@@ -6,9 +6,12 @@ import Layout from '../Layout/Layout'
 import GetOutPage from "../../pages/GetOutPage/GetOutPage";
 import GamblingPage from '../../pages/GamblingPage/GamblingPage'
 
+import { Toaster } from "react-hot-toast";
+
 function App() {
   return (
     <>
+      <Toaster position="top-center" reverseOrder={false} />
       <Suspense fallback={<Loader />}>
         <Layout>
           <Routes>

@@ -45,6 +45,7 @@
     font-size: 16px;
     letter-spacing: 0.04em;
     padding: 8px 16px;
+    width: fit-content;
     background-color: #747bff;
     color: #f1f4fd;
     border-radius: 8px;
