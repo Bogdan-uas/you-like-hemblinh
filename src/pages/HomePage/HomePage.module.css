@@ -1,0 +1,52 @@
+.main_title {
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: capitalize;
+    color: #2e2f42;
+}
+
+.nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    width: fit-content;
+    margin-inline: auto;
+    margin-top: 8px;
+}
+
+.link,
+.pass_link {
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: #f1f4fd;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    border: none;
+    transition: all 500ms ease-in-out;
+}
+
+.link:hover,
+.pass_link:hover {
+    color: #fff;
+}
+
+.link {
+    background-color: #747bff;
+}
+
+.link:hover {
+    background-color: #0d6aff;
+}
+
+.pass_link {
+    background-color: #fa5256;
+}
+
+.pass_link:hover {
+    background-color: red;
+}
+
