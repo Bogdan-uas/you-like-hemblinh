@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import CountUp from "react-countup";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
 
@@ -17,14 +18,14 @@ const GamblingPage = () => {
 
     const navigate = useNavigate();
 
+    const prevPointsRef = useRef(0);
+    const prevGoalRef = useRef(0);
+
     const getPointsStyle = () => {
         const ratio = Math.min(currentPoints / goalPoints, 1);
         let r, g, b;
-
         if (currentPoints <= 200) {
-            r = 255;
-            g = 0;
-            b = 0;
+            r = 255; g = 0; b = 0;
         } else if (ratio < 0.5) {
             const t = (currentPoints - 200) / ((goalPoints / 2) - 200);
             r = Math.round(255 * (1 - t) + 117 * t);
@@ -36,16 +37,16 @@ const GamblingPage = () => {
             g = Math.round(117 * (1 - t) + 125 * t);
             b = Math.round(117 * (1 - t) + 50 * t);
         }
-
-        const backgroundColor = `rgb(${r},${g},${b})`;
-        const color = '#fff';
-
-        return { backgroundColor, color };
+        return { backgroundColor: `rgb(${r},${g},${b})`, color: '#fff' };
     };
 
     const startGame = () => {
         const starter = Math.floor(Math.random() * 401) + 100;
         const goal = Math.floor(Math.random() * 5001) + 5000;
+
+        prevPointsRef.current = 0;
+        prevGoalRef.current = 0;
+
         setCurrentPoints(starter);
         setGoalPoints(goal);
         setBet("");
@@ -68,7 +69,6 @@ const GamblingPage = () => {
 
     const handleGamble = () => {
         if (!bet || parseInt(bet, 10) === 0) return;
-
         const betAmount = parseInt(bet, 10);
 
         if (betAmount > currentPoints) {
@@ -77,8 +77,7 @@ const GamblingPage = () => {
         }
 
         const previousPoints = currentPoints;
-
-        setCurrentPoints((prev) => prev - betAmount);
+        setCurrentPoints(prev => prev - betAmount);
         setBet("");
         setResultMessage("Calculating...");
         setMultiplier(null);
@@ -91,7 +90,6 @@ const GamblingPage = () => {
 
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
-
             let message;
             if (roundedMultiplier < 1.0) message = "What a failure😢";
             else if (roundedMultiplier <= 1.4) message = "Mid😕";
@@ -100,8 +98,7 @@ const GamblingPage = () => {
 
             const newPoints = previousPoints - betAmount + winnings;
             setCurrentPoints(newPoints);
-            const change = newPoints - previousPoints;
-            setPointsChange(change);
+            setPointsChange(newPoints - previousPoints);
 
             if (newPoints >= goalPoints) {
                 setIsWin(true);
@@ -131,7 +128,13 @@ const GamblingPage = () => {
                     <p className={css.info_text}>Your current points:</p>
                     <div className={css.another_points_text_container}>
                         <div className={css.points} style={getPointsStyle()}>
-                            {currentPoints}
+                            <CountUp
+                                start={prevPointsRef.current}
+                                end={currentPoints}
+                                duration={1.2}
+                                onEnd={() => prevPointsRef.current = currentPoints}
+                                key={currentPoints}
+                            />
                         </div>
                         {pointsChange !== null && (
                             <span
@@ -145,7 +148,15 @@ const GamblingPage = () => {
                 </div>
                 <div className={css.points_text_container}>
                     <p className={css.info_text}>Goal:</p>
-                    <div className={css.points}>{goalPoints}</div>
+                    <div className={css.points}>
+                        <CountUp
+                            start={prevGoalRef.current}
+                            end={goalPoints}
+                            duration={1.2}
+                            onEnd={() => prevGoalRef.current = goalPoints}
+                            key={goalPoints}
+                        />
+                    </div>
                 </div>
             </div>
 
