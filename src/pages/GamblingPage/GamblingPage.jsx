@@ -5,6 +5,8 @@ import CountUp from "react-countup";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
 
+const STORAGE_KEY = "gamblingGameState";
+
 const GamblingPage = () => {
     const [currentPoints, setCurrentPoints] = useState(0);
     const [goalPoints, setGoalPoints] = useState(0);
@@ -17,7 +19,6 @@ const GamblingPage = () => {
     const [pointsChange, setPointsChange] = useState(null);
 
     const navigate = useNavigate();
-
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
 
@@ -59,8 +60,37 @@ const GamblingPage = () => {
     };
 
     useEffect(() => {
-        startGame();
+        const savedState = localStorage.getItem(STORAGE_KEY);
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                setCurrentPoints(parsed.currentPoints ?? 0);
+                setGoalPoints(parsed.goalPoints ?? 0);
+                setResultMessage(parsed.resultMessage ?? "");
+                setGameOver(parsed.gameOver ?? false);
+                setIsWin(parsed.isWin ?? false);
+            } catch {
+                startGame();
+            }
+        } else {
+            startGame();
+        }
     }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            const state = {
+                currentPoints,
+                goalPoints,
+                resultMessage,
+                gameOver,
+                isWin
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [currentPoints, goalPoints, resultMessage, gameOver, isWin]);
 
     const handleBetChange = (e) => {
         const value = e.target.value;
