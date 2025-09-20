@@ -41,8 +41,8 @@ const GamblingPage = () => {
     };
 
     const startGame = () => {
-        const starter = Math.floor(Math.random() * 401) + 100;
-        const goal = Math.floor(Math.random() * 5001) + 5000;
+        const starter = Math.round(Math.random() * 401) + 100;
+        const goal = Math.round(Math.random() * 5001) + 5000;
 
         prevPointsRef.current = 0;
         prevGoalRef.current = 0;
@@ -86,7 +86,7 @@ const GamblingPage = () => {
 
         const rawMultiplier = Math.pow(Math.random(), 1.2) * 2.9 + 0.1;
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
-        const winnings = Math.floor(betAmount * roundedMultiplier);
+        const winnings = Math.round(betAmount * roundedMultiplier);
 
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
@@ -96,7 +96,7 @@ const GamblingPage = () => {
             else message = "Congratulations👏";
             setResultMessage(message);
 
-            const newPoints = previousPoints - betAmount + winnings;
+            const newPoints = Math.round(previousPoints - betAmount + winnings);
             setCurrentPoints(newPoints);
             setPointsChange(newPoints - previousPoints);
 
