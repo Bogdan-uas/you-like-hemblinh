@@ -18,6 +18,9 @@ const GamblingPage = () => {
     const [isWin, setIsWin] = useState(false);
     const [pointsChange, setPointsChange] = useState(null);
 
+    const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+    const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
+
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
@@ -149,6 +152,34 @@ const GamblingPage = () => {
         return css.multiplier_win;
     };
 
+    useEffect(() => {
+        if (!isRestartModalOpen && !isTerminateModalOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                isRestartModalOpen ? setIsRestartModalOpen(false) : setIsTerminateModalOpen(false);
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                isRestartModalOpen ? confirmRestart() : confirmTerminate();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isRestartModalOpen, isTerminateModalOpen]);
+
+    const confirmRestart = () => {
+        startGame();
+        setIsRestartModalOpen(false);
+    };
+
+    const confirmTerminate = () => {
+        startGame();
+        setIsTerminateModalOpen(false);
+        navigate("/");
+    };
+
     const isButtonLocked = !bet || isCalculating;
 
     return (
@@ -189,7 +220,6 @@ const GamblingPage = () => {
                     </div>
                 </div>
             </div>
-
             <div className={css.input_container}>
                 <input
                     type="number"
@@ -205,7 +235,6 @@ const GamblingPage = () => {
                     Gamble
                 </button>
             </div>
-
             {resultMessage && (
                 <p className={`${css.info_text} ${css.result_message}`}>
                     {resultMessage}
@@ -220,7 +249,32 @@ const GamblingPage = () => {
                     )}
                 </p>
             )}
-
+            <div className={css.bottom_buttons}>
+                <button className={css.restart_button} onClick={() => setIsRestartModalOpen(true)}>
+                    Restart the game?
+                </button>
+                <button className={css.restart_button} onClick={() => setIsTerminateModalOpen(true)}>
+                    Terminate the game?
+                </button>
+            </div>
+            {isRestartModalOpen && (
+                <div className={css.logout_modal}>
+                    <p className={css.logout_text}>Are you sure you want to restart the game?</p>
+                    <div className={css.logout_buttons}>
+                        <button className={css.cancel_button} onClick={() => setIsRestartModalOpen(false)}>Cancel</button>
+                        <button className={css.confirm_button} onClick={confirmRestart}>Restart</button>
+                    </div>
+                </div>
+            )}
+            {isTerminateModalOpen && (
+                <div className={css.logout_modal}>
+                    <p className={css.logout_text}>Are you sure you want to terminate the game?</p>
+                    <div className={css.logout_buttons}>
+                        <button className={css.cancel_button} onClick={() => setIsTerminateModalOpen(false)}>Cancel</button>
+                        <button className={css.confirm_button} onClick={confirmTerminate}>Terminate</button>
+                    </div>
+                </div>
+            )}
             {gameOver && (
                 <div className={`${loaderCss.modal_overlay} ${gameOver ? loaderCss.show : ""}`}>
                     <div className={loaderCss.game_container}>
