@@ -185,7 +185,7 @@
     color: #fff;
 }
 
-.logout_modal {
+.restart_modal {
     position: fixed;
     top: 7%;
     left: 50%;
@@ -215,7 +215,7 @@
     }
 }
 
-.logout_text {
+.restart_text {
     line-height: 1.5;
     letter-spacing: 0.04em;
     color: #2e2f42;
@@ -257,7 +257,7 @@
     color: #fff;
 }
 
-.logout_buttons {
+.restart_buttons {
     display: flex;
     align-items: center;
     gap: 16px;

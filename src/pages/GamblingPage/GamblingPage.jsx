@@ -258,18 +258,18 @@ const GamblingPage = () => {
                 </button>
             </div>
             {isRestartModalOpen && (
-                <div className={css.logout_modal}>
-                    <p className={css.logout_text}>Are you sure you want to restart the game?</p>
-                    <div className={css.logout_buttons}>
+                <div className={css.restart_modal}>
+                    <p className={css.restart_text}>Are you sure you want to restart the game?</p>
+                    <div className={css.restart_buttons}>
                         <button className={css.cancel_button} onClick={() => setIsRestartModalOpen(false)}>Cancel</button>
                         <button className={css.confirm_button} onClick={confirmRestart}>Restart</button>
                     </div>
                 </div>
             )}
             {isTerminateModalOpen && (
-                <div className={css.logout_modal}>
-                    <p className={css.logout_text}>Are you sure you want to terminate the game?</p>
-                    <div className={css.logout_buttons}>
+                <div className={css.restart_modal}>
+                    <p className={css.restart_text}>Are you sure you want to terminate the game?</p>
+                    <div className={css.restart_buttons}>
                         <button className={css.cancel_button} onClick={() => setIsTerminateModalOpen(false)}>Cancel</button>
                         <button className={css.confirm_button} onClick={confirmTerminate}>Terminate</button>
                     </div>
