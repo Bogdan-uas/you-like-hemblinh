@@ -64,18 +64,21 @@ const GamblingPage = () => {
 
     useEffect(() => {
         const savedState = localStorage.getItem(STORAGE_KEY);
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
+        if (!savedState) {
+            startGame();
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(savedState);
+            if (parsed.gameOver) {
+                startGame();
+            } else {
                 setCurrentPoints(parsed.currentPoints ?? 0);
                 setGoalPoints(parsed.goalPoints ?? 0);
                 setResultMessage(parsed.resultMessage ?? "");
-                setGameOver(parsed.gameOver ?? false);
-                setIsWin(parsed.isWin ?? false);
-            } catch {
-                startGame();
             }
-        } else {
+        } catch {
             startGame();
         }
     }, []);
@@ -86,14 +89,12 @@ const GamblingPage = () => {
                 currentPoints,
                 goalPoints,
                 resultMessage,
-                gameOver,
-                isWin
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         };
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-    }, [currentPoints, goalPoints, resultMessage, gameOver, isWin]);
+    }, [currentPoints, goalPoints, resultMessage]);
 
     const handleBetChange = (e) => {
         const value = e.target.value;
@@ -101,8 +102,17 @@ const GamblingPage = () => {
     };
 
     const handleGamble = () => {
-        if (!bet || parseInt(bet, 10) === 0) return;
+        if (bet === "" || bet === null) {
+            toast.error("Please enter a bet amount!");
+            return;
+        }
+
         const betAmount = parseInt(bet, 10);
+
+        if (betAmount === 0) {
+            toast.error("You can't gamble with 0 points!");
+            return;
+        }
 
         if (betAmount > currentPoints) {
             toast.error("You don't have enough points to place this bet!");
@@ -136,9 +146,11 @@ const GamblingPage = () => {
             if (newPoints >= goalPoints) {
                 setIsWin(true);
                 setGameOver(true);
+                localStorage.removeItem(STORAGE_KEY);
             } else if (newPoints <= 0) {
                 setIsWin(false);
                 setGameOver(true);
+                localStorage.removeItem(STORAGE_KEY);
             }
 
             setIsCalculating(false);
@@ -170,12 +182,13 @@ const GamblingPage = () => {
     }, [isRestartModalOpen, isTerminateModalOpen]);
 
     const confirmRestart = () => {
+        localStorage.removeItem(STORAGE_KEY);
         startGame();
         setIsRestartModalOpen(false);
     };
 
     const confirmTerminate = () => {
-        startGame();
+        localStorage.removeItem(STORAGE_KEY);
         setIsTerminateModalOpen(false);
         navigate("/");
     };
