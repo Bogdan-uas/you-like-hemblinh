@@ -262,3 +262,141 @@
     align-items: center;
     gap: 16px;
 }
+
+.intro_overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.intro_content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: #fff;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.intro_points {
+    opacity: 0;
+    transform: translateX(-100vw);
+    margin-bottom: 20px;
+}
+
+.slide_in {
+    animation: slideIn 2s ease-out forwards;
+}
+
+.slide_in_delay {
+    animation: slideIn 2s ease-out forwards;
+    animation-delay: 2s;
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(-100vw);
+        opacity: 0;
+    }
+
+    80% {
+        transform: translateX(20px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.fade_in {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 1000px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeIn 0.8s ease-out forwards;
+}
+
+.fade_in_delay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeIn 0.8s ease-out 0.4s forwards;
+}
+
+.fade_in_delay_more {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeIn 0.8s ease-out 0.8s forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide_in_left {
+    opacity: 0;
+    transform: translateX(-40px);
+    animation: slideInLeft 0.8s ease-out 0.2s forwards;
+}
+
+@keyframes slideInLeft {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.proceed_button {
+    margin-top: 30px;
+    display: flex;
+    font-weight: 500;
+    font-size: 20px;
+    letter-spacing: 0.04em;
+    padding: 12px 20px;
+    background-color: #747bff;
+    color: #f1f4fd;
+    border-radius: 8px;
+    border: none;
+    transition: all 500ms ease-in-out;
+    opacity: 0;
+    animation: fadeIn 1.5s ease forwards;
+    animation-delay: 3.5s;
+}
+
+.proceed_button:hover {
+    background-color: #0d6aff;
+    color: #fff;
+}
+
+.small_text {
+    display: flex;
+    flex-direction: row;
+    font-size: 16px;
+    color: #4a4b57;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+}
+
+.bold {
+    font-weight: 700;
+}
