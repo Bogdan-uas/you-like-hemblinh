@@ -26,7 +26,14 @@ const GamblingPage = () => {
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
 
-    const getPointsStyle = () => {
+    const firstRenderRef = useRef(true);
+    const firstGambleRef = useRef(false);
+
+    const getCurrentPointsStyle = () => {
+        if (!firstGambleRef.current) {
+            return { backgroundColor: "#ccc", color: "#2e2f42" };
+        }
+
         const ratio = Math.min(currentPoints / goalPoints, 1);
         let r, g, b;
         if (currentPoints <= 200) {
@@ -51,6 +58,8 @@ const GamblingPage = () => {
 
         prevPointsRef.current = 0;
         prevGoalRef.current = 0;
+        firstRenderRef.current = true;
+        firstGambleRef.current = false;
 
         setCurrentPoints(starter);
         setGoalPoints(goal);
@@ -82,6 +91,12 @@ const GamblingPage = () => {
                 setGoalPoints(parsed.goalPoints ?? 0);
                 setResultMessage(parsed.resultMessage ?? "");
                 setShowIntro(false);
+
+                if (parsed.currentPoints !== parsed.currentPoints) {
+                    firstGambleRef.current = true;
+                } else {
+                    firstGambleRef.current = true;
+                }
             }
         } catch {
             startGame();
@@ -90,10 +105,13 @@ const GamblingPage = () => {
 
     useEffect(() => {
         const handleBeforeUnload = () => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                currentPoints,
-                goalPoints,
-            }));
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                    currentPoints,
+                    goalPoints,
+                })
+            );
         };
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -106,6 +124,8 @@ const GamblingPage = () => {
 
     const handleGamble = () => {
         if (!bet) return toast.error("Please enter a bet amount!");
+
+        firstGambleRef.current = true;
 
         const betAmount = parseInt(bet, 10);
         if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
@@ -222,7 +242,10 @@ const GamblingPage = () => {
 
                         <button
                             className={`${css.proceed_button} ${css.fade_in_delay_more}`}
-                            onClick={() => setShowIntro(false)}
+                            onClick={() => {
+                                setShowIntro(false);
+                                firstRenderRef.current = false;
+                            }}
                         >
                             Proceed?
                         </button>
@@ -236,12 +259,14 @@ const GamblingPage = () => {
                         <div className={css.points_text_container}>
                             <p className={css.info_text}>Your current points:</p>
                             <div className={css.another_points_text_container}>
-                                <div className={css.points} style={getPointsStyle()}>
+                                <div className={css.points} style={getCurrentPointsStyle()}>
                                     <CountUp
                                         start={prevPointsRef.current}
                                         end={currentPoints}
                                         duration={1.2}
-                                        onEnd={() => (prevPointsRef.current = currentPoints)}
+                                        onEnd={() => {
+                                            prevPointsRef.current = currentPoints;
+                                        }}
                                         key={currentPoints}
                                     />
                                 </div>
