@@ -377,9 +377,6 @@
     border-radius: 8px;
     border: none;
     transition: all 500ms ease-in-out;
-    opacity: 0;
-    animation: fadeIn 1.5s ease forwards;
-    animation-delay: 3.5s;
 }
 
 .proceed_button:hover {
@@ -397,6 +394,170 @@
     margin-bottom: 8px;
 }
 
-.bold {
-    font-weight: 700;
+.nativeSelect {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(100%) !important;
+    white-space: nowrap !important;
+}
+
+.toggleButton {
+    appearance: none;
+    background-color: white;
+    border: 2px solid #ccc;
+    color: #2e2f42;
+    padding: 12px 48px 12px 16px;
+    font-size: 1rem;
+    border-radius: 12px;
+    width: 260px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 300ms ease-in-out;
+}
+
+.toggleButton:hover,
+.toggleButton:focus {
+    border-color: #0d6aff;
+    box-shadow: 0 0 3px #0d6aff;
+}
+
+.arrow {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="gray" height="16" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 16px 16px;
+    pointer-events: none;
+}
+
+.dropdownList {
+    position: fixed;
+    width: 219px;
+    background: white;
+    border: 1px solid black;
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    padding: 0;
+    list-style: none;
+    opacity: 0;
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.dropdownList.open {
+    opacity: 1;
+    transform: scaleY(1);
+    pointer-events: auto;
+}
+
+.dropdownList::-webkit-scrollbar {
+    display: none;
+}
+
+.option {
+    color: #2e2f42;
+    padding: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 300ms ease-in-out;
+}
+
+.option[data-difficulty="Easy"]:hover,
+.option[data-difficulty="Easy"]:focus,
+.option[data-difficulty="Easy"].selected {
+    background-color: #28a745;
+    color: white;
+}
+
+.option[data-difficulty="Normal"]:hover,
+.option[data-difficulty="Normal"]:focus,
+.option[data-difficulty="Normal"].selected {
+    background-color: #ffc107;
+    color: white;
+}
+
+.option[data-difficulty="Hard"]:hover,
+.option[data-difficulty="Hard"]:focus,
+.option[data-difficulty="Hard"].selected {
+    background-color: #dc3545;
+    color: white;
+}
+
+.option[data-difficulty="Impossible"]:hover,
+.option[data-difficulty="Impossible"]:focus,
+.option[data-difficulty="Impossible"].selected {
+    background-color: #000;
+    color: white;
+}
+
+.option[data-difficulty="LUCK GOD"]:hover {
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 1400% 1400%;
+    color: white;
+    animation: rainbow 4s ease infinite;
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: initial;
+}
+
+.option[data-difficulty="LUCK GOD"].selected {
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 1400% 1400%;
+    color: white;
+    animation: rainbow 4s ease infinite;
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: initial;
+}
+
+.selected {
+    font-weight: 600;
+    outline: none;
+    pointer-events: none;
+}
+
+@keyframes rainbow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.luckGodShimmer {
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 1400% 1400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbow 4s ease infinite;
+}
+
+.rainbowText {
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 1400% 1400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbow 4s ease infinite;
 }

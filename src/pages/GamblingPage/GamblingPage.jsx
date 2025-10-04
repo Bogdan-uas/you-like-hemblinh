@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import CountUp from "react-countup";
@@ -7,7 +7,19 @@ import loaderCss from "../../components/Loader/Loader.module.css";
 
 const STORAGE_KEY = "gamblingGameState";
 
+const DIFFICULTIES = {
+    Easy: { start: [500, 1000], goal: [5000, 7500], multiplier: [0.5, 3.0] },
+    Normal: { start: [250, 750], goal: [5000, 10000], multiplier: [0.5, 3.0] },
+    Hard: { start: [100, 500], goal: [10000, 20000], multiplier: [0.1, 2.0] },
+    Impossible: { start: [100, 250], goal: [15000, 30000], multiplier: [0.1, 2.0], unstableMin: true },
+    "LUCK GOD": { start: [25, 25], goal: [50000, 100000], multiplier: [0.1, 2.0], unstableMin: true },
+};
+
 const GamblingPage = () => {
+    const [difficulty, setDifficulty] = useState("");
+    const [showDifficultyOverlay, setShowDifficultyOverlay] = useState(true);
+    const [showIntro, setShowIntro] = useState(false);
+
     const [currentPoints, setCurrentPoints] = useState(0);
     const [goalPoints, setGoalPoints] = useState(0);
     const [bet, setBet] = useState("");
@@ -17,52 +29,94 @@ const GamblingPage = () => {
     const [gameOver, setGameOver] = useState(false);
     const [isWin, setIsWin] = useState(false);
     const [pointsChange, setPointsChange] = useState(null);
-
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
-    const [showIntro, setShowIntro] = useState(false);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
-
-    const firstRenderRef = useRef(true);
     const firstGambleRef = useRef(false);
 
-    const getCurrentPointsStyle = () => {
-        if (!firstGambleRef.current) {
-            return { backgroundColor: "#ccc", color: "#2e2f42" };
-        }
+    const [open, setOpen] = useState(false);
+    const buttonRef = useRef(null);
+    const dropdownRef = useRef(null);
+    const dropdownCoords = useRef({});
+    const selectedLabel = difficulty || "Select difficulty";
 
-        const ratio = Math.min(currentPoints / goalPoints, 1);
-        let r, g, b;
-        if (currentPoints <= 200) {
-            r = 255; g = 0; b = 0;
-        } else if (ratio < 0.5) {
-            const t = (currentPoints - 200) / ((goalPoints / 2) - 200);
-            r = Math.round(255 * (1 - t) + 117 * t);
-            g = Math.round(77 * (1 - t) + 117 * t);
-            b = Math.round(77 * (1 - t) + 117 * t);
-        } else {
-            const t = (ratio - 0.5) / 0.5;
-            r = Math.round(117 * (1 - t) + 46 * t);
-            g = Math.round(117 * (1 - t) + 125 * t);
-            b = Math.round(117 * (1 - t) + 50 * t);
+    useEffect(() => {
+        const savedState = localStorage.getItem(STORAGE_KEY);
+        if (savedState) {
+            const parsed = JSON.parse(savedState);
+            setDifficulty(parsed.difficulty);
+            setCurrentPoints(parsed.currentPoints);
+            setGoalPoints(parsed.goalPoints);
+            prevPointsRef.current = parsed.currentPoints;
+            prevGoalRef.current = parsed.goalPoints;
+            firstGambleRef.current = true;
+            setShowDifficultyOverlay(false);
+            setShowIntro(false);
         }
-        return { backgroundColor: `rgb(${r},${g},${b})`, color: "#fff" };
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target) &&
+                buttonRef.current &&
+                !buttonRef.current.contains(event.target)
+            ) {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const saveGameState = (newState) => {
+        const stateToSave = {
+            difficulty,
+            currentPoints,
+            goalPoints,
+            ...newState,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    };
+
+    const toggleDropdown = () => {
+        if (open) setOpen(false);
+        else {
+            const rect = buttonRef.current.getBoundingClientRect();
+            dropdownCoords.current = { top: rect.bottom + 4, left: rect.left };
+            setOpen(true);
+        }
+    };
+
+    const handleSelectDifficulty = (diff) => {
+        setDifficulty(diff);
+        setOpen(false);
     };
 
     const startGame = () => {
-        const starter = Math.round(Math.random() * 401) + 100;
-        const goal = Math.round(Math.random() * 5001) + 5000;
+        if (!difficulty) return;
+
+        const { start, goal } = DIFFICULTIES[difficulty];
+        const starter =
+            start[0] === start[1]
+                ? start[0]
+                : Math.round(Math.random() * (start[1] - start[0])) + start[0];
+        const goalPts =
+            Math.round(Math.random() * (goal[1] - goal[0])) + goal[0];
 
         prevPointsRef.current = 0;
         prevGoalRef.current = 0;
-        firstRenderRef.current = true;
         firstGambleRef.current = false;
 
         setCurrentPoints(starter);
-        setGoalPoints(goal);
+        setGoalPoints(goalPts);
         setBet("");
         setIsCalculating(false);
         setResultMessage("");
@@ -71,51 +125,10 @@ const GamblingPage = () => {
         setIsWin(false);
         setPointsChange(null);
         setShowIntro(true);
+        setShowDifficultyOverlay(false);
+
+        saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
-
-    useEffect(() => {
-        const savedState = localStorage.getItem(STORAGE_KEY);
-
-        if (!savedState) {
-            startGame();
-            return;
-        }
-
-        try {
-            const parsed = JSON.parse(savedState);
-
-            if (parsed.gameOver || parsed.currentPoints <= 0 || parsed.goalPoints <= 0) {
-                startGame();
-            } else {
-                setCurrentPoints(parsed.currentPoints ?? 0);
-                setGoalPoints(parsed.goalPoints ?? 0);
-                setResultMessage(parsed.resultMessage ?? "");
-                setShowIntro(false);
-
-                if (parsed.currentPoints !== parsed.currentPoints) {
-                    firstGambleRef.current = true;
-                } else {
-                    firstGambleRef.current = true;
-                }
-            }
-        } catch {
-            startGame();
-        }
-    }, []);
-
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({
-                    currentPoints,
-                    goalPoints,
-                })
-            );
-        };
-        window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-    }, [currentPoints, goalPoints]);
 
     const handleBetChange = (e) => {
         const value = e.target.value;
@@ -124,12 +137,13 @@ const GamblingPage = () => {
 
     const handleGamble = () => {
         if (!bet) return toast.error("Please enter a bet amount!");
-
         firstGambleRef.current = true;
 
         const betAmount = parseInt(bet, 10);
         if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
         if (betAmount > currentPoints) return toast.error("You don't have enough points!");
+
+        const { multiplier: [min, max], unstableMin } = DIFFICULTIES[difficulty];
 
         const previousPoints = currentPoints;
         setCurrentPoints(prev => prev - betAmount);
@@ -139,7 +153,14 @@ const GamblingPage = () => {
         setPointsChange(null);
         setIsCalculating(true);
 
-        const rawMultiplier = Math.pow(Math.random(), 1.2) * 2.9 + 0.1;
+        let rawMultiplier;
+        if (unstableMin) {
+            const randomMin = Math.random() * min;
+            rawMultiplier = Math.random() * (max - randomMin) + randomMin;
+        } else {
+            rawMultiplier = Math.random() * (max - min) + min;
+        }
+
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
         const winnings = Math.round(betAmount * roundedMultiplier);
 
@@ -155,6 +176,8 @@ const GamblingPage = () => {
             setCurrentPoints(newPoints);
             setPointsChange(newPoints - previousPoints);
 
+            saveGameState({ currentPoints: newPoints });
+
             if (newPoints >= goalPoints) {
                 setIsWin(true);
                 setGameOver(true);
@@ -169,36 +192,14 @@ const GamblingPage = () => {
         }, 3000);
     };
 
-    const getMultiplierClass = () => {
-        if (multiplier === null) return "";
-        if (multiplier < 1.0) return css.multiplier_fail;
-        if (multiplier <= 1.4) return css.multiplier_mid;
-        return css.multiplier_win;
-    };
-
-    useEffect(() => {
-        if (!isRestartModalOpen && !isTerminateModalOpen) return;
-
-        const handleKeyDown = (e) => {
-            if (e.key === "Escape") {
-                e.preventDefault();
-                if (isRestartModalOpen) setIsRestartModalOpen(false);
-                if (isTerminateModalOpen) setIsTerminateModalOpen(false);
-            } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (isRestartModalOpen) confirmRestart();
-                if (isTerminateModalOpen) confirmTerminate();
-            }
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isRestartModalOpen, isTerminateModalOpen]);
-
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
-        startGame();
+        setDifficulty("");
+        setShowDifficultyOverlay(true);
+        setShowIntro(false);
         setIsRestartModalOpen(false);
+        setGameOver(false);
+        setIsWin(false);
     };
 
     const confirmTerminate = () => {
@@ -210,15 +211,126 @@ const GamblingPage = () => {
     const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
     const isGambleButtonLocked = !bet;
 
+    const getMultiplierClass = () => {
+        if (multiplier === null) return "";
+        if (multiplier < 1.0) return css.multiplier_fail;
+        if (multiplier <= 1.4) return css.multiplier_mid;
+        return css.multiplier_win;
+    };
+
+    const getCurrentPointsStyle = () => {
+        if (!firstGambleRef.current) {
+            return { backgroundColor: "#ccc", color: "#2e2f42" };
+        }
+
+        const RED_FADE_THRESHOLDS = {
+            Easy: 1000,
+            Normal: 750,
+            Hard: 500,
+            Impossible: 2500,
+            "LUCK GOD": 10000,
+        };
+
+        const fadeThreshold = RED_FADE_THRESHOLDS[difficulty] || 200;
+        const ratio = Math.min(currentPoints / goalPoints, 1);
+        let r, g, b;
+
+        if (currentPoints <= fadeThreshold) {
+            r = 255; g = 0; b = 0;
+        } else if (ratio < 0.5) {
+            const t = (currentPoints - fadeThreshold) / ((goalPoints / 2) - fadeThreshold);
+            r = Math.round(255 * (1 - t) + 117 * t);
+            g = Math.round(77 * (1 - t) + 117 * t);
+            b = Math.round(77 * (1 - t) + 117 * t);
+        } else {
+            const t = (ratio - 0.5) / 0.5;
+            r = Math.round(117 * (1 - t) + 46 * t);
+            g = Math.round(117 * (1 - t) + 125 * t);
+            b = Math.round(117 * (1 - t) + 50 * t);
+        }
+
+        return { backgroundColor: `rgb(${r},${g},${b})`, color: "#fff" };
+    };
+
     return (
         <div className={css.container}>
+            {showDifficultyOverlay && (
+                <div className={css.intro_overlay}>
+                    <div className={css.intro_content}>
+                        <p className={css.info_text}>Select Difficulty:</p>
+                        <select
+                            value={difficulty}
+                            onChange={(e) => handleSelectDifficulty(e.target.value)}
+                            className={css.nativeSelect}
+                        >
+                            <option value=""></option>
+                            {Object.keys(DIFFICULTIES).map((key) => (
+                                <option key={key} value={key}>{key}</option>
+                            ))}
+                        </select>
+
+                        <button
+                            type="button"
+                            className={css.toggleButton}
+                            onClick={toggleDropdown}
+                            ref={buttonRef}
+                            aria-haspopup="listbox"
+                            aria-expanded={open}
+                        >
+                            <span className={difficulty === "LUCK GOD" ? css.rainbowText : ""}>
+                                {selectedLabel}
+                            </span>
+                            <span className={css.arrow} />
+                        </button>
+
+                        {open && (
+                            <ul
+                                ref={dropdownRef}
+                                role="listbox"
+                                className={`${css.dropdownList} ${open ? css.open : ""}`}
+                                style={{ position: "fixed", ...dropdownCoords.current }}
+                            >
+                                {Object.keys(DIFFICULTIES).map((key) => (
+                                    <li
+                                        key={key}
+                                        data-difficulty={key}
+                                        role="option"
+                                        aria-selected={difficulty === key}
+                                        tabIndex={0}
+                                        className={`${css.option} ${difficulty === key ? css.selected : ""}`}
+                                        onClick={() => handleSelectDifficulty(key)}
+                                        onKeyDown={(e) =>
+                                            (e.key === "Enter" || e.key === " ") &&
+                                            handleSelectDifficulty(key)
+                                        }
+                                    >
+                                        {key}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <button
+                            className={`${css.proceed_button} ${!difficulty ? css.locked : ""}`}
+                            onClick={startGame}
+                            disabled={!difficulty}
+                        >
+                            Proceed?
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {showIntro && (
                 <div className={css.intro_overlay}>
                     <div className={css.intro_content}>
+                        <h2 className={`${css.game_title} ${difficulty === "LUCK GOD" ? css.luckGodShimmer : ""}`}>
+                            {difficulty} Mode
+                        </h2>
                         <div className={css.fade_in}>
                             <p className={css.info_text}>Your current points:</p>
                             <p className={`${css.small_text} ${css.fade_in_delay}`}>
-                                You start with a random amount of points ranging from 100 to 500.
+                                Range: {DIFFICULTIES[difficulty].start[0]} to {DIFFICULTIES[difficulty].start[1]}
                             </p>
                             <div className={`${css.points} ${css.slide_in_left}`}>
                                 <CountUp start={0} end={currentPoints} duration={1.2} />
@@ -228,7 +340,7 @@ const GamblingPage = () => {
                         <div className={css.fade_in_delay}>
                             <p className={css.info_text}>Goal:</p>
                             <p className={`${css.small_text} ${css.fade_in_delay}`}>
-                                Your goal points are randomly set between 5000 and 10000.
+                                Range: {DIFFICULTIES[difficulty].goal[0]} to {DIFFICULTIES[difficulty].goal[1]}
                             </p>
                             <div className={`${css.points} ${css.slide_in_left}`}>
                                 <CountUp start={0} end={goalPoints} duration={1.2} />
@@ -236,25 +348,30 @@ const GamblingPage = () => {
                         </div>
                         <p className={`${css.info_text} ${css.fade_in_delay_more}`}>
                             The multiplier varies from{" "}
-                            <span style={{ color: "red" }}>0.1x</span> to{" "}
-                            <span style={{ color: "green" }}>3.0x</span>.
+                            <span style={{ color: "red" }}>
+                                {DIFFICULTIES[difficulty].unstableMin ? "as low as 0x" : `${DIFFICULTIES[difficulty].multiplier[0]}x`}
+                            </span>{" "}
+                            to{" "}
+                            <span style={{ color: "green" }}>
+                                {DIFFICULTIES[difficulty].multiplier[1]}x
+                            </span>.
                         </p>
 
                         <button
                             className={`${css.proceed_button} ${css.fade_in_delay_more}`}
-                            onClick={() => {
-                                setShowIntro(false);
-                                firstRenderRef.current = false;
-                            }}
+                            onClick={() => setShowIntro(false)}
                         >
-                            Proceed?
+                            Start Game
                         </button>
                     </div>
                 </div>
             )}
-
-            {!showIntro && (
+            {!showIntro && !showDifficultyOverlay && (
                 <>
+                    <h2 className={`${css.game_title} ${difficulty === "LUCK GOD" ? css.luckGodShimmer : ""}`}>
+                        {difficulty} Mode
+                    </h2>
+
                     <div className={css.points_container}>
                         <div className={css.points_text_container}>
                             <p className={css.info_text}>Your current points:</p>
@@ -264,9 +381,7 @@ const GamblingPage = () => {
                                         start={prevPointsRef.current}
                                         end={currentPoints}
                                         duration={1.2}
-                                        onEnd={() => {
-                                            prevPointsRef.current = currentPoints;
-                                        }}
+                                        onEnd={() => (prevPointsRef.current = currentPoints)}
                                         key={currentPoints}
                                     />
                                 </div>
@@ -319,7 +434,9 @@ const GamblingPage = () => {
                                 <>
                                     {" "}Your multiplier is
                                     <span className={`${css.multiplier} ${getMultiplierClass()}`}>
-                                        {multiplier.toFixed(2)}x
+                                        {DIFFICULTIES[difficulty].unlimited
+                                            ? multiplier.toFixed(4)
+                                            : multiplier.toFixed(2)}x
                                     </span>
                                     !
                                 </>
@@ -363,28 +480,28 @@ const GamblingPage = () => {
                             </div>
                         </div>
                     )}
-
-                    {gameOver && (
-                        <div className={`${loaderCss.modal_overlay} ${gameOver ? loaderCss.show : ""}`}>
-                            <div className={loaderCss.game_container}>
-                                <h1 className={css.game_title}>
-                                    {isWin ? "You Won! 🎉" : "You Lost! 😢"}
-                                </h1>
-                                <p className={css.info_text} style={{ fontSize: "20px" }}>
-                                    {isWin ? "You have achieved your goal!" : "You have no points left!"}
-                                </p>
-                                <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-                                    <button className={css.gamble_button} onClick={startGame}>
-                                        Try Again!
-                                    </button>
-                                    <button className={css.gamble_button} onClick={() => navigate("/")}>
-                                        Go to Home
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </>
+            )}
+
+            {gameOver && (
+                <div className={`${loaderCss.modal_overlay} ${gameOver ? loaderCss.show : ""}`}>
+                    <div className={loaderCss.game_container}>
+                        <h1 className={css.game_title}>
+                            {isWin ? "You Won! 🎉" : "You Lost! 😢"}
+                        </h1>
+                        <p className={css.info_text} style={{ fontSize: "20px" }}>
+                            {isWin ? "You have achieved your goal!" : "You have no points left!"}
+                        </p>
+                        <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+                            <button className={css.gamble_button} onClick={confirmRestart}>
+                                Try Again!
+                            </button>
+                            <button className={css.gamble_button} onClick={() => navigate("/")}>
+                                Go to Home
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
