@@ -187,7 +187,8 @@ const GamblingPage = () => {
         navigate("/");
     };
 
-    const isButtonLocked = !bet || isCalculating;
+    const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
+    const isGambleButtonLocked = !bet;
 
     return (
         <div className={css.container}>
@@ -279,7 +280,8 @@ const GamblingPage = () => {
                         />
                         <button
                             onClick={handleGamble}
-                            className={`${css.gamble_button} ${isButtonLocked ? css.locked : ""}`}
+                            className={`${css.gamble_button} ${isButtonLocked || isGambleButtonLocked ? css.locked : ""}`}
+                            disabled={isButtonLocked || isGambleButtonLocked}
                         >
                             Gamble
                         </button>
@@ -301,10 +303,18 @@ const GamblingPage = () => {
                     )}
 
                     <div className={css.bottom_buttons}>
-                        <button className={css.restart_button} onClick={() => setIsRestartModalOpen(true)}>
+                        <button
+                            className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
+                            onClick={() => setIsRestartModalOpen(true)}
+                            disabled={isButtonLocked}
+                        >
                             Restart the game?
                         </button>
-                        <button className={css.restart_button} onClick={() => setIsTerminateModalOpen(true)}>
+                        <button
+                            className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
+                            onClick={() => setIsTerminateModalOpen(true)}
+                            disabled={isButtonLocked}
+                        >
                             Terminate the game?
                         </button>
                     </div>
