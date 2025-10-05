@@ -490,7 +490,7 @@
 .option[data-difficulty="Normal"]:hover,
 .option[data-difficulty="Normal"]:focus,
 .option[data-difficulty="Normal"].selected {
-    background: linear-gradient(90deg, #ffc107, #fde08a);
+    background: linear-gradient(90deg, #ffc107, #fce8ad);
     color: white;
 }
 
