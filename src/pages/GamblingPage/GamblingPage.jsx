@@ -9,11 +9,36 @@ import loaderCss from "../../components/Loader/Loader.module.css";
 const STORAGE_KEY = "gamblingGameState";
 
 const DIFFICULTIES = {
-    Easy: { start: [500, 1000], goal: [5000, 7500], multiplier: [0.5, 3.0] },
-    Normal: { start: [250, 750], goal: [5000, 10000], multiplier: [0.5, 3.0] },
-    Hard: { start: [100, 500], goal: [10000, 20000], multiplier: [0.1, 2.0] },
-    Impossible: { start: [100, 250], goal: [15000, 30000], multiplier: [0.1, 2.0], unstableMin: true },
-    "LUCK GOD": { start: [25, 25], goal: [50000, 100000], multiplier: [0.1, 2.0], unstableMin: true },
+    Easy: { 
+        start: [500, 1000], 
+        goal: [5000, 7500], 
+        multiplier: [0.5, 3.0] 
+    },
+    Normal: { 
+        start: [250, 750], 
+        goal: [5000, 10000], 
+        multiplier: [0.5, 3.0] 
+    },
+    Hard: {
+        start: [100, 500],
+        goal: [10000, 20000],
+        multiplier: [0.1, 2.0],
+        jackpot: { chance: 0.0005, range: [4, 8] },
+    },
+    Impossible: {
+        start: [100, 250],
+        goal: [15000, 30000],
+        multiplier: [0.1, 2.0],
+        unstableMin: true,
+        jackpot: { chance: 0.0005, range: [8, 12] },
+    },
+    "LUCK GOD": {
+        start: [25, 25],
+        goal: [50000, 100000],
+        multiplier: [0.1, 2.0],
+        unstableMin: true,
+        jackpot: { chance: 0.001, range: [5, 20] },
+    },
 };
 
 const GamblingPage = () => {
@@ -150,8 +175,6 @@ const GamblingPage = () => {
         if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
         if (betAmount > currentPoints) return toast.error("You don't have enough points!");
 
-        const { multiplier: [min, max], unstableMin } = DIFFICULTIES[difficulty];
-
         const previousPoints = currentPoints;
         setCurrentPoints(prev => prev - betAmount);
         setBet("");
@@ -160,17 +183,27 @@ const GamblingPage = () => {
         setPointsChange(null);
         setIsCalculating(true);
 
+        const difficultyConfig = DIFFICULTIES[difficulty];
+        const { multiplier: [min, max], unstableMin, jackpot } = difficultyConfig;
+
         let rawMultiplier;
-        if (unstableMin) {
-            const randomMinGen = randomUniform(0, min);
-            const dynamicMin = randomMinGen();
-            const unstableGen = randomNormal((max + dynamicMin) / 2, (max - dynamicMin) / 6);
-            rawMultiplier = Math.min(Math.max(unstableGen(), dynamicMin), max);
+
+        if (jackpot && Math.random() < jackpot.chance) {
+            const [jackpotMin, jackpotMax] = jackpot.range;
+            const jackpotGen = randomUniform(jackpotMin, jackpotMax);
+            rawMultiplier = Math.round(jackpotGen() * 100) / 100;
         } else {
-            const mean = (min + max) / 2;
-            const stdDev = (max - min) / 6;
-            const normalGen = randomNormal(mean, stdDev);
-            rawMultiplier = Math.min(Math.max(normalGen(), min), max);
+            if (unstableMin) {
+                const randomMinGen = randomUniform(0, min);
+                const dynamicMin = randomMinGen();
+                const unstableGen = randomNormal((max + dynamicMin) / 2, (max - dynamicMin) / 6);
+                rawMultiplier = Math.min(Math.max(unstableGen(), dynamicMin), max);
+            } else {
+                const mean = (min + max) / 2;
+                const stdDev = (max - min) / 6;
+                const normalGen = randomNormal(mean, stdDev);
+                rawMultiplier = Math.min(Math.max(normalGen(), min), max);
+            }
         }
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
@@ -178,26 +211,33 @@ const GamblingPage = () => {
 
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
+
             let message;
-            if (roundedMultiplier < 1.0) message = "What a failure😢!";
-            else if (roundedMultiplier <= 1.4) message = "Mid😕!";
-            else message = "Congratulations👏!";
+            const jackpotHit = jackpot && roundedMultiplier >= jackpot.range[0];
+
+            if (jackpotHit) {
+                message = `🎰 JACKPOT!🤯`;
+                toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
+            } else if (roundedMultiplier < 1.0) {
+                message = "What a failure😢!";
+            } else if (roundedMultiplier <= 1.4) {
+                message = "Mid😕!";
+            } else {
+                message = "Congratulations👏!";
+            }
+
             setResultMessage(message);
 
             const newPoints = Math.round(previousPoints - betAmount + winnings);
             setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
-
             setTotalBets(prev => prev + 1);
 
             const netChange = newPoints - previousPoints;
+            if (netChange >= 0) setTotalEarned(prev => prev + netChange);
+            else setTotalLost(prev => prev + Math.abs(netChange));
 
-            if (netChange >= 0) {
-                setTotalEarned(prev => prev + netChange);
-            } else {
-                setTotalLost(prev => prev + Math.abs(netChange));
-            }
             setCurrentPoints(newPoints);
-            setPointsChange(newPoints - previousPoints);
+            setPointsChange(netChange);
 
             saveGameState({ currentPoints: newPoints });
 
@@ -360,6 +400,11 @@ const GamblingPage = () => {
                                         {DIFFICULTIES[hoveredDifficulty].unstableMin && (
                                             <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
                                         )}
+                                        {DIFFICULTIES[hoveredDifficulty].jackpot && (
+                                            <p className={css.unstable_note}>
+                                                🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </>
@@ -411,6 +456,11 @@ const GamblingPage = () => {
                                 {DIFFICULTIES[difficulty].multiplier[1]}x
                             </span>.
                         </p>
+                        {DIFFICULTIES[hoveredDifficulty].jackpot && (
+                            <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
+                                Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                            </p>
+                        )}
 
                         <button
                             className={`${css.proceed_button} ${css.fade_in_delay_more}`}
