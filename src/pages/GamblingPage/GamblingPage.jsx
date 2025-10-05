@@ -24,21 +24,21 @@ const DIFFICULTIES = {
         start: [100, 500],
         goal: [10000, 20000],
         multiplier: [0.1, 2.0],
-        jackpot: { chance: 0.0005, range: [4, 8] },
+        jackpot: { chance: 0.003, range: [4, 8] },
     },
     Impossible: {
         start: [100, 250],
         goal: [15000, 30000],
         multiplier: [0.1, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.0005, range: [8, 12] },
+        jackpot: { chance: 0.002, range: [8, 12] },
     },
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
         multiplier: [0.1, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.001, range: [5, 20] },
+        jackpot: { chance: 0.006, range: [5, 20] },
     },
 };
 
