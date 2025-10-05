@@ -34,6 +34,10 @@ const GamblingPage = () => {
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
     const [hoveredDifficulty, setHoveredDifficulty] = useState(null);
     const [tooltipCoords, setTooltipCoords] = useState({ top: 0, left: 0 });
+    const [bestMultiplier, setBestMultiplier] = useState(null);
+    const [totalBets, setTotalBets] = useState(0);
+    const [totalEarned, setTotalEarned] = useState(0);
+    const [totalLost, setTotalLost] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -181,6 +185,17 @@ const GamblingPage = () => {
             setResultMessage(message);
 
             const newPoints = Math.round(previousPoints - betAmount + winnings);
+            setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
+
+            setTotalBets(prev => prev + 1);
+
+            const netChange = newPoints - previousPoints;
+
+            if (netChange >= 0) {
+                setTotalEarned(prev => prev + netChange);
+            } else {
+                setTotalLost(prev => prev + Math.abs(netChange));
+            }
             setCurrentPoints(newPoints);
             setPointsChange(newPoints - previousPoints);
 
@@ -208,6 +223,10 @@ const GamblingPage = () => {
         setIsRestartModalOpen(false);
         setGameOver(false);
         setIsWin(false);
+        setBestMultiplier(null);
+        setTotalBets(0);
+        setTotalEarned(0);
+        setTotalLost(0);
     };
 
     const confirmTerminate = () => {
@@ -223,6 +242,13 @@ const GamblingPage = () => {
         if (multiplier === null) return "";
         if (multiplier < 1.0) return css.multiplier_fail;
         if (multiplier <= 1.4) return css.multiplier_mid;
+        return css.multiplier_win;
+    };
+
+    const getBestMultiplierClass = (value) => {
+        if (value === null) return "";
+        if (value < 1.0) return css.multiplier_fail;
+        if (value <= 1.4) return css.multiplier_mid;
         return css.multiplier_win;
     };
 
@@ -521,6 +547,18 @@ const GamblingPage = () => {
                         <p className={css.info_text} style={{ fontSize: "20px" }}>
                             {isWin ? "You have achieved your goal!" : "You have no points left!"}
                         </p>
+
+                        <div className={css.session_summary}>
+                            <p>🏆 Best multiplier:
+                                <span className={`${css.multiplier} ${getBestMultiplierClass(bestMultiplier)}`}>
+                                    {bestMultiplier?.toFixed(2)}x
+                                </span>
+                            </p>
+                            <p>🎲 Total bets made: {totalBets}</p>
+                            <p>💰 Total points earned: {totalEarned}</p>
+                            <p>❌ Total points lost: {totalLost}</p>
+                        </div>
+
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                             <button className={css.gamble_button} onClick={confirmRestart}>
                                 Try Again!

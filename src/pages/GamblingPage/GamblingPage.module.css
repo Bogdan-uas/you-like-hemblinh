@@ -595,3 +595,14 @@
     font-style: italic;
     margin-top: 4px;
 }
+
+.session_summary {
+    margin-top: 20px;
+    color: #2e2f42;
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 20px;
+}
