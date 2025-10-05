@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import CountUp from "react-countup";
+import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
 
@@ -104,12 +105,12 @@ const GamblingPage = () => {
         if (!difficulty) return;
 
         const { start, goal } = DIFFICULTIES[difficulty];
-        const starter =
-            start[0] === start[1]
-                ? start[0]
-                : Math.round(Math.random() * (start[1] - start[0])) + start[0];
-        const goalPts =
-            Math.round(Math.random() * (goal[1] - goal[0])) + goal[0];
+
+        const startGen = randomUniform(start[0], start[1]);
+        const goalGen = randomUniform(goal[0], goal[1]);
+
+        const starter = start[0] === start[1] ? start[0] : Math.round(startGen());
+        const goalPts = Math.round(goalGen());
 
         prevPointsRef.current = 0;
         prevGoalRef.current = 0;
@@ -155,10 +156,15 @@ const GamblingPage = () => {
 
         let rawMultiplier;
         if (unstableMin) {
-            const randomMin = Math.random() * min;
-            rawMultiplier = Math.random() * (max - randomMin) + randomMin;
+            const randomMinGen = randomUniform(0, min);
+            const dynamicMin = randomMinGen();
+            const unstableGen = randomNormal((max + dynamicMin) / 2, (max - dynamicMin) / 6);
+            rawMultiplier = Math.min(Math.max(unstableGen(), dynamicMin), max);
         } else {
-            rawMultiplier = Math.random() * (max - min) + min;
+            const mean = (min + max) / 2;
+            const stdDev = (max - min) / 6;
+            const normalGen = randomNormal(mean, stdDev);
+            rawMultiplier = Math.min(Math.max(normalGen(), min), max);
         }
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
