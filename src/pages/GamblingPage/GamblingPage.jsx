@@ -32,6 +32,8 @@ const GamblingPage = () => {
     const [pointsChange, setPointsChange] = useState(null);
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
+    const [hoveredDifficulty, setHoveredDifficulty] = useState(null);
+    const [tooltipCoords, setTooltipCoords] = useState({ top: 0, left: 0 });
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -290,30 +292,51 @@ const GamblingPage = () => {
                         </button>
 
                         {open && (
-                            <ul
-                                ref={dropdownRef}
-                                role="listbox"
-                                className={`${css.dropdownList} ${open ? css.open : ""}`}
-                                style={{ position: "fixed", ...dropdownCoords.current }}
-                            >
-                                {Object.keys(DIFFICULTIES).map((key) => (
-                                    <li
-                                        key={key}
-                                        data-difficulty={key}
-                                        role="option"
-                                        aria-selected={difficulty === key}
-                                        tabIndex={0}
-                                        className={`${css.option} ${difficulty === key ? css.selected : ""}`}
-                                        onClick={() => handleSelectDifficulty(key)}
-                                        onKeyDown={(e) =>
-                                            (e.key === "Enter" || e.key === " ") &&
-                                            handleSelectDifficulty(key)
-                                        }
+                            <>
+                                <ul
+                                    ref={dropdownRef}
+                                    role="listbox"
+                                    className={`${css.dropdownList} ${open ? css.open : ""}`}
+                                    style={{ position: "fixed", ...dropdownCoords.current }}
+                                >
+                                    {Object.keys(DIFFICULTIES).map((key) => (
+                                        <li
+                                            key={key}
+                                            data-difficulty={key}
+                                            role="option"
+                                            aria-selected={difficulty === key}
+                                            tabIndex={0}
+                                            className={`${css.option} ${difficulty === key ? css.selected : ""}`}
+                                            onClick={() => handleSelectDifficulty(key)}
+                                            onKeyDown={(e) =>
+                                                (e.key === "Enter" || e.key === " ") && handleSelectDifficulty(key)
+                                            }
+                                            onMouseEnter={(e) => {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                setTooltipCoords({ top: rect.top + rect.height / 2, left: rect.right + 10 });
+                                                setHoveredDifficulty(key);
+                                            }}
+                                            onMouseLeave={() => setHoveredDifficulty(null)}
+                                        >
+                                            {key}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {hoveredDifficulty && (
+                                    <div
+                                        className={css.info_popup}
+                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                     >
-                                        {key}
-                                    </li>
-                                ))}
-                            </ul>
+                                        <p><strong>Start:</strong> {DIFFICULTIES[hoveredDifficulty].start[0]} to {DIFFICULTIES[hoveredDifficulty].start[1]}</p>
+                                        <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
+                                        <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
+                                        {DIFFICULTIES[hoveredDifficulty].unstableMin && (
+                                            <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
+                                        )}
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         <button
