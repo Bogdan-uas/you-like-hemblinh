@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import CountUp from "react-countup";
+import { motion, AnimatePresence } from "framer-motion";
 import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
@@ -68,6 +69,7 @@ const GamblingPage = () => {
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
     const firstGambleRef = useRef(false);
+    const betInputRef = useRef(null);
 
     const [open, setOpen] = useState(false);
     const buttonRef = useRef(null);
@@ -167,6 +169,13 @@ const GamblingPage = () => {
         if (/^\d*$/.test(value)) setBet(value);
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && !isButtonLocked && bet.trim() !== "") {
+            e.preventDefault();
+            handleGamble();
+        }
+    };
+
     const handleGamble = () => {
         if (!bet) return toast.error("Please enter a bet amount!");
         firstGambleRef.current = true;
@@ -252,6 +261,10 @@ const GamblingPage = () => {
             }
 
             setIsCalculating(false);
+
+            if (betInputRef.current) {
+                betInputRef.current.focus();
+            }
         }, 3000);
     };
 
@@ -520,8 +533,10 @@ const GamblingPage = () => {
                             type="number"
                             value={bet}
                             onChange={handleBetChange}
+                            onKeyDown={handleKeyDown}
                             className={css.input}
                             placeholder="Gamble?"
+                            ref={betInputRef}
                         />
                         <button
                             onClick={handleGamble}
@@ -588,38 +603,77 @@ const GamblingPage = () => {
                 </>
             )}
 
-            {gameOver && (
-                <div className={`${loaderCss.modal_overlay} ${gameOver ? loaderCss.show : ""}`}>
-                    <div className={loaderCss.game_container}>
-                        <h1 className={css.game_title}>
-                            {isWin ? "You Won! 🎉" : "You Lost! 😢"}
-                        </h1>
-                        <p className={css.info_text} style={{ fontSize: "20px" }}>
-                            {isWin ? "You have achieved your goal!" : "You have no points left!"}
-                        </p>
+            <AnimatePresence>
+                {gameOver && (
+                    <motion.div
+                        className={`${loaderCss.modal_overlay}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.4 }}
+                    >
+                        <motion.div
+                            className={loaderCss.game_container}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 120,
+                                damping: 15,
+                                duration: 0.5,
+                            }}
+                        >
+                            <h1
+                                className={css.game_title}
+                                style={{
+                                    color: isWin ? "#00ff7f" : "#ff4c4c",
+                                    textShadow: isWin
+                                        ? "0 0 5px rgba(0,255,127,0.8)"
+                                        : "0 0 5px rgba(255,76,76,0.8)",
+                                }}
+                            >
+                                {isWin ? "You Won! 🎉" : "You Lost! 😢"}
+                            </h1>
 
-                        <div className={css.session_summary}>
-                            <p>🏆 Best multiplier:
-                                <span className={`${css.multiplier} ${getBestMultiplierClass(bestMultiplier)}`}>
-                                    {bestMultiplier?.toFixed(2)}x
-                                </span>
+                            <p className={css.info_text} style={{ fontSize: "20px" }}>
+                                {isWin ? "You have achieved your goal!" : "You have no points left!"}
                             </p>
-                            <p>🎲 Total bets made: {totalBets}</p>
-                            <p>💰 Total points earned: {totalEarned}</p>
-                            <p>❌ Total points lost: {totalLost}</p>
-                        </div>
 
-                        <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-                            <button className={css.gamble_button} onClick={confirmRestart}>
-                                Try Again!
-                            </button>
-                            <button className={css.gamble_button} onClick={() => navigate("/")}>
-                                Go to Home
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            <motion.div
+                                className={css.session_summary}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                            >
+                                <p>
+                                    🏆 Best multiplier:
+                                    <span className={`${css.multiplier} ${getBestMultiplierClass(bestMultiplier)}`}>
+                                        {bestMultiplier?.toFixed(2)}x
+                                    </span>
+                                </p>
+                                <p>🎲 Total bets made: {totalBets}</p>
+                                <p>💰 Total points earned: {totalEarned}</p>
+                                <p>❌ Total points lost: {totalLost}</p>
+                            </motion.div>
+
+                            <motion.div
+                                style={{ display: "flex", gap: "12px", marginTop: "16px" }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                            >
+                                <button className={css.gamble_button} onClick={confirmRestart}>
+                                    Try Again!
+                                </button>
+                                <button className={css.gamble_button} onClick={() => navigate("/")}>
+                                    Go to Home
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
