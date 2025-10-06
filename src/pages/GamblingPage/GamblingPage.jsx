@@ -711,7 +711,7 @@ const GamblingPage = () => {
                         {DIFFICULTIES[infoDifficulty]?.jackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}
                                 style={{ marginTop: '24px' }}>
-                                Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%): {''}
+                                🎰 Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%): {''}
                                 {DIFFICULTIES[infoDifficulty].jackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].jackpot.range[1]}x
                             </p>
                         )}
