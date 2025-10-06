@@ -54,7 +54,6 @@ const GamblingPage = () => {
     const [isCalculating, setIsCalculating] = useState(false);
     const [resultMessage, setResultMessage] = useState("");
     const [multiplier, setMultiplier] = useState(null);
-    const [gameOver, setGameOver] = useState(false);
     const [isWin, setIsWin] = useState(false);
     const [pointsChange, setPointsChange] = useState(null);
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
@@ -62,10 +61,14 @@ const GamblingPage = () => {
     const [hoveredDifficulty, setHoveredDifficulty] = useState(null);
     const [tooltipCoords, setTooltipCoords] = useState({ top: 0, left: 0 });
     const [bestMultiplier, setBestMultiplier] = useState(null);
+    const [worstMultiplier, setWorstMultiplier] = useState(null);
     const [totalBets, setTotalBets] = useState(0);
     const [totalEarned, setTotalEarned] = useState(0);
     const [totalLost, setTotalLost] = useState(0);
     const [jackpotType, setJackpotType] = useState(null);
+    const [showGameOverScreen, setShowGameOverScreen] = useState(false);
+    const [totalJackpots, setTotalJackpots] = useState(0);
+    const [totalSuperJackpots, setTotalSuperJackpots] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -157,7 +160,7 @@ const GamblingPage = () => {
         setIsCalculating(false);
         setResultMessage("");
         setMultiplier(null);
-        setGameOver(false);
+        setShowGameOverScreen(false);
         setIsWin(false);
         setPointsChange(null);
         setShowIntro(true);
@@ -229,6 +232,9 @@ const GamblingPage = () => {
             }
         }
 
+        if (jackpotType === "jackpot") setTotalJackpots(prev => prev + 1);
+        if (jackpotType === "superjackpot") setTotalSuperJackpots(prev => prev + 1);
+
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
         const winnings = Math.round(betAmount * roundedMultiplier);
 
@@ -256,6 +262,7 @@ const GamblingPage = () => {
 
             const newPoints = Math.round(previousPoints - betAmount + winnings);
             setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
+            setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
             setTotalBets(prev => prev + 1);
 
             const netChange = newPoints - previousPoints;
@@ -269,12 +276,12 @@ const GamblingPage = () => {
 
             if (newPoints >= goalPoints) {
                 setIsWin(true);
-                setGameOver(true);
                 localStorage.removeItem(STORAGE_KEY);
+                setTimeout(() => setShowGameOverScreen(true), 2000);
             } else if (newPoints <= 0) {
                 setIsWin(false);
-                setGameOver(true);
                 localStorage.removeItem(STORAGE_KEY);
+                setTimeout(() => setShowGameOverScreen(true), 2000);
             }
 
             setIsCalculating(false);
@@ -291,12 +298,15 @@ const GamblingPage = () => {
         setShowDifficultyOverlay(true);
         setShowIntro(false);
         setIsRestartModalOpen(false);
-        setGameOver(false);
+        setShowGameOverScreen(false);
         setIsWin(false);
         setBestMultiplier(null);
+        setWorstMultiplier(null);
         setTotalBets(0);
         setTotalEarned(0);
         setTotalLost(0);
+        setTotalJackpots(0);
+        setTotalSuperJackpots(0);
     };
 
     const confirmTerminate = () => {
@@ -665,7 +675,7 @@ const GamblingPage = () => {
             )}
 
             <AnimatePresence>
-                {gameOver && (
+                {showGameOverScreen && (
                     <motion.div
                         className={`${loaderCss.modal_overlay}`}
                         initial={{ opacity: 0 }}
@@ -713,9 +723,26 @@ const GamblingPage = () => {
                                         {bestMultiplier?.toFixed(2)}x
                                     </span>
                                 </p>
+                                <p>
+                                    📉 Worst multiplier:
+                                    <span className={`${css.multiplier} ${getBestMultiplierClass(worstMultiplier)}`}>
+                                        {worstMultiplier?.toFixed(2)}x
+                                    </span>
+                                </p>
+                                {DIFFICULTIES[difficulty].jackpot && (
+                                    <p style={{ color: totalJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
+                                        🎰 Total jackpots: {totalJackpots}
+                                    </p>
+                                )}
+                                {DIFFICULTIES[difficulty].superjackpot && (
+                                    <p style={{ color: totalSuperJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
+                                        🌈💥 Total superjackpots: {totalSuperJackpots}
+                                    </p>
+                                )}
                                 <p>🎲 Total bets made: {totalBets}</p>
                                 <p>💰 Total points earned: {totalEarned}</p>
                                 <p>❌ Total points lost: {totalLost}</p>
+                                
                             </motion.div>
 
                             <motion.div
