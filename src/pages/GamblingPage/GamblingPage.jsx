@@ -36,7 +36,7 @@ const DIFFICULTIES = {
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0.1, 2.0],
+        multiplier: [1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.001, range: [30, 100] },
@@ -757,7 +757,7 @@ const GamblingPage = () => {
                                             className={css.streakDisplay}
                                         >
                                             🔥
-                                            <span className={css.streakNumber}>{consecutiveWins}</span>
+                                            <span className={css.streakNumber} style={{ color: consecutiveWins >= 5 ? '#4a2a00ff' : '' }}>{consecutiveWins}</span>
                                         </motion.div>
                                     )}
                                     {consecutiveLosses >= 2 && (
@@ -770,7 +770,7 @@ const GamblingPage = () => {
                                             className={css.streakDisplay}
                                         >
                                             💀
-                                            <span className={css.streakNumber}>{consecutiveLosses}</span>
+                                            <span className={css.streakNumber} style={{ color: consecutiveLosses >= 5 ? '#4a2a00ff' : '' }}>{consecutiveLosses}</span>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
