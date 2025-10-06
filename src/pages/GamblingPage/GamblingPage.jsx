@@ -39,7 +39,15 @@ const DIFFICULTIES = {
         multiplier: [0.1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
-        superjackpot: { chance: 1, range: [30, 100] },
+        superjackpot: { chance: 0.001, range: [30, 100] },
+    },
+    "Eternal Madness": {
+        start: [25, 100],
+        goal: [500000, 999999999999999e+6],
+        multiplier: [0.1, 3.0],
+        unstableMin: true,
+        jackpot: { chance: 0.01, range: [10, 50] },
+        superjackpot: { chance: 0.005, range: [75, 200] },
     },
 };
 
@@ -64,6 +72,10 @@ const DIFFICULTY_END_MESSAGES = {
         win: "OMG! You are truly a LUCK GOD! 🌈💥",
         lose: "Even a LUCK GOD can fall… 😭",
     },
+    "Eternal Madness": {
+        win: "Yoooo! You are a real grinder! 😵",
+        lose: "That's not that bad! 😜",
+    },
 }; 
 
 const SUGGESTIONS = {
@@ -86,6 +98,10 @@ const SUGGESTIONS = {
     "LUCK GOD": {
         win: "Maybe try again LUCK GOD? You may receive harder numbers to achieve! 🌈💥",
         lose: "Even a LUCK GOD can fall… 😭 Retry to dominate!",
+    },
+    "Eternal Madness": {
+        win: "Go try again and you may receive even crazier numbers!",
+        lose: "You can try again and maybe succeed?! 😏",
     },
 };
 
@@ -448,7 +464,7 @@ const GamblingPage = () => {
     };
 
     const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
-    const isGambleButtonLocked = !bet;
+    const isGambleButtonLocked = isButtonLocked || !bet;
 
     const getMultiplierClass = () => {
         if (multiplier === null) return "";
@@ -556,7 +572,15 @@ const GamblingPage = () => {
                             aria-haspopup="listbox"
                             aria-expanded={open}
                         >
-                            <span className={difficulty === "LUCK GOD" ? css.rainbowText : ""}>
+                            <span
+                                className={
+                                    difficulty === "LUCK GOD"
+                                        ? css.luckGodShimmer
+                                        : difficulty === "Eternal Madness"
+                                            ? css.eternalMadnessShimmer
+                                            : ''
+                                }
+                            >
                                 {selectedLabel}
                             </span>
                             <span className={css.arrow} />
@@ -641,7 +665,12 @@ const GamblingPage = () => {
             {showIntro && (
                 <div className={css.intro_overlay}>
                     <div className={css.intro_content}>
-                        <h2 className={`${css.game_title} ${difficulty === "LUCK GOD" ? css.luckGodShimmer : ""}`}>
+                        <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
+                            ? css.rainbowText
+                            : difficulty === "Eternal Madness"
+                                ? css.eternalMadnessText
+                                : ''
+                            }`}>
                             {difficulty} Mode
                         </h2>
                         <div className={css.fade_in}>
@@ -681,7 +710,7 @@ const GamblingPage = () => {
                         </p>
                         {DIFFICULTIES[infoDifficulty]?.jackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}
-                            style={{ marginTop: '24px' }}>
+                                style={{ marginTop: '24px' }}>
                                 Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%): {''}
                                 {DIFFICULTIES[infoDifficulty].jackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].jackpot.range[1]}x
                             </p>
@@ -705,7 +734,12 @@ const GamblingPage = () => {
             )}
             {!showIntro && !showDifficultyOverlay && (
                 <>
-                    <h2 className={`${css.game_title} ${difficulty === "LUCK GOD" ? css.luckGodShimmer : ""}`}>
+                    <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
+                        ? css.rainbowText
+                        : difficulty === "Eternal Madness"
+                            ? css.eternalMadnessText
+                            : ''
+                        }`}>
                         {difficulty} Mode
                     </h2>
 
@@ -765,7 +799,7 @@ const GamblingPage = () => {
                             </div>
                         </div>
 
-                        <div className={css.points_text_container}>
+                        <div className={css.points_text_container} style={{ marginLeft: consecutiveWins >= 2 || consecutiveLosses >= 2 ? '80px' : '25px', transition: 'margin 1000ms ease-in-out' }}>
                             <p className={css.info_text}>Goal:</p>
                             <div className={css.points}>
                                 <CountUp
@@ -792,9 +826,26 @@ const GamblingPage = () => {
                             style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         />
                         <button
+                            type="button"
+                            className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
+                            onClick={() => setBet(currentPoints.toString())}
+                            disabled={isGameWon || isButtonLocked}
+                        >
+                            Max
+                        </button>
+                        <button
+                            type="button"
+                            className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
+                            onClick={() => setBet('')}
+                            disabled={isGameWon || isButtonLocked}
+                        >
+                            Clear
+                        </button>
+                        <button
+                            name="gamble"
                             onClick={handleGamble}
-                            className={`${css.gamble_button} ${isButtonLocked || isGambleButtonLocked ? css.locked : ""}`}
-                            disabled={isButtonLocked || isGambleButtonLocked}
+                            className={`${css.gamble_button} ${isGambleButtonLocked ? css.locked : ""}`}
+                            disabled={isGambleButtonLocked}
                         >
                             Gamble
                         </button>

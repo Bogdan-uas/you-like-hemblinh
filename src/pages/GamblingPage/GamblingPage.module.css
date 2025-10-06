@@ -73,6 +73,42 @@
     border: 1px solid black;
 }
 
+.max_button {
+    border-radius: 256px;
+    padding: 4px 10px;
+    background-color: #747bff;
+    color: #f1f4fd;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    border: none;
+    transition: 500ms ease-in-out;
+}
+
+.max_button:hover {
+    background-color: #0d6aff;
+    color: #fff;
+}
+
+.clear_button {
+    border-radius: 256px;
+    padding: 4px 10px;
+    background-color: #fa5256;
+    color: #f1f4fd;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    border: none;
+    transition: 500ms ease-in-out;
+}
+
+.clear_button:hover {
+    background-color: red;
+    color: #fff;
+}
+
 .gamble_button {
     border-radius: 8px;
     padding: 8px 20px;
@@ -449,11 +485,11 @@
 .dropdownList {
     position: fixed;
     width: 219px;
+    height: fit-content;
     background: white;
     border: 1px solid black;
     border-radius: 8px;
     margin-top: 4px;
-    max-height: 200px;
     overflow-y: auto;
     z-index: 1000;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -512,6 +548,17 @@
     color: white;
 }
 
+.option[data-difficulty="Eternal Madness"]:hover,
+.option[data-difficulty="Eternal Madness"]:focus,
+.option[data-difficulty="Eternal Madness"].selected {
+    background: linear-gradient(45deg,#2a0000,#331a00,#332b00,#002200,#003333,#000022,#220022);
+    background-size: 400% 400%;
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 0 0 6px #fff, 0 0 12px #ffa500, 0 0 20px #9400d3, 0 0 30px #ff0000;
+    animation: eternalMadnessGlow 3s ease infinite;
+}
+
 .option[data-difficulty="LUCK GOD"]:hover {
     background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
     background-size: 1400% 1400%;
@@ -550,6 +597,37 @@
     }
 }
 
+@keyframes eternalMadnessGlow {
+    0% {
+        background-position: 0% 50%;
+        box-shadow: 0 0 4px #fff, 0 0 10px #8b0000;
+    }
+
+    50% {
+        background-position: 100% 50%;
+        box-shadow: 0 0 12px #4b0082, 0 0 25px #ff0000, 0 0 35px #8b0000;
+    }
+
+    100% {
+        background-position: 0% 50%;
+        box-shadow: 0 0 4px #fff, 0 0 10px #8b0000;
+    }
+}
+
+@keyframes eternalMadness {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
 .luckGodShimmer {
     background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
     background-size: 1400% 1400%;
@@ -564,6 +642,22 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: rainbow 4s ease infinite;
+}
+
+.eternalMadnessShimmer {
+    background: linear-gradient(45deg, #2a0000, #331a00, #332b00, #002200, #003333, #000022, #220022);
+    background-size: 1400% 1400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: eternalMadness 4s ease infinite;
+}
+
+.eternalMadnessText {
+    background: linear-gradient(45deg, #2a0000, #331a00, #332b00, #002200, #003333, #000022, #220022);
+    background-size: 1400% 1400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: eternalMadness 4s ease infinite;
 }
 
 .info_wrapper {
@@ -672,13 +766,9 @@
 }
 
 .streakWrapper {
-    position: absolute;
-    top: 14%;
-    left: 15%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-right: 12px;
 }
 
 .streakDisplay {
