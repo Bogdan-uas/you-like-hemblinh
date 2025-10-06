@@ -141,6 +141,9 @@ const GamblingPage = () => {
             setDifficulty(parsed.difficulty);
             setCurrentPoints(parsed.currentPoints);
             setGoalPoints(parsed.goalPoints);
+            setLongestWinStreak(parsed.longestWinStreak || 0);
+            setLongestLossStreak(parsed.longestLossStreak || 0);
+            setConsecutiveLosses(parsed.consecutiveLosses || 0);
             prevPointsRef.current = parsed.currentPoints;
             prevGoalRef.current = parsed.goalPoints;
             firstGambleRef.current = true;
@@ -167,11 +170,13 @@ const GamblingPage = () => {
         };
     }, []);
 
-    const saveGameState = (newState) => {
+    const saveGameState = (newState = {}) => {
         const stateToSave = {
             difficulty,
             currentPoints,
             goalPoints,
+            longestWinStreak,
+            longestLossStreak,
             ...newState,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -357,32 +362,39 @@ const GamblingPage = () => {
             setResultMessage(message);
             setJackpotType(jackpotType);
 
-            const newPoints = Math.round(previousPoints - betAmount + winnings);
+            const newPoints = previousPoints - betAmount + winnings;
+            const netChange = newPoints - previousPoints;
 
-            if (roundedMultiplier > 1.0) {
-                setTotalWins(prev => prev + 1);
-                setLongestWinStreak(prev => prev + 1);
-                setLongestLossStreak(0);
-                setConsecutiveLosses(0);
-            } else if (roundedMultiplier < 1.0) {
-                setLongestWinStreak(0);
-                setConsecutiveLosses(prev => prev + 1);
-                if (consecutiveLosses + 1 >= 2) {
-                    setLongestLossStreak(prev => prev + 1);
-                }
-            }
+            const newConsecutiveLosses = roundedMultiplier < 1.0 ? consecutiveLosses + 1 : 0;
+            const newLongestWinStreak = roundedMultiplier > 1.0 ? longestWinStreak + 1 : 0;
+            const newLongestLossStreak = roundedMultiplier < 1.0 && newConsecutiveLosses >= 2
+                ? longestLossStreak + 1
+                : longestLossStreak;
+
+            setConsecutiveLosses(newConsecutiveLosses);
+            setLongestWinStreak(newLongestWinStreak);
+            setLongestLossStreak(newLongestLossStreak);
+
+            if (roundedMultiplier > 1.0) setTotalWins(prev => prev + 1);
 
             setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
             setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
             setTotalBets(prev => prev + 1);
-            const netChange = newPoints - previousPoints;
+
             if (netChange >= 0) setTotalEarned(prev => prev + netChange);
             else setTotalLost(prev => prev + Math.abs(netChange));
+
             if (netChange > 0) setBiggestWin(prev => Math.max(prev, netChange));
 
             setCurrentPoints(newPoints);
             setPointsChange(netChange);
-            saveGameState({ currentPoints: newPoints });
+
+            saveGameState({
+                currentPoints: newPoints,
+                consecutiveLosses: newConsecutiveLosses,
+                longestWinStreak: newLongestWinStreak,
+                longestLossStreak: newLongestLossStreak
+            });
 
             if (newPoints >= goalPoints) {
                 setIsWin(true);
@@ -414,6 +426,8 @@ const GamblingPage = () => {
         setTotalLost(0);
         setTotalJackpots(0);
         setTotalSuperJackpots(0);
+        setLongestWinStreak(0);
+        setLongestLossStreak(0);
     };
 
     const confirmTerminate = () => {
