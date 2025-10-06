@@ -407,7 +407,13 @@ const GamblingPage = () => {
                                         className={css.info_popup}
                                         style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                     >
-                                        <p><strong>Start:</strong> {DIFFICULTIES[hoveredDifficulty].start[0]} to {DIFFICULTIES[hoveredDifficulty].start[1]}</p>
+                                        <p>
+                                            <strong>Start:</strong>{" "}
+                                            {DIFFICULTIES[hoveredDifficulty].start[0] === DIFFICULTIES[hoveredDifficulty].start[1]
+                                                ? DIFFICULTIES[hoveredDifficulty].start[0]
+                                                : `${DIFFICULTIES[hoveredDifficulty].start[0]} to ${DIFFICULTIES[hoveredDifficulty].start[1]}`
+                                            }
+                                        </p>
                                         <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
                                         <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
                                         {DIFFICULTIES[hoveredDifficulty].unstableMin && (
@@ -442,9 +448,11 @@ const GamblingPage = () => {
                         </h2>
                         <div className={css.fade_in}>
                             <p className={css.info_text}>Your current points:</p>
-                            <p className={`${css.small_text} ${css.fade_in_delay}`}>
-                                Range: {DIFFICULTIES[difficulty].start[0]} to {DIFFICULTIES[difficulty].start[1]}
-                            </p>
+                            {DIFFICULTIES[difficulty].start[0] !== DIFFICULTIES[difficulty].start[1] && (
+                                <p className={`${css.small_text} ${css.fade_in_delay}`}>
+                                    Range: {DIFFICULTIES[difficulty].start[0]} to {DIFFICULTIES[difficulty].start[1]}
+                                </p>
+                            )}
                             <div className={`${css.points} ${css.slide_in_left}`}>
                                 <CountUp start={0} end={currentPoints} duration={1.2} />
                             </div>
