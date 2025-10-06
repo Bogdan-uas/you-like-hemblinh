@@ -120,6 +120,7 @@ const GamblingPage = () => {
     const [biggestWin, setBiggestWin] = useState(0);
     const [longestWinStreak, setLongestWinStreak] = useState(0);
     const [longestLossStreak, setLongestLossStreak] = useState(0);
+    const [consecutiveLosses, setConsecutiveLosses] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -288,9 +289,7 @@ const GamblingPage = () => {
 
     const handleGamble = () => {
         if (!bet) return toast.error("Please enter a bet amount!");
-
         setJackpotType(null);
-
         firstGambleRef.current = true;
 
         const betAmount = parseInt(bet, 10);
@@ -313,26 +312,19 @@ const GamblingPage = () => {
 
         if (superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
-            const superjackpotGen = randomUniform(sjMin, sjMax);
-            rawMultiplier = Math.round(superjackpotGen() * 100) / 100;
+            rawMultiplier = Math.round(randomUniform(sjMin, sjMax)() * 100) / 100;
             jackpotType = "superjackpot";
-        }
-        else if (jackpot && Math.random() < jackpot.chance) {
-            const [jackpotMin, jackpotMax] = jackpot.range;
-            const jackpotGen = randomUniform(jackpotMin, jackpotMax);
-            rawMultiplier = Math.round(jackpotGen() * 100) / 100;
+        } else if (jackpot && Math.random() < jackpot.chance) {
+            const [jpMin, jpMax] = jackpot.range;
+            rawMultiplier = Math.round(randomUniform(jpMin, jpMax)() * 100) / 100;
             jackpotType = "jackpot";
-        }
-        else {
+        } else {
             if (unstableMin) {
-                const randomMinGen = randomUniform(0, min);
-                const dynamicMin = randomMinGen();
-                const unstableGen = randomNormal((max + dynamicMin) / 2, (max - dynamicMin) / 6);
-                rawMultiplier = Math.min(Math.max(unstableGen(), dynamicMin), max);
+                const randomMin = randomUniform(0, min)();
+                const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 6);
+                rawMultiplier = Math.min(Math.max(normalGen(), randomMin), max);
             } else {
-                const mean = (min + max) / 2;
-                const stdDev = (max - min) / 6;
-                const normalGen = randomNormal(mean, stdDev);
+                const normalGen = randomNormal((min + max) / 2, (max - min) / 6);
                 rawMultiplier = Math.min(Math.max(normalGen(), min), max);
             }
         }
@@ -348,7 +340,6 @@ const GamblingPage = () => {
             setMultiplier(roundedMultiplier);
 
             let message;
-
             if (jackpotType === "superjackpot") {
                 message = "🌈💥 SUPER JACKPOT!!! 🚀";
                 toast.success("🌈💥 SUPER JACKPOT!!! You broke the odds!", { duration: 5000 });
@@ -367,28 +358,30 @@ const GamblingPage = () => {
             setJackpotType(jackpotType);
 
             const newPoints = Math.round(previousPoints - betAmount + winnings);
-            setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
-            setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
-            setTotalBets(prev => prev + 1);
 
-            const netChange = newPoints - previousPoints;
-            if (netChange >= 0) setTotalEarned(prev => prev + netChange);
-            else setTotalLost(prev => prev + Math.abs(netChange));
-            if (netChange > 0) {
+            if (roundedMultiplier > 1.0) {
                 setTotalWins(prev => prev + 1);
                 setLongestWinStreak(prev => prev + 1);
                 setLongestLossStreak(0);
-            } else {
-                setLongestLossStreak(prev => prev + 1);
+                setConsecutiveLosses(0);
+            } else if (roundedMultiplier < 1.0) {
                 setLongestWinStreak(0);
+                setConsecutiveLosses(prev => prev + 1);
+                if (consecutiveLosses + 1 >= 2) {
+                    setLongestLossStreak(prev => prev + 1);
+                }
             }
-            if (netChange > 0) {
-                setBiggestWin(prev => Math.max(prev, netChange));
-            }
+
+            setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
+            setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
+            setTotalBets(prev => prev + 1);
+            const netChange = newPoints - previousPoints;
+            if (netChange >= 0) setTotalEarned(prev => prev + netChange);
+            else setTotalLost(prev => prev + Math.abs(netChange));
+            if (netChange > 0) setBiggestWin(prev => Math.max(prev, netChange));
 
             setCurrentPoints(newPoints);
             setPointsChange(netChange);
-
             saveGameState({ currentPoints: newPoints });
 
             if (newPoints >= goalPoints) {
@@ -402,10 +395,7 @@ const GamblingPage = () => {
             }
 
             setIsCalculating(false);
-
-            if (betInputRef.current) {
-                betInputRef.current.focus();
-            }
+            betInputRef.current?.focus();
         }, 3000);
     };
 
@@ -450,15 +440,15 @@ const GamblingPage = () => {
     };
 
     const getAvgMultiplierClass = (value) => {
-    if (value < 1.0) return css.multiplier_fail;
-    if (value <= 1.4) return css.multiplier_mid;
-    return css.multiplier_win;
+        if (value < 1.0) return css.multiplier_fail;
+        if (value <= 1.4) return css.multiplier_mid;
+        return css.multiplier_win;
     };
 
     const getHitRateClass = (value) => {
-    if (value < 40) return css.multiplier_fail;
-    if (value <= 50) return css.multiplier_mid;
-    return css.multiplier_win;
+        if (value < 40) return css.multiplier_fail;
+        if (value <= 50) return css.multiplier_mid;
+        return css.multiplier_win;
     };
 
     const getCurrentPointsStyle = () => {
@@ -505,6 +495,8 @@ const GamblingPage = () => {
             betInputRef.current.blur();
         }
     }, [isGameWon]);
+
+    const infoDifficulty = hoveredDifficulty || difficulty;
 
     return (
         <div className={css.container}>
@@ -650,15 +642,17 @@ const GamblingPage = () => {
                                 {DIFFICULTIES[difficulty].multiplier[1]}x
                             </span>.
                         </p>
-                        {DIFFICULTIES[hoveredDifficulty].jackpot && (
+                        {DIFFICULTIES[infoDifficulty]?.jackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
-                                Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                                Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%):
+                                {DIFFICULTIES[infoDifficulty].jackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].jackpot.range[1]}x
                             </p>
                         )}
-                        {DIFFICULTIES[hoveredDifficulty].superjackpot && (
+
+                        {DIFFICULTIES[infoDifficulty]?.superjackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
-                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%): {''}
-                                {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
+                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].superjackpot.chance * 100}%):
+                                {DIFFICULTIES[infoDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].superjackpot.range[1]}x
                             </p>
                         )}
 
@@ -678,26 +672,58 @@ const GamblingPage = () => {
                     </h2>
 
                     <div className={css.points_container}>
-                        <div className={css.points_text_container}>
-                            <p className={css.info_text}>Your current points:</p>
-                            <div className={css.another_points_text_container}>
-                                <div className={css.points} style={getCurrentPointsStyle()}>
-                                    <CountUp
-                                        start={prevPointsRef.current}
-                                        end={currentPoints}
-                                        duration={1.2}
-                                        onEnd={() => (prevPointsRef.current = currentPoints)}
-                                        key={currentPoints}
-                                    />
+                        <div className={css.streak_points_container}>
+                            <div className={css.streakWrapper}>
+                                <AnimatePresence>
+                                    {longestWinStreak >= 2 && (
+                                        <motion.div
+                                            key="winStreak"
+                                            initial={{ scale: 0, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                            className={css.streakDisplay}
+                                        >
+                                            🔥
+                                            <span className={css.streakNumber}>{longestWinStreak}</span>
+                                        </motion.div>
+                                    )}
+                                    {longestLossStreak >= 2 && (
+                                        <motion.div
+                                            key="lossStreak"
+                                            initial={{ scale: 0, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                            className={css.streakDisplay}
+                                        >
+                                            💀
+                                            <span className={css.streakNumber}>{longestLossStreak}</span>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <div className={css.points_text_container}>
+                                <p className={css.info_text}>Your current points:</p>
+                                <div className={css.another_points_text_container}>
+                                    <div className={css.points} style={getCurrentPointsStyle()}>
+                                        <CountUp
+                                            start={prevPointsRef.current}
+                                            end={currentPoints}
+                                            duration={1.2}
+                                            onEnd={() => (prevPointsRef.current = currentPoints)}
+                                            key={currentPoints}
+                                        />
+                                    </div>
+                                    {pointsChange !== null && (
+                                        <span
+                                            className={css.points_gain_loss}
+                                            style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                        >
+                                            {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                        </span>
+                                    )}
                                 </div>
-                                {pointsChange !== null && (
-                                    <span
-                                        className={css.points_gain_loss}
-                                        style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                    >
-                                        {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                    </span>
-                                )}
                             </div>
                         </div>
 
