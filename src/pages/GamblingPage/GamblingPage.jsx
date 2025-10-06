@@ -580,7 +580,7 @@ const GamblingPage = () => {
                                         )}
                                         {DIFFICULTIES[hoveredDifficulty].jackpot && (
                                             <p className={css.unstable_note}>
-                                                🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                                                🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {''} {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
                                             </p>
                                         )}
                                         {DIFFICULTIES[hoveredDifficulty].superjackpot && (
@@ -644,14 +644,14 @@ const GamblingPage = () => {
                         </p>
                         {DIFFICULTIES[infoDifficulty]?.jackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
-                                Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%):
+                                Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%): {''}
                                 {DIFFICULTIES[infoDifficulty].jackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].jackpot.range[1]}x
                             </p>
                         )}
 
                         {DIFFICULTIES[infoDifficulty]?.superjackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
-                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].superjackpot.chance * 100}%):
+                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].superjackpot.chance * 100}%): {''}
                                 {DIFFICULTIES[infoDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].superjackpot.range[1]}x
                             </p>
                         )}
