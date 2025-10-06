@@ -44,7 +44,7 @@ const DIFFICULTIES = {
     "Eternal Madness": {
         start: [25, 100],
         goal: [500000, 999999999999999e+6],
-        multiplier: [0.1, 3.0],
+        multiplier: [0.1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.01, range: [10, 50] },
         superjackpot: { chance: 0.005, range: [75, 200] },
