@@ -18,7 +18,7 @@ const DIFFICULTIES = {
     Normal: { 
         start: [250, 750], 
         goal: [5000, 10000], 
-        multiplier: [0.5, 3.0] 
+        multiplier: [0.1, 3.0] 
     },
     Hard: {
         start: [100, 500],
@@ -40,6 +40,52 @@ const DIFFICULTIES = {
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.001, range: [30, 100] },
+    },
+};
+
+const DIFFICULTY_END_MESSAGES = {
+    Easy: {
+        win: "You made it through Easy mode! 🎉",
+        lose: "Easy mode defeated you...😢 Go get better luck!",
+    },
+    Normal: {
+        win: "Well done! Normal mode conquered! 🎯",
+        lose: "Normal mode has bested you… 😢",
+    },
+    Hard: {
+        win: "Impressive! You survived Hard mode! 💪",
+        lose: "Hard mode crushed you…💀 That's why it's hard!",
+    },
+    Impossible: {
+        win: "Legendary! You beat Impossible mode! 🏆",
+        lose: "Impossible mode was… well, impossible 😵",
+    },
+    "LUCK GOD": {
+        win: "OMG! You are truly a LUCK GOD! 🌈💥",
+        lose: "Even a LUCK GOD can fall… 😭",
+    },
+}; 
+
+const SUGGESTIONS = {
+    Easy: {
+        win: "Go try Normal then!",
+        lose: "Retry Easy to improve your luck and then go to Normal!",
+    },
+    Normal: {
+        win: "Nice! Try Hard next!",
+        lose: "Retry Normal to be able to proceed with next difficulties!",
+    },
+    Hard: {
+        win: "Impressive! Maybe Impossible is next?",
+        lose: "Retry!",
+    },
+    Impossible: {
+        win: "Legendary! Feeling lucky for LUCK GOD?",
+        lose: "Retry Impossible, if you want to be able to beat LUCK GOD next!",
+    },
+    "LUCK GOD": {
+        win: "Maybe try again LUCK GOD? You may receive harder numbers to achieve! 🌈💥",
+        lose: "Even a LUCK GOD can fall… 😭 Retry to dominate!",
     },
 };
 
@@ -69,6 +115,11 @@ const GamblingPage = () => {
     const [showGameOverScreen, setShowGameOverScreen] = useState(false);
     const [totalJackpots, setTotalJackpots] = useState(0);
     const [totalSuperJackpots, setTotalSuperJackpots] = useState(0);
+    const [totalWins, setTotalWins] = useState(0);
+    const [sumOfMultipliers, setSumOfMultipliers] = useState(0);
+    const [biggestWin, setBiggestWin] = useState(0);
+    const [longestWinStreak, setLongestWinStreak] = useState(0);
+    const [longestLossStreak, setLongestLossStreak] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -165,6 +216,60 @@ const GamblingPage = () => {
         setPointsChange(null);
         setShowIntro(true);
         setShowDifficultyOverlay(false);
+        setTotalBets(0);
+        setSumOfMultipliers(0);
+        setBestMultiplier(null);
+        setWorstMultiplier(null);
+        setTotalEarned(0);
+        setTotalLost(0);
+        setTotalJackpots(0);
+        setTotalSuperJackpots(0);
+        setTotalWins(0);
+        setBiggestWin(0);
+        setLongestWinStreak(0);
+        setLongestLossStreak(0);
+
+        saveGameState({ currentPoints: starter, goalPoints: goalPts });
+    };
+
+    const restartSameDifficulty = () => {
+        if (!difficulty) return;
+
+        const { start, goal } = DIFFICULTIES[difficulty];
+
+        const startGen = randomUniform(start[0], start[1]);
+        const goalGen = randomUniform(goal[0], goal[1]);
+
+        const starter = start[0] === start[1] ? start[0] : Math.round(startGen());
+        const goalPts = Math.round(goalGen());
+
+        prevPointsRef.current = 0;
+        prevGoalRef.current = 0;
+        firstGambleRef.current = false;
+
+        setCurrentPoints(starter);
+        setGoalPoints(goalPts);
+        setBet("");
+        setIsCalculating(false);
+        setResultMessage("");
+        setMultiplier(null);
+        setShowGameOverScreen(false);
+        setIsWin(false);
+        setPointsChange(null);
+        setShowIntro(true);
+        setShowDifficultyOverlay(false);
+        setTotalBets(0);
+        setSumOfMultipliers(0);
+        setBestMultiplier(null);
+        setWorstMultiplier(null);
+        setTotalEarned(0);
+        setTotalLost(0);
+        setTotalJackpots(0);
+        setTotalSuperJackpots(0);
+        setTotalWins(0);
+        setBiggestWin(0);
+        setLongestWinStreak(0);
+        setLongestLossStreak(0);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
@@ -237,6 +342,7 @@ const GamblingPage = () => {
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
         const winnings = Math.round(betAmount * roundedMultiplier);
+        setSumOfMultipliers(prev => prev + roundedMultiplier);
 
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
@@ -268,6 +374,17 @@ const GamblingPage = () => {
             const netChange = newPoints - previousPoints;
             if (netChange >= 0) setTotalEarned(prev => prev + netChange);
             else setTotalLost(prev => prev + Math.abs(netChange));
+            if (netChange > 0) {
+                setTotalWins(prev => prev + 1);
+                setLongestWinStreak(prev => prev + 1);
+                setLongestLossStreak(0);
+            } else {
+                setLongestLossStreak(prev => prev + 1);
+                setLongestWinStreak(0);
+            }
+            if (netChange > 0) {
+                setBiggestWin(prev => Math.max(prev, netChange));
+            }
 
             setCurrentPoints(newPoints);
             setPointsChange(netChange);
@@ -332,6 +449,18 @@ const GamblingPage = () => {
         return css.multiplier_win;
     };
 
+    const getAvgMultiplierClass = (value) => {
+    if (value < 1.0) return css.multiplier_fail;
+    if (value <= 1.4) return css.multiplier_mid;
+    return css.multiplier_win;
+    };
+
+    const getHitRateClass = (value) => {
+    if (value < 40) return css.multiplier_fail;
+    if (value <= 50) return css.multiplier_mid;
+    return css.multiplier_win;
+    };
+
     const getCurrentPointsStyle = () => {
         if (!firstGambleRef.current) {
             return { backgroundColor: "#ccc", color: "#2e2f42" };
@@ -365,6 +494,17 @@ const GamblingPage = () => {
 
         return { backgroundColor: `rgb(${r},${g},${b})`, color: "#fff" };
     };
+
+    const hitRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
+    const avgMultiplier = totalBets > 0 ? (sumOfMultipliers / totalBets).toFixed(2) : 0;
+
+    const isGameWon = isWin || currentPoints >= goalPoints;
+
+    useEffect(() => {
+        if (isGameWon && betInputRef.current) {
+            betInputRef.current.blur();
+        }
+    }, [isGameWon]);
 
     return (
         <div className={css.container}>
@@ -584,6 +724,8 @@ const GamblingPage = () => {
                             className={css.input}
                             placeholder="Gamble?"
                             ref={betInputRef}
+                            disabled={isGameWon}
+                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         />
                         <button
                             onClick={handleGamble}
@@ -598,7 +740,7 @@ const GamblingPage = () => {
                         <p className={`${css.info_text} ${css.result_message}`}>
                             <AnimatePresence mode="wait">
                                 {jackpotType === "superjackpot" ? (
-                                    <motion.div
+                                    <motion.span
                                         key="superjackpot"
                                         initial={{ opacity: 0, scale: 0 }}
                                         animate={{ opacity: 1, scale: 1.5 }}
@@ -607,7 +749,7 @@ const GamblingPage = () => {
                                         className={css.superjackpotFlash}
                                     >
                                         🌈💥 SUPER JACKPOT!!! 🚀
-                                    </motion.div>
+                                    </motion.span>
                                 ) : (
                                     <motion.span
                                         key="normal"
@@ -708,7 +850,7 @@ const GamblingPage = () => {
                             </h1>
 
                             <p className={css.info_text} style={{ fontSize: "20px" }}>
-                                {isWin ? "You have achieved your goal!" : "You have no points left!"}
+                                {DIFFICULTY_END_MESSAGES[difficulty]?.[isWin ? "win" : "lose"]}
                             </p>
 
                             <motion.div
@@ -717,6 +859,10 @@ const GamblingPage = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
                             >
+                                <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
+                                    General Info
+                                </p>
+                                <div className={css.divider} />
                                 <p>
                                     🏆 Best multiplier:
                                     <span className={`${css.multiplier} ${getBestMultiplierClass(bestMultiplier)}`}>
@@ -729,34 +875,71 @@ const GamblingPage = () => {
                                         {worstMultiplier?.toFixed(2)}x
                                     </span>
                                 </p>
-                                {DIFFICULTIES[difficulty].jackpot && (
-                                    <p style={{ color: totalJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
-                                        🎰 Total jackpots: {totalJackpots}
-                                    </p>
-                                )}
-                                {DIFFICULTIES[difficulty].superjackpot && (
-                                    <p style={{ color: totalSuperJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
-                                        🌈💥 Total superjackpots: {totalSuperJackpots}
-                                    </p>
-                                )}
                                 <p>🎲 Total bets made: {totalBets}</p>
                                 <p>💰 Total points earned: {totalEarned}</p>
                                 <p>❌ Total points lost: {totalLost}</p>
-                                
+                                {(DIFFICULTIES[difficulty].jackpot || DIFFICULTIES[difficulty].superjackpot) && (
+                                    <>
+                                        <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
+                                            Jackpots
+                                        </p>
+                                        <div className={css.divider} />
+                                        {DIFFICULTIES[difficulty].jackpot && (
+                                            <p style={{ color: totalJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
+                                                🎰 Total jackpots: {totalJackpots}
+                                            </p>
+                                        )}
+                                        {DIFFICULTIES[difficulty].superjackpot && (
+                                            <p style={{ color: totalSuperJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
+                                                🌈💥 Total superjackpots: {totalSuperJackpots}
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                                <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
+                                    Performance Stats
+                                </p>
+                                <div className={css.divider} />
+                                <p>🎯 Hit rate:
+                                    <span className={`${css.multiplier} ${getHitRateClass(hitRate)}`}>
+                                        {hitRate}%
+                                    </span>
+                                </p>
+                                <p>⚡ Average multiplier:
+                                    <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplier))}`}>
+                                        {avgMultiplier}x
+                                    </span>
+                                </p>
+                                <p>💰 Biggest single win: {biggestWin} points</p>
+                                <p>🔥 Longest win streak: {longestWinStreak}</p>
+                                <p>💀 Longest loss streak: {longestLossStreak}</p>
                             </motion.div>
 
                             <motion.div
-                                style={{ display: "flex", gap: "12px", marginTop: "16px" }}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
+                                transition={{ delay: 0.6 }}
                             >
-                                <button className={css.gamble_button} onClick={confirmRestart}>
-                                    Try Again!
-                                </button>
-                                <button className={css.gamble_button} onClick={() => navigate("/")}>
-                                    Go to Home
-                                </button>
+                                <div className={css.next_actions}>
+                                    <p className={css.info_text} style={{ fontSize: "20px", marginTop: '8px', fontWeight: 'bold' }}>{SUGGESTIONS[difficulty][isWin ? "win" : "lose"]}</p>
+                                    <div className={css.button_group}>
+                                        <button className={css.gamble_button} onClick={restartSameDifficulty}>
+                                            Retry Same Difficulty
+                                        </button>
+                                        <button
+                                            className={css.gamble_button}
+                                            onClick={() => {
+                                                setShowGameOverScreen(false);
+                                                setShowDifficultyOverlay(true);
+                                            }}
+                                        >
+                                            Try New Difficulty
+                                        </button>
+                                        <button className={css.gamble_button} onClick={() => navigate("/")}>
+                                            Go to Home
+                                        </button>
+                                    </div>
+                                </div>
                             </motion.div>
                         </motion.div>
                     </motion.div>

@@ -504,7 +504,7 @@
 .option[data-difficulty="Impossible"]:hover,
 .option[data-difficulty="Impossible"]:focus,
 .option[data-difficulty="Impossible"].selected {
-    background-color: #000;
+    background: linear-gradient(90deg, #000, #767676);
     color: white;
 }
 
@@ -646,4 +646,23 @@
     100% {
         color: #ff0000;
     }
+}
+
+.divider {
+    height: 1px;
+    width: 100%;
+    background-color: #202020;
+    margin-bottom: 8px;
+}
+
+.next_actions {
+    margin-inline: auto;
+}
+
+.next_actions .button_group {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
 }
