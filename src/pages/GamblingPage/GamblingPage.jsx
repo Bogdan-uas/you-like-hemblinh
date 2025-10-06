@@ -23,7 +23,7 @@ const DIFFICULTIES = {
     Hard: {
         start: [100, 500],
         goal: [10000, 20000],
-        multiplier: [0.1, 2.0],
+        multiplier: [0.1, 2.5],
         jackpot: { chance: 0.003, range: [4, 8] },
     },
     Impossible: {
@@ -31,7 +31,7 @@ const DIFFICULTIES = {
         goal: [15000, 30000],
         multiplier: [0.1, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.002, range: [8, 12] },
+        jackpot: { chance: 0.004, range: [10, 14] },
     },
     "LUCK GOD": {
         start: [25, 25],
@@ -39,6 +39,7 @@ const DIFFICULTIES = {
         multiplier: [0.1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
+        superjackpot: { chance: 0.001, range: [30, 100] },
     },
 };
 
@@ -64,6 +65,7 @@ const GamblingPage = () => {
     const [totalBets, setTotalBets] = useState(0);
     const [totalEarned, setTotalEarned] = useState(0);
     const [totalLost, setTotalLost] = useState(0);
+    const [jackpotType, setJackpotType] = useState(null);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -178,6 +180,9 @@ const GamblingPage = () => {
 
     const handleGamble = () => {
         if (!bet) return toast.error("Please enter a bet amount!");
+
+        setJackpotType(null);
+
         firstGambleRef.current = true;
 
         const betAmount = parseInt(bet, 10);
@@ -193,15 +198,24 @@ const GamblingPage = () => {
         setIsCalculating(true);
 
         const difficultyConfig = DIFFICULTIES[difficulty];
-        const { multiplier: [min, max], unstableMin, jackpot } = difficultyConfig;
+        const { multiplier: [min, max], unstableMin, jackpot, superjackpot } = difficultyConfig;
 
         let rawMultiplier;
+        let jackpotType = null;
 
-        if (jackpot && Math.random() < jackpot.chance) {
+        if (superjackpot && Math.random() < superjackpot.chance) {
+            const [sjMin, sjMax] = superjackpot.range;
+            const superjackpotGen = randomUniform(sjMin, sjMax);
+            rawMultiplier = Math.round(superjackpotGen() * 100) / 100;
+            jackpotType = "superjackpot";
+        }
+        else if (jackpot && Math.random() < jackpot.chance) {
             const [jackpotMin, jackpotMax] = jackpot.range;
             const jackpotGen = randomUniform(jackpotMin, jackpotMax);
             rawMultiplier = Math.round(jackpotGen() * 100) / 100;
-        } else {
+            jackpotType = "jackpot";
+        }
+        else {
             if (unstableMin) {
                 const randomMinGen = randomUniform(0, min);
                 const dynamicMin = randomMinGen();
@@ -222,10 +236,12 @@ const GamblingPage = () => {
             setMultiplier(roundedMultiplier);
 
             let message;
-            const jackpotHit = jackpot && roundedMultiplier >= jackpot.range[0];
 
-            if (jackpotHit) {
-                message = `🎰 JACKPOT!🤯`;
+            if (jackpotType === "superjackpot") {
+                message = "🌈💥 SUPER JACKPOT!!! 🚀";
+                toast.success("🌈💥 SUPER JACKPOT!!! You broke the odds!", { duration: 5000 });
+            } else if (jackpotType === "jackpot") {
+                message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
             } else if (roundedMultiplier < 1.0) {
                 message = "What a failure😢!";
@@ -236,6 +252,7 @@ const GamblingPage = () => {
             }
 
             setResultMessage(message);
+            setJackpotType(jackpotType);
 
             const newPoints = Math.round(previousPoints - betAmount + winnings);
             setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
@@ -424,6 +441,12 @@ const GamblingPage = () => {
                                                 🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
                                             </p>
                                         )}
+                                        {DIFFICULTIES[hoveredDifficulty].superjackpot && (
+                                            <p className={css.unstable_note}>
+                                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%): {''}
+                                                {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </>
@@ -480,6 +503,12 @@ const GamblingPage = () => {
                         {DIFFICULTIES[hoveredDifficulty].jackpot && (
                             <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
                                 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                            </p>
+                        )}
+                        {DIFFICULTIES[hoveredDifficulty].superjackpot && (
+                            <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
+                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%): {''}
+                                {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
                             </p>
                         )}
 
@@ -557,7 +586,31 @@ const GamblingPage = () => {
 
                     {resultMessage && (
                         <p className={`${css.info_text} ${css.result_message}`}>
-                            {resultMessage}
+                            <AnimatePresence mode="wait">
+                                {jackpotType === "superjackpot" ? (
+                                    <motion.div
+                                        key="superjackpot"
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1.5 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.6 }}
+                                        className={css.superjackpotFlash}
+                                    >
+                                        🌈💥 SUPER JACKPOT!!! 🚀
+                                    </motion.div>
+                                ) : (
+                                    <motion.span
+                                        key="normal"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                    >
+                                        {resultMessage}
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
+
                             {multiplier !== null && (
                                 <>
                                     {" "}Your multiplier is

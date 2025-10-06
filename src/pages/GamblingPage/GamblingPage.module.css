@@ -606,3 +606,44 @@
     gap: 8px;
     font-size: 20px;
 }
+
+.superjackpotFlash {
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+    text-shadow: 0 0 15px rgba(255, 0, 255, 0.7),
+        0 0 25px rgba(0, 255, 255, 0.6);
+    animation: rainbowGlow 2s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rainbowGlow {
+    0% {
+        color: #ff0000;
+    }
+
+    16% {
+        color: #ff7f00;
+    }
+
+    33% {
+        color: #ffff00;
+    }
+
+    50% {
+        color: #00ff00;
+    }
+
+    66% {
+        color: #0000ff;
+    }
+
+    83% {
+        color: #8b00ff;
+    }
+
+    100% {
+        color: #ff0000;
+    }
+}
