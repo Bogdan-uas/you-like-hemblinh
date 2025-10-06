@@ -39,7 +39,7 @@ const DIFFICULTIES = {
         multiplier: [0.1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
-        superjackpot: { chance: 0.001, range: [30, 100] },
+        superjackpot: { chance: 1, range: [30, 100] },
     },
 };
 
@@ -117,11 +117,13 @@ const GamblingPage = () => {
     const [totalSuperJackpots, setTotalSuperJackpots] = useState(0);
     const [totalWins, setTotalWins] = useState(0);
     const [sumOfMultipliers, setSumOfMultipliers] = useState(0);
+    const [sumOfMultipliersWithBonus, setSumOfMultipliersWithBonus] = useState(0);
     const [biggestWin, setBiggestWin] = useState(0);
     const [longestWinStreak, setLongestWinStreak] = useState(0);
     const [longestLossStreak, setLongestLossStreak] = useState(0);
     const [consecutiveLosses, setConsecutiveLosses] = useState(0);
     const [consecutiveWins, setConsecutiveWins] = useState(0);
+    const [winStreakBonus, setWinStreakBonus] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -292,14 +294,15 @@ const GamblingPage = () => {
 
     const handleGamble = () => {
         if (!bet) return toast.error("Please enter a bet amount!");
-        setJackpotType(null);
-        firstGambleRef.current = true;
 
         const betAmount = parseInt(bet, 10);
         if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
         if (betAmount > currentPoints) return toast.error("You don't have enough points!");
 
+        firstGambleRef.current = true;
+        setJackpotType(null);
         const previousPoints = currentPoints;
+
         setCurrentPoints(prev => prev - betAmount);
         setBet("");
         setResultMessage("Calculating...");
@@ -307,8 +310,8 @@ const GamblingPage = () => {
         setPointsChange(null);
         setIsCalculating(true);
 
-        const difficultyConfig = DIFFICULTIES[difficulty];
-        const { multiplier: [min, max], unstableMin, jackpot, superjackpot } = difficultyConfig;
+        const config = DIFFICULTIES[difficulty];
+        const { multiplier: [min, max], unstableMin, jackpot, superjackpot } = config;
 
         let rawMultiplier;
         let jackpotType = null;
@@ -317,11 +320,13 @@ const GamblingPage = () => {
             const [sjMin, sjMax] = superjackpot.range;
             rawMultiplier = Math.round(randomUniform(sjMin, sjMax)() * 100) / 100;
             jackpotType = "superjackpot";
-        } else if (jackpot && Math.random() < jackpot.chance) {
+        }
+        else if (jackpot && Math.random() < jackpot.chance) {
             const [jpMin, jpMax] = jackpot.range;
             rawMultiplier = Math.round(randomUniform(jpMin, jpMax)() * 100) / 100;
             jackpotType = "jackpot";
-        } else {
+        }
+        else {
             if (unstableMin) {
                 const randomMin = randomUniform(0, min)();
                 const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 6);
@@ -336,8 +341,21 @@ const GamblingPage = () => {
         if (jackpotType === "superjackpot") setTotalSuperJackpots(prev => prev + 1);
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
-        const winnings = Math.round(betAmount * roundedMultiplier);
-        setSumOfMultipliers(prev => prev + roundedMultiplier);
+
+        const newConsecutiveWins = roundedMultiplier > 1.0 ? consecutiveWins + 1 : 0;
+        const newConsecutiveLosses = roundedMultiplier < 1.0 ? consecutiveLosses + 1 : 0;
+
+        let streakBonus = 0;
+        if (newConsecutiveWins >= 5) {
+            streakBonus = 0.2 * (newConsecutiveWins - 4);
+        } else if (roundedMultiplier < 1.0 && consecutiveWins >= 5) {
+            streakBonus = 0.2 * (consecutiveWins - 4);
+        }
+
+        setWinStreakBonus(streakBonus);
+
+        const effectiveMultiplier = roundedMultiplier + streakBonus;
+        const winnings = Math.round(betAmount * effectiveMultiplier);
 
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
@@ -362,36 +380,31 @@ const GamblingPage = () => {
 
             const newPoints = previousPoints - betAmount + winnings;
             const netChange = newPoints - previousPoints;
+            setPointsChange(netChange);
+            setCurrentPoints(newPoints);
 
-            const newConsecutiveLosses = roundedMultiplier < 1.0 ? consecutiveLosses + 1 : 0;
-            const newConsecutiveWins = roundedMultiplier > 1.0 ? consecutiveWins + 1 : 0;
-
-            const newLongestWinStreak = Math.max(longestWinStreak, newConsecutiveWins);
-            const newLongestLossStreak = Math.max(longestLossStreak, newConsecutiveLosses);
-
-            setConsecutiveLosses(newConsecutiveLosses);
             setConsecutiveWins(newConsecutiveWins);
-            setLongestWinStreak(newLongestWinStreak);
-            setLongestLossStreak(newLongestLossStreak);
+            setConsecutiveLosses(newConsecutiveLosses);
+            setLongestWinStreak(Math.max(longestWinStreak, newConsecutiveWins));
+            setLongestLossStreak(Math.max(longestLossStreak, newConsecutiveLosses));
 
             if (roundedMultiplier > 1.0) setTotalWins(prev => prev + 1);
 
             setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
             setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
-            setTotalBets(prev => prev + 1);
 
+            setSumOfMultipliers(prev => prev + roundedMultiplier);
+            setSumOfMultipliersWithBonus(prev => prev + effectiveMultiplier);
+
+            setTotalBets(prev => prev + 1);
             if (netChange >= 0) setTotalEarned(prev => prev + netChange);
             else setTotalLost(prev => prev + Math.abs(netChange));
-
             if (netChange > 0) setBiggestWin(prev => Math.max(prev, netChange));
-
-            setCurrentPoints(newPoints);
-            setPointsChange(netChange);
 
             saveGameState({
                 currentPoints: newPoints,
+                consecutiveWins: newConsecutiveWins,
                 consecutiveLosses: newConsecutiveLosses,
-                consecutiveWins: newConsecutiveWins
             });
 
             if (newPoints >= goalPoints) {
@@ -439,6 +452,7 @@ const GamblingPage = () => {
 
     const getMultiplierClass = () => {
         if (multiplier === null) return "";
+        if (multiplier > 3.0) return css.multiplier_gold;
         if (multiplier < 1.0) return css.multiplier_fail;
         if (multiplier <= 1.4) return css.multiplier_mid;
         return css.multiplier_win;
@@ -446,12 +460,14 @@ const GamblingPage = () => {
 
     const getBestMultiplierClass = (value) => {
         if (value === null) return "";
+        if (value > 3.0) return css.multiplier_gold;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.4) return css.multiplier_mid;
         return css.multiplier_win;
     };
 
     const getAvgMultiplierClass = (value) => {
+        if (value > 3.0) return css.multiplier_gold;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.4) return css.multiplier_mid;
         return css.multiplier_win;
@@ -499,6 +515,7 @@ const GamblingPage = () => {
 
     const hitRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
     const avgMultiplier = totalBets > 0 ? (sumOfMultipliers / totalBets).toFixed(2) : 0;
+    const avgMultiplierWithBonus = totalBets > 0 ? (sumOfMultipliersWithBonus / totalBets).toFixed(2) : 0;
 
     const isGameWon = isWin || currentPoints >= goalPoints;
 
@@ -516,6 +533,10 @@ const GamblingPage = () => {
                 <div className={css.intro_overlay}>
                     <div className={css.intro_content}>
                         <p className={css.info_text}>Select Difficulty:</p>
+                        <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>Win streak is available on every difficulty.
+                            After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
+                            With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
+                        </p>
                         <select
                             value={difficulty}
                             onChange={(e) => handleSelectDifficulty(e.target.value)}
@@ -654,8 +675,13 @@ const GamblingPage = () => {
                                 {DIFFICULTIES[difficulty].multiplier[1]}x
                             </span>.
                         </p>
+                        <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>Win streak is available on every difficulty.
+                            After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
+                            With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
+                        </p>
                         {DIFFICULTIES[infoDifficulty]?.jackpot && (
-                            <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
+                            <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}
+                            style={{ marginTop: '24px' }}>
                                 Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%): {''}
                                 {DIFFICULTIES[infoDifficulty].jackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].jackpot.range[1]}x
                             </p>
@@ -810,6 +836,13 @@ const GamblingPage = () => {
                                             : multiplier.toFixed(2)}x
                                     </span>
                                     !
+                                    {winStreakBonus > 0 && (
+                                        <span
+                                            style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
+                                        >
+                                            +{winStreakBonus.toFixed(2)}x streak bonus!
+                                        </span>
+                                    )}
                                 </>
                             )}
                         </p>
@@ -943,9 +976,14 @@ const GamblingPage = () => {
                                         {hitRate}%
                                     </span>
                                 </p>
-                                <p>⚡ Average multiplier:
+                                <p>⚡ Average multiplier without bonuses: <br />
                                     <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplier))}`}>
                                         {avgMultiplier}x
+                                    </span> <br />
+                                </p>
+                                <p>⚡ Average multiplier with bonuses: <br />
+                                    <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplierWithBonus))}`}>
+                                        {avgMultiplierWithBonus}x
                                     </span>
                                 </p>
                                 <p>💰 Biggest single win: {biggestWin} points</p>

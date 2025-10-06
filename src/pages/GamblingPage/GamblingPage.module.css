@@ -120,6 +120,10 @@
     color: #2e7d32;
 }
 
+.multiplier_gold {
+    color: gold;
+}
+
 .game_title {
     font-weight: 700;
     font-size: 40px;
@@ -483,33 +487,33 @@
 .option[data-difficulty="Easy"]:hover,
 .option[data-difficulty="Easy"]:focus,
 .option[data-difficulty="Easy"].selected {
-    background: linear-gradient(90deg, #28a745, #7afc98);
+    background: linear-gradient(90deg, #28a745, #fff);
     color: white;
 }
 
 .option[data-difficulty="Normal"]:hover,
 .option[data-difficulty="Normal"]:focus,
 .option[data-difficulty="Normal"].selected {
-    background: linear-gradient(90deg, #ffc107, #fce8ad);
+    background: linear-gradient(90deg, #ffc107, #fff);
     color: white;
 }
 
 .option[data-difficulty="Hard"]:hover,
 .option[data-difficulty="Hard"]:focus,
 .option[data-difficulty="Hard"].selected {
-    background: linear-gradient(90deg, #dc3545, #cc7780);
+    background: linear-gradient(90deg, #dc3545, #fff);
     color: white;
 }
 
 .option[data-difficulty="Impossible"]:hover,
 .option[data-difficulty="Impossible"]:focus,
 .option[data-difficulty="Impossible"].selected {
-    background: linear-gradient(90deg, #000, #767676);
+    background: linear-gradient(90deg, #000, #fff);
     color: white;
 }
 
 .option[data-difficulty="LUCK GOD"]:hover {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
     background-size: 1400% 1400%;
     color: white;
     animation: rainbow 4s ease infinite;
@@ -518,7 +522,7 @@
 }
 
 .option[data-difficulty="LUCK GOD"].selected {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
     background-size: 1400% 1400%;
     color: white;
     animation: rainbow 4s ease infinite;
@@ -547,7 +551,7 @@
 }
 
 .luckGodShimmer {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
     background-size: 1400% 1400%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -555,7 +559,7 @@
 }
 
 .rainbowText {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
     background-size: 1400% 1400%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -610,7 +614,7 @@
 .superjackpotFlash {
     transform: translate(-50%, -50%);
     font-weight: bold;
-    font-size: 16px;
+    font-size: 20px;
     color: #fff;
     text-shadow: 0 0 15px rgba(255, 0, 255, 0.7),
         0 0 25px rgba(0, 255, 255, 0.6);
