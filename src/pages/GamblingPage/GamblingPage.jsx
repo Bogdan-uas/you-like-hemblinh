@@ -121,6 +121,7 @@ const GamblingPage = () => {
     const [longestWinStreak, setLongestWinStreak] = useState(0);
     const [longestLossStreak, setLongestLossStreak] = useState(0);
     const [consecutiveLosses, setConsecutiveLosses] = useState(0);
+    const [consecutiveWins, setConsecutiveWins] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -141,9 +142,8 @@ const GamblingPage = () => {
             setDifficulty(parsed.difficulty);
             setCurrentPoints(parsed.currentPoints);
             setGoalPoints(parsed.goalPoints);
-            setLongestWinStreak(parsed.longestWinStreak || 0);
-            setLongestLossStreak(parsed.longestLossStreak || 0);
             setConsecutiveLosses(parsed.consecutiveLosses || 0);
+            setConsecutiveWins(parsed.consecutiveWins || 0);
             prevPointsRef.current = parsed.currentPoints;
             prevGoalRef.current = parsed.goalPoints;
             firstGambleRef.current = true;
@@ -175,8 +175,6 @@ const GamblingPage = () => {
             difficulty,
             currentPoints,
             goalPoints,
-            longestWinStreak,
-            longestLossStreak,
             ...newState,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -366,12 +364,13 @@ const GamblingPage = () => {
             const netChange = newPoints - previousPoints;
 
             const newConsecutiveLosses = roundedMultiplier < 1.0 ? consecutiveLosses + 1 : 0;
-            const newLongestWinStreak = roundedMultiplier > 1.0 ? longestWinStreak + 1 : 0;
-            const newLongestLossStreak = roundedMultiplier < 1.0 && newConsecutiveLosses >= 2
-                ? longestLossStreak + 1
-                : longestLossStreak;
+            const newConsecutiveWins = roundedMultiplier > 1.0 ? consecutiveWins + 1 : 0;
+
+            const newLongestWinStreak = Math.max(longestWinStreak, newConsecutiveWins);
+            const newLongestLossStreak = Math.max(longestLossStreak, newConsecutiveLosses);
 
             setConsecutiveLosses(newConsecutiveLosses);
+            setConsecutiveWins(newConsecutiveWins);
             setLongestWinStreak(newLongestWinStreak);
             setLongestLossStreak(newLongestLossStreak);
 
@@ -392,8 +391,7 @@ const GamblingPage = () => {
             saveGameState({
                 currentPoints: newPoints,
                 consecutiveLosses: newConsecutiveLosses,
-                longestWinStreak: newLongestWinStreak,
-                longestLossStreak: newLongestLossStreak
+                consecutiveWins: newConsecutiveWins
             });
 
             if (newPoints >= goalPoints) {
@@ -689,7 +687,7 @@ const GamblingPage = () => {
                         <div className={css.streak_points_container}>
                             <div className={css.streakWrapper}>
                                 <AnimatePresence>
-                                    {longestWinStreak >= 2 && (
+                                    {consecutiveWins >= 2 && (
                                         <motion.div
                                             key="winStreak"
                                             initial={{ scale: 0, opacity: 0 }}
@@ -699,10 +697,10 @@ const GamblingPage = () => {
                                             className={css.streakDisplay}
                                         >
                                             🔥
-                                            <span className={css.streakNumber}>{longestWinStreak}</span>
+                                            <span className={css.streakNumber}>{consecutiveWins}</span>
                                         </motion.div>
                                     )}
-                                    {longestLossStreak >= 2 && (
+                                    {consecutiveLosses >= 2 && (
                                         <motion.div
                                             key="lossStreak"
                                             initial={{ scale: 0, opacity: 0 }}
@@ -712,7 +710,7 @@ const GamblingPage = () => {
                                             className={css.streakDisplay}
                                         >
                                             💀
-                                            <span className={css.streakNumber}>{longestLossStreak}</span>
+                                            <span className={css.streakNumber}>{consecutiveLosses}</span>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
