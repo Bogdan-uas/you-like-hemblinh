@@ -133,19 +133,20 @@ const GamblingPage = () => {
     const [totalSuperJackpots, setTotalSuperJackpots] = useState(0);
     const [totalWins, setTotalWins] = useState(0);
     const [sumOfMultipliers, setSumOfMultipliers] = useState(0);
-    const [sumOfMultipliersWithBonus, setSumOfMultipliersWithBonus] = useState(0);
     const [biggestWin, setBiggestWin] = useState(0);
     const [longestWinStreak, setLongestWinStreak] = useState(0);
     const [longestLossStreak, setLongestLossStreak] = useState(0);
     const [consecutiveLosses, setConsecutiveLosses] = useState(0);
     const [consecutiveWins, setConsecutiveWins] = useState(0);
     const [winStreakBonus, setWinStreakBonus] = useState(0);
+    const [sumOfStreakBonuses, setSumOfStreakBonuses] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
     const firstGambleRef = useRef(false);
     const betInputRef = useRef(null);
+    const previousStreakBonusRef = useRef(0);
 
     const [open, setOpen] = useState(false);
     const buttonRef = useRef(null);
@@ -334,11 +335,11 @@ const GamblingPage = () => {
 
         if (superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
-            rawMultiplier = Math.round(randomUniform(sjMin, sjMax)() * 100) / 100;
+            rawMultiplier = randomUniform(sjMin, sjMax)();
             jackpotType = "superjackpot";
         } else if (jackpot && Math.random() < jackpot.chance) {
             const [jpMin, jpMax] = jackpot.range;
-            rawMultiplier = Math.round(randomUniform(jpMin, jpMax)() * 100) / 100;
+            rawMultiplier = randomUniform(jpMin, jpMax)();
             jackpotType = "jackpot";
         } else {
             if (unstableMin) {
@@ -367,22 +368,15 @@ const GamblingPage = () => {
             newConsecutiveWins = 0;
         }
 
-        let streakBonus = 0;
-        if (newConsecutiveWins >= 5) {
-            streakBonus = 0.2 * (newConsecutiveWins - 4);
-        } else if (roundedMultiplier < 1.0 && consecutiveWins >= 5) {
-            streakBonus = 0.2 * (consecutiveWins - 4);
-        }
-
+        const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
+        previousStreakBonusRef.current = streakBonus;
         setWinStreakBonus(streakBonus);
 
-        const effectiveMultiplier = roundedMultiplier + streakBonus;
+        const effectiveMultiplier = roundedMultiplier + (roundedMultiplier > 1.0 ? streakBonus : 0);
         const winnings = Math.round(betAmount * effectiveMultiplier);
 
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
-
-            const totalMultiplier = effectiveMultiplier;
 
             let message;
             if (jackpotType === "superjackpot") {
@@ -391,11 +385,11 @@ const GamblingPage = () => {
             } else if (jackpotType === "jackpot") {
                 message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
-            } else if (totalMultiplier < 1.0) {
+            } else if (effectiveMultiplier < 1.0) {
                 message = "What a failure😢!";
-            } else if (totalMultiplier === 1.0) {
+            } else if (effectiveMultiplier === 1.0) {
                 message = "Neither good nor bad 😐!";
-            } else if (totalMultiplier <= 1.4) {
+            } else if (effectiveMultiplier <= 1.4) {
                 message = "Mid😕!";
             } else {
                 message = "Congratulations👏!";
@@ -406,6 +400,7 @@ const GamblingPage = () => {
 
             const newPoints = previousPoints - betAmount + winnings;
             const netChange = newPoints - previousPoints;
+
             setPointsChange(netChange);
             setCurrentPoints(newPoints);
 
@@ -420,7 +415,7 @@ const GamblingPage = () => {
             setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
 
             setSumOfMultipliers(prev => prev + roundedMultiplier);
-            setSumOfMultipliersWithBonus(prev => prev + effectiveMultiplier);
+            setSumOfStreakBonuses(prev => prev + streakBonus);
 
             setTotalBets(prev => prev + 1);
             if (netChange >= 0) setTotalEarned(prev => prev + netChange);
@@ -533,7 +528,9 @@ const GamblingPage = () => {
 
     const hitRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
     const avgMultiplier = totalBets > 0 ? (sumOfMultipliers / totalBets).toFixed(2) : 0;
-    const avgMultiplierWithBonus = totalBets > 0 ? (sumOfMultipliersWithBonus / totalBets).toFixed(2) : 0;
+    const avgMultiplierWithBonus = totalBets > 0
+        ? Number(((sumOfMultipliers + sumOfStreakBonuses) / totalBets).toFixed(2))
+        : 0;
 
     const isGameWon = isWin || currentPoints >= goalPoints;
 
