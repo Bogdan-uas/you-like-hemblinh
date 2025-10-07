@@ -376,6 +376,8 @@ const GamblingPage = () => {
         setTimeout(() => {
             setMultiplier(roundedMultiplier);
 
+            const totalMultiplier = effectiveMultiplier;
+
             let message;
             if (jackpotType === "superjackpot") {
                 message = "🌈💥 SUPER JACKPOT!!! 🚀";
@@ -383,9 +385,9 @@ const GamblingPage = () => {
             } else if (jackpotType === "jackpot") {
                 message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
-            } else if (roundedMultiplier < 1.0) {
+            } else if (totalMultiplier < 1.0) {
                 message = "What a failure😢!";
-            } else if (roundedMultiplier <= 1.4) {
+            } else if (totalMultiplier <= 1.4) {
                 message = "Mid😕!";
             } else {
                 message = "Congratulations👏!";
@@ -506,6 +508,7 @@ const GamblingPage = () => {
             Hard: 500,
             Impossible: 2500,
             "LUCK GOD": 10000,
+            "Eternal Madness": 500000,
         };
 
         const fadeThreshold = RED_FADE_THRESHOLDS[difficulty] || 200;
