@@ -336,13 +336,11 @@ const GamblingPage = () => {
             const [sjMin, sjMax] = superjackpot.range;
             rawMultiplier = Math.round(randomUniform(sjMin, sjMax)() * 100) / 100;
             jackpotType = "superjackpot";
-        }
-        else if (jackpot && Math.random() < jackpot.chance) {
+        } else if (jackpot && Math.random() < jackpot.chance) {
             const [jpMin, jpMax] = jackpot.range;
             rawMultiplier = Math.round(randomUniform(jpMin, jpMax)() * 100) / 100;
             jackpotType = "jackpot";
-        }
-        else {
+        } else {
             if (unstableMin) {
                 const randomMin = randomUniform(0, min)();
                 const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 6);
@@ -358,8 +356,16 @@ const GamblingPage = () => {
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
 
-        const newConsecutiveWins = roundedMultiplier > 1.0 ? consecutiveWins + 1 : 0;
-        const newConsecutiveLosses = roundedMultiplier < 1.0 ? consecutiveLosses + 1 : 0;
+        let newConsecutiveWins = consecutiveWins;
+        let newConsecutiveLosses = consecutiveLosses;
+
+        if (roundedMultiplier > 1.0) {
+            newConsecutiveWins += 1;
+            newConsecutiveLosses = 0;
+        } else if (roundedMultiplier < 1.0) {
+            newConsecutiveLosses += 1;
+            newConsecutiveWins = 0;
+        }
 
         let streakBonus = 0;
         if (newConsecutiveWins >= 5) {
@@ -387,6 +393,8 @@ const GamblingPage = () => {
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
             } else if (totalMultiplier < 1.0) {
                 message = "What a failure😢!";
+            } else if (totalMultiplier === 1.0) {
+                message = "Neither good nor bad 😐!";
             } else if (totalMultiplier <= 1.4) {
                 message = "Mid😕!";
             } else {
@@ -502,34 +510,25 @@ const GamblingPage = () => {
             return { backgroundColor: "#ccc", color: "#2e2f42" };
         }
 
-        const RED_FADE_THRESHOLDS = {
-            Easy: 1000,
-            Normal: 750,
-            Hard: 500,
-            Impossible: 2500,
-            "LUCK GOD": 10000,
-            "Eternal Madness": 500000,
-        };
-
-        const fadeThreshold = RED_FADE_THRESHOLDS[difficulty] || 200;
         const ratio = Math.min(currentPoints / goalPoints, 1);
         let r, g, b;
 
-        if (currentPoints <= fadeThreshold) {
-            r = 255; g = 0; b = 0;
-        } else if (ratio < 0.5) {
-            const t = (currentPoints - fadeThreshold) / ((goalPoints / 2) - fadeThreshold);
-            r = Math.round(255 * (1 - t) + 117 * t);
-            g = Math.round(77 * (1 - t) + 117 * t);
-            b = Math.round(77 * (1 - t) + 117 * t);
+        if (ratio <= 0.5) {
+            const t = ratio / 0.5;
+            r = Math.round(255 * (1 - t) + 128 * t);
+            g = Math.round(0 * (1 - t) + 128 * t);
+            b = Math.round(0 * (1 - t) + 128 * t);
         } else {
             const t = (ratio - 0.5) / 0.5;
-            r = Math.round(117 * (1 - t) + 46 * t);
-            g = Math.round(117 * (1 - t) + 125 * t);
-            b = Math.round(117 * (1 - t) + 50 * t);
+            r = Math.round(128 * (1 - t) + 34 * t);
+            g = Math.round(128 * (1 - t) + 139 * t);
+            b = Math.round(128 * (1 - t) + 34 * t);
         }
 
-        return { backgroundColor: `rgb(${r},${g},${b})`, color: "#fff" };
+        return {
+            backgroundColor: `rgb(${r}, ${g}, ${b})`,
+            color: "#fff",
+        };
     };
 
     const hitRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
