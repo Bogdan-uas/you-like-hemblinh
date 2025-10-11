@@ -30,14 +30,14 @@ const DIFFICULTIES = {
     Impossible: {
         start: [100, 250],
         goal: [15000, 30000],
-        multiplier: [0.1, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.004, range: [10, 14] },
     },
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0.1, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.001, range: [30, 100] },
@@ -45,7 +45,7 @@ const DIFFICULTIES = {
     "Eternal Madness": {
         start: [25, 100],
         goal: [500000, 999999999999999e+6],
-        multiplier: [0.1, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.01, range: [10, 50] },
         superjackpot: { chance: 0.005, range: [75, 200] },
@@ -436,8 +436,10 @@ const GamblingPage = () => {
         } else {
             if (unstableMin) {
                 const randomMin = randomUniform(0, min)();
-                const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 6);
-                rawMultiplier = Math.min(Math.max(normalGen(), randomMin), max);
+                const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 5);
+                rawMultiplier = normalGen();
+                if (rawMultiplier < 0) rawMultiplier = 0;
+                if (rawMultiplier > max) rawMultiplier = max;
             } else {
                 const normalGen = randomNormal((min + max) / 2, (max - min) / 6);
                 rawMultiplier = Math.min(Math.max(normalGen(), min), max);
@@ -487,8 +489,10 @@ const GamblingPage = () => {
             } else if (jackpotTypeLocal === "jackpot") {
                 message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
+            } else if (effectiveMultiplier <= 0.1) {
+                message = "Total loss 😭!";
             } else if (effectiveMultiplier < 1.0) {
-                message = "What a failure😢!";
+                message = "What a failure 😢!";
             } else if (effectiveMultiplier === 1.0) {
                 message = "Neither good nor bad 😐!";
             } else if (effectiveMultiplier <= 1.2) {
@@ -797,7 +801,7 @@ const GamblingPage = () => {
                         <p className={`${css.info_text} ${css.fade_in_delay_more}`}>
                             The multiplier varies from{" "}
                             <span style={{ color: "red" }}>
-                                {DIFFICULTIES[difficulty].unstableMin ? "as low as 0x" : `${DIFFICULTIES[difficulty].multiplier[0]}x`}
+                                {DIFFICULTIES[difficulty].unstableMin ? "0x" : `${DIFFICULTIES[difficulty].multiplier[0]}x`}
                             </span>{" "}
                             to{" "}
                             <span style={{ color: "green" }}>
