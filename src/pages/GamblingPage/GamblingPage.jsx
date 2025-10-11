@@ -37,7 +37,7 @@ const DIFFICULTIES = {
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0, 0.1],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.001, range: [30, 100] },
