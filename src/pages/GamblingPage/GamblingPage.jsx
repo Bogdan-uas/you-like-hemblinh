@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import CountUp from "react-countup";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
@@ -538,7 +539,6 @@ const GamblingPage = () => {
     };
 
     const confirmTerminate = () => {
-        localStorage.removeItem(STORAGE_KEY);
         setIsTerminateModalOpen(false);
         navigate("/");
     };
@@ -1136,14 +1136,14 @@ const GamblingPage = () => {
                                         </button>
                                         <button
                                             className={css.gamble_button}
-                                            onClick={() => {
-                                                setShowGameOverScreen(false);
-                                                setShowDifficultyOverlay(true);
-                                            }}
+                                            onClick={confirmRestart}
                                         >
                                             Try New Difficulty
                                         </button>
-                                        <button className={css.gamble_button} onClick={() => navigate("/")}>
+                                        <button className={css.gamble_button} onClick={() => {
+                                            navigate("/");
+                                            confirmRestart();
+                                        }}>
                                             Go to Home
                                         </button>
                                     </div>
