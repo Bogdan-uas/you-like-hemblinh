@@ -25,7 +25,7 @@ const DIFFICULTIES = {
         start: [100, 500],
         goal: [10000, 20000],
         multiplier: [0.1, 2.5],
-        jackpot: { chance: 0.003, range: [4, 8] },
+        jackpot: { chance: 1, range: [4, 8] },
     },
     Impossible: {
         start: [100, 250],
@@ -254,6 +254,32 @@ const GamblingPage = () => {
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     };
+
+    useEffect(() => {
+        if (showGameOverScreen) {
+            const autoRestartTimeout = setTimeout(() => {
+                setShowGameOverScreen(false);
+                restartSameDifficulty();
+                toast("Restarted automatically due to inactivity", {
+                    icon: "🔁",
+                    duration: 5000,
+                });
+            }, 25000);
+
+            return () => clearTimeout(autoRestartTimeout);
+        }
+    }, [showGameOverScreen]);
+
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (showGameOverScreen) {
+                confirmRestart();
+            }
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [showGameOverScreen]);
 
     const toggleDropdown = () => {
         if (open) setOpen(false);
