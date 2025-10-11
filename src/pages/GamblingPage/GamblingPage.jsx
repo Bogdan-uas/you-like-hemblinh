@@ -331,16 +331,16 @@ const GamblingPage = () => {
         const { multiplier: [min, max], unstableMin, jackpot, superjackpot } = config;
 
         let rawMultiplier;
-        let jackpotType = null;
+        let jackpotTypeLocal = null;
 
         if (superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
             rawMultiplier = randomUniform(sjMin, sjMax)();
-            jackpotType = "superjackpot";
+            jackpotTypeLocal = "superjackpot";
         } else if (jackpot && Math.random() < jackpot.chance) {
             const [jpMin, jpMax] = jackpot.range;
             rawMultiplier = randomUniform(jpMin, jpMax)();
-            jackpotType = "jackpot";
+            jackpotTypeLocal = "jackpot";
         } else {
             if (unstableMin) {
                 const randomMin = randomUniform(0, min)();
@@ -352,51 +352,61 @@ const GamblingPage = () => {
             }
         }
 
-        if (jackpotType === "jackpot") setTotalJackpots(prev => prev + 1);
-        if (jackpotType === "superjackpot") setTotalSuperJackpots(prev => prev + 1);
+        if (jackpotTypeLocal === "jackpot") setTotalJackpots(prev => prev + 1);
+        if (jackpotTypeLocal === "superjackpot") setTotalSuperJackpots(prev => prev + 1);
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
 
         let newConsecutiveWins = consecutiveWins;
         let newConsecutiveLosses = consecutiveLosses;
+        let streakBonusToApply = 0;
 
         if (roundedMultiplier > 1.0) {
             newConsecutiveWins += 1;
             newConsecutiveLosses = 0;
+
+            const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
+            previousStreakBonusRef.current = streakBonus;
+            streakBonusToApply = streakBonus;
         } else if (roundedMultiplier < 1.0) {
             newConsecutiveLosses += 1;
+
+            if (previousStreakBonusRef.current > 0) {
+                streakBonusToApply = previousStreakBonusRef.current;
+                previousStreakBonusRef.current = 0;
+            }
+
             newConsecutiveWins = 0;
         }
 
-        const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
-        previousStreakBonusRef.current = streakBonus;
-        setWinStreakBonus(streakBonus);
+        setWinStreakBonus(streakBonusToApply);
 
-        const effectiveMultiplier = roundedMultiplier + (roundedMultiplier > 1.0 ? streakBonus : 0);
+        const effectiveMultiplierRaw = roundedMultiplier + streakBonusToApply;
+        const effectiveMultiplier = Math.round(effectiveMultiplierRaw * 100) / 100;
         const winnings = Math.round(betAmount * effectiveMultiplier);
 
         setTimeout(() => {
-            setMultiplier(roundedMultiplier);
+            setMultiplier(effectiveMultiplier);
 
             let message;
-            if (jackpotType === "superjackpot") {
+            if (jackpotTypeLocal === "superjackpot") {
                 message = "🌈💥 SUPER JACKPOT!!! 🚀";
                 toast.success("🌈💥 SUPER JACKPOT!!! You broke the odds!", { duration: 5000 });
-            } else if (jackpotType === "jackpot") {
+            } else if (jackpotTypeLocal === "jackpot") {
                 message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
             } else if (effectiveMultiplier < 1.0) {
                 message = "What a failure😢!";
             } else if (effectiveMultiplier === 1.0) {
                 message = "Neither good nor bad 😐!";
-            } else if (effectiveMultiplier <= 1.4) {
+            } else if (effectiveMultiplier <= 1.2) {
                 message = "Mid😕!";
             } else {
                 message = "Congratulations👏!";
             }
 
             setResultMessage(message);
-            setJackpotType(jackpotType);
+            setJackpotType(jackpotTypeLocal);
 
             const newPoints = previousPoints - betAmount + winnings;
             const netChange = newPoints - previousPoints;
@@ -411,11 +421,11 @@ const GamblingPage = () => {
 
             if (roundedMultiplier > 1.0) setTotalWins(prev => prev + 1);
 
+            setSumOfMultipliers(prev => prev + roundedMultiplier);
+            setSumOfStreakBonuses(prev => prev + streakBonusToApply);
+
             setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
             setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
-
-            setSumOfMultipliers(prev => prev + roundedMultiplier);
-            setSumOfStreakBonuses(prev => prev + streakBonus);
 
             setTotalBets(prev => prev + 1);
             if (netChange >= 0) setTotalEarned(prev => prev + netChange);
@@ -471,11 +481,11 @@ const GamblingPage = () => {
     const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
     const isGambleButtonLocked = isButtonLocked || !bet;
 
-    const getMultiplierClass = () => {
-        if (multiplier === null) return "";
-        if (multiplier > 3.0) return css.multiplier_gold;
-        if (multiplier < 1.0) return css.multiplier_fail;
-        if (multiplier <= 1.4) return css.multiplier_mid;
+    const getMultiplierClass = (rawMultiplier) => {
+        if (rawMultiplier === null) return "";
+        if (rawMultiplier > 3.0) return css.multiplier_gold;
+        if (rawMultiplier < 1.0) return css.multiplier_fail;
+        if (rawMultiplier <= 1.2) return css.multiplier_mid;
         return css.multiplier_win;
     };
 
@@ -483,14 +493,14 @@ const GamblingPage = () => {
         if (value === null) return "";
         if (value > 3.0) return css.multiplier_gold;
         if (value < 1.0) return css.multiplier_fail;
-        if (value <= 1.4) return css.multiplier_mid;
+        if (value <= 1.2) return css.multiplier_mid;
         return css.multiplier_win;
     };
 
     const getAvgMultiplierClass = (value) => {
         if (value > 3.0) return css.multiplier_gold;
         if (value < 1.0) return css.multiplier_fail;
-        if (value <= 1.4) return css.multiplier_mid;
+        if (value <= 1.2) return css.multiplier_mid;
         return css.multiplier_win;
     };
 
@@ -880,18 +890,25 @@ const GamblingPage = () => {
                             {multiplier !== null && (
                                 <>
                                     {" "}Your multiplier is
-                                    <span className={`${css.multiplier} ${getMultiplierClass()}`}>
+                                    <span className={`${css.multiplier} ${getMultiplierClass(multiplier - winStreakBonus)}`}>
                                         {DIFFICULTIES[difficulty].unlimited
-                                            ? multiplier.toFixed(4)
-                                            : multiplier.toFixed(2)}x
+                                            ? (multiplier - winStreakBonus).toFixed(4)
+                                            : (multiplier - winStreakBonus).toFixed(2)}x
                                     </span>
                                     !
                                     {winStreakBonus > 0 && (
-                                        <span
-                                            style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
-                                        >
-                                            +{winStreakBonus.toFixed(2)}x streak bonus!
-                                        </span>
+                                        <AnimatePresence mode="wait">
+                                            <motion.span
+                                                key="streakbonus"
+                                                initial={{ opacity: 0, scale: 0 }}
+                                                animate={{ opacity: 1, scale: 1.5 }}
+                                                exit={{ opacity: 0, scale: 0, transition: { duration: 0.8, ease: "easeInOut" } }} // smooth exit
+                                                transition={{ duration: 1 }}
+                                                style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
+                                            >
+                                                +{winStreakBonus.toFixed(2)}x streak bonus!
+                                            </motion.span>
+                                        </AnimatePresence>
                                     )}
                                 </>
                             )}
