@@ -37,7 +37,7 @@ const DIFFICULTIES = {
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0, 2.0],
+        multiplier: [0, 0.1],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.001, range: [30, 100] },
@@ -141,6 +141,7 @@ const GamblingPage = () => {
     const [consecutiveWins, setConsecutiveWins] = useState(0);
     const [winStreakBonus, setWinStreakBonus] = useState(0);
     const [sumOfStreakBonuses, setSumOfStreakBonuses] = useState(0);
+    const [maxPointsReached, setMaxPointsReached] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -178,6 +179,7 @@ const GamblingPage = () => {
             setLongestWinStreak(parsed.longestWinStreak || 0);
             setLongestLossStreak(parsed.longestLossStreak || 0);
             setWinStreakBonus(parsed.winStreakBonus || 0);
+            setMaxPointsReached(parsed.maxPointsReached || 0);
             prevPointsRef.current = parsed.currentPoints;
             prevGoalRef.current = parsed.goalPoints;
             firstGambleRef.current = true;
@@ -250,6 +252,7 @@ const GamblingPage = () => {
             longestWinStreak,
             longestLossStreak,
             winStreakBonus,
+            maxPointsReached,
             ...newState,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -312,6 +315,7 @@ const GamblingPage = () => {
 
         setCurrentPoints(starter);
         setGoalPoints(goalPts);
+        setMaxPointsReached(starter);
         setBet("");
         setIsCalculating(false);
         setResultMessage("");
@@ -359,6 +363,7 @@ const GamblingPage = () => {
 
         setCurrentPoints(starter);
         setGoalPoints(goalPts);
+        setMaxPointsReached(starter);
         setBet("");
         setIsCalculating(false);
         setResultMessage("");
@@ -507,6 +512,8 @@ const GamblingPage = () => {
             const newPoints = previousPoints - betAmount + winnings;
             const netChange = newPoints - previousPoints;
 
+            setMaxPointsReached(prev => Math.max(prev, newPoints));
+
             setPointsChange(netChange);
             setCurrentPoints(newPoints);
 
@@ -566,6 +573,7 @@ const GamblingPage = () => {
         setTotalSuperJackpots(0);
         setLongestWinStreak(0);
         setLongestLossStreak(0);
+        setMaxPointsReached(0);
     };
 
     const confirmTerminate = () => {
@@ -1085,6 +1093,12 @@ const GamblingPage = () => {
                             <p className={css.info_text} style={{ fontSize: "20px" }}>
                                 {DIFFICULTY_END_MESSAGES[difficulty]?.[isWin ? "win" : "lose"]}
                             </p>
+
+                            {!isWin && (
+                                <p className={css.info_text} style={{ fontSize: "22px", fontWeight: 'bolder' }}>
+                                    Highest points amount achieved: {maxPointsReached} points
+                                </p>
+                            )}
 
                             <motion.div
                                 className={css.session_summary}

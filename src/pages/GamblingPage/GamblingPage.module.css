@@ -551,7 +551,7 @@
 .option[data-difficulty="Eternal Madness"]:hover,
 .option[data-difficulty="Eternal Madness"]:focus,
 .option[data-difficulty="Eternal Madness"].selected {
-    background: linear-gradient(45deg,#2a0000,#331a00,#332b00,#002200,#003333,#000022,#220022);
+    background: linear-gradient(45deg, #2a0000, #331a00, #332b00, #002200, #003333, #000022, #220022);
     background-size: 400% 400%;
     color: #fff;
     font-weight: bold;
@@ -695,7 +695,6 @@
 }
 
 .session_summary {
-    margin-top: 20px;
     color: #2e2f42;
     padding: 16px;
     border-radius: 8px;
