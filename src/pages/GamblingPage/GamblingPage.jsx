@@ -25,7 +25,7 @@ const DIFFICULTIES = {
         start: [100, 500],
         goal: [10000, 20000],
         multiplier: [0.1, 2.5],
-        jackpot: { chance: 1, range: [4, 8] },
+        jackpot: { chance: 0.003, range: [4, 8] },
     },
     Impossible: {
         start: [100, 250],
