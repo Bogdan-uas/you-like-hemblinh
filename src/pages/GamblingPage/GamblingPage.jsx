@@ -264,7 +264,7 @@ const GamblingPage = () => {
                     icon: "🔁",
                     duration: 5000,
                 });
-            }, 25000);
+            }, 50000);
 
             return () => clearTimeout(autoRestartTimeout);
         }
