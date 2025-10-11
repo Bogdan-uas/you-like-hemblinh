@@ -306,6 +306,11 @@ const GamblingPage = () => {
         setBiggestWin(0);
         setLongestWinStreak(0);
         setLongestLossStreak(0);
+        setConsecutiveWins(0);
+        setConsecutiveLosses(0);
+        setWinStreakBonus(0);
+        setSumOfStreakBonuses(0);
+        previousStreakBonusRef.current = 0;
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
@@ -348,6 +353,11 @@ const GamblingPage = () => {
         setBiggestWin(0);
         setLongestWinStreak(0);
         setLongestLossStreak(0);
+        setConsecutiveWins(0);
+        setConsecutiveLosses(0);
+        setWinStreakBonus(0);
+        setSumOfStreakBonuses(0);
+        previousStreakBonusRef.current = 0;
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
