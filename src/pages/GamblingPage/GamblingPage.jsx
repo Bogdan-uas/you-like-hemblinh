@@ -713,7 +713,7 @@ const GamblingPage = () => {
                                 {DIFFICULTIES[difficulty].multiplier[1]}x
                             </span>.
                         </p>
-                        <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>Win streak is available on every difficulty.
+                        <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
                             After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
                             With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
                         </p>
