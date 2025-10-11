@@ -163,6 +163,20 @@ const GamblingPage = () => {
             setGoalPoints(parsed.goalPoints);
             setConsecutiveLosses(parsed.consecutiveLosses || 0);
             setConsecutiveWins(parsed.consecutiveWins || 0);
+            setBestMultiplier(parsed.bestMultiplier || null);
+            setWorstMultiplier(parsed.worstMultiplier || null);
+            setTotalBets(parsed.totalBets || 0);
+            setTotalEarned(parsed.totalEarned || 0);
+            setTotalLost(parsed.totalLost || 0);
+            setTotalJackpots(parsed.totalJackpots || 0);
+            setTotalSuperJackpots(parsed.totalSuperJackpots || 0);
+            setTotalWins(parsed.totalWins || 0);
+            setSumOfMultipliers(parsed.sumOfMultipliers || 0);
+            setSumOfStreakBonuses(parsed.sumOfStreakBonuses || 0);
+            setBiggestWin(parsed.biggestWin || 0);
+            setLongestWinStreak(parsed.longestWinStreak || 0);
+            setLongestLossStreak(parsed.longestLossStreak || 0);
+            setWinStreakBonus(parsed.winStreakBonus || 0);
             prevPointsRef.current = parsed.currentPoints;
             prevGoalRef.current = parsed.goalPoints;
             firstGambleRef.current = true;
@@ -189,11 +203,52 @@ const GamblingPage = () => {
         };
     }, []);
 
+    useEffect(() => {
+        if (!difficulty) return;
+        saveGameState();
+    }, [
+        difficulty,
+        currentPoints,
+        goalPoints,
+        consecutiveWins,
+        consecutiveLosses,
+        bestMultiplier,
+        worstMultiplier,
+        totalBets,
+        totalEarned,
+        totalLost,
+        totalJackpots,
+        totalSuperJackpots,
+        totalWins,
+        sumOfMultipliers,
+        sumOfStreakBonuses,
+        biggestWin,
+        longestWinStreak,
+        longestLossStreak,
+        winStreakBonus,
+    ]);
+
     const saveGameState = (newState = {}) => {
         const stateToSave = {
             difficulty,
             currentPoints,
             goalPoints,
+            consecutiveWins,
+            consecutiveLosses,
+            bestMultiplier,
+            worstMultiplier,
+            totalBets,
+            totalEarned,
+            totalLost,
+            totalJackpots,
+            totalSuperJackpots,
+            totalWins,
+            sumOfMultipliers,
+            sumOfStreakBonuses,
+            biggestWin,
+            longestWinStreak,
+            longestLossStreak,
+            winStreakBonus,
             ...newState,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
