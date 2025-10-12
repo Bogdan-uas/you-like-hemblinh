@@ -969,19 +969,19 @@ const GamblingPage = () => {
                         />
                         <button
                             type="button"
-                            className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
-                            onClick={() => setBet(currentPoints.toString())}
-                            disabled={isGameWon || isButtonLocked}
-                        >
-                            Max
-                        </button>
-                        <button
-                            type="button"
                             className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet('')}
                             disabled={isGameWon || isButtonLocked}
                         >
                             Clear
+                        </button>
+                        <button
+                            type="button"
+                            className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
+                            onClick={() => setBet(currentPoints.toString())}
+                            disabled={isGameWon || isButtonLocked}
+                        >
+                            Max
                         </button>
                         <button
                             name="gamble"
