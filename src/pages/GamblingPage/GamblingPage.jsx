@@ -1094,6 +1094,7 @@ const GamblingPage = () => {
                             onClick={handleGamble}
                             className={`${css.gamble_button} ${isGambleButtonLocked ? css.locked : ""}`}
                             disabled={isGambleButtonLocked}
+                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Gamble
                         </button>
