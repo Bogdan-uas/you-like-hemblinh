@@ -512,6 +512,8 @@ const GamblingPage = () => {
             } else if (jackpotTypeLocal === "jackpot") {
                 message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
+            } else if (effectiveMultiplier === 0) {
+                message = "💀 Total wipeout! You lost everything!";
             } else if (effectiveMultiplier <= 0.1) {
                 message = "Total loss 😭!";
             } else if (effectiveMultiplier < 1.0) {
