@@ -1194,16 +1194,22 @@ const GamblingPage = () => {
                                         {hitRate}%
                                     </span>
                                 </p>
-                                <p>⚡ Average multiplier without bonuses: <br />
+                                <p>
+                                    ⚡ Average multiplier without bonuses: <br />
                                     <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplier))}`}>
                                         {avgMultiplier}x
-                                    </span> <br />
-                                </p>
-                                <p>⚡ Average multiplier with bonuses: <br />
-                                    <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplierWithBonus))}`}>
-                                        {avgMultiplierWithBonus}x
                                     </span>
+                                    <br />
                                 </p>
+
+                                {Number(avgMultiplierWithBonus) !== Number(avgMultiplier) && (
+                                    <p>
+                                        ⚡ Average multiplier with bonuses: <br />
+                                        <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplierWithBonus))}`}>
+                                            {avgMultiplierWithBonus}x
+                                        </span>
+                                    </p>
+                                )}
                                 <p>💰 Biggest single win: {biggestWin} points</p>
                                 <p>🔥 Longest win streak: {longestWinStreak}</p>
                                 <p>💀 Longest loss streak: {longestLossStreak}</p>
