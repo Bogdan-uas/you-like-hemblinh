@@ -98,7 +98,7 @@ const SUGGESTIONS = {
     },
     "LUCK GOD": {
         win: "Maybe try again LUCK GOD? You may receive harder numbers to achieve! 🌈💥",
-        lose: "Even a LUCK GOD can fall… 😭 Retry to dominate!",
+        lose: "Even a LUCK GOD can fall… 😭 Try again!",
     },
     "Eternal Madness": {
         win: "Go try again and you may receive even crazier numbers!",
@@ -1123,9 +1123,23 @@ const GamblingPage = () => {
                             </p>
 
                             {!isWin && (
-                                <p className={css.info_text} style={{ fontSize: "22px", fontWeight: 'bolder' }}>
-                                    Highest points amount achieved: {maxPointsReached} points
-                                </p>
+                                <div className={css.another_points_text_container} style={{ fontSize: "22px", fontWeight: 'bolder' }}>
+                                    <p className={css.info_text}>
+                                        Highest points amount achieved:
+                                    </p>
+                                    <div className={css.points} style={getCurrentPointsStyle()}>
+                                        <CountUp
+                                            start={prevPointsRef.current}
+                                            end={maxPointsReached}
+                                            duration={2}
+                                            onEnd={() => {
+                                                prevPointsRef.current = maxPointsReached;
+                                            }}
+                                            key={maxPointsReached}
+                                        />
+                                    </div>
+                                    <p className={css.info_text}>points</p>
+                                </div>
                             )}
 
                             <motion.div
