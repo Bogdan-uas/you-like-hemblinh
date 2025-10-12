@@ -1129,7 +1129,7 @@ const GamblingPage = () => {
                                     </p>
                                     <div className={css.points} style={getCurrentPointsStyle()}>
                                         <CountUp
-                                            start={prevPointsRef.current}
+                                            start={0}
                                             end={maxPointsReached}
                                             duration={2}
                                             onEnd={() => {
