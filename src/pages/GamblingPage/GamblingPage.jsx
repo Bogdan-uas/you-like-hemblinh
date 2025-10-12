@@ -37,7 +37,7 @@ const DIFFICULTIES = {
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0, 2.0],
+        multiplier: [0, 0.1],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.001, range: [30, 100] },
@@ -706,24 +706,28 @@ const GamblingPage = () => {
 
     const getMultiplierClass = (rawMultiplier) => {
         if (rawMultiplier === null) return "";
-        if (rawMultiplier > 3.0) return css.multiplier_gold;
+        if (rawMultiplier <= 0.1) return css.multiplier_superFail;
         if (rawMultiplier < 1.0) return css.multiplier_fail;
         if (rawMultiplier <= 1.2) return css.multiplier_mid;
+        if (rawMultiplier > 3.0) return css.multiplier_gold;
         return css.multiplier_win;
     };
 
     const getBestMultiplierClass = (value) => {
         if (value === null) return "";
-        if (value > 3.0) return css.multiplier_gold;
+        if (value <= 0.1) return css.multiplier_superFail;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.2) return css.multiplier_mid;
+        if (value > 3.0) return css.multiplier_gold;
         return css.multiplier_win;
     };
 
     const getAvgMultiplierClass = (value) => {
-        if (value > 3.0) return css.multiplier_gold;
+        if (value === null) return "";
+        if (value <= 0.1) return css.multiplier_superFail;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.2) return css.multiplier_mid;
+        if (value > 3.0) return css.multiplier_gold;
         return css.multiplier_win;
     };
 
