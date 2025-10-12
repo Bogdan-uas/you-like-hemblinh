@@ -437,7 +437,7 @@ const GamblingPage = () => {
 
         setCurrentPoints(prev => prev - betAmount);
         setBet("");
-        setResultMessage("Calculating...");
+        setResultMessage("Randomizing...");
         setMultiplier(null);
         setPointsChange(null);
         setIsCalculating(true);
@@ -1033,7 +1033,7 @@ const GamblingPage = () => {
                                                 key="streakbonus"
                                                 initial={{ opacity: 0, scale: 0 }}
                                                 animate={{ opacity: 1, scale: 1.5 }}
-                                                exit={{ opacity: 0, scale: 0, transition: { duration: 0.8, ease: "easeInOut" } }} // smooth exit
+                                                exit={{ opacity: 0, scale: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
                                                 transition={{ duration: 1 }}
                                                 style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
                                             >
