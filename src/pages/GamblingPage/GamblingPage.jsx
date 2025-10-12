@@ -154,6 +154,7 @@ const GamblingPage = () => {
     const buttonRef = useRef(null);
     const dropdownRef = useRef(null);
     const dropdownCoords = useRef({});
+    const tooltipRef = useRef(null);
     const selectedLabel = difficulty || "Select difficulty";
 
     useEffect(() => {
@@ -283,6 +284,23 @@ const GamblingPage = () => {
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [showGameOverScreen]);
+
+    useEffect(() => {
+        if (hoveredDifficulty && dropdownRef.current && tooltipRef.current) {
+            const dropdownRect = dropdownRef.current.getBoundingClientRect();
+            const tooltipRect = tooltipRef.current.getBoundingClientRect();
+
+            let tooltipTop = tooltipCoords.top;
+
+            if (tooltipRect.bottom > dropdownRect.bottom) {
+                tooltipTop -= (tooltipRect.bottom - dropdownRect.bottom);
+            } else if (tooltipRect.top < dropdownRect.top) {
+                tooltipTop += (dropdownRect.top - tooltipRect.top);
+            }
+
+            setTooltipCoords((prev) => ({ ...prev, top: tooltipTop }));
+        }
+    }, [hoveredDifficulty]);
 
     const toggleDropdown = () => {
         if (open) setOpen(false);
@@ -719,8 +737,17 @@ const GamblingPage = () => {
                                                 (e.key === "Enter" || e.key === " ") && handleSelectDifficulty(key)
                                             }
                                             onMouseEnter={(e) => {
-                                                const rect = e.currentTarget.getBoundingClientRect();
-                                                setTooltipCoords({ top: rect.top + rect.height / 2, left: rect.right + 10 });
+                                                const itemRect = e.currentTarget.getBoundingClientRect();
+                                                const dropdownRect = dropdownRef.current?.getBoundingClientRect();
+
+                                                if (dropdownRect) {
+                                                    let tooltipTop = itemRect.top + itemRect.height / 2;
+                                                    setTooltipCoords({
+                                                        top: tooltipTop,
+                                                        left: dropdownRect.right + 10,
+                                                    });
+                                                }
+
                                                 setHoveredDifficulty(key);
                                             }}
                                             onMouseLeave={() => setHoveredDifficulty(null)}
@@ -732,6 +759,7 @@ const GamblingPage = () => {
 
                                 {hoveredDifficulty && (
                                     <div
+                                        ref={tooltipRef}
                                         className={css.info_popup}
                                         style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                     >
