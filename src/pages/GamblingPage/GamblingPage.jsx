@@ -106,6 +106,98 @@ const SUGGESTIONS = {
     },
 };
 
+const DIFFICULTY_LOADING_MESSAGES = {
+    Easy: [
+        "Rolling nice and easy... 🍃",
+        "Luck feels chill today... 🌤️",
+        "A calm spin of chance... 🍀",
+        "Taking it slow and lucky... ☕",
+        "RNG is feeling kind... 😌",
+        "A gentle roll begins... 🎲",
+        "The breeze carries your luck... 🌬️",
+        "Soft spin, soft heart... 💫",
+        "No pressure — just vibes... 😎",
+        "A peaceful roll of fate... 🌈",
+        "Even fortune's relaxing... 💤",
+        "You could nap through this roll... 😴",
+    ],
+
+    Normal: [
+        "Crunching the odds... ⚙️",
+        "Building up some tension... 😬",
+        "Balancing chance and chaos... ⚖️",
+        "A fair roll is coming... 🎯",
+        "Let's see what fate decides... 📜",
+        "The wheel of luck spins on... 🎡",
+        "Just another day with destiny... 🌠",
+        "Everything feels... unpredictable. 🎲",
+        "Steady spin, steady heart... 💭",
+        "Luck and logic meet halfway... 🤝",
+        "Fate checks your patience... ⏳",
+        "Your destiny's being calculated... 💫",
+    ],
+
+    Hard: [
+        "Hold steady... 🔥",
+        "The odds look rough... 💀",
+        "RNG is in a bad mood... 🌑",
+        "Chaos stirs behind the numbers... 🌪️",
+        "Your nerve's being tested... 🗡️",
+        "Brace yourself, this could hurt... 🧱",
+        "A real challenge rolls in... ⚔️",
+        "The gamble gets serious... 🧨",
+        "Courage over comfort... 💪",
+        "Hope is your only strategy... 🙃",
+        "Fate sharpens its claws... 🐉",
+        "Ready to defy the odds? 🎰",
+    ],
+
+    Impossible: [
+        "Reality starts to twist... 🌀",
+        "Logic takes a break... 🔮",
+        "The void hums quietly... 🕳️",
+        "Luck won't save you now... 🙏😅",
+        "You're entering pure chaos... 🚫",
+        "Fate's rules don't apply here... 🧩",
+        "Just spin and hope for the best... 🌪️",
+        "The laws of chance crumble... ⚡",
+        "You've stepped off the edge... 💀",
+        "Impossible odds — perfect timing... 😈",
+        "Even reality hesitates... 🌘",
+        "The universe flips a coin... 🪙",
+    ],
+
+    "LUCK GOD": [
+        "Luck itself wakes up... 🌈💥",
+        "The universe leans your way... 🪄",
+        "Fortune whispers your name... ⚡",
+        "The divine wheel turns... 🌀",
+        "Cosmic luck joins your side... 💫",
+        "The stars cheer you on... ✨",
+        "You're glowing with pure chance... 🔥",
+        "Destiny kneels before you... 👑",
+        "Even fate applauds... 🌟",
+        "You're the chosen roller... 🌠",
+        "Miracles line up in your favor... 💎",
+        "The cosmos smiles at your gamble... 🌌",
+    ],
+
+    "Eternal Madness": [
+        "Sanity drifts away... 😵‍💫",
+        "Madness begins its dance... 🔥",
+        "The abyss rolls for you... 🌌",
+        "Order has left the building... 🕳️",
+        "Even gods look away... ⚠️",
+        "You spin beyond reason... 🌀",
+        "The edge of chaos awaits... 💀",
+        "The void whispers your name... 👁️",
+        "Nothing makes sense anymore... 🌀",
+        "You laugh as fate screams... 🤪",
+        "Welcome to endless chaos... 🧠",
+        "The dice have lost their minds... 🎲💫",
+    ],
+};
+
 const GamblingPage = () => {
     const [difficulty, setDifficulty] = useState("");
     const [showDifficultyOverlay, setShowDifficultyOverlay] = useState(true);
@@ -149,6 +241,7 @@ const GamblingPage = () => {
     const firstGambleRef = useRef(false);
     const betInputRef = useRef(null);
     const previousStreakBonusRef = useRef(0);
+    const lastLoadingMessageRef = useRef("");
 
     const [open, setOpen] = useState(false);
     const buttonRef = useRef(null);
@@ -434,10 +527,17 @@ const GamblingPage = () => {
         firstGambleRef.current = true;
         setJackpotType(null);
         const previousPoints = currentPoints;
+        const availableMessages = DIFFICULTY_LOADING_MESSAGES[difficulty];
+        let randomLoadingMsg;
+        do {
+            randomLoadingMsg = availableMessages[Math.floor(Math.random() * availableMessages.length)];
+        } while (randomLoadingMsg === lastLoadingMessageRef.current && availableMessages.length > 1);
+
+        lastLoadingMessageRef.current = randomLoadingMsg;
 
         setCurrentPoints(prev => prev - betAmount);
         setBet("");
-        setResultMessage("Randomizing...");
+        setResultMessage(randomLoadingMsg);
         setMultiplier(null);
         setPointsChange(null);
         setIsCalculating(true);
@@ -972,6 +1072,7 @@ const GamblingPage = () => {
                             className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet('')}
                             disabled={isGameWon || isButtonLocked}
+                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Clear
                         </button>
@@ -980,6 +1081,7 @@ const GamblingPage = () => {
                             className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet(currentPoints.toString())}
                             disabled={isGameWon || isButtonLocked}
+                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Max
                         </button>
@@ -1053,6 +1155,7 @@ const GamblingPage = () => {
                             className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setIsRestartModalOpen(true)}
                             disabled={isButtonLocked}
+                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Restart the game?
                         </button>
@@ -1060,6 +1163,7 @@ const GamblingPage = () => {
                             className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setIsTerminateModalOpen(true)}
                             disabled={isButtonLocked}
+                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Terminate the game?
                         </button>
