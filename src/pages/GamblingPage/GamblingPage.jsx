@@ -11,21 +11,21 @@ import loaderCss from "../../components/Loader/Loader.module.css";
 const STORAGE_KEY = "gamblingGameState";
 
 const DIFFICULTIES = {
-    Easy: { 
-        start: [500, 1000], 
-        goal: [5000, 7500], 
-        multiplier: [0.5, 3.0] 
+    Easy: {
+        start: [500, 1000],
+        goal: [7000, 10000],
+        multiplier: [0.3, 3.0],
     },
-    Normal: { 
-        start: [250, 750], 
-        goal: [5000, 10000], 
-        multiplier: [0.1, 3.0] 
-    },
-    Hard: {
-        start: [100, 500],
+    Normal: {
+        start: [300, 700],
         goal: [10000, 20000],
         multiplier: [0.1, 2.5],
-        jackpot: { chance: 0.003, range: [4, 8] },
+    },
+    Hard: {
+        start: [100, 400],
+        goal: [15000, 30000],
+        multiplier: [0.05, 2.0],
+        jackpot: { chance: 0.003, range: [4, 10] },
     },
     Impossible: {
         start: [100, 250],
@@ -40,7 +40,7 @@ const DIFFICULTIES = {
         multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
-        superjackpot: { chance: 0.001, range: [30, 100] },
+        superjackpot: { chance: 0.002, range: [30, 100] },
     },
     "Eternal Madness": {
         start: [25, 100],
