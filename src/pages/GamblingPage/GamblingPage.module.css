@@ -555,34 +555,49 @@
 .option[data-difficulty="Eternal Madness"]:hover,
 .option[data-difficulty="Eternal Madness"]:focus,
 .option[data-difficulty="Eternal Madness"].selected {
-    background: linear-gradient(45deg, #2a0000, #331a00, #332b00, #002200, #003333, #000022, #220022);
-    background-size: 400% 400%;
+    background: linear-gradient(270deg, #2a0000, #2a1000, #2a2400, #052a00, #003333, #00012a, #28002a, #2a0000);
+    background-size: 800% 800%;
     color: #fff;
-    font-weight: bold;
     box-shadow: 0 0 6px #fff, 0 0 12px #ffa500, 0 0 20px #9400d3, 0 0 30px #ff0000;
-    animation: eternalMadnessGlow 3s ease infinite;
+    animation: eternalMadnessGlow 40s linear infinite;
 }
 
 .option[data-difficulty="LUCK GOD"]:hover {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
-    background-size: 1400% 1400%;
+    background: linear-gradient(270deg,
+            red,
+            orange,
+            yellow,
+            green,
+            blue,
+            indigo,
+            violet,
+            red);
+    background-size: 800% 800%;
     color: white;
-    animation: rainbow 4s ease infinite;
+    animation: rainbow 40s linear infinite;
     -webkit-background-clip: initial;
     -webkit-text-fill-color: initial;
 }
 
 .option[data-difficulty="LUCK GOD"].selected {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
-    background-size: 1400% 1400%;
+    background: linear-gradient(270deg,
+            red,
+            orange,
+            yellow,
+            green,
+            blue,
+            indigo,
+            violet,
+            red);
+    background-size: 800% 800%;
     color: white;
-    animation: rainbow 4s ease infinite;
+    animation: rainbow 40s linear infinite;
     -webkit-background-clip: initial;
     -webkit-text-fill-color: initial;
 }
 
 .selected {
-    font-weight: 600;
+    font-weight: bold;
     outline: none;
     pointer-events: none;
 }
@@ -592,29 +607,20 @@
         background-position: 0% 50%;
     }
 
-    50% {
-        background-position: 100% 50%;
-    }
-
     100% {
-        background-position: 0% 50%;
+        background-position: 800% 50%;
     }
 }
 
 @keyframes eternalMadnessGlow {
     0% {
         background-position: 0% 50%;
-        box-shadow: 0 0 4px #fff, 0 0 10px #8b0000;
-    }
-
-    50% {
-        background-position: 100% 50%;
-        box-shadow: 0 0 12px #4b0082, 0 0 25px #ff0000, 0 0 35px #8b0000;
+        box-shadow: 0 0 5px #ff0000, 0 0 10px #ff3700, 0 0 20px #9500ff;
     }
 
     100% {
-        background-position: 0% 50%;
-        box-shadow: 0 0 4px #fff, 0 0 10px #8b0000;
+        background-position: 800% 50%;
+        box-shadow: 0 0 15px #d60000, 0 0 25px #d64400, 0 0 35px #6000d6;
     }
 }
 
@@ -623,45 +629,41 @@
         background-position: 0% 50%;
     }
 
-    50% {
-        background-position: 100% 50%;
-    }
-
     100% {
-        background-position: 0% 50%;
+        background-position: 800% 50%;
     }
 }
 
 .luckGodShimmer {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
-    background-size: 1400% 1400%;
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet, red);
+    background-size: 800% 800%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: rainbow 4s ease infinite;
+    animation: rainbow 40s linear infinite;
 }
 
 .rainbowText {
-    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo);
-    background-size: 1400% 1400%;
+    background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet, red);
+    background-size: 800% 800%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: rainbow 4s ease infinite;
+    animation: rainbow 40s linear infinite;
 }
 
 .eternalMadnessShimmer {
-    background: linear-gradient(45deg, #2a0000, #331a00, #332b00, #002200, #003333, #000022, #220022);
-    background-size: 1400% 1400%;
+    background: linear-gradient(270deg, #2a0000, #2a1000, #2a2400, #052a00, #003333, #00012a, #28002a, #2a0000);
+    background-size: 800% 800%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: eternalMadness 4s ease infinite;
+    animation: eternalMadness 40s linear infinite;
 }
 
 .eternalMadnessText {
-    background: linear-gradient(45deg, #2a0000, #331a00, #332b00, #002200, #003333, #000022, #220022);
-    background-size: 1400% 1400%;
+    background: linear-gradient(270deg, #2a0000, #2a1000, #2a2400, #052a00, #003333, #00012a, #28002a, #2a0000);
+    background-size: 800% 800%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: eternalMadness 4s ease infinite;
+    animation: eternalMadness 40s linear infinite;
 }
 
 .info_wrapper {
