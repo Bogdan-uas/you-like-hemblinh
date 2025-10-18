@@ -800,3 +800,65 @@
     gap: 24px;
     align-items: center;
 }
+
+.mode_buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.active_mode {
+    background-color: #00307e;
+    color: #fff;
+    pointer-events: none;
+}
+
+.round_text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2e2f42;
+}
+
+.scoreboard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.squares {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.square {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+}
+
+.squareWin {
+    background-color: limegreen;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.squareDarkWin {
+    background-color: #004d00;
+}
+
+.squareLoss {
+    background-color: red;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.squareDarkLoss {
+    background-color: #4d0000;
+}
+
+.best_of_5_result {
+    color: #2e2f42;
+    font-size: 20px;
+    font-weight: 600;
+}

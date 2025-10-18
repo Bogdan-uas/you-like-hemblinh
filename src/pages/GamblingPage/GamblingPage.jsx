@@ -77,7 +77,7 @@ const DIFFICULTY_END_MESSAGES = {
         win: "Yoooo! You are a real grinder! 😵",
         lose: "That's not that bad! 😜",
     },
-}; 
+};
 
 const SUGGESTIONS = {
     Easy: {
@@ -198,6 +198,15 @@ const DIFFICULTY_LOADING_MESSAGES = {
     ],
 };
 
+const BO5_PERCENT_MAP = {
+    "3-0": +200,
+    "3-1": +150,
+    "3-2": +100,
+    "2-3": -50,
+    "1-3": -65,
+    "0-3": -75,
+};
+
 const GamblingPage = () => {
     const [difficulty, setDifficulty] = useState("");
     const [showDifficultyOverlay, setShowDifficultyOverlay] = useState(true);
@@ -211,10 +220,12 @@ const GamblingPage = () => {
     const [multiplier, setMultiplier] = useState(null);
     const [isWin, setIsWin] = useState(false);
     const [pointsChange, setPointsChange] = useState(null);
+
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
     const [hoveredDifficulty, setHoveredDifficulty] = useState(null);
     const [tooltipCoords, setTooltipCoords] = useState({ top: 0, left: 0 });
+
     const [bestMultiplier, setBestMultiplier] = useState(null);
     const [worstMultiplier, setWorstMultiplier] = useState(null);
     const [totalBets, setTotalBets] = useState(0);
@@ -235,6 +246,15 @@ const GamblingPage = () => {
     const [sumOfStreakBonuses, setSumOfStreakBonuses] = useState(0);
     const [maxPointsReached, setMaxPointsReached] = useState(0);
 
+    const [bestOf5Mode, setBestOf5Mode] = useState(null);
+    const [hoveredMode, setHoveredMode] = useState(null);
+    const [isBestOf5Active, setIsBestOf5Active] = useState(false);
+    const [bo5Wins, setBo5Wins] = useState(0);
+    const [bo5Losses, setBo5Losses] = useState(0);
+    const [bo5Round, setBo5Round] = useState(1);
+    const [bo5InitialPoints, setBo5InitialPoints] = useState(0);
+    const [bo5Result, setBo5Result] = useState(null);
+
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
@@ -242,7 +262,6 @@ const GamblingPage = () => {
     const betInputRef = useRef(null);
     const previousStreakBonusRef = useRef(0);
     const lastLoadingMessageRef = useRef("");
-
     const [open, setOpen] = useState(false);
     const buttonRef = useRef(null);
     const dropdownRef = useRef(null);
@@ -253,33 +272,44 @@ const GamblingPage = () => {
     useEffect(() => {
         const savedState = localStorage.getItem(STORAGE_KEY);
         if (savedState) {
-            const parsed = JSON.parse(savedState);
-            setDifficulty(parsed.difficulty);
-            setCurrentPoints(parsed.currentPoints);
-            setGoalPoints(parsed.goalPoints);
-            setConsecutiveLosses(parsed.consecutiveLosses || 0);
-            setConsecutiveWins(parsed.consecutiveWins || 0);
-            setBestMultiplier(parsed.bestMultiplier || null);
-            setWorstMultiplier(parsed.worstMultiplier || null);
-            setTotalBets(parsed.totalBets || 0);
-            setTotalEarned(parsed.totalEarned || 0);
-            setTotalLost(parsed.totalLost || 0);
-            setTotalJackpots(parsed.totalJackpots || 0);
-            setTotalSuperJackpots(parsed.totalSuperJackpots || 0);
-            setTotalWins(parsed.totalWins || 0);
-            setSumOfMultipliers(parsed.sumOfMultipliers || 0);
-            setSumOfStreakBonuses(parsed.sumOfStreakBonuses || 0);
-            setBiggestWin(parsed.biggestWin || 0);
-            setLongestWinStreak(parsed.longestWinStreak || 0);
-            setLongestLossStreak(parsed.longestLossStreak || 0);
-            setWinStreakBonus(parsed.winStreakBonus || 0);
-            setMaxPointsReached(parsed.maxPointsReached || 0);
-            prevPointsRef.current = parsed.currentPoints;
-            prevGoalRef.current = parsed.goalPoints;
-            firstGambleRef.current = true;
-            setShowDifficultyOverlay(false);
-            setShowIntro(false);
+            try {
+                const parsed = JSON.parse(savedState);
+                setDifficulty(parsed.difficulty);
+                setCurrentPoints(parsed.currentPoints);
+                setGoalPoints(parsed.goalPoints);
+                setConsecutiveLosses(parsed.consecutiveLosses || 0);
+                setConsecutiveWins(parsed.consecutiveWins || 0);
+                setBestMultiplier(parsed.bestMultiplier || null);
+                setWorstMultiplier(parsed.worstMultiplier || null);
+                setTotalBets(parsed.totalBets || 0);
+                setTotalEarned(parsed.totalEarned || 0);
+                setTotalLost(parsed.totalLost || 0);
+                setTotalJackpots(parsed.totalJackpots || 0);
+                setTotalSuperJackpots(parsed.totalSuperJackpots || 0);
+                setTotalWins(parsed.totalWins || 0);
+                setSumOfMultipliers(parsed.sumOfMultipliers || 0);
+                setSumOfStreakBonuses(parsed.sumOfStreakBonuses || 0);
+                setBiggestWin(parsed.biggestWin || 0);
+                setLongestWinStreak(parsed.longestWinStreak || 0);
+                setLongestLossStreak(parsed.longestLossStreak || 0);
+                setWinStreakBonus(parsed.winStreakBonus || 0);
+                setMaxPointsReached(parsed.maxPointsReached || 0);
+                setBestOf5Mode(parsed.bestOf5Mode || 0);
+                setIsBestOf5Active(parsed.isBestOf5Active || false);
+                setBo5Wins(parsed.bo5Wins || 0);
+                setBo5Losses(parsed.bo5Losses || 0);
+                setBo5Round(parsed.bo5Round || 1);
+                setBo5InitialPoints(parsed.bo5InitialPoints || 0);
+                prevPointsRef.current = parsed.currentPoints;
+                prevGoalRef.current = parsed.goalPoints;
+                firstGambleRef.current = true;
+                setShowDifficultyOverlay(false);
+                setShowIntro(false);
+            } catch (err) {
+                return console.error("Failed to parse saved game state:", err);
+            }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -293,16 +323,14 @@ const GamblingPage = () => {
                 setOpen(false);
             }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     useEffect(() => {
         if (!difficulty) return;
         saveGameState();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         difficulty,
         currentPoints,
@@ -323,6 +351,9 @@ const GamblingPage = () => {
         longestWinStreak,
         longestLossStreak,
         winStreakBonus,
+        bo5Wins,
+        bo5Losses,
+        bo5Round,
     ]);
 
     const saveGameState = (newState = {}) => {
@@ -347,6 +378,12 @@ const GamblingPage = () => {
             longestLossStreak,
             winStreakBonus,
             maxPointsReached,
+            bestOf5Mode,
+            isBestOf5Active,
+            bo5Wins,
+            bo5Losses,
+            bo5Round,
+            bo5InitialPoints,
             ...newState,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -373,7 +410,6 @@ const GamblingPage = () => {
                 confirmRestart();
             }
         };
-
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [showGameOverScreen]);
@@ -386,9 +422,9 @@ const GamblingPage = () => {
             let tooltipTop = tooltipCoords.top;
 
             if (tooltipRect.bottom > dropdownRect.bottom) {
-                tooltipTop -= (tooltipRect.bottom - dropdownRect.bottom);
+                tooltipTop -= tooltipRect.bottom - dropdownRect.bottom;
             } else if (tooltipRect.top < dropdownRect.top) {
-                tooltipTop += (dropdownRect.top - tooltipRect.top);
+                tooltipTop += dropdownRect.top - tooltipRect.top;
             }
 
             setTooltipCoords((prev) => ({ ...prev, top: tooltipTop }));
@@ -407,6 +443,7 @@ const GamblingPage = () => {
     const handleSelectDifficulty = (diff) => {
         setDifficulty(diff);
         setOpen(false);
+        setBestOf5Mode(null);
     };
 
     const startGame = () => {
@@ -453,6 +490,12 @@ const GamblingPage = () => {
         setWinStreakBonus(0);
         setSumOfStreakBonuses(0);
         previousStreakBonusRef.current = 0;
+        setIsBestOf5Active(false);
+        setBo5Wins(0);
+        setBo5Losses(0);
+        setBo5Round(1);
+        setBo5InitialPoints(0);
+        setBo5Result(null);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
@@ -502,6 +545,13 @@ const GamblingPage = () => {
         setSumOfStreakBonuses(0);
         previousStreakBonusRef.current = 0;
 
+        setIsBestOf5Active(false);
+        setBo5Wins(0);
+        setBo5Losses(0);
+        setBo5Round(1);
+        setBo5InitialPoints(0);
+        setBo5Result(null);
+
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
 
@@ -517,17 +567,81 @@ const GamblingPage = () => {
         }
     };
 
-    const handleGamble = () => {
-        if (!bet) return toast.error("Please enter a bet amount!");
+    const startBestOf5Series = () => {
+        if (!difficulty) return toast.error("Select difficulty first!");
+        if (!bestOf5Mode) return toast.error("Select mode first!");
+        if (bestOf5Mode !== "extended") {
+            toast("Normal mode selected — Bo5 not started.", { duration: 2500 });
+            return;
+        }
+        if (isBestOf5Active) return;
 
-        const betAmount = parseInt(bet, 10);
-        if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
-        if (betAmount > currentPoints) return toast.error("You don't have enough points!");
+        setIsBestOf5Active(true);
+        setBo5Wins(0);
+        setBo5Losses(0);
+        setBo5Round(1);
+        setBo5InitialPoints(currentPoints);
+        setBo5Result(null);
+        toast("🏆 Best-of-5 Series Started! Win 3 rounds to triumph!", {
+            icon: "🎯",
+            duration: 4000,
+        });
+    };
+
+    const completeBo5Series = (wins, losses) => {
+        const key = `${wins}-${losses}`;
+        const percent = BO5_PERCENT_MAP[key] ?? 0;
+        const change = Math.round((bo5InitialPoints * percent) / 100);
+        const newPoints = bo5InitialPoints + change;
+
+        setBo5Result({
+            isWin: wins > losses,
+            percent,
+            change,
+        });
+
+        setPointsChange(change >= 0 ? change : change);
+
+        setCurrentPoints(newPoints);
+        setMaxPointsReached((prev) => Math.max(prev, newPoints));
+
+        saveGameState({ currentPoints: newPoints });
+
+        if (newPoints >= goalPoints) {
+            setIsWin(true);
+            setTimeout(() => setShowGameOverScreen(true), 2000);
+        } else if (newPoints <= 0) {
+            setIsWin(false);
+            setTimeout(() => setShowGameOverScreen(true), 2000);
+        }
+        setTimeout(() => {
+            setPointsChange(null);
+            setIsBestOf5Active(false);
+            setBo5Wins(0);
+            setBo5Losses(0);
+            setBo5Round(1);
+            setBo5Result(null);
+        }, 10000);
+    };
+
+    const handleGamble = () => {
+        const inBo5 = isBestOf5Active && bestOf5Mode === "extended";
+
+        if (!inBo5) {
+            if (!bet) return toast.error("Please enter a bet amount!");
+        }
+
+        const betAmount = inBo5 ? 1 : parseInt(bet, 10);
+        if (!inBo5) {
+            if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
+            if (betAmount > currentPoints) return toast.error("You don't have enough points!");
+        }
 
         firstGambleRef.current = true;
         setJackpotType(null);
         const previousPoints = currentPoints;
-        const availableMessages = DIFFICULTY_LOADING_MESSAGES[difficulty];
+
+        const availableMessages = DIFFICULTY_LOADING_MESSAGES[difficulty] ?? DIFFICULTY_LOADING_MESSAGES.Normal;
         let randomLoadingMsg;
         do {
             randomLoadingMsg = availableMessages[Math.floor(Math.random() * availableMessages.length)];
@@ -535,8 +649,10 @@ const GamblingPage = () => {
 
         lastLoadingMessageRef.current = randomLoadingMsg;
 
-        setCurrentPoints(prev => prev - betAmount);
-        setBet("");
+        if (!inBo5) setCurrentPoints((prev) => prev - betAmount);
+
+        if (!inBo5) setBet("");
+
         setResultMessage(randomLoadingMsg);
         setMultiplier(null);
         setPointsChange(null);
@@ -569,8 +685,8 @@ const GamblingPage = () => {
             }
         }
 
-        if (jackpotTypeLocal === "jackpot") setTotalJackpots(prev => prev + 1);
-        if (jackpotTypeLocal === "superjackpot") setTotalSuperJackpots(prev => prev + 1);
+        if (jackpotTypeLocal === "jackpot") setTotalJackpots((prev) => prev + 1);
+        if (jackpotTypeLocal === "superjackpot") setTotalSuperJackpots((prev) => prev + 1);
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
 
@@ -629,46 +745,78 @@ const GamblingPage = () => {
             setResultMessage(message);
             setJackpotType(jackpotTypeLocal);
 
-            const newPoints = previousPoints - betAmount + winnings;
-            const netChange = newPoints - previousPoints;
+            if (!inBo5) {
+                const newPoints = previousPoints - betAmount + winnings;
+                const netChange = newPoints - previousPoints;
 
-            setMaxPointsReached(prev => Math.max(prev, newPoints));
+                setMaxPointsReached((prev) => Math.max(prev, newPoints));
 
-            setPointsChange(netChange);
-            setCurrentPoints(newPoints);
+                setPointsChange(netChange);
+                setCurrentPoints(newPoints);
 
-            setConsecutiveWins(newConsecutiveWins);
-            setConsecutiveLosses(newConsecutiveLosses);
-            setLongestWinStreak(Math.max(longestWinStreak, newConsecutiveWins));
-            setLongestLossStreak(Math.max(longestLossStreak, newConsecutiveLosses));
+                setConsecutiveWins(newConsecutiveWins);
+                setConsecutiveLosses(newConsecutiveLosses);
+                setLongestWinStreak((prev) => Math.max(prev, newConsecutiveWins));
+                setLongestLossStreak((prev) => Math.max(prev, newConsecutiveLosses));
 
-            if (roundedMultiplier > 1.0) setTotalWins(prev => prev + 1);
+                if (roundedMultiplier > 1.0) setTotalWins((prev) => prev + 1);
 
-            setSumOfMultipliers(prev => prev + roundedMultiplier);
-            setSumOfStreakBonuses(prev => prev + streakBonusToApply);
+                setSumOfMultipliers((prev) => prev + roundedMultiplier);
+                setSumOfStreakBonuses((prev) => prev + streakBonusToApply);
 
-            setBestMultiplier(prev => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
-            setWorstMultiplier(prev => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
+                setBestMultiplier((prev) => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
+                setWorstMultiplier((prev) => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
 
-            setTotalBets(prev => prev + 1);
-            if (netChange >= 0) setTotalEarned(prev => prev + netChange);
-            else setTotalLost(prev => prev + Math.abs(netChange));
-            if (netChange > 0) setBiggestWin(prev => Math.max(prev, netChange));
+                setTotalBets((prev) => prev + 1);
+                if (netChange >= 0) setTotalEarned((prev) => prev + netChange);
+                else setTotalLost((prev) => prev + Math.abs(netChange));
+                if (netChange > 0) setBiggestWin((prev) => Math.max(prev, netChange));
 
-            saveGameState({
-                currentPoints: newPoints,
-                consecutiveWins: newConsecutiveWins,
-                consecutiveLosses: newConsecutiveLosses,
-            });
+                saveGameState({
+                    currentPoints: newPoints,
+                    consecutiveWins: newConsecutiveWins,
+                    consecutiveLosses: newConsecutiveLosses,
+                });
 
-            if (newPoints >= goalPoints) {
-                setIsWin(true);
-                localStorage.removeItem(STORAGE_KEY);
-                setTimeout(() => setShowGameOverScreen(true), 2000);
-            } else if (newPoints <= 0) {
-                setIsWin(false);
-                localStorage.removeItem(STORAGE_KEY);
-                setTimeout(() => setShowGameOverScreen(true), 2000);
+                if (newPoints >= goalPoints) {
+                    setIsWin(true);
+                    localStorage.removeItem(STORAGE_KEY);
+                    setTimeout(() => setShowGameOverScreen(true), 2000);
+                } else if (newPoints <= 0) {
+                    setIsWin(false);
+                    localStorage.removeItem(STORAGE_KEY);
+                    setTimeout(() => setShowGameOverScreen(true), 2000);
+                }
+
+            } else {
+                if (effectiveMultiplier > 1.0) {
+                    setBo5Wins((prev) => {
+                        const nextWins = prev + 1;
+                        return nextWins;
+                    });
+                } else if (effectiveMultiplier < 1.0) {
+                    setBo5Losses((prev) => prev + 1);
+                }
+
+                setBo5Round((prev) => Math.min(prev + 1));
+
+                setSumOfMultipliers((prev) => prev + roundedMultiplier);
+                setSumOfStreakBonuses((prev) => prev + streakBonusToApply);
+                setTotalBets((prev) => prev + 1);
+                if (roundedMultiplier > 1.0) setTotalWins((prev) => prev + 1);
+                setBestMultiplier((prev) => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
+                setWorstMultiplier((prev) => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
+
+                const localWins = (effectiveMultiplier > 1.0) ? bo5Wins + 1 : bo5Wins;
+                const localLosses = (effectiveMultiplier < 1.0) ? bo5Losses + 1 : bo5Losses;
+
+                if (localWins >= 3 || localLosses >= 3) {
+                    completeBo5Series(localWins, localLosses);
+                    setBo5Round((prev) => Math.min(prev - 1));
+                    setTimeout(() => {
+                        setResultMessage("");
+                    }, 10000);
+                }
             }
 
             setIsCalculating(false);
@@ -694,6 +842,13 @@ const GamblingPage = () => {
         setLongestWinStreak(0);
         setLongestLossStreak(0);
         setMaxPointsReached(0);
+        setBestOf5Mode(null);
+        setIsBestOf5Active(false);
+        setBo5Wins(0);
+        setBo5Losses(0);
+        setBo5Round(1);
+        setBo5InitialPoints(0);
+        setBo5Result(null);
     };
 
     const confirmTerminate = () => {
@@ -701,8 +856,8 @@ const GamblingPage = () => {
         navigate("/");
     };
 
-    const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
-    const isGambleButtonLocked = isButtonLocked || !bet;
+    const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen || (isBestOf5Active && bestOf5Mode === "extended");
+    const isGambleButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
 
     const getMultiplierClass = (rawMultiplier) => {
         if (rawMultiplier === null) return "";
@@ -777,18 +932,18 @@ const GamblingPage = () => {
         }
     }, [isGameWon]);
 
-    const infoDifficulty = hoveredDifficulty || difficulty;
-
     return (
         <div className={css.container}>
             {showDifficultyOverlay && (
                 <div className={css.intro_overlay}>
-                    <div className={css.intro_content}>
+                    <div className={css.intro_content} style={{ maxHeight: "85vh", overflowY: "auto" }}>
                         <p className={css.info_text}>Select Difficulty:</p>
-                        <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>Win streak is available on every difficulty.
+                        <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
+                            Win streak is available on every difficulty.
                             After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
                             With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
                         </p>
+
                         <select
                             value={difficulty}
                             onChange={(e) => handleSelectDifficulty(e.target.value)}
@@ -897,12 +1052,58 @@ const GamblingPage = () => {
                             </>
                         )}
 
+                        {difficulty && (
+                            <div className={css.mode_select_container} style={{ marginTop: 20 }}>
+                                <p className={css.info_text}>Select Mode:</p>
+                                <div className={css.mode_buttons}>
+                                    <button
+                                        className={`${css.gamble_button} ${bestOf5Mode === "normal" ? css.active_mode : ""}`}
+                                        onMouseEnter={() => setHoveredMode("normal")}
+                                        onMouseLeave={() => setHoveredMode(null)}
+                                        onClick={() => setBestOf5Mode("normal")}
+                                    >
+                                        Normal
+                                    </button>
+
+                                    <button
+                                        className={`${css.gamble_button} ${bestOf5Mode === "extended" ? css.active_mode : ""}`}
+                                        onMouseEnter={() => setHoveredMode("extended")}
+                                        onMouseLeave={() => setHoveredMode(null)}
+                                        onClick={() => setBestOf5Mode("extended")}
+                                    >
+                                        Extended
+                                    </button>
+                                </div>
+
+                                {hoveredMode === "normal" && (
+                                    <div
+                                        ref={tooltipRef}
+                                        className={css.info_popup}
+                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                    >
+                                        🎯 Just a normal mode, nothing special.
+                                    </div>
+                                )}
+                                {hoveredMode === "extended" && (
+                                    <div
+                                        ref={tooltipRef}
+                                        className={css.info_popup}
+                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                    >
+                                        🏆 In Extended mode, you'll be able to play a Best-of-5 series. Win 3 rounds to triumph!
+                                        Your total gain/loss depends on your final score.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <button
-                            className={`${css.proceed_button} ${!difficulty ? css.locked : ""}`}
+                            className={`${css.proceed_button} ${!difficulty || !bestOf5Mode ? css.locked : ""}`}
                             onClick={startGame}
-                            disabled={!difficulty}
+                            disabled={!difficulty || !bestOf5Mode}
+                            style={{ marginTop: 20 }}
                         >
-                            Proceed?
+                            Let's go?
                         </button>
                     </div>
                 </div>
@@ -917,8 +1118,9 @@ const GamblingPage = () => {
                                 ? css.eternalMadnessText
                                 : ''
                             }`}>
-                            {difficulty} Mode
+                            {bestOf5Mode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode
                         </h2>
+
                         <div className={css.fade_in}>
                             <p className={css.info_text}>Your current points:</p>
                             {DIFFICULTIES[difficulty].start[0] !== DIFFICULTIES[difficulty].start[1] && (
@@ -940,6 +1142,7 @@ const GamblingPage = () => {
                                 <CountUp start={0} end={goalPoints} duration={1.2} />
                             </div>
                         </div>
+
                         <p className={`${css.info_text} ${css.fade_in_delay_more}`}>
                             The multiplier varies from{" "}
                             <span style={{ color: "red" }}>
@@ -950,36 +1153,32 @@ const GamblingPage = () => {
                                 {DIFFICULTIES[difficulty].multiplier[1]}x
                             </span>.
                         </p>
+
                         <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
                             After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
                             With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
                         </p>
-                        {DIFFICULTIES[infoDifficulty]?.jackpot && (
-                            <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}
-                                style={{ marginTop: '24px' }}>
-                                🎰 Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].jackpot.chance * 100}%): {''}
-                                {DIFFICULTIES[infoDifficulty].jackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].jackpot.range[1]}x
+
+                        {bestOf5Mode === "extended" && (
+                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px',marginTop: '16px', textAlign: "center", maxWidth: "60ch" }}>
+                                🏆 In Extended mode, you'll be able to play a Best-of-5 series.<br />
+                                Win 3 rounds to triumph! Your final gain or loss will depend on your match score.<br />
+                                Tipp: Start playing Best-of-5 only when you have at least 100 points to avoid small gains from big wins.
                             </p>
                         )}
 
-                        {DIFFICULTIES[infoDifficulty]?.superjackpot && (
-                            <p className={`${css.info_text} ${css.unstable_note} ${css.fade_in_delay_more}`}>
-                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[infoDifficulty].superjackpot.chance * 100}%): {''}
-                                {DIFFICULTIES[infoDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[infoDifficulty].superjackpot.range[1]}x
-                            </p>
-                        )}
-
-                        <button
-                            className={`${css.proceed_button} ${css.fade_in_delay_more}`}
-                            onClick={() => setShowIntro(false)}
-                        >
+                        <button className={`${css.proceed_button} ${css.fade_in_delay_more}`} onClick={() => setShowIntro(false)}>
                             Start Game
                         </button>
                     </div>
                 </div>
             )}
+
             {!showIntro && !showDifficultyOverlay && (
                 <>
+                    <p className={css.info_text} style={{ marginTop: "12px", fontWeight: "bold" }}>
+                        {bestOf5Mode === "extended" ? "Extended" : "Standard"}
+                    </p>
                     <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
                         ? css.rainbowText
                         : difficulty === "Eternal Madness"
@@ -989,6 +1188,65 @@ const GamblingPage = () => {
                         {difficulty} Mode
                     </h2>
 
+                    {bestOf5Mode === "extended" && (
+                        <div className={css.best_of_5_container}>
+                            {!isBestOf5Active ? (
+                                <button
+                                    className={css.gamble_button}
+                                    onClick={startBestOf5Series}
+                                    disabled={isButtonLocked}
+                                    style={{ marginTop: '8px', marginBottom: '8px' }}
+                                >
+                                    Best-of-5?
+                                </button>
+                            ) : (
+                                <div className={css.scoreboard}>
+                                    <div className={css.squares}>
+                                        {[...Array(3)].map((_, i) => (
+                                            <span
+                                                key={`win-${i}`}
+                                                className={`${css.square} ${i < bo5Wins ? css.squareWin : css.squareDarkWin}`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className={css.round_text}>Round {bo5Round}</span>
+                                    <div className={css.squares}>
+                                        {[...Array(3)].map((_, i) => (
+                                            <span
+                                                key={`loss-${i}`}
+                                                className={`${css.square} ${i < bo5Losses ? css.squareLoss : css.squareDarkLoss}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {bo5Result && (
+                        <motion.div
+                            key="bo5Result"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.best_of_5_result}
+                            style={{ marginTop: '8px' }}>
+                            <p>
+                                Because you{" "}
+                                <span style={{ fontWeight: 'bold' }} className={`${bo5Result.isWin ? css.multiplier_win : css.multiplier_fail}`}>
+                                    {bo5Result.isWin ? "won" : "lost"}
+                                </span>{" "}
+                                with a score of <span style={{ fontWeight: 'bold' }} className={css.multiplier_win}>{bo5Wins}</span>-<span style={{ fontWeight: 'bold' }} className={css.multiplier_fail}>{bo5Losses}</span>, you{" "}
+                                <span style={{ fontWeight: 'bold' }} className={`${bo5Result.isWin ? css.multiplier_win : css.multiplier_fail}`}>
+                                    {bo5Result.isWin ? "gain" : "lose"}
+                                </span>{" "}
+                                <span style={{ fontWeight: 'bold' }} className={getHitRateClass(bo5Result.percent)}>
+                                    {bo5Result.percent}%
+                                </span>{" "}.
+                            </p>
+                        </motion.div>
+                    )}
                     <div className={css.points_container}>
                         <div className={css.streak_points_container}>
                             <div className={css.streakWrapper}>
@@ -1068,15 +1326,24 @@ const GamblingPage = () => {
                             className={css.input}
                             placeholder="Gamble?"
                             ref={betInputRef}
-                            disabled={isGameWon}
-                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
+                            disabled={isGameWon || isBestOf5Active}
+                            style={{
+                                pointerEvents: isGameWon || isBestOf5Active ? "none" : "auto",
+                                opacity: isBestOf5Active ? 0.0 : 1,
+                                display: isBestOf5Active ? "none" : "inline-block",
+                                transition: 'opacity 300ms ease-in-out'
+                            }}
                         />
                         <button
                             type="button"
                             className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet('')}
-                            disabled={isGameWon || isButtonLocked}
-                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
+                            disabled={isGameWon || isButtonLocked || isBestOf5Active}
+                            style={{
+                                pointerEvents: isGameWon || isButtonLocked || isBestOf5Active ? "none" : "auto",
+                                display: isBestOf5Active ? "none" : "inline-block",
+                                opacity: isBestOf5Active ? 0.0 : 1
+                            }}
                         >
                             Clear
                         </button>
@@ -1084,8 +1351,12 @@ const GamblingPage = () => {
                             type="button"
                             className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet(currentPoints.toString())}
-                            disabled={isGameWon || isButtonLocked}
-                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
+                            disabled={isGameWon || isButtonLocked || isBestOf5Active}
+                            style={{
+                                pointerEvents: isGameWon || isButtonLocked || isBestOf5Active ? "none" : "auto",
+                                display: isBestOf5Active ? "none" : "inline-block",
+                                opacity: isBestOf5Active ? 0.0 : 1
+                            }}
                         >
                             Max
                         </button>
@@ -1093,7 +1364,7 @@ const GamblingPage = () => {
                             name="gamble"
                             onClick={handleGamble}
                             className={`${css.gamble_button} ${isGambleButtonLocked ? css.locked : ""}`}
-                            disabled={isGambleButtonLocked}
+                            disabled={isGambleButtonLocked || bo5Result}
                             style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Gamble
