@@ -415,6 +415,14 @@ const GamblingPage = () => {
     }, [showGameOverScreen]);
 
     useEffect(() => {
+        const handleBeforeUnload = () => {
+                confirmRestart();
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [showGameOverScreen]);
+
+    useEffect(() => {
         if (hoveredDifficulty && dropdownRef.current && tooltipRef.current) {
             const dropdownRect = dropdownRef.current.getBoundingClientRect();
             const tooltipRect = tooltipRef.current.getBoundingClientRect();
