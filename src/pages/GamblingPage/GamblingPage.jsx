@@ -1062,7 +1062,7 @@ const GamblingPage = () => {
                                         onMouseLeave={() => setHoveredMode(null)}
                                         onClick={() => setBestOf5Mode("normal")}
                                     >
-                                        Normal
+                                        Standard
                                     </button>
 
                                     <button
