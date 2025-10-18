@@ -621,7 +621,7 @@ const GamblingPage = () => {
             setBo5Losses(0);
             setBo5Round(1);
             setBo5Result(null);
-        }, 10000);
+        }, 5000);
     };
 
     const handleGamble = () => {
@@ -815,7 +815,7 @@ const GamblingPage = () => {
                     setBo5Round((prev) => Math.min(prev - 1));
                     setTimeout(() => {
                         setResultMessage("");
-                    }, 10000);
+                    }, 5000);
                 }
             }
 
