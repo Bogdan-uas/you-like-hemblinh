@@ -415,11 +415,11 @@ const GamblingPage = () => {
     }, [showGameOverScreen]);
 
     useEffect(() => {
-        const handleBeforeUnload = () => {
+        const handleBefore = () => {
                 confirmRestart();
         };
-        window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+        window.addEventListener("beforeunload", handleBefore);
+        return () => window.removeEventListener("beforeunload", handleBefore);
     }, [showGameOverScreen]);
 
     useEffect(() => {
