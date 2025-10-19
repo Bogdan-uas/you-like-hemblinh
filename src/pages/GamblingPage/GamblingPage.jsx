@@ -1322,7 +1322,7 @@ const GamblingPage = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4 }}
+                            transition={{ duration: 0.4, delay: 1 }}
                             className={css.best_of_9_result}
                             style={{ marginTop: '8px' }}>
                             <p>
