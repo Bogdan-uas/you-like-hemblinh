@@ -722,7 +722,10 @@ const GamblingPage = () => {
         let rawMultiplier;
         let jackpotTypeLocal = null;
 
-        if (superjackpot && Math.random() < superjackpot.chance) {
+        if (inBo9) {
+            rawMultiplier = min + Math.random() * (max - min);
+            jackpotTypeLocal = null;
+        } else if (superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
             rawMultiplier = sjMin + Math.random() * (sjMax - sjMin);
             jackpotTypeLocal = "superjackpot";
@@ -730,15 +733,11 @@ const GamblingPage = () => {
             const [jpMin, jpMax] = jackpot.range;
             rawMultiplier = jpMin + Math.random() * (jpMax - jpMin);
             jackpotTypeLocal = "jackpot";
-        } else if (inBo9) {
-            rawMultiplier = min + Math.random() * (max - min);
         } else {
             if (unstableMin) {
                 const randomMin = randomUniform(0, min)();
                 const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 5);
-                rawMultiplier = normalGen();
-                if (rawMultiplier < 0) rawMultiplier = 0;
-                if (rawMultiplier > max) rawMultiplier = max;
+                rawMultiplier = Math.min(Math.max(normalGen(), 0), max);
             } else {
                 const normalGen = randomNormal((min + max) / 2, (max - min) / 6);
                 rawMultiplier = Math.min(Math.max(normalGen(), min), max);
