@@ -314,6 +314,10 @@ const GamblingPage = () => {
         if (bo5End) {
             const elapsed = Date.now() - parseInt(bo5End, 10);
             if (elapsed < 10000) {
+                if (window["bo5ResetTimeout"]) {
+                    clearTimeout(window["bo5ResetTimeout"]);
+                    window["bo5ResetTimeout"] = null;
+                }
                 localStorage.removeItem("bo5EndTime");
                 resetBo5State();
             }
@@ -596,13 +600,18 @@ const GamblingPage = () => {
 
     const startBestOf5Series = () => {
         if (!difficulty) return toast.error("Select difficulty first!");
-        if (!bestOf5Mode) return toast.error("Select mode first!");
-        if (bestOf5Mode !== "extended") {
+    
+        const modeToUse = bestOf5Mode || bestOf5ModeDraft;
+        if (!modeToUse) return toast.error("Select mode first!");
+
+        if (modeToUse !== "extended") {
             toast("Normal mode selected — Bo5 not started.", { duration: 2500 });
             return;
         }
+
         if (isBestOf5Active) return;
 
+        setBestOf5Mode(modeToUse);
         setIsBestOf5Active(true);
         setBo5Wins(0);
         setBo5Losses(0);
@@ -645,7 +654,7 @@ const GamblingPage = () => {
         const endTimeout = setTimeout(() => {
             resetBo5State();
         }, 10000);
-        window.bo5ResetTimeout = endTimeout;
+        window["bo5ResetTimeout"] = endTimeout;
     };
 
     const handleGamble = () => {
@@ -1260,7 +1269,7 @@ const GamblingPage = () => {
                                 </button>
                             ) : (
                                 <div className={css.scoreboard}>
-                                    <div className={css.squares}>
+                                    <div className={`${css.squares} ${css.winRow}`}>
                                         {[...Array(3)].map((_, i) => (
                                             <span
                                                 key={`win-${i}`}

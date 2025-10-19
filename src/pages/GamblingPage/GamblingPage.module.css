@@ -827,6 +827,10 @@
     margin-bottom: 8px;
 }
 
+.winRow {
+    flex-direction: row-reverse;
+}
+
 .squares {
     display: flex;
     align-items: center;
