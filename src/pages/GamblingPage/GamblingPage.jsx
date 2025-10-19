@@ -843,16 +843,16 @@ const GamblingPage = () => {
                 }
 
                 setBo9Round((prev) => Math.min(prev + 1));
-                if (bo9Round === 9) {
+                if (bo9Round === 10) {
                     toast("Isn't that too long for you?", { icon: "🤔", duration: 3000 });
                 }
-                if (bo9Round === 10) {
+                if (bo9Round === 11) {
                     toast("Wat?! How so long?", { icon: "🤯", duration: 3000 });
                 }
-                if (bo9Round === 19) {
+                if (bo9Round === 20) {
                     toast("No way!", { icon: "💥", duration: 3000 });
                 }
-                if (bo9Round === 29) {
+                if (bo9Round === 30) {
                     toast("Pretty long run, isn't it?", { icon: "💥", duration: 3000 });
                 }
                 setSumOfMultipliers((prev) => prev + roundedMultiplier);
