@@ -1306,7 +1306,7 @@ const GamblingPage = () => {
                                     disabled={isButtonLocked}
                                     style={{ marginTop: '8px', marginBottom: '8px' }}
                                 >
-                                    Best-of-9?
+                                    Wanna more at once?
                                 </button>
                             ) : (
                                 <div className={css.scoreboard}>
