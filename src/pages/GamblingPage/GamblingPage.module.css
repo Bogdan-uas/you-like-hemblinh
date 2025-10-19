@@ -201,7 +201,7 @@
     letter-spacing: 0.04em;
     font-size: 22px;
     font-weight: 600;
-    animation: slideInOut 5s ease forwards;
+    animation: slideInOut 8s ease-in-out forwards;
 }
 
 .bottom_buttons {

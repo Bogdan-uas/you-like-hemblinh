@@ -8,6 +8,17 @@ import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
 
+const DelayedMount = ({ delay, children }) => {
+    const [show, setShow] = useState(false);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => setShow(true), delay);
+        return () => clearTimeout(timeout);
+    }, [delay]);
+
+    return show ? children : null;
+};
+
 const STORAGE_KEY = "gamblingGameState";
 
 const DIFFICULTIES = {
@@ -317,7 +328,7 @@ const GamblingPage = () => {
         const bo5End = localStorage.getItem("bo5EndTime");
         if (bo5End) {
             const elapsed = Date.now() - parseInt(bo5End, 10);
-            if (elapsed < 10000) {
+            if (elapsed < 15000) {
                 if (window["bo5ResetTimeout"]) {
                     clearTimeout(window["bo5ResetTimeout"]);
                     window["bo5ResetTimeout"] = null;
@@ -678,7 +689,7 @@ const GamblingPage = () => {
         localStorage.setItem("bo9EndTime", String(Date.now()));
         const endTimeout = setTimeout(() => {
             resetBo9State();
-        }, 10000);
+        }, 15000);
         window["bo9ResetTimeout"] = endTimeout;
     };
 
@@ -886,7 +897,7 @@ const GamblingPage = () => {
                     setBo9Round((prev) => Math.min(prev - 1));
                     setTimeout(() => {
                         setResultMessage("");
-                    }, 10000);
+                    }, 15000);
                 }
             }
 
@@ -1304,13 +1315,18 @@ const GamblingPage = () => {
                                     className={css.gamble_button}
                                     onClick={startBestOf9Series}
                                     disabled={isButtonLocked}
-                                    style={{ marginTop: '8px', marginBottom: '8px' }}
+                                    style={{ marginTop: "8px", marginBottom: "8px" }}
                                 >
                                     Wanna more at once?
                                 </button>
                             ) : (
                                 <div className={css.scoreboard}>
-                                    <div className={`${css.squares} ${css.winRow}`}>
+                                    <div
+                                        className={`${css.squares} ${css.winRow}`}
+                                        style={{
+                                            opacity: bo9Result && !bo9Result.isWin ? 0.3 : 1,
+                                        }}
+                                    >
                                         {[...Array(5)].map((_, i) => (
                                             <span
                                                 key={`win-${i}`}
@@ -1318,8 +1334,28 @@ const GamblingPage = () => {
                                             />
                                         ))}
                                     </div>
-                                    <span className={css.round_text}>Round {bo9Round}</span>
-                                    <div className={css.squares}>
+
+                                    <motion.span
+                                        key="bo9Result"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className={css.round_text}
+                                    >
+                                        {!bo9Result ? (
+                                            `Round ${bo9Round}`
+                                        ) : (
+                                            <>{bo9Result.isWin ? "YOU WON!" : "YOU LOST!"}</>
+                                        )}
+                                    </motion.span>
+
+                                    <div
+                                        className={css.squares}
+                                        style={{
+                                            opacity: bo9Result && bo9Result.isWin ? 0.3 : 1,
+                                        }}
+                                    >
                                         {[...Array(5)].map((_, i) => (
                                             <span
                                                 key={`loss-${i}`}
@@ -1333,28 +1369,49 @@ const GamblingPage = () => {
                     )}
 
                     {bo9Result && (
-                        <motion.div
-                            key="bo9Result"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4, delay: 1 }}
-                            className={css.best_of_9_result}
-                            style={{ marginTop: '8px' }}>
-                            <p>
-                                Because you{" "}
-                                <span style={{ fontWeight: 'bold' }} className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}>
-                                    {bo9Result.isWin ? "won" : "lost"}
-                                </span>{" "}
-                                with a score of <span style={{ fontWeight: 'bold' }} className={css.multiplier_win}>{bo9Wins}</span>-<span style={{ fontWeight: 'bold' }} className={css.multiplier_fail}>{bo9Losses}</span>, you{" "}
-                                <span style={{ fontWeight: 'bold' }} className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}>
-                                    {bo9Result.isWin ? "gain" : "lose"}
-                                </span>{" "}
-                                <span style={{ fontWeight: 'bold' }} className={getHitRateClass(bo9Result.percent)}>
-                                    {bo9Result.percent}%
-                                </span>{" "}.
-                            </p>
-                        </motion.div>
+                        <DelayedMount delay={4000}>
+                            <motion.div
+                                key="bo9Result"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.best_of_9_result}
+                                style={{ marginTop: '8px' }}
+                            >
+                                <p>
+                                    and because you{" "}
+                                    <span
+                                        style={{ fontWeight: "bold" }}
+                                        className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}
+                                    >
+                                        {bo9Result.isWin ? "won" : "lost"}
+                                    </span>{" "}
+                                    with a score of{" "}
+                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
+                                        {bo9Wins}
+                                    </span>
+                                    -
+                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
+                                        {bo9Losses}
+                                    </span>
+                                    , you{" "}
+                                    <span
+                                        style={{ fontWeight: "bold" }}
+                                        className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}
+                                    >
+                                        {bo9Result.isWin ? "gain" : "lose"}
+                                    </span>{" "}
+                                    <span
+                                        style={{ fontWeight: "bold" }}
+                                        className={getHitRateClass(bo9Result.percent)}
+                                    >
+                                        {bo9Result.percent}%
+                                    </span>{" "}
+                                    .
+                                </p>
+                            </motion.div>
+                        </DelayedMount>
                     )}
                     <div className={css.points_container}>
                         <div className={css.streak_points_container}>
@@ -1400,14 +1457,23 @@ const GamblingPage = () => {
                                             key={currentPoints}
                                         />
                                     </div>
-                                    {pointsChange !== null && (
+                                    {bo9Result ? (pointsChange !== null && (
+                                        <DelayedMount delay={4000}>
+                                            <span
+                                                className={css.points_gain_loss}
+                                                style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                            >
+                                                {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                            </span>
+                                        </DelayedMount>
+                                    )) : (pointsChange !== null && (
                                         <span
                                             className={css.points_gain_loss}
                                             style={{ color: pointsChange >= 0 ? "green" : "red" }}
                                         >
                                             {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
                                         </span>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
                         </div>
