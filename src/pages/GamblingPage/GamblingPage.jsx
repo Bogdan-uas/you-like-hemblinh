@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
-import { b } from "framer-motion/client";
 
 const STORAGE_KEY = "gamblingGameState";
 
@@ -31,14 +30,14 @@ const DIFFICULTIES = {
     Impossible: {
         start: [100, 250],
         goal: [15000, 30000],
-        multiplier: [0.00, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.004, range: [10, 14] },
     },
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0.00, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.002, range: [30, 100] },
@@ -46,7 +45,7 @@ const DIFFICULTIES = {
     "Eternal Madness": {
         start: [25, 100],
         goal: [500000, 999999999999999e+6],
-        multiplier: [0.00, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.01, range: [10, 50] },
         superjackpot: { chance: 0.005, range: [75, 200] },
