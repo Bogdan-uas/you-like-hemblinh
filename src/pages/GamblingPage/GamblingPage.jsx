@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
+import { b } from "framer-motion/client";
 
 const STORAGE_KEY = "gamblingGameState";
 
@@ -30,7 +31,7 @@ const DIFFICULTIES = {
     Impossible: {
         start: [100, 250],
         goal: [15000, 30000],
-        multiplier: [0, 2.0],
+        multiplier: [1, 1],
         unstableMin: true,
         jackpot: { chance: 0.004, range: [10, 14] },
     },
@@ -843,7 +844,18 @@ const GamblingPage = () => {
                 }
 
                 setBo9Round((prev) => Math.min(prev + 1));
-
+                if (bo9Round === 10) {
+                    toast("Isn't that too long for you?", { icon: "🤔", duration: 3000 });
+                }
+                if (bo9Round === 11) {
+                    toast("Wat?! How so long?", { icon: "🤯", duration: 3000 });
+                }
+                if (bo9Round === 20) {
+                    toast("No way!", { icon: "💥", duration: 3000 });
+                }
+                if (bo9Round === 30) {
+                    toast("Pretty long run, isn't it?", { icon: "💥", duration: 3000 });
+                }
                 setSumOfMultipliers((prev) => prev + roundedMultiplier);
                 setSumOfStreakBonuses((prev) => prev + streakBonusToApply);
                 setTotalBets((prev) => prev + 1);
