@@ -983,6 +983,7 @@ const GamblingPage = () => {
                 clearTimeout(window.bo5ResetTimeout);
                 window.bo5ResetTimeout = null;
                 resetBo5State();
+                setResultMessage("");
             }
         };
         window.addEventListener("click", clearBo5OnClick);
