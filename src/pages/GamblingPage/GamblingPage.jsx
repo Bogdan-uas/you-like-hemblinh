@@ -599,6 +599,11 @@ const GamblingPage = () => {
     };
 
     const startBestOf5Series = () => {
+        if (window.bo5ResetTimeout) {
+            clearTimeout(window.bo5ResetTimeout);
+            window.bo5ResetTimeout = null;
+        }
+        
         if (!difficulty) return toast.error("Select difficulty first!");
     
         const modeToUse = bestOf5Mode || bestOf5ModeDraft;
@@ -892,6 +897,11 @@ const GamblingPage = () => {
     };
 
     const resetBo5State = () => {
+        if (window.bo5ResetTimeout) {
+            clearTimeout(window.bo5ResetTimeout);
+            window.bo5ResetTimeout = null;
+        }
+
         setIsBestOf5Active(false);
         setBo5Wins(0);
         setBo5Losses(0);
@@ -906,7 +916,7 @@ const GamblingPage = () => {
             bo5Wins: 0,
             bo5Losses: 0,
             bo5Round: 1,
-            bo5InitialPoints: 0
+            bo5InitialPoints: 0,
         });
     };
 
