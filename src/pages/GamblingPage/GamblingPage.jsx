@@ -639,6 +639,22 @@ const GamblingPage = () => {
         const change = Math.round((bo9InitialPoints * percent) / 100);
         const newPoints = bo9InitialPoints + change;
 
+        if (wins > losses) {
+            setConsecutiveWins((prev) => {
+                const newWins = prev + 1;
+                setLongestWinStreak((longest) => Math.max(longest, newWins));
+                return newWins;
+            });
+            setConsecutiveLosses(0);
+        } else {
+            setConsecutiveLosses((prev) => {
+                const newLosses = prev + 1;
+                setLongestLossStreak((longest) => Math.max(longest, newLosses));
+                return newLosses;
+            });
+            setConsecutiveWins(0);
+        }
+
         setBo9Result({
             isWin: wins > losses,
             percent,
@@ -741,14 +757,15 @@ const GamblingPage = () => {
         if (roundedMultiplier > 1.0) {
             newConsecutiveWins += 1;
             newConsecutiveLosses = 0;
-
-            const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
-            previousStreakBonusRef.current = streakBonus;
-            streakBonusToApply = streakBonus;
+            if (!inBo9) {
+                const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
+                previousStreakBonusRef.current = streakBonus;
+                streakBonusToApply = streakBonus;
+            }
         } else if (roundedMultiplier < 1.0) {
             newConsecutiveLosses += 1;
 
-            if (previousStreakBonusRef.current > 0) {
+            if (!inBo9 && previousStreakBonusRef.current > 0) {
                 streakBonusToApply = previousStreakBonusRef.current;
                 previousStreakBonusRef.current = 0;
             }
@@ -756,8 +773,8 @@ const GamblingPage = () => {
             newConsecutiveWins = 0;
         }
 
-        setWinStreakBonus(streakBonusToApply);
-
+        setWinStreakBonus(!inBo9 ? streakBonusToApply : 0);
+        
         const effectiveMultiplierRaw = roundedMultiplier + streakBonusToApply;
         const effectiveMultiplier = Math.round(effectiveMultiplierRaw * 100) / 100;
         const winnings = Math.round(betAmount * effectiveMultiplier);
