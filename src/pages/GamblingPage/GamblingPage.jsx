@@ -204,10 +204,10 @@ const BO9_PERCENT_MAP = {
     "5-2": +200,
     "5-3": +150,
     "5-4": +100,
-    "4-5": -25,
-    "3-5": -40,
-    "2-5": -50,
-    "1-5": -65,
+    "4-5": -20,
+    "3-5": -30,
+    "2-5": -40,
+    "1-5": -50,
     "0-5": -75,
 };
 
@@ -1001,16 +1001,16 @@ const GamblingPage = () => {
     }, [isGameWon]);
 
     useEffect(() => {
-        const clearBo5OnClick = () => {
-            if (window.bo5ResetTimeout) {
+        const clearBo9OnClick = () => {
+            if (window.bo9ResetTimeout) {
                 clearTimeout(window.bo9ResetTimeout);
                 window.bo9ResetTimeout = null;
                 resetBo9State();
                 setResultMessage("");
             }
         };
-        window.addEventListener("click", clearBo5OnClick);
-        return () => window.removeEventListener("click", clearBo5OnClick);
+        window.addEventListener("click", clearBo9OnClick);
+        return () => window.removeEventListener("click", clearBo9OnClick);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
