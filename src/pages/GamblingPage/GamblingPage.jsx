@@ -254,6 +254,7 @@ const GamblingPage = () => {
     const [bo5Round, setBo5Round] = useState(1);
     const [bo5InitialPoints, setBo5InitialPoints] = useState(0);
     const [bo5Result, setBo5Result] = useState(null);
+    const [bestOf5ModeDraft, setBestOf5ModeDraft] = useState(null);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -307,6 +308,14 @@ const GamblingPage = () => {
                 setShowIntro(false);
             } catch (err) {
                 return console.error("Failed to parse saved game state:", err);
+            }
+        }
+        const bo5End = localStorage.getItem("bo5EndTime");
+        if (bo5End) {
+            const elapsed = Date.now() - parseInt(bo5End, 10);
+            if (elapsed < 10000) {
+                localStorage.removeItem("bo5EndTime");
+                resetBo5State();
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -402,6 +411,7 @@ const GamblingPage = () => {
 
             return () => clearTimeout(autoRestartTimeout);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showGameOverScreen]);
 
     useEffect(() => {
@@ -413,6 +423,14 @@ const GamblingPage = () => {
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [showGameOverScreen]);
+
+    // useEffect(() => {
+    //     const handleBefore = () => {
+    //         confirmRestart();
+    //     };
+    //     window.addEventListener("beforeunload", handleBefore);
+    //     return () => window.removeEventListener("beforeunload", handleBefore);
+    // }, []);
 
     useEffect(() => {
         if (hoveredDifficulty && dropdownRef.current && tooltipRef.current) {
@@ -429,6 +447,7 @@ const GamblingPage = () => {
 
             setTooltipCoords((prev) => ({ ...prev, top: tooltipTop }));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hoveredDifficulty]);
 
     const toggleDropdown = () => {
@@ -448,6 +467,14 @@ const GamblingPage = () => {
 
     const startGame = () => {
         if (!difficulty) return;
+
+        if (bestOf5ModeDraft) {
+            setBestOf5Mode(bestOf5ModeDraft);
+            saveGameState({ bestOf5Mode: bestOf5ModeDraft });
+        } else {
+            setBestOf5Mode(null);
+            saveGameState({ bestOf5Mode: null });
+        }
 
         const { start, goal } = DIFFICULTIES[difficulty];
 
@@ -614,14 +641,11 @@ const GamblingPage = () => {
             setIsWin(false);
             setTimeout(() => setShowGameOverScreen(true), 2000);
         }
-        setTimeout(() => {
-            setPointsChange(null);
-            setIsBestOf5Active(false);
-            setBo5Wins(0);
-            setBo5Losses(0);
-            setBo5Round(1);
-            setBo5Result(null);
-        }, 5000);
+        localStorage.setItem("bo5EndTime", String(Date.now()));
+        const endTimeout = setTimeout(() => {
+            resetBo5State();
+        }, 10000);
+        window.bo5ResetTimeout = endTimeout;
     };
 
     const handleGamble = () => {
@@ -666,12 +690,14 @@ const GamblingPage = () => {
 
         if (superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
-            rawMultiplier = randomUniform(sjMin, sjMax)();
+            rawMultiplier = sjMin + Math.random() * (sjMax - sjMin);
             jackpotTypeLocal = "superjackpot";
         } else if (jackpot && Math.random() < jackpot.chance) {
             const [jpMin, jpMax] = jackpot.range;
-            rawMultiplier = randomUniform(jpMin, jpMax)();
+            rawMultiplier = jpMin + Math.random() * (jpMax - jpMin);
             jackpotTypeLocal = "jackpot";
+        } else if (inBo5) {
+            rawMultiplier = min + Math.random() * (max - min);
         } else {
             if (unstableMin) {
                 const randomMin = randomUniform(0, min)();
@@ -815,7 +841,7 @@ const GamblingPage = () => {
                     setBo5Round((prev) => Math.min(prev - 1));
                     setTimeout(() => {
                         setResultMessage("");
-                    }, 5000);
+                    }, 10000);
                 }
             }
 
@@ -854,6 +880,25 @@ const GamblingPage = () => {
     const confirmTerminate = () => {
         setIsTerminateModalOpen(false);
         navigate("/");
+    };
+
+    const resetBo5State = () => {
+        setIsBestOf5Active(false);
+        setBo5Wins(0);
+        setBo5Losses(0);
+        setBo5Round(1);
+        setBo5InitialPoints(0);
+        setBo5Result(null);
+        setPointsChange(null);
+        localStorage.removeItem("bo5EndTime");
+        saveGameState({
+            bestOf5Mode: null,
+            isBestOf5Active: false,
+            bo5Wins: 0,
+            bo5Losses: 0,
+            bo5Round: 1,
+            bo5InitialPoints: 0
+        });
     };
 
     const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen || (isBestOf5Active && bestOf5Mode === "extended");
@@ -931,6 +976,19 @@ const GamblingPage = () => {
             betInputRef.current.blur();
         }
     }, [isGameWon]);
+
+    useEffect(() => {
+        const clearBo5OnClick = () => {
+            if (window.bo5ResetTimeout) {
+                clearTimeout(window.bo5ResetTimeout);
+                window.bo5ResetTimeout = null;
+                resetBo5State();
+            }
+        };
+        window.addEventListener("click", clearBo5OnClick);
+        return () => window.removeEventListener("click", clearBo5OnClick);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className={css.container}>
@@ -1057,19 +1115,19 @@ const GamblingPage = () => {
                                 <p className={css.info_text}>Select Mode:</p>
                                 <div className={css.mode_buttons}>
                                     <button
-                                        className={`${css.gamble_button} ${bestOf5Mode === "normal" ? css.active_mode : ""}`}
+                                        className={`${css.gamble_button} ${bestOf5ModeDraft === "normal" ? css.active_mode : ""}`}
                                         onMouseEnter={() => setHoveredMode("normal")}
                                         onMouseLeave={() => setHoveredMode(null)}
-                                        onClick={() => setBestOf5Mode("normal")}
+                                        onClick={() => setBestOf5ModeDraft("normal")}
                                     >
                                         Standard
                                     </button>
 
                                     <button
-                                        className={`${css.gamble_button} ${bestOf5Mode === "extended" ? css.active_mode : ""}`}
+                                        className={`${css.gamble_button} ${bestOf5ModeDraft === "extended" ? css.active_mode : ""}`}
                                         onMouseEnter={() => setHoveredMode("extended")}
                                         onMouseLeave={() => setHoveredMode(null)}
-                                        onClick={() => setBestOf5Mode("extended")}
+                                        onClick={() => setBestOf5ModeDraft("extended")}
                                     >
                                         Extended
                                     </button>
@@ -1098,9 +1156,9 @@ const GamblingPage = () => {
                         )}
 
                         <button
-                            className={`${css.proceed_button} ${!difficulty || !bestOf5Mode ? css.locked : ""}`}
+                            className={`${css.proceed_button} ${!difficulty || !bestOf5ModeDraft ? css.locked : ""}`}
                             onClick={startGame}
-                            disabled={!difficulty || !bestOf5Mode}
+                            disabled={!difficulty || !bestOf5ModeDraft}
                             style={{ marginTop: 20 }}
                         >
                             Let's go?
@@ -1160,7 +1218,7 @@ const GamblingPage = () => {
                         </p>
 
                         {bestOf5Mode === "extended" && (
-                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px',marginTop: '16px', textAlign: "center", maxWidth: "60ch" }}>
+                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px', marginTop: '16px', textAlign: "center", maxWidth: "60ch" }}>
                                 🏆 In Extended mode, you'll be able to play a Best-of-5 series.<br />
                                 Win 3 rounds to triumph! Your final gain or loss will depend on your match score.<br />
                                 Tipp: Start playing Best-of-5 only when you have at least 100 points to avoid small gains from big wins.
