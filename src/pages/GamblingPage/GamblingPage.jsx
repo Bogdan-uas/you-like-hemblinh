@@ -212,7 +212,7 @@ const DIFFICULTY_LOADING_MESSAGES = {
 const BO9_PERCENT_MAP = {
     "5-0": +300,
     "5-1": +200,
-    "5-2": +160,
+    "5-2": +180,
     "5-3": +130,
     "5-4": +100,
     "4-5": -20,
