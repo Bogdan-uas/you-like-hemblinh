@@ -310,7 +310,7 @@ const GamblingPage = () => {
                 setLongestLossStreak(parsed.longestLossStreak || 0);
                 setWinStreakBonus(parsed.winStreakBonus || 0);
                 setMaxPointsReached(parsed.maxPointsReached || 0);
-                setBestOf9Mode(parsed.bestOf9Mode || 0);
+                setBestOf9Mode(parsed.bestOf9Mode || null);
                 setIsBestOf9Active(parsed.isBestOf9Active || false);
                 setBo9Wins(parsed.bo9Wins || 0);
                 setBo9Losses(parsed.bo9Losses || 0);
@@ -322,21 +322,34 @@ const GamblingPage = () => {
                 setShowDifficultyOverlay(false);
                 setShowIntro(false);
             } catch (err) {
-                return console.error("Failed to parse saved game state:", err);
+                console.error("Failed to parse saved game state:", err);
             }
         }
-        const bo5End = localStorage.getItem("bo5EndTime");
-        if (bo5End) {
-            const elapsed = Date.now() - parseInt(bo5End, 10);
+
+        setTimeout(() => {
+            const bo9End = localStorage.getItem("bo9EndTime");
+
+            if (!bo9End) return;
+
+            const elapsed = Date.now() - parseInt(bo9End, 10);
+
             if (elapsed < 15000) {
-                if (window["bo5ResetTimeout"]) {
-                    clearTimeout(window["bo5ResetTimeout"]);
-                    window["bo5ResetTimeout"] = null;
+                console.log("⏱ Reload detected during BO9 reset window — clearing state immediately");
+
+                if (window.bo9ResetTimeout) {
+                    clearTimeout(window.bo9ResetTimeout);
+                    window.bo9ResetTimeout = null;
                 }
-                localStorage.removeItem("bo5EndTime");
-                resetBo9State();
+
+                localStorage.removeItem("bo9EndTime");
+
+                setTimeout(() => {
+                    resetBo9State();
+                }, 300);
+            } else {
+                localStorage.removeItem("bo9EndTime");
             }
-        }
+        }, 300);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -674,8 +687,27 @@ const GamblingPage = () => {
 
         setPointsChange(change >= 0 ? change : change);
 
-        setCurrentPoints(newPoints);
-        setMaxPointsReached((prev) => Math.max(prev, newPoints));
+        localStorage.setItem("pendingBo9Result", JSON.stringify({
+            newPoints,
+            isWin: wins > losses,
+            percent,
+            change,
+            timestamp: Date.now(),
+        }));
+
+        saveGameState({ currentPoints: newPoints });
+
+        if (isBestOf9Active && bestOf9Mode === "extended") {
+            setTimeout(() => {
+                setCurrentPoints(newPoints);
+                setMaxPointsReached((prev) => Math.max(prev, newPoints));
+                localStorage.removeItem("pendingBo9Result");
+            }, 4000);
+        } else {
+            setCurrentPoints(newPoints);
+            setMaxPointsReached((prev) => Math.max(prev, newPoints));
+            localStorage.removeItem("pendingBo9Result");
+        }
 
         saveGameState({ currentPoints: newPoints });
 
@@ -951,14 +983,16 @@ const GamblingPage = () => {
         setBo9InitialPoints(0);
         setBo9Result(null);
         setPointsChange(null);
+
         localStorage.removeItem("bo9EndTime");
+
         saveGameState({
-            bestOf9Mode: null,
             isBestOf9Active: false,
             bo9Wins: 0,
             bo9Losses: 0,
             bo9Round: 1,
             bo9InitialPoints: 0,
+            bo9Result: null,
         });
     };
 
@@ -1377,10 +1411,9 @@ const GamblingPage = () => {
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.4 }}
                                 className={css.best_of_9_result}
-                                style={{ marginTop: '8px' }}
                             >
                                 <p>
-                                    and because you{" "}
+                                    And because you{" "}
                                     <span
                                         style={{ fontWeight: "bold" }}
                                         className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}
