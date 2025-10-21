@@ -927,11 +927,19 @@ const GamblingPage = () => {
                 if (localWins >= 5 || localLosses >= 5) {
                     completeBo9Series(localWins, localLosses);
                     setBo9Round((prev) => Math.min(prev - 1));
-                    setTimeout(() => {
-                        setResultMessage("");
+
+                    if (window.bo9ResultClearTimeout) {
+                        clearTimeout(window.bo9ResultClearTimeout);
+                    }
+
+                    window.bo9ResultClearTimeout = setTimeout(() => {
+                        if (!window.bo9ResetTimeout) {
+                            setResultMessage("");
+                        }
+                        window.bo9ResultClearTimeout = null;
                     }, 15000);
                 }
-            }
+            };
 
             setIsCalculating(false);
             betInputRef.current?.focus();
@@ -1073,16 +1081,30 @@ const GamblingPage = () => {
     }, [isGameWon]);
 
     useEffect(() => {
-        const clearBo9OnClick = () => {
+        const quickenBo9Result = () => {
+            const pending = localStorage.getItem("pendingBo9Result");
+            if (pending) {
+                const { newPoints } = JSON.parse(pending);
+                setCurrentPoints(newPoints);
+                setMaxPointsReached((prev) => Math.max(prev, newPoints));
+                localStorage.removeItem("pendingBo9Result");
+            }
+
             if (window.bo9ResetTimeout) {
                 clearTimeout(window.bo9ResetTimeout);
                 window.bo9ResetTimeout = null;
                 resetBo9State();
                 setResultMessage("");
             }
+
+            if (window.bo9ResultClearTimeout) {
+                clearTimeout(window.bo9ResultClearTimeout);
+                window.bo9ResultClearTimeout = null;
+            }
         };
-        window.addEventListener("click", clearBo9OnClick);
-        return () => window.removeEventListener("click", clearBo9OnClick);
+
+        window.addEventListener("click", quickenBo9Result);
+        return () => window.removeEventListener("click", quickenBo9Result);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
