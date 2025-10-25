@@ -30,7 +30,7 @@ const DIFFICULTIES = {
     Normal: {
         start: [300, 700],
         goal: [10000, 20000],
-        multiplier: [0.1, 2.5],
+        multiplier: [0.1, 3.0],
     },
     Hard: {
         start: [100, 400],
@@ -209,18 +209,38 @@ const DIFFICULTY_LOADING_MESSAGES = {
     ],
 };
 
-const BO9_PERCENT_MAP = {
-    "5-0": +300,
-    "5-1": +200,
-    "5-2": +180,
-    "5-3": +130,
-    "5-4": +100,
-    "4-5": -20,
-    "3-5": -35,
-    "2-5": -45,
-    "1-5": -60,
-    "0-5": -75,
+const SERIES_REWARDS_BO1 = {
+    "1-0": +100,
+    "0-1": -30,
 };
+
+const SERIES_REWARDS_BO3 = {
+    "2-0": +300,
+    "2-1": +200,
+    "1-2": -40,
+    "0-2": -65,
+};
+
+const SERIES_REWARDS_BO5_LUCKGOD = {
+    "3-0": +300,
+    "3-1": +200,
+    "3-2": +100,
+    "2-3": -20,
+    "1-3": -45,
+    "0-3": -65,
+};
+
+const SERIES_REWARDS_BO5_EM = {
+    "3-0": +600,
+    "3-1": +400,
+    "3-2": +200,
+    "2-3": -30,
+    "1-3": -55,
+    "0-3": -75,
+};
+
+const SERIES_APPLY_DELAY = 4000;
+const SERIES_RESET_WINDOW = 15000;
 
 const GamblingPage = () => {
     const [difficulty, setDifficulty] = useState("");
@@ -231,6 +251,7 @@ const GamblingPage = () => {
     const [goalPoints, setGoalPoints] = useState(0);
     const [bet, setBet] = useState("");
     const [isCalculating, setIsCalculating] = useState(false);
+    const [isLocked, setIsLocked] = useState(false);
     const [resultMessage, setResultMessage] = useState("");
     const [multiplier, setMultiplier] = useState(null);
     const [isWin, setIsWin] = useState(false);
@@ -261,15 +282,27 @@ const GamblingPage = () => {
     const [sumOfStreakBonuses, setSumOfStreakBonuses] = useState(0);
     const [maxPointsReached, setMaxPointsReached] = useState(0);
 
-    const [bestOf9Mode, setBestOf9Mode] = useState(null);
+    const [seriesMode, setSeriesMode] = useState(null);
     const [hoveredMode, setHoveredMode] = useState(null);
-    const [isBestOf9Active, setIsBestOf9Active] = useState(false);
-    const [bo9Wins, setBo9Wins] = useState(0);
-    const [bo9Losses, setBo9Losses] = useState(0);
-    const [bo9Round, setBo9Round] = useState(1);
-    const [bo9InitialPoints, setBo9InitialPoints] = useState(0);
-    const [bo9Result, setBo9Result] = useState(null);
-    const [bestOf9ModeDraft, setBestOf9ModeDraft] = useState(null);
+    const [seriesModeDraft, setSeriesModeDraft] = useState(null);
+
+    const [isSeriesActive, setIsSeriesActive] = useState(false);
+    const [setsToWin, setSetsToWin] = useState(2);
+    const [playerSets, setPlayerSets] = useState(0);
+    const [opponentSets, setOpponentSets] = useState(0);
+    const [loserOpacity, setLoserOpacity] = useState(null);
+
+    const [roundWins, setRoundWins] = useState(0);
+    const [roundLosses, setRoundLosses] = useState(0);
+    const [roundNumber, setRoundNumber] = useState(1);
+    const [isOvertime, setIsOvertime] = useState(false);
+    const [overtimeBlock, setOvertimeBlock] = useState(0);
+    const [otWins, setOtWins] = useState(0);
+    const [otLosses, setOtLosses] = useState(0);
+
+    const [seriesBanner, setSeriesBanner] = useState(null);
+    const [seriesResult, setSeriesResult] = useState(null);
+    const [seriesInitialPoints, setSeriesInitialPoints] = useState(0);
 
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
@@ -283,6 +316,9 @@ const GamblingPage = () => {
     const dropdownRef = useRef(null);
     const dropdownCoords = useRef({});
     const tooltipRef = useRef(null);
+    const seriesApplyTimeoutRef = useRef(null);
+    const seriesResetTimeoutRef = useRef(null);
+    const seriesResultTimeoutRef = useRef(null);
     const selectedLabel = difficulty || "Select difficulty";
 
     useEffect(() => {
@@ -310,12 +346,21 @@ const GamblingPage = () => {
                 setLongestLossStreak(parsed.longestLossStreak || 0);
                 setWinStreakBonus(parsed.winStreakBonus || 0);
                 setMaxPointsReached(parsed.maxPointsReached || 0);
-                setBestOf9Mode(parsed.bestOf9Mode || null);
-                setIsBestOf9Active(parsed.isBestOf9Active || false);
-                setBo9Wins(parsed.bo9Wins || 0);
-                setBo9Losses(parsed.bo9Losses || 0);
-                setBo9Round(parsed.bo9Round || 1);
-                setBo9InitialPoints(parsed.bo9InitialPoints || 0);
+                setSeriesMode(parsed.seriesMode || null);
+                setIsSeriesActive(parsed.isSeriesActive || false);
+                setSetsToWin(parsed.setsToWin || 2);
+                setPlayerSets(parsed.playerSets || 0);
+                setOpponentSets(parsed.opponentSets || 0);
+                setRoundWins(parsed.roundWins || 0);
+                setRoundLosses(parsed.roundLosses || 0);
+                setRoundNumber(parsed.roundNumber || 1);
+                setIsOvertime(parsed.isOvertime || false);
+                setOvertimeBlock(parsed.overtimeBlock || 0);
+                setOtWins(parsed.otWins || 0);
+                setOtLosses(parsed.otLosses || 0);
+                setSeriesBanner(parsed.seriesBanner || null);
+                setSeriesResult(parsed.seriesResult || null);
+                setSeriesInitialPoints(parsed.seriesInitialPoints || 0);
                 prevPointsRef.current = parsed.currentPoints;
                 prevGoalRef.current = parsed.goalPoints;
                 firstGambleRef.current = true;
@@ -325,32 +370,6 @@ const GamblingPage = () => {
                 console.error("Failed to parse saved game state:", err);
             }
         }
-
-        setTimeout(() => {
-            const bo9End = localStorage.getItem("bo9EndTime");
-
-            if (!bo9End) return;
-
-            const elapsed = Date.now() - parseInt(bo9End, 10);
-
-            if (elapsed < 15000) {
-                console.log("⏱ Reload detected during BO9 reset window — clearing state immediately");
-
-                if (window.bo9ResetTimeout) {
-                    clearTimeout(window.bo9ResetTimeout);
-                    window.bo9ResetTimeout = null;
-                }
-
-                localStorage.removeItem("bo9EndTime");
-
-                setTimeout(() => {
-                    resetBo9State();
-                }, 300);
-            } else {
-                localStorage.removeItem("bo9EndTime");
-            }
-        }, 300);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -392,9 +411,14 @@ const GamblingPage = () => {
         longestWinStreak,
         longestLossStreak,
         winStreakBonus,
-        bo9Wins,
-        bo9Losses,
-        bo9Round,
+        playerSets,
+        opponentSets,
+        roundWins,
+        roundLosses,
+        roundNumber,
+        overtimeBlock,
+        otWins,
+        otLosses,
     ]);
 
     const saveGameState = (newState = {}) => {
@@ -419,12 +443,21 @@ const GamblingPage = () => {
             longestLossStreak,
             winStreakBonus,
             maxPointsReached,
-            bestOf9Mode,
-            isBestOf9Active,
-            bo9Wins,
-            bo9Losses,
-            bo9Round,
-            bo9InitialPoints,
+            seriesMode,
+            isSeriesActive,
+            setsToWin,
+            playerSets,
+            opponentSets,
+            roundWins,
+            roundLosses,
+            roundNumber,
+            isOvertime,
+            overtimeBlock,
+            otWins,
+            otLosses,
+            seriesBanner,
+            seriesResult,
+            seriesInitialPoints,
             ...newState,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -455,6 +488,31 @@ const GamblingPage = () => {
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [showGameOverScreen]);
+
+    useEffect(() => {
+        if (!isSeriesActive && !showGameOverScreen && seriesResult) {
+            const timeout = setTimeout(() => {
+                if (currentPoints >= goalPoints) {
+                    setIsWin(true);
+                    setShowGameOverScreen(true);
+                } else if (currentPoints <= 0) {
+                    setIsWin(false);
+                    setShowGameOverScreen(true);
+                }
+            }, SERIES_APPLY_DELAY + 500);
+            return () => clearTimeout(timeout);
+        }
+    }, [isSeriesActive, showGameOverScreen, seriesResult, currentPoints, goalPoints]);
+
+    useEffect(() => {
+        if (seriesResult) {
+            const timer = setTimeout(() => {
+                setSeriesResult(null);
+            }, 15000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [seriesResult]);
 
     // useEffect(() => {
     //     const handleBefore = () => {
@@ -494,18 +552,52 @@ const GamblingPage = () => {
     const handleSelectDifficulty = (diff) => {
         setDifficulty(diff);
         setOpen(false);
-        setBestOf9Mode(null);
+        setSeriesMode(null);
+    };
+
+    const currentRewardsTable = () => {
+        if (difficulty === "LUCK GOD") return SERIES_REWARDS_BO5_LUCKGOD;
+        if (difficulty === "Eternal Madness") return SERIES_REWARDS_BO5_EM;
+        if (["Easy", "Normal"].includes(difficulty)) return SERIES_REWARDS_BO1;
+        return SERIES_REWARDS_BO3;
+    };
+
+    const baseMaxRounds = 18;
+    const baseRoundsToWin = 10;
+    const otMaxRounds = 6;
+    const otRoundsToWin = 4;
+
+    const resetSet = () => {
+        setRoundWins(0);
+        setRoundLosses(0);
+        setRoundNumber(1);
+        setIsOvertime(false);
+        setOvertimeBlock(0);
+    };
+
+    const endSet = (playerWon) => {
+        if (playerWon) setPlayerSets((v) => v + 1);
+        else setOpponentSets((v) => v + 1);
+        resetSet();
+    };
+
+    const seriesKey = (p, o) => `${p}-${o}`;
+
+    const maybeEndSeries = (pSets, oSets) => {
+        const need = setsToWin;
+        if (pSets >= need || oSets >= need) return true;
+        return false;
     };
 
     const startGame = () => {
         if (!difficulty) return;
 
-        if (bestOf9ModeDraft) {
-            setBestOf9Mode(bestOf9ModeDraft);
-            saveGameState({ bestOf9Mode: bestOf9ModeDraft });
+        if (seriesModeDraft) {
+            setSeriesMode(seriesModeDraft);
+            saveGameState({ seriesMode: seriesModeDraft });
         } else {
-            setBestOf9Mode(null);
-            saveGameState({ bestOf9Mode: null });
+            setSeriesMode(null);
+            saveGameState({ seriesMode: null });
         }
 
         const { start, goal } = DIFFICULTIES[difficulty];
@@ -549,12 +641,14 @@ const GamblingPage = () => {
         setWinStreakBonus(0);
         setSumOfStreakBonuses(0);
         previousStreakBonusRef.current = 0;
-        setIsBestOf9Active(false);
-        setBo9Wins(0);
-        setBo9Losses(0);
-        setBo9Round(1);
-        setBo9InitialPoints(0);
-        setBo9Result(null);
+        setIsSeriesActive(false);
+        setPlayerSets(0);
+        setOpponentSets(0);
+        resetSet();
+        setSeriesBanner(null);
+        setSeriesResult(null);
+        setLoserOpacity(null);
+        setSeriesInitialPoints(currentPoints);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
@@ -603,13 +697,14 @@ const GamblingPage = () => {
         setWinStreakBonus(0);
         setSumOfStreakBonuses(0);
         previousStreakBonusRef.current = 0;
-
-        setIsBestOf9Active(false);
-        setBo9Wins(0);
-        setBo9Losses(0);
-        setBo9Round(1);
-        setBo9InitialPoints(0);
-        setBo9Result(null);
+        setIsSeriesActive(false);
+        setPlayerSets(0);
+        setOpponentSets(0);
+        resetSet();
+        setSeriesBanner(null);
+        setSeriesResult(null);
+        setLoserOpacity(null);
+        setSeriesInitialPoints(currentPoints);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
     };
@@ -626,114 +721,51 @@ const GamblingPage = () => {
         }
     };
 
-    const startBestOf9Series = () => {
-        if (window.bo9ResetTimeout) {
-            clearTimeout(window.bo9ResetTimeout);
-            window.bo9ResetTimeout = null;
-        }
-        
+    const startSeries = () => {
         if (!difficulty) return toast.error("Select difficulty first!");
-
-        const modeToUse = bestOf9Mode || bestOf9ModeDraft;
-        if (!modeToUse) return toast.error("Select mode first!");
-
+        const modeToUse = seriesMode;
         if (modeToUse !== "extended") {
-            toast("Normal mode selected — Bo9 not started.", { duration: 2500 });
+            toast("Normal mode selected — series not started.", { duration: 2500 });
             return;
         }
+        if (isSeriesActive) return;
 
-        if (isBestOf9Active) return;
+        if (difficulty === "Eternal Madness") {
+            setSetsToWin(3);
+            setSeriesMode("extended");
+        } else if (difficulty === "LUCK GOD") {
+            setSetsToWin(3);
+            setSeriesMode("extended");
+        } else if (["Hard", "Impossible"].includes(difficulty)) {
+            setSetsToWin(2);
+            setSeriesMode("extended");
+        } else if (["Easy", "Normal"].includes(difficulty)) {
+            setSetsToWin(1);
+            setSeriesMode("extended");
+        } else {
+            setSetsToWin(0);
+            setSeriesMode("standard");
+        }
 
-        setBestOf9Mode(modeToUse);
-        setIsBestOf9Active(true);
-        setBo9Wins(0);
-        setBo9Losses(0);
-        setBo9Round(1);
-        setBo9InitialPoints(currentPoints);
-        setBo9Result(null);
-        toast("🏆 Best-of-9 Series Started! Win 5 rounds to triumph!", {
-            icon: "🎯",
-            duration: 4000,
-        });
+        setIsSeriesActive(true);
+        setPlayerSets(0);
+        setOpponentSets(0);
+        resetSet();
+        setSeriesBanner(null);
+        setSeriesResult(null);
+        setLoserOpacity(null);
+        setSeriesInitialPoints(currentPoints);
+
+        toast("🏆 Series started! Win sets by taking rounds!", { icon: "🎯", duration: 4000 });
     };
 
-    const completeBo9Series = (wins, losses) => {
-        const key = `${wins}-${losses}`;
-        const percent = BO9_PERCENT_MAP[key] ?? 0;
-        const change = Math.round((bo9InitialPoints * percent) / 100);
-        const newPoints = bo9InitialPoints + change;
-
-        if (wins > losses) {
-            setConsecutiveWins((prev) => {
-                const newWins = prev + 1;
-                setLongestWinStreak((longest) => Math.max(longest, newWins));
-                return newWins;
-            });
-            setConsecutiveLosses(0);
-        } else {
-            setConsecutiveLosses((prev) => {
-                const newLosses = prev + 1;
-                setLongestLossStreak((longest) => Math.max(longest, newLosses));
-                return newLosses;
-            });
-            setConsecutiveWins(0);
-        }
-
-        setBo9Result({
-            isWin: wins > losses,
-            percent,
-            change,
-        });
-
-        setPointsChange(change >= 0 ? change : change);
-
-        localStorage.setItem("pendingBo9Result", JSON.stringify({
-            newPoints,
-            isWin: wins > losses,
-            percent,
-            change,
-            timestamp: Date.now(),
-        }));
-
-        saveGameState({ currentPoints: newPoints });
-
-        if (isBestOf9Active && bestOf9Mode === "extended") {
-            setTimeout(() => {
-                setCurrentPoints(newPoints);
-                setMaxPointsReached((prev) => Math.max(prev, newPoints));
-                localStorage.removeItem("pendingBo9Result");
-            }, 4000);
-        } else {
-            setCurrentPoints(newPoints);
-            setMaxPointsReached((prev) => Math.max(prev, newPoints));
-            localStorage.removeItem("pendingBo9Result");
-        }
-
-        saveGameState({ currentPoints: newPoints });
-
-        if (newPoints >= goalPoints) {
-            setIsWin(true);
-            setTimeout(() => setShowGameOverScreen(true), 2000);
-        } else if (newPoints <= 0) {
-            setIsWin(false);
-            setTimeout(() => setShowGameOverScreen(true), 2000);
-        }
-        localStorage.setItem("bo9EndTime", String(Date.now()));
-        const endTimeout = setTimeout(() => {
-            resetBo9State();
-        }, 15000);
-        window["bo9ResetTimeout"] = endTimeout;
-    };
+    const inSeries = isSeriesActive && seriesMode === "extended";
 
     const handleGamble = () => {
-        const inBo9 = isBestOf9Active && bestOf9Mode === "extended";
+        if (!inSeries && !bet) return toast.error("Please enter a bet amount!");
 
-        if (!inBo9) {
-            if (!bet) return toast.error("Please enter a bet amount!");
-        }
-
-        const betAmount = inBo9 ? 1 : parseInt(bet, 10);
-        if (!inBo9) {
+        const betAmount = inSeries ? 1 : parseInt(bet, 10);
+        if (!inSeries) {
             if (betAmount === 0) return toast.error("You can't gamble with 0 points!");
             if (betAmount > currentPoints) return toast.error("You don't have enough points!");
         }
@@ -742,17 +774,16 @@ const GamblingPage = () => {
         setJackpotType(null);
         const previousPoints = currentPoints;
 
-        const availableMessages = DIFFICULTY_LOADING_MESSAGES[difficulty] ?? DIFFICULTY_LOADING_MESSAGES.Normal;
+        const availableMessages =
+            DIFFICULTY_LOADING_MESSAGES[difficulty] ?? DIFFICULTY_LOADING_MESSAGES.Normal;
         let randomLoadingMsg;
         do {
             randomLoadingMsg = availableMessages[Math.floor(Math.random() * availableMessages.length)];
         } while (randomLoadingMsg === lastLoadingMessageRef.current && availableMessages.length > 1);
-
         lastLoadingMessageRef.current = randomLoadingMsg;
 
-        if (!inBo9) setCurrentPoints((prev) => prev - betAmount);
-
-        if (!inBo9) setBet("");
+        if (!inSeries) setCurrentPoints((prev) => prev - betAmount);
+        if (!inSeries) setBet("");
 
         setResultMessage(randomLoadingMsg);
         setMultiplier(null);
@@ -765,9 +796,8 @@ const GamblingPage = () => {
         let rawMultiplier;
         let jackpotTypeLocal = null;
 
-        if (inBo9) {
+        if (inSeries) {
             rawMultiplier = min + Math.random() * (max - min);
-            jackpotTypeLocal = null;
         } else if (superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
             rawMultiplier = sjMin + Math.random() * (sjMax - sjMin);
@@ -787,8 +817,8 @@ const GamblingPage = () => {
             }
         }
 
-        if (jackpotTypeLocal === "jackpot") setTotalJackpots((prev) => prev + 1);
-        if (jackpotTypeLocal === "superjackpot") setTotalSuperJackpots((prev) => prev + 1);
+        if (jackpotTypeLocal === "jackpot") setTotalJackpots((p) => p + 1);
+        if (jackpotTypeLocal === "superjackpot") setTotalSuperJackpots((p) => p + 1);
 
         const roundedMultiplier = Math.round(rawMultiplier * 100) / 100;
 
@@ -799,24 +829,22 @@ const GamblingPage = () => {
         if (roundedMultiplier > 1.0) {
             newConsecutiveWins += 1;
             newConsecutiveLosses = 0;
-            if (!inBo9) {
+            if (!inSeries) {
                 const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
                 previousStreakBonusRef.current = streakBonus;
                 streakBonusToApply = streakBonus;
             }
         } else if (roundedMultiplier < 1.0) {
             newConsecutiveLosses += 1;
-
-            if (!inBo9 && previousStreakBonusRef.current > 0) {
+            if (!inSeries && previousStreakBonusRef.current > 0) {
                 streakBonusToApply = previousStreakBonusRef.current;
                 previousStreakBonusRef.current = 0;
             }
-
             newConsecutiveWins = 0;
         }
 
-        setWinStreakBonus(!inBo9 ? streakBonusToApply : 0);
-        
+        setWinStreakBonus(!inSeries ? streakBonusToApply : 0);
+
         const effectiveMultiplierRaw = roundedMultiplier + streakBonusToApply;
         const effectiveMultiplier = Math.round(effectiveMultiplierRaw * 100) / 100;
         const winnings = Math.round(betAmount * effectiveMultiplier);
@@ -845,15 +873,399 @@ const GamblingPage = () => {
                 message = "Congratulations👏!";
             }
 
+            if (inSeries) {
+                if (effectiveMultiplier === 0) {
+                    message = "💀 That's good that you got it during the series!";
+                } else if (effectiveMultiplier <= 0.1) {
+                    message = "Imagine, you get it on your whole score 😭!";
+                } else if (effectiveMultiplier < 1.0) {
+                    message = "That's a round loss 😢!";
+                } else if (effectiveMultiplier === 1.0) {
+                    message = "Neither good nor bad 😐!";
+                } else {
+                    message = "That's a round win👏!";
+                }
+            }
+
             setResultMessage(message);
             setJackpotType(jackpotTypeLocal);
 
-            if (!inBo9) {
+            setTotalBets((prev) => prev + 1);
+            setSumOfMultipliers((prev) => prev + roundedMultiplier);
+            setBestMultiplier((prev) => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
+            setWorstMultiplier((prev) => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
+
+            try {
+                if (inSeries) {
+                    const playerWonRound = effectiveMultiplier > 1.0;
+                    if (playerWonRound) setTotalWins((prev) => prev + 1);
+                    const needWins = isOvertime ? otRoundsToWin : baseRoundsToWin;
+                    const maxRounds = isOvertime ? otMaxRounds : baseMaxRounds;
+
+                    if (!isOvertime) {
+                        const nextWins = playerWonRound ? roundWins + 1 : roundWins;
+                        const nextLosses = !playerWonRound && effectiveMultiplier < 1.0 ? roundLosses + 1 : roundLosses;
+
+                        setRoundWins(nextWins);
+                        setRoundLosses(nextLosses);
+                        setRoundNumber((n) => n + 1);
+
+                        if (nextWins === 9 && nextLosses === 9) {
+                            setIsLocked(true);
+                            toast("Overtime coming in for this set! 🔥", { icon: "⚔️", duration: 4000 });
+                            setTimeout(() => {
+                                setIsOvertime(true);
+                                setOvertimeBlock((b) => (b ? b + 1 : 1));
+                                setOtWins(0);
+                                setOtLosses(0);
+                                setRoundNumber(1);
+                                setIsLocked(false);
+                            }, 4000);
+                            return;
+                        }
+
+                        if (nextWins >= needWins || nextLosses >= needWins || (nextWins + nextLosses) >= maxRounds) {
+                            const playerWonSet = nextWins > nextLosses;
+                            const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
+                            const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
+                            const isSeriesOver =
+                                maybeEndSeries(nextPlayerSets, nextOppSets) ||
+                                setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
+
+                            setIsLocked(true);
+
+                            if (isSeriesOver) {
+                                if (playerWonSet) {
+                                    toast("These series have been WON! 🏆🔥", { icon: "🎉", duration: 4000 });
+                                } else {
+                                    toast("These series have been LOST!", { icon: "😢", duration: 4000 });
+                                }
+                            } else {
+                                if (playerWonSet) {
+                                    toast(`The set ${playerSets + opponentSets + 1} has been won!`, { icon: "🤯", duration: 4000 });
+                                } else {
+                                    toast(`The set ${playerSets + opponentSets + 1} has been lost!`, { icon: "😞", duration: 4000 });
+                                }
+                            }
+                            if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
+                                setTimeout(() => {
+                                    endSet(playerWonSet);
+                                    setIsLocked(false);
+                                }, 4000);
+                            } else {
+                                setTimeout(() => {
+                                    endSet(playerWonSet);
+                                    setIsLocked(false);
+                                }, 19000);
+                            }
+
+                            if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
+                                const k = seriesKey(nextPlayerSets, nextOppSets);
+                                const table = currentRewardsTable();
+                                const percent = table[k] ?? 0;
+                                const base = seriesInitialPoints || currentPoints;
+                                const change = Math.round((base * percent) / 100);
+                                const newPoints = base + change;
+
+                                setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                                setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
+                                setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+
+                                seriesResultTimeoutRef.current = setTimeout(() => {
+                                    setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+
+                                    if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
+                                    seriesResetTimeoutRef.current = setTimeout(() => {
+                                        resetSeriesState();
+                                        setRoundWins(0);
+                                        setRoundLosses(0);
+                                        setOtWins(0);
+                                        setOtLosses(0);
+                                        setIsOvertime(false);
+                                        setOvertimeBlock(0);
+                                        setIsSeriesActive(false);
+                                        seriesResetTimeoutRef.current = null;
+                                    }, 15000);
+                                }, 4000);
+
+                                const timestamp = Date.now();
+                                localStorage.setItem(
+                                    "pendingSeriesApply",
+                                    JSON.stringify({
+                                        newPoints,
+                                        change,
+                                        percent,
+                                        isWin: nextPlayerSets > nextOppSets,
+                                        timestamp,
+                                        delayEndsAt: timestamp + SERIES_APPLY_DELAY,
+                                    })
+                                );
+
+                                if (seriesApplyTimeoutRef.current) clearTimeout(seriesApplyTimeoutRef.current);
+                                seriesApplyTimeoutRef.current = setTimeout(() => {
+                                    const pending = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
+                                    if (!pending) return;
+
+                                    setCurrentPoints(pending.newPoints);
+                                    setPointsChange(pending.change);
+                                    setMaxPointsReached((m) => Math.max(m, pending.newPoints));
+
+                                    setTotalBets((t) => t + 1);
+                                    if (pending.change >= 0) {
+                                        setTotalEarned((e) => e + pending.change);
+                                        setTotalWins((w) => w + 1);
+                                        setBiggestWin((b) => Math.max(b, pending.change));
+                                        setConsecutiveWins((cw) => {
+                                            const nw = cw + 1;
+                                            setLongestWinStreak((lw) => Math.max(lw, nw));
+                                            return nw;
+                                        });
+                                        setConsecutiveLosses(0);
+                                    } else {
+                                        setTotalLost((l) => l + Math.abs(pending.change));
+                                        setConsecutiveLosses((cl) => {
+                                            const nl = cl + 1;
+                                            setLongestLossStreak((ll) => Math.max(ll, nl));
+                                            return nl;
+                                        });
+                                        setConsecutiveWins(0);
+                                    }
+
+                                    setSumOfMultipliers((s) => s + 1);
+
+                                    saveGameState({
+                                        currentPoints: pending.newPoints,
+                                        maxPointsReached,
+                                        pointsChange: pending.change,
+                                        totalBets: totalBets + 1,
+                                        totalWins: pending.change >= 0 ? totalWins + 1 : totalWins,
+                                        totalEarned: pending.change >= 0 ? totalEarned + pending.change : totalEarned,
+                                        totalLost: pending.change < 0 ? totalLost + Math.abs(pending.change) : totalLost,
+                                        biggestWin: pending.change >= 0 ? Math.max(biggestWin, pending.change) : biggestWin,
+                                        bestMultiplier,
+                                        worstMultiplier,
+                                        sumOfMultipliers,
+                                        sumOfStreakBonuses,
+                                        totalJackpots,
+                                        totalSuperJackpots,
+                                        consecutiveWins,
+                                        consecutiveLosses,
+                                        longestWinStreak,
+                                        longestLossStreak,
+                                    });
+
+                                    if (pending.newPoints >= goalPoints) {
+                                        setIsWin(true);
+                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                    } else if (pending.newPoints <= 0) {
+                                        setIsWin(false);
+                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                    }
+
+                                    localStorage.removeItem("pendingSeriesApply");
+                                    seriesApplyTimeoutRef.current = null;
+                                }, SERIES_APPLY_DELAY);
+
+                                localStorage.setItem("seriesEndTime", String(Date.now()));
+                            }
+                            return;
+                        }
+
+                        return;
+                    }
+
+                    const nextOtWins = playerWonRound ? otWins + 1 : otWins;
+                    const nextOtLosses = !playerWonRound && effectiveMultiplier < 1.0 ? otLosses + 1 : otLosses;
+
+                    setOtWins(nextOtWins);
+                    setOtLosses(nextOtLosses);
+                    setRoundNumber((n) => n + 1);
+                    setRoundWins((w) => w + (playerWonRound ? 1 : 0));
+                    setRoundLosses((l) => l + (!playerWonRound && effectiveMultiplier < 1.0 ? 1 : 0));
+
+                    if (nextOtWins === otRoundsToWin || nextOtLosses === otRoundsToWin) {
+                        const playerWonSet = nextOtWins > nextOtLosses;
+                        const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
+                        const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
+                        const isSeriesOver =
+                            maybeEndSeries(nextPlayerSets, nextOppSets) ||
+                            setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
+
+                        setIsLocked(true);
+
+                        if (isSeriesOver) {
+                            if (playerWonSet) {
+                                toast("These series have been WON! 🏆🔥", { icon: "🎉", duration: 4000 });
+                            } else {
+                                toast("These series have been LOST!", { icon: "😢", duration: 4000 });
+                            }
+                        } else {
+                            if (playerWonSet) {
+                                toast(`The set ${playerSets + opponentSets + 1} has been won in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!`, { icon: "🤯", duration: 4000 });
+                            } else {
+                                toast(`The set ${playerSets + opponentSets + 1} has been lost in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!`, { icon: "😞", duration: 4000 });
+                            }
+                        }
+                        if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
+                            setTimeout(() => {
+                                endSet(playerWonSet);
+                                setIsOvertime(false);
+                                setOvertimeBlock(0);
+                                setOtWins(0);
+                                setOtLosses(0);
+                                setIsLocked(false);
+                            }, 4000);
+                        } else {
+                            setTimeout(() => {
+                                endSet(playerWonSet);
+                                setIsOvertime(false);
+                                setOvertimeBlock(0);
+                                setOtWins(0);
+                                setOtLosses(0);
+                                setIsLocked(false);
+                            }, 19000);
+                        }
+
+                        if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
+                            const k = seriesKey(nextPlayerSets, nextOppSets);
+                            const table = currentRewardsTable();
+                            const percent = table[k] ?? 0;
+                            const base = seriesInitialPoints || currentPoints;
+                            const change = Math.round((base * percent) / 100);
+                            const newPoints = base + change;
+
+                            setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                            setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
+                            setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+
+                            seriesResultTimeoutRef.current = setTimeout(() => {
+                                setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+
+                                if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
+                                seriesResetTimeoutRef.current = setTimeout(() => {
+                                    resetSeriesState();
+                                    setRoundWins(0);
+                                    setRoundLosses(0);
+                                    setOtWins(0);
+                                    setOtLosses(0);
+                                    setIsOvertime(false);
+                                    setOvertimeBlock(0);
+                                    setIsSeriesActive(false);
+                                    seriesResetTimeoutRef.current = null;
+                                }, 15000);
+                            }, 4000);
+                            
+                            const timestamp = Date.now();
+                            localStorage.setItem(
+                                "pendingSeriesApply",
+                                JSON.stringify({
+                                    newPoints,
+                                    change,
+                                    percent,
+                                    isWin: nextPlayerSets > nextOppSets,
+                                    timestamp,
+                                    delayEndsAt: timestamp + SERIES_APPLY_DELAY,
+                                })
+                            );
+
+                            if (seriesApplyTimeoutRef.current) clearTimeout(seriesApplyTimeoutRef.current);
+                            seriesApplyTimeoutRef.current = setTimeout(() => {
+                                const pending = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
+                                if (!pending) return;
+
+                                setCurrentPoints(pending.newPoints);
+                                setPointsChange(pending.change);
+                                setMaxPointsReached((m) => Math.max(m, pending.newPoints));
+
+                                setTotalBets((t) => t + 1);
+                                if (pending.change >= 0) {
+                                    setTotalEarned((e) => e + pending.change);
+                                    setTotalWins((w) => w + 1);
+                                    setBiggestWin((b) => Math.max(b, pending.change));
+                                    setConsecutiveWins((cw) => {
+                                        const nw = cw + 1;
+                                        setLongestWinStreak((lw) => Math.max(lw, nw));
+                                        return nw;
+                                    });
+                                    setConsecutiveLosses(0);
+                                } else {
+                                    setTotalLost((l) => l + Math.abs(pending.change));
+                                    setConsecutiveLosses((cl) => {
+                                        const nl = cl + 1;
+                                        setLongestLossStreak((ll) => Math.max(ll, nl));
+                                        return nl;
+                                    });
+                                    setConsecutiveWins(0);
+                                }
+
+                                setSumOfMultipliers((s) => s + 1);
+
+                                saveGameState({
+                                    currentPoints: pending.newPoints,
+                                    maxPointsReached,
+                                    pointsChange: pending.change,
+                                    totalBets: totalBets + 1,
+                                    totalWins: pending.change >= 0 ? totalWins + 1 : totalWins,
+                                    totalEarned: pending.change >= 0 ? totalEarned + pending.change : totalEarned,
+                                    totalLost: pending.change < 0 ? totalLost + Math.abs(pending.change) : totalLost,
+                                    biggestWin: pending.change >= 0 ? Math.max(biggestWin, pending.change) : biggestWin,
+                                    bestMultiplier,
+                                    worstMultiplier,
+                                    sumOfMultipliers,
+                                    sumOfStreakBonuses,
+                                    totalJackpots,
+                                    totalSuperJackpots,
+                                    consecutiveWins,
+                                    consecutiveLosses,
+                                    longestWinStreak,
+                                    longestLossStreak,
+                                });
+
+                                if (pending.newPoints >= goalPoints) {
+                                    setIsWin(true);
+                                    setTimeout(() => setShowGameOverScreen(true), 2000);
+                                } else if (pending.newPoints <= 0) {
+                                    setIsWin(false);
+                                    setTimeout(() => setShowGameOverScreen(true), 2000);
+                                }
+
+                                localStorage.removeItem("pendingSeriesApply");
+                                seriesApplyTimeoutRef.current = null;
+                            }, SERIES_APPLY_DELAY);
+
+                            localStorage.setItem("seriesEndTime", String(Date.now()));
+                        }
+                        return;
+                    }
+
+                    if (nextOtWins === 3 && nextOtLosses === 3) {
+                        setIsLocked(true);
+                        if (overtimeBlock === 1) {
+                            toast("Overtime is tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
+                        } else if (overtimeBlock === 2) {
+                            toast("Another overtime block tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
+                        } else if (overtimeBlock === 3) {
+                            toast("That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
+                        } else if (overtimeBlock >= 4) {
+                            toast("A tie again! Impressing! Starting new overtime block...", { icon: "🔄", duration: 4000 });
+                        }
+                        setTimeout(() => {
+                            setOvertimeBlock((b) => b + 1);
+                            setRoundNumber(1);
+                            setOtWins(0);
+                            setOtLosses(0);
+                            setIsOvertime(true);
+                            setIsLocked(false);
+                        }, 4000);
+                    }
+
+                    return;
+                }
+
                 const newPoints = previousPoints - betAmount + winnings;
                 const netChange = newPoints - previousPoints;
 
                 setMaxPointsReached((prev) => Math.max(prev, newPoints));
-
                 setPointsChange(netChange);
                 setCurrentPoints(newPoints);
 
@@ -890,60 +1302,11 @@ const GamblingPage = () => {
                     localStorage.removeItem(STORAGE_KEY);
                     setTimeout(() => setShowGameOverScreen(true), 2000);
                 }
-
-            } else {
-                if (effectiveMultiplier > 1.0) {
-                    setBo9Wins((prev) => {
-                        const nextWins = prev + 1;
-                        return nextWins;
-                    });
-                } else if (effectiveMultiplier < 1.0) {
-                    setBo9Losses((prev) => prev + 1);
-                }
-
-                setBo9Round((prev) => Math.min(prev + 1));
-                if (bo9Round === 10) {
-                    toast("Isn't that too long for you?", { icon: "🤔", duration: 3000 });
-                }
-                if (bo9Round === 11) {
-                    toast("Wat?! How so long?", { icon: "🤯", duration: 3000 });
-                }
-                if (bo9Round === 20) {
-                    toast("No way!", { icon: "💥", duration: 3000 });
-                }
-                if (bo9Round === 30) {
-                    toast("Pretty long run, isn't it?", { icon: "💥", duration: 3000 });
-                }
-                setSumOfMultipliers((prev) => prev + roundedMultiplier);
-                setSumOfStreakBonuses((prev) => prev + streakBonusToApply);
-                setTotalBets((prev) => prev + 1);
-                if (roundedMultiplier > 1.0) setTotalWins((prev) => prev + 1);
-                setBestMultiplier((prev) => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
-                setWorstMultiplier((prev) => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
-
-                const localWins = (effectiveMultiplier > 1.0) ? bo9Wins + 1 : bo9Wins;
-                const localLosses = (effectiveMultiplier < 1.0) ? bo9Losses + 1 : bo9Losses;
-
-                if (localWins >= 5 || localLosses >= 5) {
-                    completeBo9Series(localWins, localLosses);
-                    setBo9Round((prev) => Math.min(prev - 1));
-
-                    if (window.bo9ResultClearTimeout) {
-                        clearTimeout(window.bo9ResultClearTimeout);
-                    }
-
-                    window.bo9ResultClearTimeout = setTimeout(() => {
-                        if (!window.bo9ResetTimeout) {
-                            setResultMessage("");
-                        }
-                        window.bo9ResultClearTimeout = null;
-                    }, 15000);
-                }
-            };
-
-            setIsCalculating(false);
-            betInputRef.current?.focus();
-        }, 3000);
+            } finally {
+                setIsCalculating(false);
+                betInputRef.current?.focus();
+            }
+        }, 2000);
     };
 
     const confirmRestart = () => {
@@ -964,13 +1327,18 @@ const GamblingPage = () => {
         setLongestWinStreak(0);
         setLongestLossStreak(0);
         setMaxPointsReached(0);
-        setBestOf9Mode(null);
-        setIsBestOf9Active(false);
-        setBo9Wins(0);
-        setBo9Losses(0);
-        setBo9Round(1);
-        setBo9InitialPoints(0);
-        setBo9Result(null);
+
+        setSeriesMode(null);
+        setIsSeriesActive(false);
+        setPlayerSets(0);
+        setOpponentSets(0);
+        setRoundWins(0);
+        setRoundLosses(0);
+        setRoundNumber(1);
+        setIsOvertime(false);
+        setOvertimeBlock(0);
+        setSeriesBanner(null);
+        setSeriesResult(null);
     };
 
     const confirmTerminate = () => {
@@ -978,46 +1346,55 @@ const GamblingPage = () => {
         navigate("/");
     };
 
-    const resetBo9State = () => {
-        if (window.bo9ResetTimeout) {
-            clearTimeout(window.bo9ResetTimeout);
-            window.bo9ResetTimeout = null;
-        }
-
-        setIsBestOf9Active(false);
-        setBo9Wins(0);
-        setBo9Losses(0);
-        setBo9Round(1);
-        setBo9InitialPoints(0);
-        setBo9Result(null);
-        setPointsChange(null);
-
-        localStorage.removeItem("bo9EndTime");
-
-        saveGameState({
-            isBestOf9Active: false,
-            bo9Wins: 0,
-            bo9Losses: 0,
-            bo9Round: 1,
-            bo9InitialPoints: 0,
-            bo9Result: null,
-        });
+    const resetSeriesState = () => {
+        setPlayerSets(0);
+        setOpponentSets(0);
+        setRoundWins(0);
+        setRoundLosses(0);
+        setOtWins(0);
+        setOtLosses(0);
+        setRoundNumber(1);
+        setIsOvertime(false);
+        setOvertimeBlock(0);
+        setSeriesResult(null);
+        setSeriesBanner("");
+        setLoserOpacity("");
     };
 
-    const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen || (isBestOf9Active && bestOf9Mode === "extended");
-    const isGambleButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen;
+    const applyPendingSeriesChange = () => {
+        const pending = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
+        if (!pending) return;
+        setCurrentPoints(pending.newPoints);
+        setPointsChange(pending.change);
+        setMaxPointsReached((prev) => Math.max(prev, pending.newPoints));
+        localStorage.removeItem("pendingSeriesApply");
+    };
+
+    const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen || isLocked;
+    const isGambleButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen || isLocked;
 
     const getMultiplierClass = (rawMultiplier) => {
-        if (rawMultiplier === null) return "";
-        if (rawMultiplier <= 0.1) return css.multiplier_superFail;
-        if (rawMultiplier < 1.0) return css.multiplier_fail;
-        if (rawMultiplier <= 1.2) return css.multiplier_mid;
-        if (rawMultiplier > 3.0) return css.multiplier_gold;
-        return css.multiplier_win;
+        if (inSeries) {
+            if (rawMultiplier === null) return "";
+            if (rawMultiplier === 0) return css.multiplier_totalWipeout;
+            if (rawMultiplier <= 0.1) return css.multiplier_superFail;
+            if (rawMultiplier < 1.0) return css.multiplier_fail;
+            if (rawMultiplier === 1.0) return css.multiplier_mid;
+            return css.multiplier_win;
+        } else {
+            if (rawMultiplier === null) return "";
+            if (rawMultiplier === 0) return css.multiplier_totalWipeout;
+            if (rawMultiplier <= 0.1) return css.multiplier_superFail;
+            if (rawMultiplier < 1.0) return css.multiplier_fail;
+            if (rawMultiplier <= 1.2) return css.multiplier_mid;
+            if (rawMultiplier > 3.0) return css.multiplier_gold;
+            return css.multiplier_win;
+        }
     };
 
     const getBestMultiplierClass = (value) => {
         if (value === null) return "";
+        if (value === 0) return css.multiplier_totalWipeout;
         if (value <= 0.1) return css.multiplier_superFail;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.2) return css.multiplier_mid;
@@ -1027,6 +1404,7 @@ const GamblingPage = () => {
 
     const getAvgMultiplierClass = (value) => {
         if (value === null) return "";
+        if (value === 0) return css.multiplier_totalWipeout;
         if (value <= 0.1) return css.multiplier_superFail;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.2) return css.multiplier_mid;
@@ -1081,32 +1459,71 @@ const GamblingPage = () => {
     }, [isGameWon]);
 
     useEffect(() => {
-        const quickenBo9Result = () => {
-            const pending = localStorage.getItem("pendingBo9Result");
-            if (pending) {
-                const { newPoints } = JSON.parse(pending);
-                setCurrentPoints(newPoints);
-                setMaxPointsReached((prev) => Math.max(prev, newPoints));
-                localStorage.removeItem("pendingBo9Result");
+        const handleClick = () => {
+            if (!seriesResult && (seriesBanner === "YOU WON!" || seriesBanner === "YOU LOST!")) {
+                applyPendingSeriesChange();
+                clearTimeout(seriesResultTimeoutRef.current);
+                clearTimeout(seriesResetTimeoutRef.current);
+                resetSeriesState();
+                setIsSeriesActive(false);
+                setIsLocked(false);
+                return;
             }
 
-            if (window.bo9ResetTimeout) {
-                clearTimeout(window.bo9ResetTimeout);
-                window.bo9ResetTimeout = null;
-                resetBo9State();
-                setResultMessage("");
-            }
-
-            if (window.bo9ResultClearTimeout) {
-                clearTimeout(window.bo9ResultClearTimeout);
-                window.bo9ResultClearTimeout = null;
+            if (seriesResult) {
+                setSeriesResult(null);
+                clearTimeout(seriesResetTimeoutRef.current);
+                resetSeriesState();
+                setIsSeriesActive(false);
+                setIsLocked(false);
             }
         };
 
-        window.addEventListener("click", quickenBo9Result);
-        return () => window.removeEventListener("click", quickenBo9Result);
+        window.addEventListener("click", handleClick);
+        return () => window.removeEventListener("click", handleClick);
+    }, [seriesResult, seriesBanner]);
+
+    useEffect(() => {
+        const pending = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
+        if (pending) {
+            const now = Date.now();
+            const remaining = Math.max(0, (pending.delayEndsAt ?? (pending.timestamp + SERIES_APPLY_DELAY)) - now);
+            if (remaining === 0) {
+                setCurrentPoints(pending.newPoints);
+                setMaxPointsReached((prev) => Math.max(prev, pending.newPoints));
+                setPointsChange(pending.change);
+                saveGameState({ currentPoints: pending.newPoints });
+                localStorage.removeItem("pendingSeriesApply");
+            } else {
+                if (seriesApplyTimeoutRef.current) clearTimeout(seriesApplyTimeoutRef.current);
+                seriesApplyTimeoutRef.current = setTimeout(() => {
+                    const still = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
+                    if (!still) return;
+                    setCurrentPoints(still.newPoints);
+                    setMaxPointsReached((prev) => Math.max(prev, still.newPoints));
+                    setPointsChange(still.change);
+                    saveGameState({ currentPoints: still.newPoints });
+                    localStorage.removeItem("pendingSeriesApply");
+                    seriesApplyTimeoutRef.current = null;
+                }, remaining);
+            }
+        }
+
+        const end = localStorage.getItem("seriesEndTime");
+        if (end) {
+            const elapsed = Date.now() - parseInt(end, 10);
+            if (elapsed < SERIES_RESET_WINDOW) {
+                setIsSeriesActive(false);
+                resetSet();
+                setSeriesBanner(null);
+                setSeriesResult(null);
+            }
+            localStorage.removeItem("seriesEndTime");
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const overtimeTarget = 10 + overtimeBlock * 3;
 
     return (
         <div className={css.container}>
@@ -1233,19 +1650,19 @@ const GamblingPage = () => {
                                 <p className={css.info_text}>Select Mode:</p>
                                 <div className={css.mode_buttons}>
                                     <button
-                                        className={`${css.gamble_button} ${bestOf9ModeDraft === "normal" ? css.active_mode : ""}`}
+                                        className={`${css.gamble_button} ${seriesModeDraft === "normal" ? css.active_mode : ""}`}
                                         onMouseEnter={() => setHoveredMode("normal")}
                                         onMouseLeave={() => setHoveredMode(null)}
-                                        onClick={() => setBestOf9ModeDraft("normal")}
+                                        onClick={() => setSeriesModeDraft("normal")}
                                     >
                                         Standard
                                     </button>
 
                                     <button
-                                        className={`${css.gamble_button} ${bestOf9ModeDraft === "extended" ? css.active_mode : ""}`}
+                                        className={`${css.gamble_button} ${seriesModeDraft === "extended" ? css.active_mode : ""}`}
                                         onMouseEnter={() => setHoveredMode("extended")}
                                         onMouseLeave={() => setHoveredMode(null)}
-                                        onClick={() => setBestOf9ModeDraft("extended")}
+                                        onClick={() => setSeriesModeDraft("extended")}
                                     >
                                         Extended
                                     </button>
@@ -1266,17 +1683,17 @@ const GamblingPage = () => {
                                         className={css.info_popup}
                                         style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                     >
-                                        🏆 In Extended mode, you'll be able to play a Best-of-9 series. Win 5 rounds to triumph!
-                                        Your total gain/loss depends on your final score.
+                                        🏆 In Extended mode , you'll be able to play a Best-of-1/3/5 series.<br />
+                                        Win 1/2/3 sets to triumph! Your final gain or loss will depend on your match score.<br />
                                     </div>
                                 )}
                             </div>
                         )}
 
                         <button
-                            className={`${css.proceed_button} ${!difficulty || !bestOf9ModeDraft ? css.locked : ""}`}
+                            className={`${css.proceed_button} ${!difficulty || !seriesModeDraft ? css.locked : ""}`}
                             onClick={startGame}
-                            disabled={!difficulty || !bestOf9ModeDraft}
+                            disabled={!difficulty || !seriesModeDraft}
                             style={{ marginTop: 20 }}
                         >
                             Let's go?
@@ -1294,7 +1711,7 @@ const GamblingPage = () => {
                                 ? css.eternalMadnessText
                                 : ''
                             }`}>
-                            {bestOf9Mode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode
+                            {seriesMode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode
                         </h2>
 
                         <div className={css.fade_in}>
@@ -1335,11 +1752,11 @@ const GamblingPage = () => {
                             With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
                         </p>
 
-                        {bestOf9Mode === "extended" && (
+                        {seriesMode === "extended" && (
                             <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px', marginTop: '16px', textAlign: "center", maxWidth: "60ch" }}>
-                                🏆 In Extended mode, you'll be able to play a Best-of-9 series.<br />
-                                Win 5 rounds to triumph! Your final gain or loss will depend on your match score.<br />
-                                Tipp: Start playing Best-of-9 only when you have at least 100 points to avoid small gains from big wins.
+                                🏆 In Extended — {difficulty} Mode, you'll be able to play a Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : 1} series.<br />
+                                Win {setsToWin === 2 ? 2 : setsToWin === 3 ? 3 : 1} {setsToWin === 1 ? 'set' : 'sets'} to triumph! Your final gain or loss will depend on your match score.<br />
+                                Tipp: Start playing Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : 1} only when you have at least 100 points to avoid small gains from big wins.
                             </p>
                         )}
 
@@ -1353,7 +1770,7 @@ const GamblingPage = () => {
             {!showIntro && !showDifficultyOverlay && (
                 <>
                     <p className={css.info_text} style={{ marginTop: "12px", fontWeight: "bold" }}>
-                        {bestOf9Mode === "extended" ? "Extended" : "Standard"}
+                        {seriesMode === "extended" ? "Extended" : "Standard"}
                     </p>
                     <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
                         ? css.rainbowText
@@ -1364,12 +1781,12 @@ const GamblingPage = () => {
                         {difficulty} Mode
                     </h2>
 
-                    {bestOf9Mode === "extended" && (
+                    {seriesMode === "extended" && (
                         <div className={css.best_of_9_container}>
-                            {!isBestOf9Active ? (
+                            {!isSeriesActive ? (
                                 <button
                                     className={css.gamble_button}
-                                    onClick={startBestOf9Series}
+                                    onClick={startSeries}
                                     disabled={isButtonLocked}
                                     style={{ marginTop: "8px", marginBottom: "8px" }}
                                 >
@@ -1377,92 +1794,166 @@ const GamblingPage = () => {
                                 </button>
                             ) : (
                                 <div className={css.scoreboard}>
-                                    <div
-                                        className={`${css.squares} ${css.winRow}`}
-                                        style={{
-                                            opacity: bo9Result && !bo9Result.isWin ? 0.3 : 1,
-                                        }}
-                                    >
-                                        {[...Array(5)].map((_, i) => (
-                                            <span
-                                                key={`win-${i}`}
-                                                className={`${css.square} ${i < bo9Wins ? css.squareWin : css.squareDarkWin}`}
-                                            />
-                                        ))}
+                                    <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                            <span style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }} className={css.round_text}>
+                                                <CountUp
+                                                    key={roundWins}
+                                                    start={Math.max(roundWins - 1, 0)}
+                                                    end={roundWins}
+                                                    duration={1}
+                                                />
+                                            </span>
+                                        </div>
+                                        <div
+                                            className={`${css.squares} ${css.winRow}`}
+                                        >
+                                            {setsToWin === 3 ? (
+                                                <>
+                                                    <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                                    <span className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
+                                                    <span className={`${css.square} ${playerSets >= 3 ? css.squareWin : css.squareDarkWin}`} />
+                                                </>
+                                            ) : setsToWin === 2 ? (
+                                                <>
+                                                    <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                                    <span className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
+                                                </>
+                                            ) : (
+                                                <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                            )}
+                                        </div>
                                     </div>
+                                    {seriesBanner ? (
+                                        <motion.span
+                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }} className={css.round_text}
+                                        >
+                                            {seriesBanner}
+                                        </motion.span>
+                                    ) : (
+                                        <div className={css.game_info_text}>
+                                            {setsToWin !== 1 && (
+                                                <motion.span
+                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }} className={css.round_text}
+                                                >
+                                                    Set {playerSets + opponentSets + 1}
+                                                </motion.span>
+                                            )
+                                            }
+                                            {isOvertime && (
+                                                <motion.span
+                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    className={css.round_text}
+                                                    style={{ textAlign: 'center', fontSize: '20px' }}
+                                                >
+                                                    Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
+                                                </motion.span>
+                                            )}
+                                            <motion.span
+                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }}
+                                                className={css.round_text}
+                                                style={{ textAlign: 'center', fontSize: '16px' }}
+                                            >
+                                                First to {overtimeTarget}
+                                            </motion.span>
 
-                                    <motion.span
-                                        key="bo9Result"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className={css.round_text}
-                                    >
-                                        {!bo9Result ? (
-                                            `Round ${bo9Round}`
-                                        ) : (
-                                            <>{bo9Result.isWin ? "YOU WON!" : "YOU LOST!"}</>
-                                        )}
-                                    </motion.span>
+                                            <motion.span
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }}
+                                                className={css.round_text}
+                                            >
+                                                {isOvertime ? (
+                                                    <>
+                                                        Round{" "}
+                                                        <CountUp
+                                                            key={roundNumber}
+                                                            start={Math.max(roundNumber - 1, 0)}
+                                                            end={roundNumber}
+                                                            duration={1}
+                                                        />
+                                                        /{otMaxRounds}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Round{" "}
+                                                        <CountUp
+                                                            key={roundWins + roundLosses + 1}
+                                                            start={Math.max(roundWins + roundLosses, 0)}
+                                                            end={roundWins + roundLosses + 1}
+                                                            duration={1}
+                                                        />
+                                                        /{baseMaxRounds}
+                                                    </>
+                                                )}
+                                            </motion.span>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                            <span style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }} className={css.round_text}>
+                                                <CountUp
+                                                    key={roundLosses}
+                                                    start={Math.max(roundLosses - 1, 0)}
+                                                    end={roundLosses}
+                                                    duration={1}
+                                                />
+                                            </span>
+                                        </div>
 
-                                    <div
-                                        className={css.squares}
-                                        style={{
-                                            opacity: bo9Result && bo9Result.isWin ? 0.3 : 1,
-                                        }}
-                                    >
-                                        {[...Array(5)].map((_, i) => (
-                                            <span
-                                                key={`loss-${i}`}
-                                                className={`${css.square} ${i < bo9Losses ? css.squareLoss : css.squareDarkLoss}`}
-                                            />
-                                        ))}
+                                        <div className={css.squares}>
+                                            {setsToWin === 3 ? (
+                                                <>
+                                                    <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    <span className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    <span className={`${css.square} ${opponentSets >= 3 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                </>
+                                            ) : setsToWin === 2 ? (
+                                                <>
+                                                    <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    <span className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                </>
+                                            ) : (
+                                                <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {bo9Result && (
-                        <DelayedMount delay={4000}>
+                    {seriesResult && (
+                        <DelayedMount delay={SERIES_APPLY_DELAY}>
                             <motion.div
-                                key="bo9Result"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 transition={{ duration: 0.4 }}
-                                className={css.best_of_9_result}
+                                className={css.series_result}
                             >
                                 <p>
-                                    And because you{" "}
-                                    <span
-                                        style={{ fontWeight: "bold" }}
-                                        className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}
-                                    >
-                                        {bo9Result.isWin ? "won" : "lost"}
+                                    and because you{" "}
+                                    <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                        {seriesResult.isWin ? "won" : "lost"}
                                     </span>{" "}
-                                    with a score of{" "}
+                                    with the score of{" "}
                                     <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
-                                        {bo9Wins}
+                                        {playerSets}
                                     </span>
                                     -
                                     <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
-                                        {bo9Losses}
+                                        {opponentSets}
+                                    </span>, you{" "}
+                                    <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                        {seriesResult.isWin ? "gain" : "lose"}
+                                    </span>{" "}
+                                    <span style={{ fontWeight: "bold" }} className={getHitRateClass(seriesResult.percent)}>
+                                        {seriesResult.percent}%
                                     </span>
-                                    , you{" "}
-                                    <span
-                                        style={{ fontWeight: "bold" }}
-                                        className={`${bo9Result.isWin ? css.multiplier_win : css.multiplier_fail}`}
-                                    >
-                                        {bo9Result.isWin ? "gain" : "lose"}
-                                    </span>{" "}
-                                    <span
-                                        style={{ fontWeight: "bold" }}
-                                        className={getHitRateClass(bo9Result.percent)}
-                                    >
-                                        {bo9Result.percent}%
-                                    </span>{" "}
                                     .
                                 </p>
                             </motion.div>
@@ -1512,15 +2003,13 @@ const GamblingPage = () => {
                                             key={currentPoints}
                                         />
                                     </div>
-                                    {bo9Result ? (pointsChange !== null && (
-                                        <DelayedMount delay={4000}>
-                                            <span
-                                                className={css.points_gain_loss}
-                                                style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                            >
-                                                {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                            </span>
-                                        </DelayedMount>
+                                    {seriesResult ? (pointsChange !== null && (
+                                        <span
+                                            className={css.points_gain_loss}
+                                            style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                        >
+                                            {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                        </span>
                                     )) : (pointsChange !== null && (
                                         <span
                                             className={css.points_gain_loss}
@@ -1556,11 +2045,11 @@ const GamblingPage = () => {
                             className={css.input}
                             placeholder="Gamble?"
                             ref={betInputRef}
-                            disabled={isGameWon || isBestOf9Active}
+                            disabled={isGameWon || isSeriesActive}
                             style={{
-                                pointerEvents: isGameWon || isBestOf9Active ? "none" : "auto",
-                                opacity: isBestOf9Active ? 0.0 : 1,
-                                display: isBestOf9Active ? "none" : "inline-block",
+                                pointerEvents: isGameWon || isSeriesActive ? "none" : "auto",
+                                opacity: isSeriesActive ? 0.0 : 1,
+                                display: isSeriesActive ? "none" : "inline-block",
                                 transition: 'opacity 300ms ease-in-out'
                             }}
                         />
@@ -1568,11 +2057,11 @@ const GamblingPage = () => {
                             type="button"
                             className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet('')}
-                            disabled={isGameWon || isButtonLocked || isBestOf9Active}
+                            disabled={isGameWon || isButtonLocked || isSeriesActive}
                             style={{
-                                pointerEvents: isGameWon || isButtonLocked || isBestOf9Active ? "none" : "auto",
-                                display: isBestOf9Active ? "none" : "inline-block",
-                                opacity: isBestOf9Active ? 0.0 : 1
+                                pointerEvents: isGameWon || isButtonLocked || isSeriesActive ? "none" : "auto",
+                                display: isSeriesActive ? "none" : "inline-block",
+                                opacity: isSeriesActive ? 0.0 : 1
                             }}
                         >
                             Clear
@@ -1581,11 +2070,11 @@ const GamblingPage = () => {
                             type="button"
                             className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
                             onClick={() => setBet(currentPoints.toString())}
-                            disabled={isGameWon || isButtonLocked || isBestOf9Active}
+                            disabled={isGameWon || isButtonLocked || isSeriesActive}
                             style={{
-                                pointerEvents: isGameWon || isButtonLocked || isBestOf9Active ? "none" : "auto",
-                                display: isBestOf9Active ? "none" : "inline-block",
-                                opacity: isBestOf9Active ? 0.0 : 1
+                                pointerEvents: isGameWon || isButtonLocked || isSeriesActive ? "none" : "auto",
+                                display: isSeriesActive ? "none" : "inline-block",
+                                opacity: isSeriesActive ? 0.0 : 1
                             }}
                         >
                             Max
@@ -1594,7 +2083,7 @@ const GamblingPage = () => {
                             name="gamble"
                             onClick={handleGamble}
                             className={`${css.gamble_button} ${isGambleButtonLocked ? css.locked : ""}`}
-                            disabled={isGambleButtonLocked || bo9Result}
+                            disabled={isGambleButtonLocked || seriesResult}
                             style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
                             Gamble

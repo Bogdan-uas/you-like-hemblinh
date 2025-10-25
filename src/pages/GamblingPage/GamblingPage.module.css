@@ -164,6 +164,10 @@
     color: #2a0000;
 }
 
+.multiplier_totalWipeout {
+    color: #000;
+}
+
 .game_title {
     font-weight: 700;
     font-size: 40px;
@@ -834,13 +838,13 @@
 .squares {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .square {
     width: 20px;
-    height: 20px;
-    border-radius: 6px;
+    height: 5px;
+    border-radius: 12px;
     transition: all 300ms ease-in-out;
 }
 
@@ -850,7 +854,7 @@
 }
 
 .squareDarkWin {
-    background-color: #004d00;
+    background-color: #002a0e;
 }
 
 .squareLoss {
@@ -859,11 +863,18 @@
 }
 
 .squareDarkLoss {
-    background-color: #4d0000;
+    background-color: #2a0000;
 }
 
-.best_of_9_result {
+.series_result {
     color: #2e2f42;
     font-size: 20px;
     font-weight: 600;
+}
+
+.game_info_text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
