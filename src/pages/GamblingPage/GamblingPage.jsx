@@ -59,7 +59,7 @@ const DIFFICULTIES = {
         multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.01, range: [10, 50] },
-        superjackpot: { chance: 0.005, range: [75, 200] },
+        superjackpot: { chance: 1, range: [75, 200] },
     },
 };
 
