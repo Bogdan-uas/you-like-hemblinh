@@ -575,10 +575,15 @@ const GamblingPage = () => {
         setOvertimeBlock(0);
     };
 
-    const endSet = (playerWon) => {
-        if (playerWon) setPlayerSets((v) => v + 1);
-        else setOpponentSets((v) => v + 1);
-        resetSet();
+    const endSet = (playerWon, isFinal = false) => {
+        if (playerWon) setPlayerSets(v => v + 1);
+        else setOpponentSets(v => v + 1);
+
+        if (isFinal) {
+            setTimeout(() => resetSet(), SERIES_RESET_WINDOW);
+        } else {
+            resetSet();
+        }
     };
 
     const seriesKey = (p, o) => `${p}-${o}`;
@@ -912,6 +917,7 @@ const GamblingPage = () => {
 
                         if (nextWins === 9 && nextLosses === 9) {
                             setIsLocked(true);
+                            setRoundNumber((n) => n - 1)
                             toast("Overtime coming in for this set! 🔥", { icon: "⚔️", duration: 4000 });
                             setTimeout(() => {
                                 setIsOvertime(true);
@@ -931,6 +937,8 @@ const GamblingPage = () => {
                             const isSeriesOver =
                                 maybeEndSeries(nextPlayerSets, nextOppSets) ||
                                 setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
+                            
+                            setRoundNumber((n) => n - 1)
 
                             setIsLocked(true);
 
@@ -949,14 +957,12 @@ const GamblingPage = () => {
                             }
                             if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet);
+                                    endSet(playerWonSet, false);
                                     setIsLocked(false);
                                 }, 4000);
                             } else {
-                                setTimeout(() => {
-                                    endSet(playerWonSet);
-                                    setIsLocked(false);
-                                }, 19000);
+                                endSet(playerWonSet, true);
+                                setIsLocked(false);
                             }
 
                             if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
@@ -1090,14 +1096,16 @@ const GamblingPage = () => {
                         const isSeriesOver =
                             maybeEndSeries(nextPlayerSets, nextOppSets) ||
                             setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
+                        
+                        setRoundNumber((n) => n - 1)
 
                         setIsLocked(true);
 
                         if (isSeriesOver) {
                             if (playerWonSet) {
-                                toast("These series have been WON! 🏆🔥", { icon: "🎉", duration: 4000 });
+                                toast("These series have been WON in Overtime! 🏆🔥", { icon: "🎉", duration: 4000 });
                             } else {
-                                toast("These series have been LOST!", { icon: "😢", duration: 4000 });
+                                toast("These series have been LOST in Overtime!", { icon: "😢", duration: 4000 });
                             }
                         } else {
                             if (playerWonSet) {
@@ -1108,7 +1116,7 @@ const GamblingPage = () => {
                         }
                         if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
                             setTimeout(() => {
-                                endSet(playerWonSet);
+                                endSet(playerWonSet, false);
                                 setIsOvertime(false);
                                 setOvertimeBlock(0);
                                 setOtWins(0);
@@ -1116,14 +1124,12 @@ const GamblingPage = () => {
                                 setIsLocked(false);
                             }, 4000);
                         } else {
-                            setTimeout(() => {
-                                endSet(playerWonSet);
-                                setIsOvertime(false);
-                                setOvertimeBlock(0);
-                                setOtWins(0);
-                                setOtLosses(0);
-                                setIsLocked(false);
-                            }, 19000);
+                            endSet(playerWonSet, true);
+                            setIsOvertime(false);
+                            setOvertimeBlock(0);
+                            setOtWins(0);
+                            setOtLosses(0);
+                            setIsLocked(false);
                         }
 
                         if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
@@ -1137,6 +1143,8 @@ const GamblingPage = () => {
                             setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
                             setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
                             setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+
+                            setRoundNumber((n) => n - 1)
 
                             seriesResultTimeoutRef.current = setTimeout(() => {
                                 setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
@@ -1240,6 +1248,7 @@ const GamblingPage = () => {
 
                     if (nextOtWins === 3 && nextOtLosses === 3) {
                         setIsLocked(true);
+                        setRoundNumber((n) => n - 1)
                         if (overtimeBlock === 1) {
                             toast("Overtime is tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
                         } else if (overtimeBlock === 2) {
@@ -1796,12 +1805,13 @@ const GamblingPage = () => {
                                 <div className={css.scoreboard}>
                                     <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                            <span style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }} className={css.round_text}>
+                                            <span className={css.round_text}>
                                                 <CountUp
                                                     key={roundWins}
                                                     start={Math.max(roundWins - 1, 0)}
                                                     end={roundWins}
                                                     duration={1}
+                                                    style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}
                                                 />
                                             </span>
                                         </div>
@@ -1896,12 +1906,13 @@ const GamblingPage = () => {
                                     )}
                                     <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                            <span style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }} className={css.round_text}>
+                                            <span className={css.round_text}>
                                                 <CountUp
                                                     key={roundLosses}
                                                     start={Math.max(roundLosses - 1, 0)}
                                                     end={roundLosses}
                                                     duration={1}
+                                                    style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}
                                                 />
                                             </span>
                                         </div>
