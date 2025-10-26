@@ -1975,11 +1975,11 @@ const GamblingPage = () => {
                                             {setHistory.map(({ set, wins, losses, won }) => (
                                                 <li key={set} style={{ fontSize: '20px' }}>
                                                     <span style={{ color: won === true ? '#2e7d32' : won === false ? 'red' : '', fontWeight: '700' }}>Set {set}</span> &nbsp;&nbsp;
-                                                    <span className={css.multiplier_win} style={{ color: '#2e7d32', fontWeight: '700', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}>
+                                                    <span className={css.multiplier_win} style={{ color: '#2e7d32', fontWeight: '700' }}>
                                                         {wins}
                                                     </span>
                                                     -
-                                                    <span className={css.multiplier_fail} style={{ color: 'red', fontWeight: '700', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}>
+                                                    <span className={css.multiplier_fail} style={{ color: 'red', fontWeight: '700' }}>
                                                         {losses}
                                                     </span>
                                                 </li>
