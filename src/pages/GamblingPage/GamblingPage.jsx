@@ -935,7 +935,9 @@ const GamblingPage = () => {
 
                         setRoundWins(nextWins);
                         setRoundLosses(nextLosses);
-                        setRoundNumber((n) => n + 1);
+                        if (effectiveMultiplier !== 1.0) {
+                            setRoundNumber((n) => n + 1);
+                        }
 
                         if (nextWins === 9 && nextLosses === 9) {
                             setIsLocked(true);
@@ -960,7 +962,7 @@ const GamblingPage = () => {
                                 maybeEndSeries(nextPlayerSets, nextOppSets) ||
                                 setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
                             
-                            setRoundNumber((n) => n - 1)
+                            setRoundNumber((n) => n - 2);
 
                             setIsLocked(true);
 
@@ -1107,7 +1109,9 @@ const GamblingPage = () => {
 
                     setOtWins(nextOtWins);
                     setOtLosses(nextOtLosses);
-                    setRoundNumber((n) => n + 1);
+                    if (effectiveMultiplier !== 1.0) {
+                        setRoundNumber((n) => n + 1);
+                    }
                     setRoundWins((w) => w + (playerWonRound ? 1 : 0));
                     setRoundLosses((l) => l + (!playerWonRound && effectiveMultiplier < 1.0 ? 1 : 0));
 
@@ -1121,7 +1125,7 @@ const GamblingPage = () => {
                         const finalWins = roundWins + (playerWonRound ? 1 : 0);
                         const finalLosses = roundLosses + (!playerWonRound && effectiveMultiplier < 1.0 ? 1 : 0);
                         
-                        setRoundNumber((n) => n - 1)
+                        setRoundNumber((n) => n - 2);
 
                         setIsLocked(true);
 
@@ -1867,16 +1871,23 @@ const GamblingPage = () => {
                                             </motion.span>
                                         ) : (
                                             <div className={css.game_info_text}>
-                                                {setsToWin !== 1 && (
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }} className={css.round_text}
-                                                        style={{ fontSize: '24px' }}
-                                                    >
-                                                        Set {playerSets + opponentSets + 1}
-                                                    </motion.span>
-                                                )
-                                                }
+                                                    {setsToWin !== 1 && (
+                                                        <motion.span
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            transition={{ duration: 0.4 }}
+                                                            className={css.round_text}
+                                                            style={{ fontSize: "24px" }}
+                                                        >
+                                                            {(() => {
+                                                                const currentSet = playerSets + opponentSets + 1;
+                                                                const totalSets = setsToWin * 2 - 1;
+                                                                const isDecider = currentSet === totalSets;
+                                                                return isDecider ? `Set - Decider` : `Set ${currentSet}`;
+                                                            })()}
+                                                        </motion.span>
+                                                    )}
                                                 {isOvertime && (
                                                     <motion.span
                                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1972,18 +1983,25 @@ const GamblingPage = () => {
                                         transition={{ duration: 0.4 }}
                                         className={css.seriesSummary}>
                                         <ul className={css.seriesSummaryList}>
-                                            {setHistory.map(({ set, wins, losses, won }) => (
-                                                <li key={set} style={{ fontSize: '20px' }}>
-                                                    <span style={{ fontWeight: '600' }} className={css.info_text}>Set {set}</span> &nbsp;&nbsp;
-                                                    <span className={css.multiplier_win} style={{ color: won === true ? '#2e7d32' : won === false ? '#2e7d32' : '', fontWeight: '700', opacity: won === true ? 1 : won === false ? 0.4 : '' }}>
-                                                        {wins}
-                                                    </span>
-                                                    -
-                                                    <span className={css.multiplier_fail} style={{ color: won === true ? 'red' : won === false ? 'red' : '', fontWeight: '700', opacity: won === true ? 0.4 : won === false ? 1 : '' }}>
-                                                        {losses}
-                                                    </span>
-                                                </li>
-                                            ))}
+                                            {setHistory.map(({ set, wins, losses, won }) => {
+                                                const totalSets = setsToWin * 2 - 1;
+                                                const isDecider = set === totalSets;
+                                                const label = isDecider ? "Set - Decider" : `Set ${set}`;
+
+                                                return (
+                                                    <li key={set} style={{ fontSize: '20px' }}>
+                                                        <span className={css.multiplier_win} style={{ color: won === true ? '#2e7d32' : won === false ? '#2e7d32' : '', fontWeight: '700', opacity: won === true ? 1 : won === false ? 0.4 : '' }}>
+                                                            {wins}
+                                                        </span>
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;
+                                                        <span style={{ fontWeight: '600' }} className={css.info_text}>{label}</span>
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;
+                                                        <span className={css.multiplier_fail} style={{ color: won === true ? 'red' : won === false ? 'red' : '', fontWeight: '700', opacity: won === true ? 0.4 : won === false ? 1 : '' }}>
+                                                            {losses}
+                                                        </span>
+                                                    </li>
+                                                )
+                                            })}
                                         </ul>
                                     </motion.div>
                                 </DelayedMount>
