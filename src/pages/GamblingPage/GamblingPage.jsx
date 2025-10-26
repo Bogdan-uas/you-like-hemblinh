@@ -941,7 +941,7 @@ const GamblingPage = () => {
 
                         if (nextWins === 9 && nextLosses === 9) {
                             setIsLocked(true);
-                            setRoundNumber((n) => n - 1)
+                            setRoundNumber((n) => n - 2)
                             toast("Overtime coming in for this set! 🔥", { icon: "⚔️", duration: 4000 });
                             setTimeout(() => {
                                 setIsOvertime(true);
@@ -1276,7 +1276,7 @@ const GamblingPage = () => {
 
                     if (nextOtWins === 3 && nextOtLosses === 3) {
                         setIsLocked(true);
-                        setRoundNumber((n) => n - 1)
+                        setRoundNumber((n) => n - 2)
                         if (overtimeBlock === 1) {
                             toast("Overtime is tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
                         } else if (overtimeBlock === 2) {
