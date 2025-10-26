@@ -48,7 +48,7 @@ const DIFFICULTIES = {
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0, 2.0],
+        multiplier: [0, 1],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.002, range: [30, 100] },
@@ -1877,6 +1877,16 @@ const GamblingPage = () => {
                                                     </motion.span>
                                                 )
                                                 }
+                                                {isOvertime && (
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        className={css.round_text}
+                                                        style={{ textAlign: 'center', fontSize: '20px' }}
+                                                    >
+                                                        Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
+                                                    </motion.span>
+                                                )}
                                                 <motion.span
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
@@ -1908,16 +1918,6 @@ const GamblingPage = () => {
                                                         </>
                                                     )}
                                                 </motion.span>
-                                                {isOvertime && (
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                        className={css.round_text}
-                                                        style={{ textAlign: 'center', fontSize: '20px' }}
-                                                    >
-                                                        Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
-                                                    </motion.span>
-                                                )}
                                                 <motion.span
                                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                                     transition={{ duration: 0.4 }}
