@@ -1172,7 +1172,7 @@ const GamblingPage = () => {
                             setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
                             setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
 
-                            setRoundNumber((n) => n - 1)
+                            setRoundNumber((n) => n - 2)
 
                             seriesResultTimeoutRef.current = setTimeout(() => {
                                 setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
