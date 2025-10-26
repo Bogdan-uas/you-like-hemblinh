@@ -233,7 +233,7 @@ const SERIES_REWARDS_BO5_LUCKGOD = {
 const SERIES_REWARDS_BO5_EM = {
     "3-0": +800,
     "3-1": +600,
-    "3-2": +400,
+    "3-2": +300,
     "2-3": -30,
     "1-3": -55,
     "0-3": -75,
