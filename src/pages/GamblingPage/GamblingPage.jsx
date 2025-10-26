@@ -1974,12 +1974,12 @@ const GamblingPage = () => {
                                         <ul className={css.seriesSummaryList}>
                                             {setHistory.map(({ set, wins, losses, won }) => (
                                                 <li key={set} style={{ fontSize: '20px' }}>
-                                                    <span style={{ color: won === true ? '#2e7d32' : won === false ? 'red' : '', fontWeight: '700' }}>Set {set}</span> &nbsp;&nbsp;
-                                                    <span className={css.multiplier_win} style={{ color: won === true ? '#2e7d32' : won === false ? '#a5d6b2ff' : '', fontWeight: '700' }}>
+                                                    <span style={{ fontWeight: '600' }} className={css.info_text}>Set {set}</span> &nbsp;&nbsp;
+                                                    <span className={css.multiplier_win} style={{ color: won === true ? '#2e7d32' : won === false ? '#2e7d32' : '', fontWeight: '700', opacity: won === true ? 1 : won === false ? 0.4 : '' }}>
                                                         {wins}
                                                     </span>
                                                     -
-                                                    <span className={css.multiplier_fail} style={{ color: won === true ? '#c2ababff' : won === false ? 'red' : '', fontWeight: '700' }}>
+                                                    <span className={css.multiplier_fail} style={{ color: won === true ? 'red' : won === false ? 'red' : '', fontWeight: '700', opacity: won === true ? 0.4 : won === false ? 1 : '' }}>
                                                         {losses}
                                                     </span>
                                                 </li>
