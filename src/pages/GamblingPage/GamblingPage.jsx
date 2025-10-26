@@ -1884,7 +1884,7 @@ const GamblingPage = () => {
                                                                 const currentSet = playerSets + opponentSets + 1;
                                                                 const totalSets = setsToWin * 2 - 1;
                                                                 const isDecider = currentSet === totalSets;
-                                                                return isDecider ? `Set - Decider` : `Set ${currentSet}`;
+                                                                return isDecider ? 'Decider' : `Set ${currentSet}`;
                                                             })()}
                                                         </motion.span>
                                                     )}
@@ -1986,7 +1986,7 @@ const GamblingPage = () => {
                                             {setHistory.map(({ set, wins, losses, won }) => {
                                                 const totalSets = setsToWin * 2 - 1;
                                                 const isDecider = set === totalSets;
-                                                const label = isDecider ? "Set - Decider" : `Set ${set}`;
+                                                const label = isDecider ? 'Decider' : `Set ${set}`;
 
                                                 return (
                                                     <li key={set} style={{ fontSize: '20px' }}>
