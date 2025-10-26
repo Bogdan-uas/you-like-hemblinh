@@ -48,7 +48,7 @@ const DIFFICULTIES = {
     "LUCK GOD": {
         start: [25, 25],
         goal: [50000, 100000],
-        multiplier: [0, 2.0],
+        multiplier: [0, 1.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 20] },
         superjackpot: { chance: 0.002, range: [30, 100] },
@@ -239,7 +239,7 @@ const SERIES_REWARDS_BO5_EM = {
     "0-3": -75,
 };
 
-const SERIES_APPLY_DELAY = 4000;
+const SERIES_APPLY_DELAY = 6000;
 const SERIES_RESET_WINDOW = 15000;
 
 const GamblingPage = () => {
@@ -304,6 +304,8 @@ const GamblingPage = () => {
     const [seriesResult, setSeriesResult] = useState(null);
     const [seriesInitialPoints, setSeriesInitialPoints] = useState(0);
 
+    const [setHistory, setSetHistory] = useState([]);
+
     const navigate = useNavigate();
     const prevPointsRef = useRef(0);
     const prevGoalRef = useRef(0);
@@ -360,6 +362,7 @@ const GamblingPage = () => {
                 setOtLosses(parsed.otLosses || 0);
                 setSeriesBanner(parsed.seriesBanner || null);
                 setSeriesResult(parsed.seriesResult || null);
+                setSetHistory(parsed.setHistory || []);
                 setSeriesInitialPoints(parsed.seriesInitialPoints || 0);
                 prevPointsRef.current = parsed.currentPoints;
                 prevGoalRef.current = parsed.goalPoints;
@@ -419,6 +422,7 @@ const GamblingPage = () => {
         overtimeBlock,
         otWins,
         otLosses,
+        setHistory,
     ]);
 
     const saveGameState = (newState = {}) => {
@@ -457,6 +461,7 @@ const GamblingPage = () => {
             otLosses,
             seriesBanner,
             seriesResult,
+            setHistory,
             seriesInitialPoints,
             ...newState,
         };
@@ -575,15 +580,29 @@ const GamblingPage = () => {
         setOvertimeBlock(0);
     };
 
-    const endSet = (playerWon, isFinal = false) => {
+    const endSet = (playerWon, finalWins, finalLosses, isFinal = false) => {
         if (playerWon) setPlayerSets(v => v + 1);
         else setOpponentSets(v => v + 1);
 
         if (isFinal) {
-            setTimeout(() => resetSet(), SERIES_RESET_WINDOW);
+            setTimeout(() => resetSet(), 19000);
         } else {
             resetSet();
         }
+
+        setSetHistory(prev => {
+            const updated = [
+                ...prev,
+                {
+                    set: prev.length + 1,
+                    wins: finalWins,
+                    losses: finalLosses,
+                    won: playerWon,
+                },
+            ];
+            saveGameState({ setHistory: updated });
+            return updated;
+        });
     };
 
     const seriesKey = (p, o) => `${p}-${o}`;
@@ -653,6 +672,7 @@ const GamblingPage = () => {
         setSeriesBanner(null);
         setSeriesResult(null);
         setLoserOpacity(null);
+        setSetHistory([]);
         setSeriesInitialPoints(currentPoints);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
@@ -709,6 +729,7 @@ const GamblingPage = () => {
         setSeriesBanner(null);
         setSeriesResult(null);
         setLoserOpacity(null);
+        setSetHistory([]);
         setSeriesInitialPoints(currentPoints);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
@@ -759,6 +780,7 @@ const GamblingPage = () => {
         setSeriesBanner(null);
         setSeriesResult(null);
         setLoserOpacity(null);
+        setSetHistory([]);
         setSeriesInitialPoints(currentPoints);
 
         toast("🏆 Series started! Win sets by taking rounds!", { icon: "🎯", duration: 4000 });
@@ -957,11 +979,11 @@ const GamblingPage = () => {
                             }
                             if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet, false);
+                                    endSet(playerWonSet, nextWins, nextLosses, false);
                                     setIsLocked(false);
                                 }, 4000);
                             } else {
-                                endSet(playerWonSet, true);
+                                endSet(playerWonSet, nextWins, nextLosses, true);
                                 setIsLocked(false);
                             }
 
@@ -1096,6 +1118,8 @@ const GamblingPage = () => {
                         const isSeriesOver =
                             maybeEndSeries(nextPlayerSets, nextOppSets) ||
                             setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
+                        const finalWins = roundWins + (playerWonRound ? 1 : 0);
+                        const finalLosses = roundLosses + (!playerWonRound && effectiveMultiplier < 1.0 ? 1 : 0);
                         
                         setRoundNumber((n) => n - 1)
 
@@ -1116,7 +1140,7 @@ const GamblingPage = () => {
                         }
                         if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
                             setTimeout(() => {
-                                endSet(playerWonSet, false);
+                                endSet(playerWonSet, finalWins, finalLosses, false);
                                 setIsOvertime(false);
                                 setOvertimeBlock(0);
                                 setOtWins(0);
@@ -1124,7 +1148,7 @@ const GamblingPage = () => {
                                 setIsLocked(false);
                             }, 4000);
                         } else {
-                            endSet(playerWonSet, true);
+                            endSet(playerWonSet, finalWins, finalLosses, true);
                             setIsOvertime(false);
                             setOvertimeBlock(0);
                             setOtWins(0);
@@ -1940,35 +1964,60 @@ const GamblingPage = () => {
                     )}
 
                     {seriesResult && (
-                        <DelayedMount delay={SERIES_APPLY_DELAY}>
-                            <motion.div
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.series_result}
-                            >
-                                <p>
-                                    and because you{" "}
-                                    <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
-                                        {seriesResult.isWin ? "won" : "lost"}
-                                    </span>{" "}
-                                    with the score of{" "}
-                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
-                                        {playerSets}
-                                    </span>
-                                    -
-                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
-                                        {opponentSets}
-                                    </span>, you{" "}
-                                    <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
-                                        {seriesResult.isWin ? "gain" : "lose"}
-                                    </span>{" "}
-                                    <span style={{ fontWeight: "bold" }} className={getHitRateClass(seriesResult.percent)}>
-                                        {seriesResult.percent}%
-                                    </span>
-                                    .
-                                </p>
-                            </motion.div>
-                        </DelayedMount>
+                        <>
+                            {setsToWin !== 1 && (
+                                <DelayedMount delay={3000}>
+                                    <motion.div
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className={css.seriesSummary}>
+                                        <ul className={css.seriesSummaryList}>
+                                            {setHistory.map(({ set, wins, losses, won }) => (
+                                                <li key={set} style={{ fontSize: '20px' }}>
+                                                    <span style={{ color: won === true ? '#2e7d32' : won === false ? 'red' : '', fontWeight: '700' }}>Set {set}</span> &nbsp;&nbsp;
+                                                    <span className={css.multiplier_win} style={{ color: '#2e7d32', fontWeight: '700', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}>
+                                                        {wins}
+                                                    </span>
+                                                    -
+                                                    <span className={css.multiplier_fail} style={{ color: 'red', fontWeight: '700', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}>
+                                                        {losses}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </motion.div>
+                                </DelayedMount>
+                            )}
+                            <DelayedMount delay={SERIES_APPLY_DELAY}>
+                                <motion.div
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className={css.series_result}
+                                >
+                                    <p>
+                                        and because you{" "}
+                                        <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                            {seriesResult.isWin ? "won" : "lost"}
+                                        </span>{" "}
+                                        with the score of{" "}
+                                        <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
+                                            {playerSets}
+                                        </span>
+                                        -
+                                        <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
+                                            {opponentSets}
+                                        </span>, you{" "}
+                                        <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                            {seriesResult.isWin ? "gain" : "lose"}
+                                        </span>{" "}
+                                        <span style={{ fontWeight: "bold" }} className={getHitRateClass(seriesResult.percent)}>
+                                            {seriesResult.percent}%
+                                        </span>
+                                        .
+                                    </p>
+                                </motion.div>
+                            </DelayedMount>
+                        </>
                     )}
                     <div className={css.points_container}>
                         <div className={css.streak_points_container}>
