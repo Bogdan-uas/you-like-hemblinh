@@ -1157,9 +1157,9 @@ const GamblingPage = () => {
                             }
                         } else {
                             if (playerWonSet) {
-                                toast(`The set ${playerSets + opponentSets + 1} has been won in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!`, { icon: "🤯", duration: 4000 });
+                                toast(`The set ${playerSets + opponentSets + 1} has been won in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}`}`, { icon: "🤯", duration: 4000 });
                             } else {
-                                toast(`The set ${playerSets + opponentSets + 1} has been lost in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!`, { icon: "😞", duration: 4000 });
+                                toast(`The set ${playerSets + opponentSets + 1} has been lost in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}`}`, { icon: "😞", duration: 4000 });
                             }
                         }
                         if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
