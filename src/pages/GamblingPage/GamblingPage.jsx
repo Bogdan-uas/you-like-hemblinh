@@ -32,26 +32,47 @@ const DIFFICULTIES = {
         goal: [10000, 20000],
         multiplier: [0.1, 3.0],
     },
+    Challenging: {
+        start: [200, 600],
+        goal: [12000, 25000],
+        multiplier: [0.1, 2.5],
+    },
     Hard: {
         start: [100, 400],
         goal: [15000, 30000],
-        multiplier: [0.05, 2.0],
+        multiplier: [0.05, 2.25],
         jackpot: { chance: 0.003, range: [4, 10] },
     },
-    Impossible: {
-        start: [100, 250],
-        goal: [15000, 30000],
+    Insane: {
+        start: [100, 300],
+        goal: [18000, 50000],
+        multiplier: [0.025, 2.0],
+        unstableMin: true,
+        jackpot: { chance: 0.0035, range: [6, 12] },
+    },
+    "Impossible": {
+        start: [80, 250],
+        goal: [25000, 75000],
         multiplier: [0, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.004, range: [10, 14] },
+        jackpot: { chance: 0.005, range: [10, 18] },
+        superjackpot: { chance: 0.001, range: [20, 40] },
+    },
+    "Tuff Luck": {
+        start: [50, 200],
+        goal: [25000, 100000],
+        multiplier: [0, 2.0],
+        unstableMin: true,
+        jackpot: { chance: 0.005, range: [8, 20] },
+        superjackpot: { chance: 0.0015, range: [20, 70] },
     },
     "LUCK GOD": {
         start: [25, 25],
-        goal: [50000, 100000],
+        goal: [50000, 300000],
         multiplier: [0, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.006, range: [5, 20] },
-        superjackpot: { chance: 0.002, range: [30, 100] },
+        jackpot: { chance: 0.006, range: [5, 25] },
+        superjackpot: { chance: 0.003, range: [30, 100] },
     },
     "Eternal Madness": {
         start: [25, 100],
@@ -59,7 +80,7 @@ const DIFFICULTIES = {
         multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.01, range: [10, 50] },
-        superjackpot: { chance: 0.005, range: [75, 200] },
+        superjackpot: { chance: 0.005, range: [100, 200] },
     },
 };
 
@@ -72,13 +93,25 @@ const DIFFICULTY_END_MESSAGES = {
         win: "Well done! Normal mode conquered! 🎯",
         lose: "Normal mode has bested you… 😢",
     },
+    Challenging: {
+        win: "Nice! You overcame Challenging mode! ⚔️",
+        lose: "Challenging mode showed you no mercy… 😓",
+    },
     Hard: {
         win: "Impressive! You survived Hard mode! 💪",
         lose: "Hard mode crushed you…💀 That's why it's hard!",
     },
-    Impossible: {
+    Insane: {
+        win: "Incredible! You conquered Insane mode! 😵🔥",
+        lose: "Insane mode drove you off the edge… 🌀",
+    },
+    "Impossible": {
         win: "Legendary! You beat Impossible mode! 🏆",
         lose: "Impossible mode was… well, impossible 😵",
+    },
+    "Tuff Luck": {
+        win: "Unbelievable! You beat Tuff Luck! 🍀🔥 Fate blinked first!",
+        lose: "Tuff Luck lived up to its name... better spin next time! 😬",
     },
     "LUCK GOD": {
         win: "OMG! You are truly a LUCK GOD! 🌈💥",
@@ -96,16 +129,28 @@ const SUGGESTIONS = {
         lose: "Retry Easy to improve your luck and then go to Normal!",
     },
     Normal: {
-        win: "Nice! Try Hard next!",
+        win: "Nice! Try Challenging next!",
         lose: "Retry Normal to be able to proceed with next difficulties!",
     },
-    Hard: {
-        win: "Impressive! Maybe Impossible is next?",
-        lose: "Retry!",
+    Challenging: {
+        win: "Awesome! Maybe step up to Hard next! 🍀",
+        lose: "Retry Challenging — your luck can flip anytime! 🎲",
     },
-    Impossible: {
-        win: "Legendary! Feeling lucky for LUCK GOD?",
-        lose: "Retry Impossible, if you want to be able to beat LUCK GOD next!",
+    Hard: {
+        win: "Impressive! Ready for Insane next? 😈",
+        lose: "Retry — you're close to mastering Hard!",
+    },
+    Insane: {
+        win: "Insane! You did it! Try Impossible next... if you dare. 💀",
+        lose: "Insane mode bites back — sharpen your courage and retry! ⚡",
+    },
+    "Impossible": {
+        win: "Legendary! Think you can survive Tuff Luck next? 🍀🔥",
+        lose: "Retry Impossible to sharpen your luck for Tuff Luck!",
+    },
+    "Tuff Luck": {
+        win: "You crushed Tuff Luck! Dare to challenge the LUCK GOD next? 🌈💥",
+        lose: "Unlucky? Retry — fortune might smile in your favour next time! 😏",
     },
     "LUCK GOD": {
         win: "Maybe try again LUCK GOD? You may receive harder numbers to achieve! 🌈💥",
@@ -148,6 +193,21 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "Your destiny's being calculated... 💫",
     ],
 
+    Challenging: [
+        "Luck tests your courage... ⚔️",
+        "The dice feel heavier now... 🎲",
+        "You sense the odds turning... 🌒",
+        "The challenge begins... 🔥",
+        "Fate sharpens its edges... 🗡️",
+        "The spin could make or break you... 💀",
+        "Confidence or chaos? 🤔",
+        "Destiny grows bolder... 🌀",
+        "You feel the tension in the air... ⚡",
+        "This is where luck gets serious... 💫",
+        "The RNG gods are watching closely... 👁️",
+        "Balance wavers — can you tip it? ⚖️",
+    ],
+
     Hard: [
         "Hold steady... 🔥",
         "The odds look rough... 💀",
@@ -163,7 +223,22 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "Ready to defy the odds? 🎰",
     ],
 
-    Impossible: [
+    Insane: [
+        "You feel the insanity creeping in... 😵",
+        "This roll defies all reason... 🔮",
+        "Luck or madness — who wins first? 💫",
+        "The numbers whisper... 👁️",
+        "Chaos calls your name... 🌀",
+        "You've crossed into insanity's edge... ⚡",
+        "RNG doesn't care anymore... 💀",
+        "This isn't normal anymore... 🔥",
+        "You laugh as the wheel spins... 🤪",
+        "Even fate is nervous now... 🌪️",
+        "Your luck unravels and reforms... 🧩",
+        "Sanity costs extra here... 🧠",
+    ],
+
+    "Impossible": [
         "Reality starts to twist... 🌀",
         "Logic takes a break... 🔮",
         "The void hums quietly... 🕳️",
@@ -176,6 +251,21 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "Impossible odds — perfect timing... 😈",
         "Even reality hesitates... 🌘",
         "The universe flips a coin... 🪙",
+    ],
+
+    "Tuff Luck": [
+        "Luck mocks you softly... 🍀😏",
+        "Fate whispers: 'Bet you won't win this one'... 😈",
+        "Even the gods are rolling their eyes... 🌪️",
+        "You're tempting destiny again... 💫",
+        "The air crackles with unlucky energy... ⚡",
+        "Your fortune trembles... 🪙",
+        "A dangerous spin begins... 🔥",
+        "Luck stumbles — can you catch it? 🎲",
+        "Every roll is a dare... 🧨",
+        "Fortune smirks in the shadows... 🌒",
+        "You're in Tuff Luck territory now... 😬",
+        "May your chaos be merciful... 💀",
     ],
 
     "LUCK GOD": [
@@ -214,6 +304,11 @@ const SERIES_REWARDS_BO1 = {
     "0-1": -30,
 };
 
+const SERIES_REWARDS_BO1_CHALLENGING = {
+    "1-0": +150,
+    "0-1": -50,
+};
+
 const SERIES_REWARDS_BO3 = {
     "2-0": +300,
     "2-1": +200,
@@ -221,7 +316,7 @@ const SERIES_REWARDS_BO3 = {
     "0-2": -65,
 };
 
-const SERIES_REWARDS_BO5_LUCKGOD = {
+const SERIES_REWARDS_BO5 = {
     "3-0": +300,
     "3-1": +200,
     "3-2": +100,
@@ -230,13 +325,26 @@ const SERIES_REWARDS_BO5_LUCKGOD = {
     "0-3": -65,
 };
 
-const SERIES_REWARDS_BO5_EM = {
-    "3-0": +800,
-    "3-1": +600,
-    "3-2": +300,
-    "2-3": -30,
-    "1-3": -55,
-    "0-3": -75,
+const SERIES_REWARDS_BO7 = {
+    "4-0": +400,
+    "4-1": +350,
+    "4-2": +300,
+    "4-3": +200,
+    "3-4": -20,
+    "2-4": -35,
+    "1-4": -45,
+    "0-4": -65,
+};
+
+const SERIES_REWARDS_BO7_EM = {
+    "4-0": +800,
+    "4-1": +600,
+    "4-2": +400,
+    "4-3": +200,
+    "3-4": -30,
+    "2-4": -45,
+    "1-4": -55,
+    "0-4": -75,
 };
 
 const SERIES_APPLY_DELAY = 6000;
@@ -561,8 +669,10 @@ const GamblingPage = () => {
     };
 
     const currentRewardsTable = () => {
-        if (difficulty === "LUCK GOD") return SERIES_REWARDS_BO5_LUCKGOD;
-        if (difficulty === "Eternal Madness") return SERIES_REWARDS_BO5_EM;
+        if (difficulty === "LUCK GOD") return SERIES_REWARDS_BO7;
+        if (difficulty === "Eternal Madness") return SERIES_REWARDS_BO7_EM;
+        if (["Impossible", "Tuff Luck"].includes(difficulty)) return SERIES_REWARDS_BO5;
+        if (difficulty === "Challenging") return SERIES_REWARDS_BO1_CHALLENGING;
         if (["Easy", "Normal"].includes(difficulty)) return SERIES_REWARDS_BO1;
         return SERIES_REWARDS_BO3;
     };
@@ -756,16 +866,16 @@ const GamblingPage = () => {
         }
         if (isSeriesActive) return;
 
-        if (difficulty === "Eternal Madness") {
+        if (["LUCK GOD", "Eternal Madness"].includes(difficulty)) {
+            setSetsToWin(4);
+            setSeriesMode("extended");
+        } else if (["Impossible", "Tuff Luck"].includes(difficulty)) {
             setSetsToWin(3);
             setSeriesMode("extended");
-        } else if (difficulty === "LUCK GOD") {
-            setSetsToWin(3);
-            setSeriesMode("extended");
-        } else if (["Hard", "Impossible"].includes(difficulty)) {
+        } else if (["Hard", "Insane"].includes(difficulty)) {
             setSetsToWin(2);
             setSeriesMode("extended");
-        } else if (["Easy", "Normal"].includes(difficulty)) {
+        } else if (["Easy", "Normal", "Challenging"].includes(difficulty)) {
             setSetsToWin(1);
             setSeriesMode("extended");
         } else {
@@ -962,7 +1072,7 @@ const GamblingPage = () => {
 
                         if (nextWins === 9 && nextLosses === 9) {
                             setIsLocked(true);
-                            toast("Overtime coming in for this set! 🔥", { icon: "⚔️", duration: 4000 });
+                            toast(`Overtime coming in for this ${setsToWin === 1 ? 'match' : 'set'}! 🔥`, { icon: "⚔️", duration: 4000 });
                             setTimeout(() => {
                                 setIsOvertime(true);
                                 setOvertimeBlock((b) => (b ? b + 1 : 1));
@@ -986,9 +1096,9 @@ const GamblingPage = () => {
 
                             if (isSeriesOver) {
                                 if (playerWonSet) {
-                                    toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been WON! 🏆🔥`, { icon: "🎉", duration: 4000 });
+                                    toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been WON! 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
                                 } else {
-                                    toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been LOST!`, { icon: "😢", duration: 4000 });
+                                    toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been LOST!`, { icon: "😢", duration: SERIES_APPLY_DELAY });
                                 }
                             } else {
                                 if (playerWonSet) {
@@ -1151,9 +1261,9 @@ const GamblingPage = () => {
 
                         if (isSeriesOver) {
                             if (playerWonSet) {
-                                toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been WON in Overtime! 🏆🔥`, { icon: "🎉", duration: 4000 });
+                                toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been WON in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`} 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
                             } else {
-                                toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been LOST in Overtime!`, { icon: "😢", duration: 4000 });
+                                toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been LOST in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`}`, { icon: "😢", duration: SERIES_APPLY_DELAY });
                             }
                         } else {
                             if (playerWonSet) {
@@ -1742,8 +1852,8 @@ const GamblingPage = () => {
                                         className={css.info_popup}
                                         style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                     >
-                                        🏆 In Extended mode , you'll be able to play a Best-of-1/3/5 series.<br />
-                                        Win 1/2/3 sets to triumph! Your final gain or loss will depend on your match score.<br />
+                                        🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7 series.<br />
+                                        Win 1/2/3/4 sets to triumph! Your final gain or loss will depend on your match score.<br />
                                     </div>
                                 )}
                             </div>
@@ -1812,10 +1922,10 @@ const GamblingPage = () => {
                         </p>
 
                         {seriesMode === "extended" && (
-                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px', marginTop: '16px', textAlign: "center", maxWidth: "60ch" }}>
-                                🏆 In Extended — {difficulty} Mode, you'll be able to play a Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : 1} series.<br />
-                                Win {setsToWin === 2 ? 2 : setsToWin === 3 ? 3 : 1} {setsToWin === 1 ? 'set' : 'sets'} to triumph! Your final gain or loss will depend on your match score.<br />
-                                Tipp: Start playing Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : 1} only when you have at least 100 points to avoid small gains from big wins.
+                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px', marginTop: '16px', textAlign: "center", maxWidth: "60ch", color: '#2e2f42' }}>
+                                🏆 In Extended — {difficulty} Mode, you'll be able to play a Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : setsToWin === 4 ? 7 : 1} series.<br />
+                                Win {setsToWin === 2 ? 2 : setsToWin === 3 ? 3 : setsToWin === 4 ? 4 : 1} {setsToWin === 1 ? 'set' : 'sets'} to triumph! Your final gain or loss will depend on your match score.<br />
+                                Tipp: Start playing Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : setsToWin === 4 ? 7 : 1} only when you have at least 100 points to avoid small gains from big wins.
                             </p>
                         )}
 
@@ -1868,20 +1978,27 @@ const GamblingPage = () => {
                                         <div
                                             className={`${css.squares} ${css.winRow}`}
                                         >
-                                            {setsToWin === 3 ? (
-                                                <>
-                                                    <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
-                                                    <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
-                                                    <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 3 ? css.squareWin : css.squareDarkWin}`} />
-                                                </>
-                                            ) : setsToWin === 2 ? (
-                                                <>
+                                                {setsToWin === 4 ? (
+                                                    <>
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 3 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 4 ? css.squareWin : css.squareDarkWin}`} />
+                                                    </>
+                                                ) : setsToWin === 3 ? (
+                                                    <>
+                                                        <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 3 ? css.squareWin : css.squareDarkWin}`} />
+                                                    </>
+                                                ) : setsToWin === 2 ? (
+                                                    <>
+                                                        <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
+                                                    </>
+                                                ) : (
                                                     <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
-                                                    <span className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
-                                                </>
-                                            ) : (
-                                                <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
-                                            )}
+                                                )}
                                         </div>
                                     </div>
                                         {seriesBanner ? (
@@ -1974,21 +2091,28 @@ const GamblingPage = () => {
                                             </span>
                                         </div>
 
-                                        <div className={css.squares}>
-                                            {setsToWin === 3 ? (
-                                                <>
-                                                    <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                    <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                    <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 3 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                </>
-                                            ) : setsToWin === 2 ? (
-                                                <>
+                                            <div className={css.squares}>
+                                                {setsToWin === 4 ? (
+                                                    <>
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 3 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 4 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    </>
+                                                ) : setsToWin === 3 ? (
+                                                    <>
+                                                        <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 3 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    </>
+                                                ) : setsToWin === 2 ? (
+                                                    <>
+                                                        <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    </>
+                                                ) : (
                                                     <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                    <span className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                </>
-                                            ) : (
-                                                <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
-                                            )}
+                                                )}
                                         </div>
                                     </div>
                                 </div>

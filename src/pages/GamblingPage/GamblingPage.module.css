@@ -542,6 +542,13 @@
     color: white;
 }
 
+.option[data-difficulty="Challenging"]:hover,
+.option[data-difficulty="Challenging"]:focus,
+.option[data-difficulty="Challenging"].selected {
+    background: linear-gradient(90deg, #ff5722, #fff);
+    color: white;
+}
+
 .option[data-difficulty="Hard"]:hover,
 .option[data-difficulty="Hard"]:focus,
 .option[data-difficulty="Hard"].selected {
@@ -549,10 +556,24 @@
     color: white;
 }
 
+.option[data-difficulty="Insane"]:hover,
+.option[data-difficulty="Insane"]:focus,
+.option[data-difficulty="Insane"].selected {
+    background: linear-gradient(90deg, #b300ff, #fff);
+    color: white;
+}
+
 .option[data-difficulty="Impossible"]:hover,
 .option[data-difficulty="Impossible"]:focus,
 .option[data-difficulty="Impossible"].selected {
     background: linear-gradient(90deg, #000, #fff);
+    color: white;
+}
+
+.option[data-difficulty="Tuff Luck"]:hover,
+.option[data-difficulty="Tuff Luck"]:focus,
+.option[data-difficulty="Tuff Luck"].selected {
+    background: linear-gradient(90deg, #0d0016, #fff);
     color: white;
 }
 
@@ -889,5 +910,5 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
