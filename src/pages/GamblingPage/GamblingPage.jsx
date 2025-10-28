@@ -835,7 +835,6 @@ const GamblingPage = () => {
         setIsSeriesActive(false);
         setPlayerSets(0);
         setOpponentSets(0);
-        setsToWin(0);
         resetSet();
         setSeriesBanner(null);
         setSeriesResult(null);
@@ -1495,7 +1494,6 @@ const GamblingPage = () => {
 
         setSeriesMode(null);
         setIsSeriesActive(false);
-        setsToWin(0);
         setPlayerSets(0);
         setOpponentSets(0);
         setRoundWins(0);
@@ -1527,7 +1525,6 @@ const GamblingPage = () => {
         setLoserOpacity(null);
         setSeriesBanner("");
         setLoserOpacity("");
-        setsToWin(0);
     };
 
     const applyPendingSeriesChange = () => {
