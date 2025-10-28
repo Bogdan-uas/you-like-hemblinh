@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
+import Header from "../../components/Header/Header";
 
 const DelayedMount = ({ delay, children }) => {
     const [show, setShow] = useState(false);
@@ -1096,9 +1097,9 @@ const GamblingPage = () => {
 
                             if (isSeriesOver) {
                                 if (playerWonSet) {
-                                    toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been WON! 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
+                                    toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been WON! 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
                                 } else {
-                                    toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been LOST!`, { icon: "😢", duration: SERIES_APPLY_DELAY });
+                                    toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been LOST!`, { icon: "😢", duration: SERIES_APPLY_DELAY });
                                 }
                             } else {
                                 if (playerWonSet) {
@@ -1261,9 +1262,9 @@ const GamblingPage = () => {
 
                         if (isSeriesOver) {
                             if (playerWonSet) {
-                                toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been WON in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`} 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
+                                toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been WON in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`} 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
                             } else {
-                                toast(`${ setsToWin === 1 ? 'This match has' : 'These series have'} been LOST in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`}`, { icon: "😢", duration: SERIES_APPLY_DELAY });
+                                toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been LOST in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`}`, { icon: "😢", duration: SERIES_APPLY_DELAY });
                             }
                         } else {
                             if (playerWonSet) {
@@ -1695,326 +1696,333 @@ const GamblingPage = () => {
     const overtimeTarget = 10 + overtimeBlock * 3;
 
     return (
-        <div className={css.container}>
-            {showDifficultyOverlay && (
-                <div className={css.intro_overlay}>
-                    <div className={css.intro_content} style={{ maxHeight: "85vh", overflowY: "auto" }}>
-                        <p className={css.info_text}>Select Difficulty:</p>
-                        <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
-                            Win streak is available on every difficulty.
-                            After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                            With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
-                        </p>
+        <>
+            <Header
+                isGameWon={isGameWon}
+                setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
+                setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
+                isButtonLocked={isButtonLocked}
+            />
+            <div className={css.container}>
+                {showDifficultyOverlay && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content} style={{ maxHeight: "85vh", overflowY: "auto" }}>
+                            <p className={css.info_text}>Select Difficulty:</p>
+                            <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
+                                Win streak is available on every difficulty.
+                                After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
+                            </p>
 
-                        <select
-                            value={difficulty}
-                            onChange={(e) => handleSelectDifficulty(e.target.value)}
-                            className={css.nativeSelect}
-                        >
-                            <option value=""></option>
-                            {Object.keys(DIFFICULTIES).map((key) => (
-                                <option key={key} value={key}>{key}</option>
-                            ))}
-                        </select>
-
-                        <button
-                            type="button"
-                            className={css.toggleButton}
-                            onClick={toggleDropdown}
-                            ref={buttonRef}
-                            aria-haspopup="listbox"
-                            aria-expanded={open}
-                        >
-                            <span
-                                className={
-                                    difficulty === "LUCK GOD"
-                                        ? css.luckGodShimmer
-                                        : difficulty === "Eternal Madness"
-                                            ? css.eternalMadnessShimmer
-                                            : ''
-                                }
+                            <select
+                                value={difficulty}
+                                onChange={(e) => handleSelectDifficulty(e.target.value)}
+                                className={css.nativeSelect}
                             >
-                                {selectedLabel}
-                            </span>
-                            <span className={css.arrow} />
-                        </button>
+                                <option value=""></option>
+                                {Object.keys(DIFFICULTIES).map((key) => (
+                                    <option key={key} value={key}>{key}</option>
+                                ))}
+                            </select>
 
-                        {open && (
-                            <>
-                                <ul
-                                    ref={dropdownRef}
-                                    role="listbox"
-                                    className={`${css.dropdownList} ${open ? css.open : ""}`}
-                                    style={{ position: "fixed", ...dropdownCoords.current }}
+                            <button
+                                type="button"
+                                className={css.toggleButton}
+                                onClick={toggleDropdown}
+                                ref={buttonRef}
+                                aria-haspopup="listbox"
+                                aria-expanded={open}
+                            >
+                                <span
+                                    className={
+                                        difficulty === "LUCK GOD"
+                                            ? css.luckGodShimmer
+                                            : difficulty === "Eternal Madness"
+                                                ? css.eternalMadnessShimmer
+                                                : ''
+                                    }
                                 >
-                                    {Object.keys(DIFFICULTIES).map((key) => (
-                                        <li
-                                            key={key}
-                                            data-difficulty={key}
-                                            role="option"
-                                            aria-selected={difficulty === key}
-                                            tabIndex={0}
-                                            className={`${css.option} ${difficulty === key ? css.selected : ""}`}
-                                            onClick={() => handleSelectDifficulty(key)}
-                                            onKeyDown={(e) =>
-                                                (e.key === "Enter" || e.key === " ") && handleSelectDifficulty(key)
-                                            }
-                                            onMouseEnter={(e) => {
-                                                const itemRect = e.currentTarget.getBoundingClientRect();
-                                                const dropdownRect = dropdownRef.current?.getBoundingClientRect();
+                                    {selectedLabel}
+                                </span>
+                                <span className={css.arrow} />
+                            </button>
 
-                                                if (dropdownRect) {
-                                                    let tooltipTop = itemRect.top + itemRect.height / 2;
-                                                    setTooltipCoords({
-                                                        top: tooltipTop,
-                                                        left: dropdownRect.right + 10,
-                                                    });
+                            {open && (
+                                <>
+                                    <ul
+                                        ref={dropdownRef}
+                                        role="listbox"
+                                        className={`${css.dropdownList} ${open ? css.open : ""}`}
+                                        style={{ position: "fixed", ...dropdownCoords.current }}
+                                    >
+                                        {Object.keys(DIFFICULTIES).map((key) => (
+                                            <li
+                                                key={key}
+                                                data-difficulty={key}
+                                                role="option"
+                                                aria-selected={difficulty === key}
+                                                tabIndex={0}
+                                                className={`${css.option} ${difficulty === key ? css.selected : ""}`}
+                                                onClick={() => handleSelectDifficulty(key)}
+                                                onKeyDown={(e) =>
+                                                    (e.key === "Enter" || e.key === " ") && handleSelectDifficulty(key)
                                                 }
+                                                onMouseEnter={(e) => {
+                                                    const itemRect = e.currentTarget.getBoundingClientRect();
+                                                    const dropdownRect = dropdownRef.current?.getBoundingClientRect();
 
-                                                setHoveredDifficulty(key);
-                                            }}
-                                            onMouseLeave={() => setHoveredDifficulty(null)}
+                                                    if (dropdownRect) {
+                                                        let tooltipTop = itemRect.top + itemRect.height / 2;
+                                                        setTooltipCoords({
+                                                            top: tooltipTop,
+                                                            left: dropdownRect.right + 10,
+                                                        });
+                                                    }
+
+                                                    setHoveredDifficulty(key);
+                                                }}
+                                                onMouseLeave={() => setHoveredDifficulty(null)}
+                                            >
+                                                {key}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {hoveredDifficulty && (
+                                        <div
+                                            ref={tooltipRef}
+                                            className={css.info_popup}
+                                            style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                         >
-                                            {key}
-                                        </li>
-                                    ))}
-                                </ul>
+                                            <p>
+                                                <strong>Start:</strong>{" "}
+                                                {DIFFICULTIES[hoveredDifficulty].start[0] === DIFFICULTIES[hoveredDifficulty].start[1]
+                                                    ? DIFFICULTIES[hoveredDifficulty].start[0]
+                                                    : `${DIFFICULTIES[hoveredDifficulty].start[0]} to ${DIFFICULTIES[hoveredDifficulty].start[1]}`
+                                                }
+                                            </p>
+                                            <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
+                                            <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
+                                            {DIFFICULTIES[hoveredDifficulty].unstableMin && (
+                                                <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
+                                            )}
+                                            {DIFFICULTIES[hoveredDifficulty].jackpot && (
+                                                <p className={css.unstable_note}>
+                                                    🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {''} {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                                                </p>
+                                            )}
+                                            {DIFFICULTIES[hoveredDifficulty].superjackpot && (
+                                                <p className={css.unstable_note}>
+                                                    🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%): {''}
+                                                    {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
-                                {hoveredDifficulty && (
-                                    <div
-                                        ref={tooltipRef}
-                                        className={css.info_popup}
-                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
-                                    >
-                                        <p>
-                                            <strong>Start:</strong>{" "}
-                                            {DIFFICULTIES[hoveredDifficulty].start[0] === DIFFICULTIES[hoveredDifficulty].start[1]
-                                                ? DIFFICULTIES[hoveredDifficulty].start[0]
-                                                : `${DIFFICULTIES[hoveredDifficulty].start[0]} to ${DIFFICULTIES[hoveredDifficulty].start[1]}`
-                                            }
-                                        </p>
-                                        <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
-                                        <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
-                                        {DIFFICULTIES[hoveredDifficulty].unstableMin && (
-                                            <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
-                                        )}
-                                        {DIFFICULTIES[hoveredDifficulty].jackpot && (
-                                            <p className={css.unstable_note}>
-                                                🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {''} {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
-                                            </p>
-                                        )}
-                                        {DIFFICULTIES[hoveredDifficulty].superjackpot && (
-                                            <p className={css.unstable_note}>
-                                                🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%): {''}
-                                                {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
-                                            </p>
-                                        )}
+                            {difficulty && (
+                                <div className={css.mode_select_container} style={{ marginTop: 20 }}>
+                                    <p className={css.info_text}>Select Mode:</p>
+                                    <div className={css.mode_buttons}>
+                                        <button
+                                            className={`${css.gamble_button} ${seriesModeDraft === "normal" ? css.active_mode : ""}`}
+                                            onMouseEnter={() => setHoveredMode("normal")}
+                                            onMouseLeave={() => setHoveredMode(null)}
+                                            onClick={() => setSeriesModeDraft("normal")}
+                                        >
+                                            Standard
+                                        </button>
+
+                                        <button
+                                            className={`${css.gamble_button} ${seriesModeDraft === "extended" ? css.active_mode : ""}`}
+                                            onMouseEnter={() => setHoveredMode("extended")}
+                                            onMouseLeave={() => setHoveredMode(null)}
+                                            onClick={() => setSeriesModeDraft("extended")}
+                                        >
+                                            Extended
+                                        </button>
                                     </div>
-                                )}
-                            </>
-                        )}
 
-                        {difficulty && (
-                            <div className={css.mode_select_container} style={{ marginTop: 20 }}>
-                                <p className={css.info_text}>Select Mode:</p>
-                                <div className={css.mode_buttons}>
-                                    <button
-                                        className={`${css.gamble_button} ${seriesModeDraft === "normal" ? css.active_mode : ""}`}
-                                        onMouseEnter={() => setHoveredMode("normal")}
-                                        onMouseLeave={() => setHoveredMode(null)}
-                                        onClick={() => setSeriesModeDraft("normal")}
-                                    >
-                                        Standard
-                                    </button>
-
-                                    <button
-                                        className={`${css.gamble_button} ${seriesModeDraft === "extended" ? css.active_mode : ""}`}
-                                        onMouseEnter={() => setHoveredMode("extended")}
-                                        onMouseLeave={() => setHoveredMode(null)}
-                                        onClick={() => setSeriesModeDraft("extended")}
-                                    >
-                                        Extended
-                                    </button>
+                                    {hoveredMode === "normal" && (
+                                        <div
+                                            ref={tooltipRef}
+                                            className={css.info_popup}
+                                            style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                        >
+                                            🎯 Just a normal mode, nothing special.
+                                        </div>
+                                    )}
+                                    {hoveredMode === "extended" && (
+                                        <div
+                                            ref={tooltipRef}
+                                            className={css.info_popup}
+                                            style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                        >
+                                            🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7 series.<br />
+                                            Win 1/2/3/4 sets to triumph! Your final gain or loss will depend on your match score.<br />
+                                        </div>
+                                    )}
                                 </div>
+                            )}
 
-                                {hoveredMode === "normal" && (
-                                    <div
-                                        ref={tooltipRef}
-                                        className={css.info_popup}
-                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
-                                    >
-                                        🎯 Just a normal mode, nothing special.
-                                    </div>
-                                )}
-                                {hoveredMode === "extended" && (
-                                    <div
-                                        ref={tooltipRef}
-                                        className={css.info_popup}
-                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
-                                    >
-                                        🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7 series.<br />
-                                        Win 1/2/3/4 sets to triumph! Your final gain or loss will depend on your match score.<br />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <button
-                            className={`${css.proceed_button} ${!difficulty || !seriesModeDraft ? css.locked : ""}`}
-                            onClick={startGame}
-                            disabled={!difficulty || !seriesModeDraft}
-                            style={{ marginTop: 20 }}
-                        >
-                            Let's go?
-                        </button>
+                            <button
+                                className={`${css.proceed_button} ${!difficulty || !seriesModeDraft ? css.locked : ""}`}
+                                onClick={startGame}
+                                disabled={!difficulty || !seriesModeDraft}
+                                style={{ marginTop: 20 }}
+                            >
+                                Let's go?
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {showIntro && (
-                <div className={css.intro_overlay}>
-                    <div className={css.intro_content}>
+                {showIntro && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
+                                ? css.rainbowText
+                                : difficulty === "Eternal Madness"
+                                    ? css.eternalMadnessText
+                                    : ''
+                                }`}>
+                                {seriesMode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode
+                            </h2>
+
+                            <div className={css.fade_in}>
+                                <p className={css.info_text}>Your current points:</p>
+                                {DIFFICULTIES[difficulty].start[0] !== DIFFICULTIES[difficulty].start[1] && (
+                                    <p className={`${css.small_text} ${css.fade_in_delay}`}>
+                                        Range: {DIFFICULTIES[difficulty].start[0]} to {DIFFICULTIES[difficulty].start[1]}
+                                    </p>
+                                )}
+                                <div className={`${css.points} ${css.slide_in_left}`}>
+                                    <CountUp start={0} end={currentPoints} duration={1.2} />
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay}>
+                                <p className={css.info_text}>Goal:</p>
+                                <p className={`${css.small_text} ${css.fade_in_delay}`}>
+                                    Range: {DIFFICULTIES[difficulty].goal[0]} to {DIFFICULTIES[difficulty].goal[1]}
+                                </p>
+                                <div className={`${css.points} ${css.slide_in_left}`}>
+                                    <CountUp start={0} end={goalPoints} duration={1.2} />
+                                </div>
+                            </div>
+
+                            <p className={`${css.info_text} ${css.fade_in_delay_more}`}>
+                                The multiplier varies from{" "}
+                                <span style={{ color: "red" }}>
+                                    {DIFFICULTIES[difficulty].unstableMin ? "0x" : `${DIFFICULTIES[difficulty].multiplier[0]}x`}
+                                </span>{" "}
+                                to{" "}
+                                <span style={{ color: "green" }}>
+                                    {DIFFICULTIES[difficulty].multiplier[1]}x
+                                </span>.
+                            </p>
+
+                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
+                                After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
+                            </p>
+
+                            {seriesMode === "extended" && (
+                                <p
+                                    className={`${css.unstable_note} ${css.fade_in_delay_more}`}
+                                    style={{
+                                        fontSize: "24px",
+                                        marginTop: "16px",
+                                        textAlign: "center",
+                                        maxWidth: "60ch",
+                                        color: "#2e2f42",
+                                    }}
+                                >
+                                    🏆 In Extended — {difficulty} Mode, you'll be able to play a{" "}
+                                    {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
+                                        ? "Best-of-7"
+                                        : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                            ? "Best-of-5"
+                                            : difficulty === "Insane" || difficulty === "Hard"
+                                                ? "Best-of-3"
+                                                : "Best-of-1"}{" "}
+                                    series.
+                                    <br />
+                                    Win{" "}
+                                    {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
+                                        ? "4"
+                                        : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                            ? "3"
+                                            : difficulty === "Insane" || difficulty === "Hard"
+                                                ? "2"
+                                                : "1"}{" "}
+                                    {difficulty === "Easy" || difficulty === "Normal" ? "set" : "sets"} to triumph!
+                                    {difficulty !== "Easy" && difficulty !== "Normal" &&
+                                        " Your final gain or loss will depend on your match score."}
+                                    <br />
+                                    Tipp: Start playing{" "}
+                                    {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
+                                        ? "Best-of-7"
+                                        : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                            ? "Best-of-5"
+                                            : difficulty === "Insane" || difficulty === "Hard"
+                                                ? "Best-of-3"
+                                                : "Best-of-1"}{" "}
+                                    only when you have at least 100 points to avoid small gains from big wins.
+                                </p>
+                            )}
+
+                            <button className={`${css.proceed_button} ${css.fade_in_delay_more}`} onClick={() => setShowIntro(false)}>
+                                Start Game
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {!showIntro && !showDifficultyOverlay && (
+                    <>
+                        <p className={css.info_text} style={{ marginTop: "12px", fontWeight: "bold" }}>
+                            {seriesMode === "extended" ? "Extended" : "Standard"}
+                        </p>
                         <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
                             ? css.rainbowText
                             : difficulty === "Eternal Madness"
                                 ? css.eternalMadnessText
                                 : ''
                             }`}>
-                            {seriesMode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode
+                            {difficulty} Mode
                         </h2>
 
-                        <div className={css.fade_in}>
-                            <p className={css.info_text}>Your current points:</p>
-                            {DIFFICULTIES[difficulty].start[0] !== DIFFICULTIES[difficulty].start[1] && (
-                                <p className={`${css.small_text} ${css.fade_in_delay}`}>
-                                    Range: {DIFFICULTIES[difficulty].start[0]} to {DIFFICULTIES[difficulty].start[1]}
-                                </p>
-                            )}
-                            <div className={`${css.points} ${css.slide_in_left}`}>
-                                <CountUp start={0} end={currentPoints} duration={1.2} />
-                            </div>
-                        </div>
-
-                        <div className={css.fade_in_delay}>
-                            <p className={css.info_text}>Goal:</p>
-                            <p className={`${css.small_text} ${css.fade_in_delay}`}>
-                                Range: {DIFFICULTIES[difficulty].goal[0]} to {DIFFICULTIES[difficulty].goal[1]}
-                            </p>
-                            <div className={`${css.points} ${css.slide_in_left}`}>
-                                <CountUp start={0} end={goalPoints} duration={1.2} />
-                            </div>
-                        </div>
-
-                        <p className={`${css.info_text} ${css.fade_in_delay_more}`}>
-                            The multiplier varies from{" "}
-                            <span style={{ color: "red" }}>
-                                {DIFFICULTIES[difficulty].unstableMin ? "0x" : `${DIFFICULTIES[difficulty].multiplier[0]}x`}
-                            </span>{" "}
-                            to{" "}
-                            <span style={{ color: "green" }}>
-                                {DIFFICULTIES[difficulty].multiplier[1]}x
-                            </span>.
-                        </p>
-
-                        <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
-                            After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                            With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
-                        </p>
-
                         {seriesMode === "extended" && (
-                            <p
-                                className={`${css.unstable_note} ${css.fade_in_delay_more}`}
-                                style={{
-                                    fontSize: "24px",
-                                    marginTop: "16px",
-                                    textAlign: "center",
-                                    maxWidth: "60ch",
-                                    color: "#2e2f42",
-                                }}
-                            >
-                                🏆 In Extended — {difficulty} Mode, you'll be able to play a{" "}
-                                {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
-                                    ? "Best-of-7"
-                                    : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                        ? "Best-of-5"
-                                        : difficulty === "Insane" || difficulty === "Hard"
-                                            ? "Best-of-3"
-                                            : "Best-of-1"}{" "}
-                                series.
-                                <br />
-                                Win{" "}
-                                {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
-                                    ? "4"
-                                    : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                        ? "3"
-                                        : difficulty === "Insane" || difficulty === "Hard"
-                                            ? "2"
-                                            : "1"}{" "}
-                                {difficulty === "Easy" || difficulty === "Normal" ? "set" : "sets"} to triumph!
-                                {difficulty !== "Easy" && difficulty !== "Normal" &&
-                                    " Your final gain or loss will depend on your match score."}
-                                <br />
-                                Tipp: Start playing{" "}
-                                {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
-                                    ? "Best-of-7"
-                                    : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                        ? "Best-of-5"
-                                        : difficulty === "Insane" || difficulty === "Hard"
-                                            ? "Best-of-3"
-                                            : "Best-of-1"}{" "}
-                                only when you have at least 100 points to avoid small gains from big wins.
-                            </p>
-                        )}
-
-                        <button className={`${css.proceed_button} ${css.fade_in_delay_more}`} onClick={() => setShowIntro(false)}>
-                            Start Game
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {!showIntro && !showDifficultyOverlay && (
-                <>
-                    <p className={css.info_text} style={{ marginTop: "12px", fontWeight: "bold" }}>
-                        {seriesMode === "extended" ? "Extended" : "Standard"}
-                    </p>
-                    <h2 className={`${css.game_title} ${difficulty === "LUCK GOD"
-                        ? css.rainbowText
-                        : difficulty === "Eternal Madness"
-                            ? css.eternalMadnessText
-                            : ''
-                        }`}>
-                        {difficulty} Mode
-                    </h2>
-
-                    {seriesMode === "extended" && (
-                        <div className={css.best_of_9_container}>
-                            {!isSeriesActive ? (
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={startSeries}
-                                    disabled={isButtonLocked}
-                                    style={{ marginTop: "8px", marginBottom: "8px" }}
-                                >
-                                    Wanna more at once?
-                                </button>
-                            ) : (
-                                <div className={css.scoreboard}>
-                                    <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                            <span className={css.round_text}>
-                                                <CountUp
-                                                    key={roundWins}
-                                                    start={Math.max(roundWins - 1, 0)}
-                                                    end={roundWins}
-                                                    duration={1}
-                                                    style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}
-                                                />
-                                            </span>
-                                        </div>
-                                        <div
-                                            className={`${css.squares} ${css.winRow}`}
-                                        >
+                            <div className={css.best_of_9_container}>
+                                {!isSeriesActive ? (
+                                    <button
+                                        className={css.gamble_button}
+                                        onClick={startSeries}
+                                        disabled={isButtonLocked}
+                                        style={{ marginTop: "8px", marginBottom: "8px" }}
+                                    >
+                                        Wanna more at once?
+                                    </button>
+                                ) : (
+                                    <div className={css.scoreboard}>
+                                        <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                <span className={css.round_text}>
+                                                    <CountUp
+                                                        key={roundWins}
+                                                        start={Math.max(roundWins - 1, 0)}
+                                                        end={roundWins}
+                                                        duration={1}
+                                                        style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}
+                                                    />
+                                                </span>
+                                            </div>
+                                            <div
+                                                className={`${css.squares} ${css.winRow}`}
+                                            >
                                                 {setsToWin === 4 ? (
                                                     <>
                                                         <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
@@ -2036,8 +2044,8 @@ const GamblingPage = () => {
                                                 ) : (
                                                     <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
                                                 )}
+                                            </div>
                                         </div>
-                                    </div>
                                         {seriesBanner ? (
                                             <motion.span
                                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -2047,23 +2055,23 @@ const GamblingPage = () => {
                                             </motion.span>
                                         ) : (
                                             <div className={css.game_info_text}>
-                                                    {setsToWin !== 1 && (
-                                                        <motion.span
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                            transition={{ duration: 0.4 }}
-                                                            className={css.round_text}
-                                                            style={{ fontSize: "24px" }}
-                                                        >
-                                                            {(() => {
-                                                                const currentSet = playerSets + opponentSets + 1;
-                                                                const totalSets = setsToWin * 2 - 1;
-                                                                const isDecider = currentSet === totalSets;
-                                                                return isDecider ? 'Decider' : `Set ${currentSet}`;
-                                                            })()}
-                                                        </motion.span>
-                                                    )}
+                                                {setsToWin !== 1 && (
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        className={css.round_text}
+                                                        style={{ fontSize: "24px" }}
+                                                    >
+                                                        {(() => {
+                                                            const currentSet = playerSets + opponentSets + 1;
+                                                            const totalSets = setsToWin * 2 - 1;
+                                                            const isDecider = currentSet === totalSets;
+                                                            return isDecider ? 'Decider' : `Set ${currentSet}`;
+                                                        })()}
+                                                    </motion.span>
+                                                )}
                                                 {isOvertime && (
                                                     <motion.span
                                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -2115,18 +2123,18 @@ const GamblingPage = () => {
                                                 </motion.span>
                                             </div>
                                         )}
-                                    <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                            <span className={css.round_text}>
-                                                <CountUp
-                                                    key={roundLosses}
-                                                    start={Math.max(roundLosses - 1, 0)}
-                                                    end={roundLosses}
-                                                    duration={1}
-                                                    style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}
-                                                />
-                                            </span>
-                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                <span className={css.round_text}>
+                                                    <CountUp
+                                                        key={roundLosses}
+                                                        start={Math.max(roundLosses - 1, 0)}
+                                                        end={roundLosses}
+                                                        duration={1}
+                                                        style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}
+                                                    />
+                                                </span>
+                                            </div>
 
                                             <div className={css.squares}>
                                                 {setsToWin === 4 ? (
@@ -2150,464 +2158,446 @@ const GamblingPage = () => {
                                                 ) : (
                                                     <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
                                                 )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        )}
 
-                    {seriesResult && (
-                        <>
-                            {setsToWin !== 1 && (
-                                <DelayedMount delay={3000}>
+                        {seriesResult && (
+                            <>
+                                {setsToWin !== 1 && (
+                                    <DelayedMount delay={3000}>
+                                        <motion.div
+                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className={css.seriesSummary}>
+                                            <ul className={css.seriesSummaryList}>
+                                                {setHistory.map(({ set, wins, losses, won }) => {
+                                                    const totalSets = setsToWin * 2 - 1;
+                                                    const isDecider = set === totalSets;
+                                                    const label = isDecider ? 'Decider' : `Set ${set}`;
+
+                                                    return (
+                                                        <li key={set} style={{ fontSize: '20px' }}>
+                                                            <span className={css.multiplier_win} style={{ color: won === true ? '#2e7d32' : won === false ? '#2e7d32' : '', fontWeight: '700', opacity: won === true ? 1 : won === false ? 0.4 : '' }}>
+                                                                {wins}
+                                                            </span>
+                                                            &nbsp;&nbsp;&nbsp;&nbsp;
+                                                            <span style={{ fontWeight: '600' }} className={css.info_text}>{label}</span>
+                                                            &nbsp;&nbsp;&nbsp;&nbsp;
+                                                            <span className={css.multiplier_fail} style={{ color: won === true ? 'red' : won === false ? 'red' : '', fontWeight: '700', opacity: won === true ? 0.4 : won === false ? 1 : '' }}>
+                                                                {losses}
+                                                            </span>
+                                                        </li>
+                                                    )
+                                                })}
+                                            </ul>
+                                        </motion.div>
+                                    </DelayedMount>
+                                )}
+                                <DelayedMount delay={SERIES_APPLY_DELAY}>
                                     <motion.div
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                         transition={{ duration: 0.4 }}
-                                        className={css.seriesSummary}>
-                                        <ul className={css.seriesSummaryList}>
-                                            {setHistory.map(({ set, wins, losses, won }) => {
-                                                const totalSets = setsToWin * 2 - 1;
-                                                const isDecider = set === totalSets;
-                                                const label = isDecider ? 'Decider' : `Set ${set}`;
-
-                                                return (
-                                                    <li key={set} style={{ fontSize: '20px' }}>
-                                                        <span className={css.multiplier_win} style={{ color: won === true ? '#2e7d32' : won === false ? '#2e7d32' : '', fontWeight: '700', opacity: won === true ? 1 : won === false ? 0.4 : '' }}>
-                                                            {wins}
-                                                        </span>
-                                                        &nbsp;&nbsp;&nbsp;&nbsp;
-                                                        <span style={{ fontWeight: '600' }} className={css.info_text}>{label}</span>
-                                                        &nbsp;&nbsp;&nbsp;&nbsp;
-                                                        <span className={css.multiplier_fail} style={{ color: won === true ? 'red' : won === false ? 'red' : '', fontWeight: '700', opacity: won === true ? 0.4 : won === false ? 1 : '' }}>
-                                                            {losses}
-                                                        </span>
-                                                    </li>
-                                                )
-                                            })}
-                                        </ul>
+                                        className={css.series_result}
+                                    >
+                                        <p>
+                                            and because you{" "}
+                                            <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                                {seriesResult.isWin ? "won" : "lost"}
+                                            </span>{" "}
+                                            with the score of{" "}
+                                            <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
+                                                {playerSets}
+                                            </span>
+                                            -
+                                            <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
+                                                {opponentSets}
+                                            </span>, you{" "}
+                                            <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                                {seriesResult.isWin ? "gain" : "lose"}
+                                            </span>{" "}
+                                            <span style={{ fontWeight: "bold" }} className={getHitRateClass(seriesResult.percent)}>
+                                                {seriesResult.percent}%
+                                            </span>
+                                            .
+                                        </p>
                                     </motion.div>
                                 </DelayedMount>
-                            )}
-                            <DelayedMount delay={SERIES_APPLY_DELAY}>
-                                <motion.div
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    className={css.series_result}
-                                >
-                                    <p>
-                                        and because you{" "}
-                                        <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
-                                            {seriesResult.isWin ? "won" : "lost"}
-                                        </span>{" "}
-                                        with the score of{" "}
-                                        <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
-                                            {playerSets}
-                                        </span>
-                                        -
-                                        <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
-                                            {opponentSets}
-                                        </span>, you{" "}
-                                        <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
-                                            {seriesResult.isWin ? "gain" : "lose"}
-                                        </span>{" "}
-                                        <span style={{ fontWeight: "bold" }} className={getHitRateClass(seriesResult.percent)}>
-                                            {seriesResult.percent}%
-                                        </span>
-                                        .
-                                    </p>
-                                </motion.div>
-                            </DelayedMount>
-                        </>
-                    )}
-                    <div className={css.points_container}>
-                        <div className={css.streak_points_container}>
-                            <div className={css.streakWrapper}>
-                                <AnimatePresence>
-                                    {consecutiveWins >= 2 && (
-                                        <motion.div
-                                            key="winStreak"
-                                            initial={{ scale: 0, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            exit={{ scale: 0, opacity: 0 }}
-                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                            className={css.streakDisplay}
-                                        >
-                                            🔥
-                                            <span className={css.streakNumber} style={{ color: consecutiveWins >= 5 ? '#4a2a00ff' : '' }}>{consecutiveWins}</span>
-                                        </motion.div>
-                                    )}
-                                    {consecutiveLosses >= 2 && (
-                                        <motion.div
-                                            key="lossStreak"
-                                            initial={{ scale: 0, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            exit={{ scale: 0, opacity: 0 }}
-                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                            className={css.streakDisplay}
-                                        >
-                                            💀
-                                            <span className={css.streakNumber} style={{ color: consecutiveLosses >= 5 ? '#4a2a00ff' : '' }}>{consecutiveLosses}</span>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            <div className={css.points_text_container}>
-                                <p className={css.info_text}>Your current points:</p>
-                                <div className={css.another_points_text_container}>
-                                    <div className={css.points} style={getCurrentPointsStyle()}>
-                                        <CountUp
-                                            start={prevPointsRef.current}
-                                            end={currentPoints}
-                                            duration={1.2}
-                                            onEnd={() => (prevPointsRef.current = currentPoints)}
-                                            key={currentPoints}
-                                        />
+                            </>
+                        )}
+                        <div className={css.points_container}>
+                            <div className={css.streak_points_container}>
+                                <div className={css.streakWrapper}>
+                                    <AnimatePresence>
+                                        {consecutiveWins >= 2 && (
+                                            <motion.div
+                                                key="winStreak"
+                                                initial={{ scale: 0, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                exit={{ scale: 0, opacity: 0 }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                className={css.streakDisplay}
+                                            >
+                                                🔥
+                                                <span className={css.streakNumber} style={{ color: consecutiveWins >= 5 ? '#4a2a00ff' : '' }}>{consecutiveWins}</span>
+                                            </motion.div>
+                                        )}
+                                        {consecutiveLosses >= 2 && (
+                                            <motion.div
+                                                key="lossStreak"
+                                                initial={{ scale: 0, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                exit={{ scale: 0, opacity: 0 }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                className={css.streakDisplay}
+                                            >
+                                                💀
+                                                <span className={css.streakNumber} style={{ color: consecutiveLosses >= 5 ? '#4a2a00ff' : '' }}>{consecutiveLosses}</span>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                                <div className={css.points_text_container}>
+                                    <p className={css.info_text}>Your current points:</p>
+                                    <div className={css.another_points_text_container}>
+                                        <div className={css.points} style={getCurrentPointsStyle()}>
+                                            <CountUp
+                                                start={prevPointsRef.current}
+                                                end={currentPoints}
+                                                duration={1.2}
+                                                onEnd={() => (prevPointsRef.current = currentPoints)}
+                                                key={currentPoints}
+                                            />
+                                        </div>
+                                        {seriesResult ? (pointsChange !== null && (
+                                            <span
+                                                className={css.points_gain_loss}
+                                                style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                            >
+                                                {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                            </span>
+                                        )) : (pointsChange !== null && (
+                                            <span
+                                                className={css.points_gain_loss}
+                                                style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                            >
+                                                {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                            </span>
+                                        ))}
                                     </div>
-                                    {seriesResult ? (pointsChange !== null && (
-                                        <span
-                                            className={css.points_gain_loss}
-                                            style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                        >
-                                            {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                        </span>
-                                    )) : (pointsChange !== null && (
-                                        <span
-                                            className={css.points_gain_loss}
-                                            style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                        >
-                                            {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                        </span>
-                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.points_text_container} style={{ marginLeft: consecutiveWins >= 2 || consecutiveLosses >= 2 ? '80px' : '25px', transition: 'margin 1000ms ease-in-out' }}>
+                                <p className={css.info_text}>Goal:</p>
+                                <div className={css.points}>
+                                    <CountUp
+                                        start={prevGoalRef.current}
+                                        end={goalPoints}
+                                        duration={1.2}
+                                        onEnd={() => (prevGoalRef.current = goalPoints)}
+                                        key={goalPoints}
+                                    />
                                 </div>
                             </div>
                         </div>
 
-                        <div className={css.points_text_container} style={{ marginLeft: consecutiveWins >= 2 || consecutiveLosses >= 2 ? '80px' : '25px', transition: 'margin 1000ms ease-in-out' }}>
-                            <p className={css.info_text}>Goal:</p>
-                            <div className={css.points}>
-                                <CountUp
-                                    start={prevGoalRef.current}
-                                    end={goalPoints}
-                                    duration={1.2}
-                                    onEnd={() => (prevGoalRef.current = goalPoints)}
-                                    key={goalPoints}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={css.input_container}>
-                        <input
-                            type="number"
-                            value={bet}
-                            onChange={handleBetChange}
-                            onKeyDown={handleKeyDown}
-                            className={css.input}
-                            placeholder="Gamble?"
-                            ref={betInputRef}
-                            disabled={isGameWon || isSeriesActive}
-                            style={{
-                                pointerEvents: isGameWon || isSeriesActive ? "none" : "auto",
-                                opacity: isSeriesActive ? 0.0 : 1,
-                                display: isSeriesActive ? "none" : "inline-block",
-                                transition: 'opacity 300ms ease-in-out'
-                            }}
-                        />
-                        <button
-                            type="button"
-                            className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
-                            onClick={() => setBet('')}
-                            disabled={isGameWon || isButtonLocked || isSeriesActive}
-                            style={{
-                                pointerEvents: isGameWon || isButtonLocked || isSeriesActive ? "none" : "auto",
-                                display: isSeriesActive ? "none" : "inline-block",
-                                opacity: isSeriesActive ? 0.0 : 1
-                            }}
-                        >
-                            Clear
-                        </button>
-                        <button
-                            type="button"
-                            className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
-                            onClick={() => setBet(currentPoints.toString())}
-                            disabled={isGameWon || isButtonLocked || isSeriesActive}
-                            style={{
-                                pointerEvents: isGameWon || isButtonLocked || isSeriesActive ? "none" : "auto",
-                                display: isSeriesActive ? "none" : "inline-block",
-                                opacity: isSeriesActive ? 0.0 : 1
-                            }}
-                        >
-                            Max
-                        </button>
-                        <button
-                            name="gamble"
-                            onClick={handleGamble}
-                            className={`${css.gamble_button} ${isGambleButtonLocked ? css.locked : ""}`}
-                            disabled={isGambleButtonLocked || seriesResult}
-                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
-                        >
-                            Gamble
-                        </button>
-                    </div>
-
-                    {resultMessage && (
-                        <p className={`${css.info_text} ${css.result_message}`}>
-                            <AnimatePresence mode="wait">
-                                {jackpotType === "superjackpot" ? (
-                                    <motion.span
-                                        key="superjackpot"
-                                        initial={{ opacity: 0, scale: 0 }}
-                                        animate={{ opacity: 1, scale: 1.5 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.6 }}
-                                        className={css.superjackpotFlash}
-                                    >
-                                        🌈💥 SUPER JACKPOT!!! 🚀
-                                    </motion.span>
-                                ) : (
-                                    <motion.span
-                                        key="normal"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                    >
-                                        {resultMessage}
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
-
-                            {multiplier !== null && (
-                                <>
-                                    {" "}Your multiplier is
-                                    <span className={`${css.multiplier} ${getMultiplierClass(multiplier - winStreakBonus)}`}>
-                                        {DIFFICULTIES[difficulty].unlimited
-                                            ? (multiplier - winStreakBonus).toFixed(4)
-                                            : (multiplier - winStreakBonus).toFixed(2)}x
-                                    </span>
-                                    !
-                                    {winStreakBonus > 0 && (
-                                        <AnimatePresence mode="wait">
-                                            <motion.span
-                                                key="streakbonus"
-                                                initial={{ opacity: 0, scale: 0 }}
-                                                animate={{ opacity: 1, scale: 1.5 }}
-                                                exit={{ opacity: 0, scale: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
-                                                transition={{ duration: 1 }}
-                                                style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
-                                            >
-                                                +{winStreakBonus.toFixed(2)}x streak bonus!
-                                            </motion.span>
-                                        </AnimatePresence>
-                                    )}
-                                </>
-                            )}
-                        </p>
-                    )}
-
-                    <div className={css.bottom_buttons}>
-                        <button
-                            className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
-                            onClick={() => setIsRestartModalOpen(true)}
-                            disabled={isButtonLocked}
-                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
-                        >
-                            Restart the game?
-                        </button>
-                        <button
-                            className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
-                            onClick={() => setIsTerminateModalOpen(true)}
-                            disabled={isButtonLocked}
-                            style={{ pointerEvents: isGameWon ? "none" : "auto" }}
-                        >
-                            Terminate the game?
-                        </button>
-                    </div>
-
-                    {isRestartModalOpen && (
-                        <div className={css.restart_modal}>
-                            <p className={css.restart_text}>Are you sure you want to restart the game?</p>
-                            <div className={css.restart_buttons}>
-                                <button className={css.cancel_button} onClick={() => setIsRestartModalOpen(false)}>Cancel</button>
-                                <button className={css.confirm_button} onClick={confirmRestart}>Restart</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {isTerminateModalOpen && (
-                        <div className={css.restart_modal}>
-                            <p className={css.restart_text}>Are you sure you want to terminate the game?</p>
-                            <div className={css.restart_buttons}>
-                                <button className={css.cancel_button} onClick={() => setIsTerminateModalOpen(false)}>Cancel</button>
-                                <button className={css.confirm_button} onClick={confirmTerminate}>Terminate</button>
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            <AnimatePresence>
-                {showGameOverScreen && (
-                    <motion.div
-                        className={`${loaderCss.modal_overlay}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.4 }}
-                    >
-                        <motion.div
-                            className={loaderCss.game_container}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 120,
-                                damping: 15,
-                                duration: 0.5,
-                            }}
-                        >
-                            <h1
-                                className={css.game_title}
+                        <div className={css.input_container}>
+                            <input
+                                type="number"
+                                value={bet}
+                                onChange={handleBetChange}
+                                onKeyDown={handleKeyDown}
+                                className={css.input}
+                                placeholder="Gamble?"
+                                ref={betInputRef}
+                                disabled={isGameWon || isSeriesActive}
                                 style={{
-                                    color: isWin ? "#00ff7f" : "#ff4c4c",
-                                    textShadow: isWin
-                                        ? "0 0 5px rgba(0,255,127,0.8)"
-                                        : "0 0 5px rgba(255,76,76,0.8)",
+                                    pointerEvents: isGameWon || isSeriesActive ? "none" : "auto",
+                                    opacity: isSeriesActive ? 0.0 : 1,
+                                    display: isSeriesActive ? "none" : "inline-block",
+                                    transition: 'opacity 300ms ease-in-out'
+                                }}
+                            />
+                            <button
+                                type="button"
+                                className={`${css.clear_button} ${isButtonLocked ? css.locked : ""}`}
+                                onClick={() => setBet('')}
+                                disabled={isGameWon || isButtonLocked || isSeriesActive}
+                                style={{
+                                    pointerEvents: isGameWon || isButtonLocked || isSeriesActive ? "none" : "auto",
+                                    display: isSeriesActive ? "none" : "inline-block",
+                                    opacity: isSeriesActive ? 0.0 : 1
                                 }}
                             >
-                                {isWin ? "You Won! 🎉" : "You Lost! 😢"}
-                            </h1>
-
-                            <p className={css.info_text} style={{ fontSize: "20px" }}>
-                                {DIFFICULTY_END_MESSAGES[difficulty]?.[isWin ? "win" : "lose"]}
-                            </p>
-
-                            {!isWin && (
-                                <div className={css.another_points_text_container} style={{ fontSize: "22px", fontWeight: 'bolder' }}>
-                                    <p className={css.info_text}>
-                                        Highest points amount achieved:
-                                    </p>
-                                    <div className={css.points} style={getCurrentPointsStyle()}>
-                                        <CountUp
-                                            start={0}
-                                            end={maxPointsReached}
-                                            duration={2}
-                                            onEnd={() => {
-                                                prevPointsRef.current = maxPointsReached;
-                                            }}
-                                            key={maxPointsReached}
-                                        />
-                                    </div>
-                                    <p className={css.info_text}>points</p>
-                                </div>
-                            )}
-
-                            <motion.div
-                                className={css.session_summary}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
+                                Clear
+                            </button>
+                            <button
+                                type="button"
+                                className={`${css.max_button} ${isButtonLocked ? css.locked : ""}`}
+                                onClick={() => setBet(currentPoints.toString())}
+                                disabled={isGameWon || isButtonLocked || isSeriesActive}
+                                style={{
+                                    pointerEvents: isGameWon || isButtonLocked || isSeriesActive ? "none" : "auto",
+                                    display: isSeriesActive ? "none" : "inline-block",
+                                    opacity: isSeriesActive ? 0.0 : 1
+                                }}
                             >
-                                <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
-                                    General Info
-                                </p>
-                                <div className={css.divider} />
-                                <p>
-                                    🏆 Best multiplier:
-                                    <span className={`${css.multiplier} ${getBestMultiplierClass(bestMultiplier)}`}>
-                                        {bestMultiplier?.toFixed(2)}x
-                                    </span>
-                                </p>
-                                <p>
-                                    📉 Worst multiplier:
-                                    <span className={`${css.multiplier} ${getBestMultiplierClass(worstMultiplier)}`}>
-                                        {worstMultiplier?.toFixed(2)}x
-                                    </span>
-                                </p>
-                                <p>🎲 Total bets made: {totalBets}</p>
-                                <p>💰 Total points earned: {totalEarned}</p>
-                                <p>❌ Total points lost: {totalLost}</p>
-                                {(DIFFICULTIES[difficulty].jackpot || DIFFICULTIES[difficulty].superjackpot) && (
+                                Max
+                            </button>
+                            <button
+                                name="gamble"
+                                onClick={handleGamble}
+                                className={`${css.gamble_button} ${isGambleButtonLocked ? css.locked : ""}`}
+                                disabled={isGambleButtonLocked || seriesResult}
+                                style={{ pointerEvents: isGameWon ? "none" : "auto" }}
+                            >
+                                Gamble
+                            </button>
+                        </div>
+
+                        {resultMessage && (
+                            <p className={`${css.info_text} ${css.result_message}`}>
+                                <AnimatePresence mode="wait">
+                                    {jackpotType === "superjackpot" ? (
+                                        <motion.span
+                                            key="superjackpot"
+                                            initial={{ opacity: 0, scale: 0 }}
+                                            animate={{ opacity: 1, scale: 1.5 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.6 }}
+                                            className={css.superjackpotFlash}
+                                        >
+                                            🌈💥 SUPER JACKPOT!!! 🚀
+                                        </motion.span>
+                                    ) : (
+                                        <motion.span
+                                            key="normal"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                        >
+                                            {resultMessage}
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
+
+                                {multiplier !== null && (
                                     <>
-                                        <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
-                                            Jackpots
-                                        </p>
-                                        <div className={css.divider} />
-                                        {DIFFICULTIES[difficulty].jackpot && (
-                                            <p style={{ color: totalJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
-                                                🎰 Total jackpots: {totalJackpots}
-                                            </p>
-                                        )}
-                                        {DIFFICULTIES[difficulty].superjackpot && (
-                                            <p style={{ color: totalSuperJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
-                                                🌈💥 Total superjackpots: {totalSuperJackpots}
-                                            </p>
+                                        {" "}Your multiplier is
+                                        <span className={`${css.multiplier} ${getMultiplierClass(multiplier - winStreakBonus)}`}>
+                                            {DIFFICULTIES[difficulty].unlimited
+                                                ? (multiplier - winStreakBonus).toFixed(4)
+                                                : (multiplier - winStreakBonus).toFixed(2)}x
+                                        </span>
+                                        !
+                                        {winStreakBonus > 0 && (
+                                            <AnimatePresence mode="wait">
+                                                <motion.span
+                                                    key="streakbonus"
+                                                    initial={{ opacity: 0, scale: 0 }}
+                                                    animate={{ opacity: 1, scale: 1.5 }}
+                                                    exit={{ opacity: 0, scale: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
+                                                    transition={{ duration: 1 }}
+                                                    style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
+                                                >
+                                                    +{winStreakBonus.toFixed(2)}x streak bonus!
+                                                </motion.span>
+                                            </AnimatePresence>
                                         )}
                                     </>
                                 )}
-                                <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
-                                    Performance Stats
-                                </p>
-                                <div className={css.divider} />
-                                <p>🎯 Hit rate:
-                                    <span className={`${css.multiplier} ${getHitRateClass(hitRate)}`}>
-                                        {hitRate}%
-                                    </span>
-                                </p>
-                                <p>
-                                    ⚡ Average multiplier without bonuses: <br />
-                                    <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplier))}`}>
-                                        {avgMultiplier}x
-                                    </span>
-                                    <br />
+                            </p>
+                        )}
+
+                        {isRestartModalOpen && (
+                            <div className={css.restart_modal}>
+                                <p className={css.restart_text}>Are you sure you want to restart the game?</p>
+                                <div className={css.restart_buttons}>
+                                    <button className={css.cancel_button} onClick={() => setIsRestartModalOpen(false)}>Cancel</button>
+                                    <button className={css.confirm_button} onClick={confirmRestart}>Restart</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {isTerminateModalOpen && (
+                            <div className={css.restart_modal}>
+                                <p className={css.restart_text}>Are you sure you want to terminate the game?</p>
+                                <div className={css.restart_buttons}>
+                                    <button className={css.cancel_button} onClick={() => setIsTerminateModalOpen(false)}>Cancel</button>
+                                    <button className={css.confirm_button} onClick={confirmTerminate}>Terminate</button>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                <AnimatePresence>
+                    {showGameOverScreen && (
+                        <motion.div
+                            className={`${loaderCss.modal_overlay}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                        >
+                            <motion.div
+                                className={loaderCss.game_container}
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.8, opacity: 0 }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 120,
+                                    damping: 15,
+                                    duration: 0.5,
+                                }}
+                            >
+                                <h1
+                                    className={css.game_title}
+                                    style={{
+                                        color: isWin ? "#00ff7f" : "#ff4c4c",
+                                        textShadow: isWin
+                                            ? "0 0 5px rgba(0,255,127,0.8)"
+                                            : "0 0 5px rgba(255,76,76,0.8)",
+                                    }}
+                                >
+                                    {isWin ? "You Won! 🎉" : "You Lost! 😢"}
+                                </h1>
+
+                                <p className={css.info_text} style={{ fontSize: "20px" }}>
+                                    {DIFFICULTY_END_MESSAGES[difficulty]?.[isWin ? "win" : "lose"]}
                                 </p>
 
-                                {Number(avgMultiplierWithBonus) !== Number(avgMultiplier) && (
+                                {!isWin && (
+                                    <div className={css.another_points_text_container} style={{ fontSize: "22px", fontWeight: 'bolder' }}>
+                                        <p className={css.info_text}>
+                                            Highest points amount achieved:
+                                        </p>
+                                        <div className={css.points} style={getCurrentPointsStyle()}>
+                                            <CountUp
+                                                start={0}
+                                                end={maxPointsReached}
+                                                duration={2}
+                                                onEnd={() => {
+                                                    prevPointsRef.current = maxPointsReached;
+                                                }}
+                                                key={maxPointsReached}
+                                            />
+                                        </div>
+                                        <p className={css.info_text}>points</p>
+                                    </div>
+                                )}
+
+                                <motion.div
+                                    className={css.session_summary}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                >
+                                    <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
+                                        General Info
+                                    </p>
+                                    <div className={css.divider} />
                                     <p>
-                                        ⚡ Average multiplier with bonuses: <br />
-                                        <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplierWithBonus))}`}>
-                                            {avgMultiplierWithBonus}x
+                                        🏆 Best multiplier:
+                                        <span className={`${css.multiplier} ${getBestMultiplierClass(bestMultiplier)}`}>
+                                            {bestMultiplier?.toFixed(2)}x
                                         </span>
                                     </p>
-                                )}
-                                <p>💰 Biggest single win: {biggestWin} points</p>
-                                <p>🔥 Longest win streak: {longestWinStreak}</p>
-                                <p>💀 Longest loss streak: {longestLossStreak}</p>
-                            </motion.div>
+                                    <p>
+                                        📉 Worst multiplier:
+                                        <span className={`${css.multiplier} ${getBestMultiplierClass(worstMultiplier)}`}>
+                                            {worstMultiplier?.toFixed(2)}x
+                                        </span>
+                                    </p>
+                                    <p>🎲 Total bets made: {totalBets}</p>
+                                    <p>💰 Total points earned: {totalEarned}</p>
+                                    <p>❌ Total points lost: {totalLost}</p>
+                                    {(DIFFICULTIES[difficulty].jackpot || DIFFICULTIES[difficulty].superjackpot) && (
+                                        <>
+                                            <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
+                                                Jackpots
+                                            </p>
+                                            <div className={css.divider} />
+                                            {DIFFICULTIES[difficulty].jackpot && (
+                                                <p style={{ color: totalJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
+                                                    🎰 Total jackpots: {totalJackpots}
+                                                </p>
+                                            )}
+                                            {DIFFICULTIES[difficulty].superjackpot && (
+                                                <p style={{ color: totalSuperJackpots === 0 ? "red" : "green", fontWeight: 'bold' }}>
+                                                    🌈💥 Total superjackpots: {totalSuperJackpots}
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                    <p className={css.info_text} style={{ fontSize: "24px", textAlign: 'start' }}>
+                                        Performance Stats
+                                    </p>
+                                    <div className={css.divider} />
+                                    <p>🎯 Hit rate:
+                                        <span className={`${css.multiplier} ${getHitRateClass(hitRate)}`}>
+                                            {hitRate}%
+                                        </span>
+                                    </p>
+                                    <p>
+                                        ⚡ Average multiplier without bonuses: <br />
+                                        <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplier))}`}>
+                                            {avgMultiplier}x
+                                        </span>
+                                        <br />
+                                    </p>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6 }}
-                            >
-                                <div className={css.next_actions}>
-                                    <p className={css.info_text} style={{ fontSize: "20px", marginTop: '8px', fontWeight: 'bold' }}>{SUGGESTIONS[difficulty][isWin ? "win" : "lose"]}</p>
-                                    <div className={css.button_group}>
-                                        <button className={css.gamble_button} onClick={restartSameDifficulty}>
-                                            Retry Same Difficulty
-                                        </button>
-                                        <button
-                                            className={css.gamble_button}
-                                            onClick={confirmRestart}
-                                        >
-                                            Try New Difficulty
-                                        </button>
-                                        <button className={css.gamble_button} onClick={() => {
-                                            navigate("/");
-                                            confirmRestart();
-                                        }}>
-                                            Go to Home
-                                        </button>
+                                    {Number(avgMultiplierWithBonus) !== Number(avgMultiplier) && (
+                                        <p>
+                                            ⚡ Average multiplier with bonuses: <br />
+                                            <span className={`${css.multiplier} ${getAvgMultiplierClass(Number(avgMultiplierWithBonus))}`}>
+                                                {avgMultiplierWithBonus}x
+                                            </span>
+                                        </p>
+                                    )}
+                                    <p>💰 Biggest single win: {biggestWin} points</p>
+                                    <p>🔥 Longest win streak: {longestWinStreak}</p>
+                                    <p>💀 Longest loss streak: {longestLossStreak}</p>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.6 }}
+                                >
+                                    <div className={css.next_actions}>
+                                        <p className={css.info_text} style={{ fontSize: "20px", marginTop: '8px', fontWeight: 'bold' }}>{SUGGESTIONS[difficulty][isWin ? "win" : "lose"]}</p>
+                                        <div className={css.button_group}>
+                                            <button className={css.gamble_button} onClick={restartSameDifficulty}>
+                                                Retry Same Difficulty
+                                            </button>
+                                            <button
+                                                className={css.gamble_button}
+                                                onClick={confirmRestart}
+                                            >
+                                                Try New Difficulty
+                                            </button>
+                                            <button className={css.gamble_button} onClick={() => {
+                                                navigate("/");
+                                                confirmRestart();
+                                            }}>
+                                                Go to Home
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </>
     );
 };
 

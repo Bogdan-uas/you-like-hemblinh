@@ -109,6 +109,24 @@
     color: #fff;
 }
 
+.restart_button {
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: #f1f4fd;
+    background-color: #fa5256;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    border: none;
+    transition: all 500ms ease-in-out;
+}
+
+.restart_button:hover {
+    background-color: red;
+    color: #fff;
+}
+
 .gamble_button {
     border-radius: 8px;
     padding: 8px 20px;
@@ -124,7 +142,7 @@
 
 .locked {
     pointer-events: none;
-    background-color: gray;
+    background-color: #ccc;
     color: #fff;
 }
 
@@ -206,31 +224,6 @@
     font-size: 22px;
     font-weight: 600;
     animation: slideInOut 8s ease-in-out forwards;
-}
-
-.bottom_buttons {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    margin-top: 128px;
-}
-
-.restart_button {
-    border-radius: 8px;
-    padding: 8px 16px;
-    color: #f1f4fd;
-    background-color: #fa5256;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 1.5;
-    letter-spacing: 0.04em;
-    border: none;
-    transition: all 500ms ease-in-out;
-}
-
-.restart_button:hover {
-    background-color: red;
-    color: #fff;
 }
 
 .restart_modal {

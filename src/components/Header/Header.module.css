@@ -1,0 +1,43 @@
+.locked {
+    pointer-events: none;
+    background-color: #ccc;
+    color: #fff;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: solid 1px #2e2f42;
+    z-index: 998;
+}
+
+.bottom_buttons {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.restart_button {
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: #f1f4fd;
+    background-color: #fa5256;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    border: none;
+    transition: all 500ms ease-in-out;
+}
+
+.restart_button:hover {
+    background-color: red;
+    color: #fff;
+}
