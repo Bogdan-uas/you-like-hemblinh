@@ -52,7 +52,7 @@ const DIFFICULTIES = {
     },
     "Impossible": {
         start: [80, 250],
-        goal: [25000, 75000],
+        goal: [40000, 75000],
         multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.005, range: [10, 18] },
@@ -60,7 +60,7 @@ const DIFFICULTIES = {
     },
     "Tuff Luck": {
         start: [50, 200],
-        goal: [25000, 100000],
+        goal: [50000, 100000],
         multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.005, range: [8, 20] },
@@ -68,7 +68,7 @@ const DIFFICULTIES = {
     },
     "LUCK GOD": {
         start: [25, 25],
-        goal: [50000, 300000],
+        goal: [75000, 500000],
         multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.006, range: [5, 25] },
@@ -395,7 +395,7 @@ const GamblingPage = () => {
     const [seriesModeDraft, setSeriesModeDraft] = useState(null);
 
     const [isSeriesActive, setIsSeriesActive] = useState(false);
-    const [setsToWin, setSetsToWin] = useState(2);
+    const [setsToWin, setSetsToWin] = useState(0);
     const [playerSets, setPlayerSets] = useState(0);
     const [opponentSets, setOpponentSets] = useState(0);
     const [loserOpacity, setLoserOpacity] = useState(null);
@@ -835,6 +835,7 @@ const GamblingPage = () => {
         setIsSeriesActive(false);
         setPlayerSets(0);
         setOpponentSets(0);
+        setsToWin(0);
         resetSet();
         setSeriesBanner(null);
         setSeriesResult(null);
@@ -1494,6 +1495,7 @@ const GamblingPage = () => {
 
         setSeriesMode(null);
         setIsSeriesActive(false);
+        setsToWin(0);
         setPlayerSets(0);
         setOpponentSets(0);
         setRoundWins(0);
@@ -1525,6 +1527,7 @@ const GamblingPage = () => {
         setLoserOpacity(null);
         setSeriesBanner("");
         setLoserOpacity("");
+        setsToWin(0);
     };
 
     const applyPendingSeriesChange = () => {
@@ -1922,10 +1925,47 @@ const GamblingPage = () => {
                         </p>
 
                         {seriesMode === "extended" && (
-                            <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '24px', marginTop: '16px', textAlign: "center", maxWidth: "60ch", color: '#2e2f42' }}>
-                                🏆 In Extended — {difficulty} Mode, you'll be able to play a Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : setsToWin === 4 ? 7 : 1} series.<br />
-                                Win {setsToWin === 2 ? 2 : setsToWin === 3 ? 3 : setsToWin === 4 ? 4 : 1} {setsToWin === 1 ? 'set' : 'sets'} to triumph! Your final gain or loss will depend on your match score.<br />
-                                Tipp: Start playing Best-of-{setsToWin === 2 ? 3 : setsToWin === 3 ? 5 : setsToWin === 4 ? 7 : 1} only when you have at least 100 points to avoid small gains from big wins.
+                            <p
+                                className={`${css.unstable_note} ${css.fade_in_delay_more}`}
+                                style={{
+                                    fontSize: "24px",
+                                    marginTop: "16px",
+                                    textAlign: "center",
+                                    maxWidth: "60ch",
+                                    color: "#2e2f42",
+                                }}
+                            >
+                                🏆 In Extended — {difficulty} Mode, you'll be able to play a{" "}
+                                {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
+                                    ? "Best-of-7"
+                                    : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                        ? "Best-of-5"
+                                        : difficulty === "Insane" || difficulty === "Hard"
+                                            ? "Best-of-3"
+                                            : "Best-of-1"}{" "}
+                                series.
+                                <br />
+                                Win{" "}
+                                {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
+                                    ? "4"
+                                    : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                        ? "3"
+                                        : difficulty === "Insane" || difficulty === "Hard"
+                                            ? "2"
+                                            : "1"}{" "}
+                                {difficulty === "Easy" || difficulty === "Normal" ? "set" : "sets"} to triumph!
+                                {difficulty !== "Easy" && difficulty !== "Normal" &&
+                                    " Your final gain or loss will depend on your match score."}
+                                <br />
+                                Tipp: Start playing{" "}
+                                {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
+                                    ? "Best-of-7"
+                                    : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                        ? "Best-of-5"
+                                        : difficulty === "Insane" || difficulty === "Hard"
+                                            ? "Best-of-3"
+                                            : "Best-of-1"}{" "}
+                                only when you have at least 100 points to avoid small gains from big wins.
                             </p>
                         )}
 
