@@ -678,8 +678,8 @@ const GamblingPage = () => {
         return SERIES_REWARDS_BO3;
     };
 
-    const baseMaxRounds = 18;
-    const baseRoundsToWin = 10;
+    const baseMaxRounds = 24;
+    const baseRoundsToWin = 13;
     const otMaxRounds = 6;
     const otRoundsToWin = 4;
 
@@ -1071,7 +1071,7 @@ const GamblingPage = () => {
                             setRoundNumber((n) => n + 1);
                         }
 
-                        if (nextWins === 9 && nextLosses === 9) {
+                        if (nextWins === 12 && nextLosses === 12) {
                             setIsLocked(true);
                             toast(`Overtime coming in for this ${setsToWin === 1 ? 'match' : 'set'}! 🔥`, { icon: "⚔️", duration: 4000 });
                             setTimeout(() => {
@@ -1693,7 +1693,7 @@ const GamblingPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const overtimeTarget = 10 + overtimeBlock * 3;
+    const overtimeTarget = 13 + overtimeBlock * 3;
 
     return (
         <>
