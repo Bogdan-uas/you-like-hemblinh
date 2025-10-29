@@ -47,7 +47,7 @@ const DIFFICULTIES = {
     Insane: {
         start: [100, 300],
         goal: [18000, 50000],
-        multiplier: [0.025, 2.0],
+        multiplier: [1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.0035, range: [6, 12] },
     },
@@ -1059,15 +1059,13 @@ const GamblingPage = () => {
                     if (!isOvertime) {
                         const nextWins = playerWonRound ? roundWins + 1 : roundWins;
                         const nextLosses = !playerWonRound && effectiveMultiplier < 1.0 ? roundLosses + 1 : roundLosses;
-                        const isFinalRound =
-                            nextWins >= needWins ||
-                            nextLosses >= needWins ||
-                            nextWins + nextLosses >= maxRounds;
 
                         setRoundWins(nextWins);
                         setRoundLosses(nextLosses);
 
-                        if (effectiveMultiplier !== 1.0 && !isFinalRound) {
+                        const isSetOver = nextWins >= needWins || nextLosses >= needWins || (nextWins + nextLosses) >= maxRounds || nextWins === 12 && nextLosses === 12;
+
+                        if (effectiveMultiplier !== 1.0 && !isSetOver) {
                             setRoundNumber((n) => n + 1);
                         }
 
@@ -1235,14 +1233,15 @@ const GamblingPage = () => {
 
                     const nextOtWins = playerWonRound ? otWins + 1 : otWins;
                     const nextOtLosses = !playerWonRound && effectiveMultiplier < 1.0 ? otLosses + 1 : otLosses;
+
+                    setOtWins(nextOtWins);
+                    setOtLosses(nextOtLosses);
                     const isFinalOtRound =
                         nextOtWins === otRoundsToWin ||
                         nextOtLosses === otRoundsToWin ||
                         (nextOtWins === 3 && nextOtLosses === 3);
 
-                    setOtWins(nextOtWins);
-                    setOtLosses(nextOtLosses);
-                    if (effectiveMultiplier !== 1.0 || isFinalOtRound) {
+                    if (effectiveMultiplier !== 1.0 && !isFinalOtRound) {
                         setRoundNumber((n) => n + 1);
                     }
                     setRoundWins((w) => w + (playerWonRound ? 1 : 0));
