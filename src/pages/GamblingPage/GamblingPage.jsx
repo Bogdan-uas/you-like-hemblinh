@@ -47,7 +47,7 @@ const DIFFICULTIES = {
     Insane: {
         start: [100, 300],
         goal: [18000, 50000],
-        multiplier: [1, 2.0],
+        multiplier: [0.025, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.0035, range: [6, 12] },
     },
