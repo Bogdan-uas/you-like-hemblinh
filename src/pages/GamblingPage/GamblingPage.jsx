@@ -1694,6 +1694,26 @@ const GamblingPage = () => {
 
     const overtimeTarget = 13 + overtimeBlock * 3;
 
+    const extendedLabel = (() => {
+        switch (hoveredDifficulty) {
+            case "Easy":
+            case "Normal":
+            case "Challenging":
+                return "Best-of-1";
+            case "Hard":
+            case "Insane":
+                return "Best-of-3";
+            case "Impossible":
+            case "Tuff Luck":
+                return "Best-of-5";
+            case "LUCK GOD":
+            case "Eternal Madness":
+                return "Best-of-7";
+            default:
+                return "Best-of-3";
+        }
+    })();
+
     return (
         <>
             <Header
@@ -1802,6 +1822,7 @@ const GamblingPage = () => {
                                             </p>
                                             <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
                                             <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
+                                            <p style={{ fontWeight: '800', marginTop: '8px' }}>In Extended Mode: <span style={{ color: 'Highlight' }}>{extendedLabel}</span> available</p>
                                             {DIFFICULTIES[hoveredDifficulty].unstableMin && (
                                                 <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
                                             )}
