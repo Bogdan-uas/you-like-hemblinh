@@ -1714,6 +1714,26 @@ const GamblingPage = () => {
         }
     })();
 
+    const seriesLabel = (() => {
+        switch (difficulty) {
+            case "Easy":
+            case "Normal":
+            case "Challenging":
+                return "Best-of-1";
+            case "Hard":
+            case "Insane":
+                return "Best-of-3";
+            case "Impossible":
+            case "Tuff Luck":
+                return "Best-of-5";
+            case "LUCK GOD":
+            case "Eternal Madness":
+                return "Best-of-7";
+            default:
+                return "Best-of-3";
+        }
+    })();
+
     return (
         <>
             <Header
@@ -2066,16 +2086,15 @@ const GamblingPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        {seriesBanner ? (
-                                            <motion.span
-                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }} className={css.round_text}
-                                            >
-                                                {seriesBanner}
-                                            </motion.span>
-                                        ) : (
-                                            <div className={css.game_info_text}>
-                                                {setsToWin !== 1 && (
+                                            {seriesBanner ? (
+                                                <motion.span
+                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }} className={css.round_text}
+                                                >
+                                                    {seriesBanner}
+                                                </motion.span>
+                                            ) : (
+                                                <div className={css.game_info_text}>
                                                     <motion.span
                                                         initial={{ opacity: 0 }}
                                                         animate={{ opacity: 1 }}
@@ -2084,65 +2103,76 @@ const GamblingPage = () => {
                                                         className={css.round_text}
                                                         style={{ fontSize: "24px" }}
                                                     >
-                                                        {(() => {
-                                                            const currentSet = playerSets + opponentSets + 1;
-                                                            const totalSets = setsToWin * 2 - 1;
-                                                            const isDecider = currentSet === totalSets;
-                                                            return isDecider ? 'Decider' : `Set ${currentSet}`;
-                                                        })()}
+                                                        {seriesLabel}
                                                     </motion.span>
-                                                )}
-                                                {isOvertime && (
+                                                    {setsToWin !== 1 && (
+                                                        <motion.span
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            transition={{ duration: 0.4 }}
+                                                            className={css.round_text}
+                                                            style={{ fontSize: "24px" }}
+                                                        >
+                                                            {(() => {
+                                                                const currentSet = playerSets + opponentSets + 1;
+                                                                const totalSets = setsToWin * 2 - 1;
+                                                                const isDecider = currentSet === totalSets;
+                                                                return isDecider ? 'Decider' : `Set ${currentSet}`;
+                                                            })()}
+                                                        </motion.span>
+                                                    )}
+                                                    {isOvertime && (
+                                                        <motion.span
+                                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                            transition={{ duration: 0.4 }}
+                                                            className={css.round_text}
+                                                            style={{ textAlign: 'center', fontSize: '20px' }}
+                                                        >
+                                                            Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
+                                                        </motion.span>
+                                                    )}
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        className={css.round_text}
+                                                    >
+                                                        {isOvertime ? (
+                                                            <>
+                                                                Round{" "}
+                                                                <CountUp
+                                                                    key={roundNumber}
+                                                                    start={Math.max(roundNumber - 1, 0)}
+                                                                    end={roundNumber}
+                                                                    duration={1}
+                                                                />
+                                                                /{otMaxRounds}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Round{" "}
+                                                                <CountUp
+                                                                    key={roundWins + roundLosses + 1}
+                                                                    start={Math.max(roundWins + roundLosses, 0)}
+                                                                    end={roundWins + roundLosses + 1}
+                                                                    duration={1}
+                                                                />
+                                                                /{baseMaxRounds}
+                                                            </>
+                                                        )}
+                                                    </motion.span>
                                                     <motion.span
                                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.4 }}
                                                         className={css.round_text}
-                                                        style={{ textAlign: 'center', fontSize: '20px' }}
+                                                        style={{ textAlign: 'center', fontSize: '16px' }}
                                                     >
-                                                        Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
+                                                        First to {overtimeTarget}
                                                     </motion.span>
-                                                )}
-                                                <motion.span
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.4 }}
-                                                    className={css.round_text}
-                                                >
-                                                    {isOvertime ? (
-                                                        <>
-                                                            Round{" "}
-                                                            <CountUp
-                                                                key={roundNumber}
-                                                                start={Math.max(roundNumber - 1, 0)}
-                                                                end={roundNumber}
-                                                                duration={1}
-                                                            />
-                                                            /{otMaxRounds}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            Round{" "}
-                                                            <CountUp
-                                                                key={roundWins + roundLosses + 1}
-                                                                start={Math.max(roundWins + roundLosses, 0)}
-                                                                end={roundWins + roundLosses + 1}
-                                                                duration={1}
-                                                            />
-                                                            /{baseMaxRounds}
-                                                        </>
-                                                    )}
-                                                </motion.span>
-                                                <motion.span
-                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.4 }}
-                                                    className={css.round_text}
-                                                    style={{ textAlign: 'center', fontSize: '16px' }}
-                                                >
-                                                    First to {overtimeTarget}
-                                                </motion.span>
-                                            </div>
-                                        )}
+                                                </div>
+                                            )}
                                         <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span className={css.round_text}>
