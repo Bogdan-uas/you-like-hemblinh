@@ -893,6 +893,8 @@ const GamblingPage = () => {
         setLoserOpacity(null);
         setSetHistory([]);
         setSeriesInitialPoints(currentPoints);
+        setResultMessage("");
+        setMultiplier(null);
 
         toast("🏆 Series started! Win sets by taking rounds!", { icon: "🎯", duration: 4000 });
     };
@@ -1035,7 +1037,7 @@ const GamblingPage = () => {
                 } else if (effectiveMultiplier < 1.0) {
                     message = "That's a round loss 😢!";
                 } else if (effectiveMultiplier === 1.0) {
-                    message = "Neither good nor bad 😐!";
+                    message = "Neither win nor loss 😐!";
                 } else {
                     message = "That's a round win👏!";
                 }
@@ -1079,6 +1081,8 @@ const GamblingPage = () => {
                                 setOtLosses(0);
                                 setRoundNumber(1);
                                 setIsLocked(false);
+                                setResultMessage("");
+                                setMultiplier(null);
                             }, 4000);
                             return;
                         }
@@ -1110,10 +1114,14 @@ const GamblingPage = () => {
                                 setTimeout(() => {
                                     endSet(playerWonSet, nextWins, nextLosses, false);
                                     setIsLocked(false);
+                                    setResultMessage("");
+                                    setMultiplier(null);
                                 }, 4000);
                             } else {
                                 endSet(playerWonSet, nextWins, nextLosses, true);
                                 setIsLocked(false);
+                                setResultMessage("");
+                                setMultiplier(null);
                             }
 
                             if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
@@ -1127,6 +1135,9 @@ const GamblingPage = () => {
                                 setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
                                 setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
                                 setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+                                setTimeout(() => {
+                                    setIsSeriesActive(false);
+                                }, 4000);
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
                                     setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
@@ -1140,7 +1151,8 @@ const GamblingPage = () => {
                                         setOtLosses(0);
                                         setIsOvertime(false);
                                         setOvertimeBlock(0);
-                                        setIsSeriesActive(false);
+                                        setResultMessage("");
+                                        setMultiplier(null);
                                         seriesResetTimeoutRef.current = null;
                                     }, 15000);
                                 }, 4000);
@@ -1280,6 +1292,8 @@ const GamblingPage = () => {
                                 setOtWins(0);
                                 setOtLosses(0);
                                 setIsLocked(false);
+                                setResultMessage("");
+                                setMultiplier(null);
                             }, 4000);
                         } else {
                             endSet(playerWonSet, finalWins, finalLosses, true);
@@ -1288,6 +1302,8 @@ const GamblingPage = () => {
                             setOtWins(0);
                             setOtLosses(0);
                             setIsLocked(false);
+                            setResultMessage("");
+                            setMultiplier(null);
                         }
 
                         if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
@@ -1301,6 +1317,9 @@ const GamblingPage = () => {
                             setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
                             setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
                             setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+                            setTimeout(() => {
+                                setIsSeriesActive(false);
+                            }, 3000);
 
                             seriesResultTimeoutRef.current = setTimeout(() => {
                                 setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
@@ -1314,7 +1333,8 @@ const GamblingPage = () => {
                                     setOtLosses(0);
                                     setIsOvertime(false);
                                     setOvertimeBlock(0);
-                                    setIsSeriesActive(false);
+                                    setResultMessage("");
+                                    setMultiplier(null);
                                     seriesResetTimeoutRef.current = null;
                                 }, 15000);
                             }, 4000);
@@ -1420,6 +1440,8 @@ const GamblingPage = () => {
                             setOtLosses(0);
                             setIsOvertime(true);
                             setIsLocked(false);
+                            setResultMessage("");
+                            setMultiplier(null);
                         }, 4000);
                     }
 
@@ -2086,15 +2108,26 @@ const GamblingPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                            {seriesBanner ? (
+                                        {seriesBanner ? (
+                                            <motion.span
+                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }} className={css.round_text}
+                                            >
+                                                {seriesBanner}
+                                            </motion.span>
+                                        ) : (
+                                            <div className={css.game_info_text}>
                                                 <motion.span
-                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.4 }} className={css.round_text}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    className={css.round_text}
+                                                    style={{ fontSize: "24px" }}
                                                 >
-                                                    {seriesBanner}
+                                                    {seriesLabel}
                                                 </motion.span>
-                                            ) : (
-                                                <div className={css.game_info_text}>
+                                                {setsToWin !== 1 && (
                                                     <motion.span
                                                         initial={{ opacity: 0 }}
                                                         animate={{ opacity: 1 }}
@@ -2103,76 +2136,65 @@ const GamblingPage = () => {
                                                         className={css.round_text}
                                                         style={{ fontSize: "24px" }}
                                                     >
-                                                        {seriesLabel}
+                                                        {(() => {
+                                                            const currentSet = playerSets + opponentSets + 1;
+                                                            const totalSets = setsToWin * 2 - 1;
+                                                            const isDecider = currentSet === totalSets;
+                                                            return isDecider ? 'Decider' : `Set ${currentSet}`;
+                                                        })()}
                                                     </motion.span>
-                                                    {setsToWin !== 1 && (
-                                                        <motion.span
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                            transition={{ duration: 0.4 }}
-                                                            className={css.round_text}
-                                                            style={{ fontSize: "24px" }}
-                                                        >
-                                                            {(() => {
-                                                                const currentSet = playerSets + opponentSets + 1;
-                                                                const totalSets = setsToWin * 2 - 1;
-                                                                const isDecider = currentSet === totalSets;
-                                                                return isDecider ? 'Decider' : `Set ${currentSet}`;
-                                                            })()}
-                                                        </motion.span>
-                                                    )}
-                                                    {isOvertime && (
-                                                        <motion.span
-                                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                            transition={{ duration: 0.4 }}
-                                                            className={css.round_text}
-                                                            style={{ textAlign: 'center', fontSize: '20px' }}
-                                                        >
-                                                            Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
-                                                        </motion.span>
-                                                    )}
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                        className={css.round_text}
-                                                    >
-                                                        {isOvertime ? (
-                                                            <>
-                                                                Round{" "}
-                                                                <CountUp
-                                                                    key={roundNumber}
-                                                                    start={Math.max(roundNumber - 1, 0)}
-                                                                    end={roundNumber}
-                                                                    duration={1}
-                                                                />
-                                                                /{otMaxRounds}
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                Round{" "}
-                                                                <CountUp
-                                                                    key={roundWins + roundLosses + 1}
-                                                                    start={Math.max(roundWins + roundLosses, 0)}
-                                                                    end={roundWins + roundLosses + 1}
-                                                                    duration={1}
-                                                                />
-                                                                /{baseMaxRounds}
-                                                            </>
-                                                        )}
-                                                    </motion.span>
+                                                )}
+                                                {isOvertime && (
                                                     <motion.span
                                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.4 }}
                                                         className={css.round_text}
-                                                        style={{ textAlign: 'center', fontSize: '16px' }}
+                                                        style={{ textAlign: 'center', fontSize: '20px' }}
                                                     >
-                                                        First to {overtimeTarget}
+                                                        Overtime{overtimeBlock === 0 || overtimeBlock === 1 ? '' : ` #${overtimeBlock}`}!<br />
                                                     </motion.span>
-                                                </div>
-                                            )}
+                                                )}
+                                                <motion.span
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    className={css.round_text}
+                                                >
+                                                    {isOvertime ? (
+                                                        <>
+                                                            Round{" "}
+                                                            <CountUp
+                                                                key={roundNumber}
+                                                                start={Math.max(roundNumber - 1, 0)}
+                                                                end={roundNumber}
+                                                                duration={1}
+                                                            />
+                                                            /{otMaxRounds}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Round{" "}
+                                                            <CountUp
+                                                                key={roundWins + roundLosses + 1}
+                                                                start={Math.max(roundWins + roundLosses, 0)}
+                                                                end={roundWins + roundLosses + 1}
+                                                                duration={1}
+                                                            />
+                                                            /{baseMaxRounds}
+                                                        </>
+                                                    )}
+                                                </motion.span>
+                                                <motion.span
+                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    className={css.round_text}
+                                                    style={{ textAlign: 'center', fontSize: '16px' }}
+                                                >
+                                                    First to {overtimeTarget}
+                                                </motion.span>
+                                            </div>
+                                        )}
                                         <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span className={css.round_text}>
@@ -2278,82 +2300,97 @@ const GamblingPage = () => {
                                 </DelayedMount>
                             </>
                         )}
-                        <div className={css.points_container}>
-                            <div className={css.streak_points_container}>
-                                <div className={css.streakWrapper}>
-                                    <AnimatePresence>
-                                        {consecutiveWins >= 2 && (
-                                            <motion.div
-                                                key="winStreak"
-                                                initial={{ scale: 0, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                exit={{ scale: 0, opacity: 0 }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                                className={css.streakDisplay}
-                                            >
-                                                🔥
-                                                <span className={css.streakNumber} style={{ color: consecutiveWins >= 5 ? '#4a2a00ff' : '' }}>{consecutiveWins}</span>
-                                            </motion.div>
-                                        )}
-                                        {consecutiveLosses >= 2 && (
-                                            <motion.div
-                                                key="lossStreak"
-                                                initial={{ scale: 0, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                exit={{ scale: 0, opacity: 0 }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                                className={css.streakDisplay}
-                                            >
-                                                💀
-                                                <span className={css.streakNumber} style={{ color: consecutiveLosses >= 5 ? '#4a2a00ff' : '' }}>{consecutiveLosses}</span>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                                <div className={css.points_text_container}>
-                                    <p className={css.info_text}>Your current points:</p>
-                                    <div className={css.another_points_text_container}>
-                                        <div className={css.points} style={getCurrentPointsStyle()}>
-                                            <CountUp
-                                                start={prevPointsRef.current}
-                                                end={currentPoints}
-                                                duration={1.2}
-                                                onEnd={() => (prevPointsRef.current = currentPoints)}
-                                                key={currentPoints}
-                                            />
+                        <div className={inSeries ? css.seriesBackgroundDimmed : ""}>
+                            <div className={css.points_container}>
+                                <div className={css.streak_points_container}>
+                                    <div className={css.streakWrapper}>
+                                        <AnimatePresence>
+                                            {consecutiveWins >= 2 && (
+                                                <motion.div
+                                                    key="winStreak"
+                                                    initial={{ scale: 0, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    exit={{ scale: 0, opacity: 0 }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                    className={css.streakDisplay}
+                                                >
+                                                    🔥
+                                                    <span className={css.streakNumber} style={{ color: consecutiveWins >= 5 ? '#4a2a00ff' : '' }}>{consecutiveWins}</span>
+                                                </motion.div>
+                                            )}
+                                            {consecutiveLosses >= 2 && (
+                                                <motion.div
+                                                    key="lossStreak"
+                                                    initial={{ scale: 0, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    exit={{ scale: 0, opacity: 0 }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                    className={css.streakDisplay}
+                                                >
+                                                    💀
+                                                    <span className={css.streakNumber} style={{ color: consecutiveLosses >= 5 ? '#4a2a00ff' : '' }}>{consecutiveLosses}</span>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                    <div className={css.points_text_container}>
+                                        <p className={css.info_text}>Your current points:</p>
+                                        <div className={css.another_points_text_container}>
+                                            <div className={css.points} style={getCurrentPointsStyle()}>
+                                                <CountUp
+                                                    start={prevPointsRef.current}
+                                                    end={currentPoints}
+                                                    duration={1.2}
+                                                    onEnd={() => (prevPointsRef.current = currentPoints)}
+                                                    key={currentPoints}
+                                                />
+                                            </div>
+                                            {seriesResult ? (pointsChange !== null && (
+                                                <span
+                                                    className={css.points_gain_loss}
+                                                    style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                                >
+                                                    {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                                </span>
+                                            )) : (pointsChange !== null && (
+                                                <span
+                                                    className={css.points_gain_loss}
+                                                    style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                                >
+                                                    {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                                </span>
+                                            ))}
                                         </div>
-                                        {seriesResult ? (pointsChange !== null && (
-                                            <span
-                                                className={css.points_gain_loss}
-                                                style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                            >
-                                                {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                            </span>
-                                        )) : (pointsChange !== null && (
-                                            <span
-                                                className={css.points_gain_loss}
-                                                style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                            >
-                                                {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                            </span>
-                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className={css.points_text_container} style={{ marginLeft: consecutiveWins >= 2 || consecutiveLosses >= 2 ? '80px' : '25px', transition: 'margin 1000ms ease-in-out' }}>
+                                    <p className={css.info_text}>Goal:</p>
+                                    <div className={css.points}>
+                                        <CountUp
+                                            start={prevGoalRef.current}
+                                            end={goalPoints}
+                                            duration={1.2}
+                                            onEnd={() => (prevGoalRef.current = goalPoints)}
+                                            key={goalPoints}
+                                        />
                                     </div>
                                 </div>
                             </div>
-
-                            <div className={css.points_text_container} style={{ marginLeft: consecutiveWins >= 2 || consecutiveLosses >= 2 ? '80px' : '25px', transition: 'margin 1000ms ease-in-out' }}>
-                                <p className={css.info_text}>Goal:</p>
-                                <div className={css.points}>
-                                    <CountUp
-                                        start={prevGoalRef.current}
-                                        end={goalPoints}
-                                        duration={1.2}
-                                        onEnd={() => (prevGoalRef.current = goalPoints)}
-                                        key={goalPoints}
-                                    />
-                                </div>
-                            </div>
                         </div>
+
+                        {inSeries && (
+                            <div className={css.seriesGambleMessage}>
+                                <p className={css.seriesResultMessage}>{resultMessage}</p>
+                                {multiplier !== null && (
+                                    <span className={`${css.seriesMultiplier} ${getMultiplierClass(multiplier - winStreakBonus)}`}>
+                                        {DIFFICULTIES[difficulty].unlimited
+                                            ? (multiplier - winStreakBonus).toFixed(4)
+                                            : (multiplier - winStreakBonus).toFixed(2)}x
+                                    </span>
+                                )}
+                            </div>
+                        )}
 
                         <div className={css.input_container}>
                             <input
@@ -2409,7 +2446,7 @@ const GamblingPage = () => {
                             </button>
                         </div>
 
-                        {resultMessage && (
+                        {!inSeries && resultMessage && (
                             <p className={`${css.info_text} ${css.result_message}`}>
                                 <AnimatePresence mode="wait">
                                     {jackpotType === "superjackpot" ? (
