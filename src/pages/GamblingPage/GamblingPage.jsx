@@ -44,15 +44,21 @@ const DIFFICULTIES = {
         multiplier: [0.05, 2.25],
         jackpot: { chance: 0.003, range: [4, 10] },
     },
-    Insane: {
+    Brutal: {
         start: [100, 300],
-        goal: [18000, 50000],
+        goal: [20000, 45000],
+        multiplier: [0.03, 2.1],
+        jackpot: { chance: 0.004, range: [5, 11] },
+    },
+    Insane: {
+        start: [100, 250],
+        goal: [25000, 50000],
         multiplier: [0.025, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.0035, range: [6, 12] },
+        jackpot: { chance: 0.004, range: [6, 12] },
     },
     "Impossible": {
-        start: [80, 250],
+        start: [80, 200],
         goal: [40000, 75000],
         multiplier: [0, 2.0],
         unstableMin: true,
@@ -60,7 +66,7 @@ const DIFFICULTIES = {
         superjackpot: { chance: 0.001, range: [20, 40] },
     },
     "Tuff Luck": {
-        start: [50, 200],
+        start: [50, 150],
         goal: [50000, 100000],
         multiplier: [0, 2.0],
         unstableMin: true,
@@ -102,6 +108,10 @@ const DIFFICULTY_END_MESSAGES = {
         win: "Impressive! You survived Hard mode! 💪",
         lose: "Hard mode crushed you…💀 That's why it's hard!",
     },
+    Brutal: {
+        win: "You fought through Brutal mode! 💪 Respect!",
+        lose: "Brutal mode broke your streak... try again! ⚔️",
+    },
     Insane: {
         win: "Incredible! You conquered Insane mode! 😵🔥",
         lose: "Insane mode drove you off the edge… 🌀",
@@ -140,6 +150,10 @@ const SUGGESTIONS = {
     Hard: {
         win: "Impressive! Ready for Insane next? 😈",
         lose: "Retry — you're close to mastering Hard!",
+    },
+    Brutal: {
+        win: "You crushed Brutal! Ready to lose your mind in Insane? 😵",
+        lose: "That was rough! Retry and prove you can handle Brutal! 🔥",
     },
     Insane: {
         win: "Insane! You did it! Try Impossible next... if you dare. 💀",
@@ -222,6 +236,17 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "Hope is your only strategy... 🙃",
         "Fate sharpens its claws... 🐉",
         "Ready to defy the odds? 🎰",
+    ],
+
+    Brutal: [
+        "Brace yourself... this is gonna hurt. 💀",
+        "Luck isn't on your side — fight anyway. ⚔️",
+        "This spin hits harder. 💢",
+        "You chose Brutal. Be proud. 😤",
+        "No mercy from RNG today. 🔥",
+        "Breathe in... roll out. 🌀",
+        "The numbers grow sharper... ⚡",
+        "Are you able to make it through? 💪",
     ],
 
     Insane: [
@@ -873,7 +898,7 @@ const GamblingPage = () => {
         } else if (["Impossible", "Tuff Luck"].includes(difficulty)) {
             setSetsToWin(3);
             setSeriesMode("extended");
-        } else if (["Hard", "Insane"].includes(difficulty)) {
+        } else if (["Hard", "Brutal", "Insane"].includes(difficulty)) {
             setSetsToWin(2);
             setSeriesMode("extended");
         } else if (["Easy", "Normal", "Challenging"].includes(difficulty)) {
@@ -1723,6 +1748,7 @@ const GamblingPage = () => {
             case "Challenging":
                 return "Best-of-1";
             case "Hard":
+            case "Brutal":
             case "Insane":
                 return "Best-of-3";
             case "Impossible":
@@ -1743,6 +1769,7 @@ const GamblingPage = () => {
             case "Challenging":
                 return "Best-of-1";
             case "Hard":
+            case "Brutal":
             case "Insane":
                 return "Best-of-3";
             case "Impossible":
@@ -2007,7 +2034,7 @@ const GamblingPage = () => {
                                         ? "Best-of-7"
                                         : difficulty === "Impossible" || difficulty === "Tuff Luck"
                                             ? "Best-of-5"
-                                            : difficulty === "Insane" || difficulty === "Hard"
+                                            : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
                                                 ? "Best-of-3"
                                                 : "Best-of-1"}{" "}
                                     series.
@@ -2017,7 +2044,7 @@ const GamblingPage = () => {
                                         ? "4"
                                         : difficulty === "Impossible" || difficulty === "Tuff Luck"
                                             ? "3"
-                                            : difficulty === "Insane" || difficulty === "Hard"
+                                            : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
                                                 ? "2"
                                                 : "1"}{" "}
                                     {difficulty === "Easy" || difficulty === "Normal" ? "set" : "sets"} to triumph!
@@ -2029,7 +2056,7 @@ const GamblingPage = () => {
                                         ? "Best-of-7"
                                         : difficulty === "Impossible" || difficulty === "Tuff Luck"
                                             ? "Best-of-5"
-                                            : difficulty === "Insane" || difficulty === "Hard"
+                                            : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
                                                 ? "Best-of-3"
                                                 : "Best-of-1"}{" "}
                                     only when you have at least 100 points to avoid small gains from big wins.

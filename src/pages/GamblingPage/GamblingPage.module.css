@@ -486,7 +486,7 @@
 .dropdownList {
     position: fixed;
     width: 260px;
-    height: fit-content;
+    height: 300px;
     background: white;
     border: 1px solid black;
     border-radius: 8px;
@@ -546,6 +546,13 @@
 .option[data-difficulty="Hard"]:focus,
 .option[data-difficulty="Hard"].selected {
     background: linear-gradient(90deg, #dc3545, #fff);
+    color: white;
+}
+
+.option[data-difficulty="Brutal"]:hover,
+.option[data-difficulty="Brutal"]:focus,
+.option[data-difficulty="Brutal"].selected {
+    background: linear-gradient(90deg, #2a0000, #fff);
     color: white;
 }
 
@@ -944,7 +951,8 @@
     position: absolute;
     top: 30%;
     z-index: -1;
-    opacity: 0.1;
+    filter: blur(1px);
+    opacity: 0.2;
     pointer-events: none;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.4s ease, filter 0.4s ease;
 }
