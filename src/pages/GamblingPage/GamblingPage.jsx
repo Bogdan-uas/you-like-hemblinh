@@ -2039,12 +2039,12 @@ const GamblingPage = () => {
                             <div className={css.best_of_9_container}>
                                 {!isSeriesActive ? (
                                     <button
-                                        className={css.gamble_button}
+                                        className={`${css.gamble_button} ${currentPoints <= 50 ? css.locked : ""}`}
                                         onClick={startSeries}
-                                        disabled={isButtonLocked}
+                                        disabled={isButtonLocked || currentPoints <= 50}
                                         style={{ marginTop: "8px", marginBottom: "8px" }}
                                     >
-                                        Wanna more at once?
+                                        {currentPoints <= 50 ? 'You need more points to unlock this feature' : 'Wanna more at once?'}
                                     </button>
                                 ) : (
                                     <div className={css.scoreboard}>
