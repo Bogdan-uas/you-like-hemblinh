@@ -433,6 +433,8 @@ const GamblingPage = () => {
     const [overtimeBlock, setOvertimeBlock] = useState(0);
     const [otWins, setOtWins] = useState(0);
     const [otLosses, setOtLosses] = useState(0);
+    const [miniWins, setMiniWins] = useState(0);
+    const [miniLosses, setMiniLosses] = useState(0);
 
     const [seriesBanner, setSeriesBanner] = useState(null);
     const [seriesResult, setSeriesResult] = useState(null);
@@ -497,6 +499,8 @@ const GamblingPage = () => {
                 setSeriesBanner(parsed.seriesBanner || null);
                 setSeriesResult(parsed.seriesResult || null);
                 setSetHistory(parsed.setHistory || []);
+                setMiniLosses(parsed.miniLosses || 0);
+                setMiniWins(parsed.miniWins || 0);
                 setSeriesInitialPoints(parsed.seriesInitialPoints || 0);
                 prevPointsRef.current = parsed.currentPoints;
                 prevGoalRef.current = parsed.goalPoints;
@@ -556,6 +560,8 @@ const GamblingPage = () => {
         overtimeBlock,
         otWins,
         otLosses,
+        miniWins,
+        miniLosses,
         setHistory,
     ]);
 
@@ -596,6 +602,8 @@ const GamblingPage = () => {
             seriesBanner,
             seriesResult,
             setHistory,
+            miniWins,
+            miniLosses,
             seriesInitialPoints,
             ...newState,
         };
@@ -712,8 +720,12 @@ const GamblingPage = () => {
         setRoundWins(0);
         setRoundLosses(0);
         setRoundNumber(1);
+        setMiniWins(0);
+        setMiniLosses(0);
         setIsOvertime(false);
         setOvertimeBlock(0);
+        setMiniWins(0);
+        setMiniLosses(0);
     };
 
     const endSet = (playerWon, finalWins, finalLosses, isFinal = false) => {
@@ -809,6 +821,8 @@ const GamblingPage = () => {
         setSeriesResult(null);
         setLoserOpacity(null);
         setSetHistory([]);
+        setMiniWins(0);
+        setMiniLosses(0);
         setSeriesInitialPoints(currentPoints);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
@@ -866,6 +880,8 @@ const GamblingPage = () => {
         setSeriesResult(null);
         setLoserOpacity(null);
         setSetHistory([]);
+        setMiniWins(0);
+        setMiniLosses(0);
         setSeriesInitialPoints(currentPoints);
 
         saveGameState({ currentPoints: starter, goalPoints: goalPts });
@@ -937,11 +953,9 @@ const GamblingPage = () => {
                 setMaxPointsReached((m) => Math.max(m, pending.newPoints));
                 localStorage.removeItem("pendingSeriesApply");
             }
-
             setSeriesResult(null);
             setSeriesBanner(null);
             setLoserOpacity(null);
-
             return;
         }
 
@@ -1055,17 +1069,11 @@ const GamblingPage = () => {
             }
 
             if (inSeries) {
-                if (effectiveMultiplier === 0) {
-                    message = "💀 That's good that you got it during the series!";
-                } else if (effectiveMultiplier <= 0.1) {
-                    message = "Imagine, you get it on your whole score 😭!";
-                } else if (effectiveMultiplier < 1.0) {
-                    message = "That's a round loss 😢!";
-                } else if (effectiveMultiplier === 1.0) {
-                    message = "Neither win nor loss 😐!";
-                } else {
-                    message = "That's a round win👏!";
-                }
+                if (effectiveMultiplier === 0) message = "💀 That's good that you got it during the series!";
+                else if (effectiveMultiplier <= 0.1) message = "Imagine, you get it on your whole score 😭!";
+                else if (effectiveMultiplier < 1.0) message = "That's a round loss 😢!";
+                else if (effectiveMultiplier === 1.0) message = "Neither win nor loss 😐!";
+                else message = "That's a round win👏!";
             }
 
             setResultMessage(message);
@@ -1078,25 +1086,250 @@ const GamblingPage = () => {
 
             try {
                 if (inSeries) {
-                    const playerWonRound = effectiveMultiplier > 1.0;
-                    if (playerWonRound) setTotalWins((prev) => prev + 1);
-                    const needWins = isOvertime ? otRoundsToWin : baseRoundsToWin;
-                    const maxRounds = isOvertime ? otMaxRounds : baseMaxRounds;
+                    const playerWonGamble = effectiveMultiplier > 1.0;
+                    const playerLostGamble = effectiveMultiplier < 1.0;
 
-                    if (!isOvertime) {
-                        const nextWins = playerWonRound ? roundWins + 1 : roundWins;
-                        const nextLosses = !playerWonRound && effectiveMultiplier < 1.0 ? roundLosses + 1 : roundLosses;
+                    if (isOvertime) {
+                        let nextMiniWins = miniWins;
+                        let nextMiniLosses = miniLosses;
 
-                        setRoundWins(nextWins);
-                        setRoundLosses(nextLosses);
+                        if (playerWonGamble) nextMiniWins++;
+                        else if (playerLostGamble) nextMiniLosses++;
 
-                        const isSetOver = nextWins >= needWins || nextLosses >= needWins || (nextWins + nextLosses) >= maxRounds || nextWins === 12 && nextLosses === 12;
-
-                        if (effectiveMultiplier !== 1.0 && !isSetOver) {
-                            setRoundNumber((n) => n + 1);
+                        if (nextMiniWins < 5 && nextMiniLosses < 5) {
+                            setMiniWins(nextMiniWins);
+                            setMiniLosses(nextMiniLosses);
+                            return;
                         }
 
-                        if (nextWins === 12 && nextLosses === 12) {
+                        const wonOtRound = nextMiniWins >= 5;
+
+                        const updatedOtWins = wonOtRound ? otWins + 1 : otWins;
+                        const updatedOtLosses = wonOtRound ? otLosses : otLosses + 1;
+
+                        const updatedRoundWins = wonOtRound ? roundWins + 1 : roundWins;
+                        const updatedRoundLosses = wonOtRound ? roundLosses : roundLosses + 1;
+
+                        setOtWins(updatedOtWins);
+                        setOtLosses(updatedOtLosses);
+                        setRoundWins(updatedRoundWins);
+                        setRoundLosses(updatedRoundLosses);
+                        setRoundNumber((n) => n + 1);
+                        setMiniWins(0);
+                        setMiniLosses(0);
+
+                        const otDecided =
+                            updatedOtWins === otRoundsToWin ||
+                            updatedOtLosses === otRoundsToWin;
+
+                        const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
+
+                        if (otDecided) {
+                            const playerWonSet = updatedOtWins > updatedOtLosses;
+                            const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
+                            const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
+                            const isSeriesOver =
+                                maybeEndSeries(nextPlayerSets, nextOppSets) ||
+                                (setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1));
+
+                            setIsLocked(true);
+                            if (isSeriesOver) {
+                                toast(
+                                    `${setsToWin === 1 ? 'This match has' : 'These series have'} been ${playerWonSet ? 'WON' : 'LOST'} in Overtime ${overtimeBlock <= 1 ? '!' : ` #${overtimeBlock}!`} 🏆🔥`,
+                                    { icon: playerWonSet ? "🎉" : "😢", duration: SERIES_APPLY_DELAY }
+                                );
+                            } else {
+                                toast(
+                                    `The set ${playerSets + opponentSets + 1} has been ${playerWonSet ? 'won' : 'lost'} in overtime ${overtimeBlock <= 1 ? '!' : ` #${overtimeBlock}!`}`,
+                                    { icon: playerWonSet ? "🤯" : "😞", duration: 4000 }
+                                );
+                            }
+
+                            if (!isSeriesOver) {
+                                setTimeout(() => {
+                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, false);
+                                    setIsOvertime(false);
+                                    setOvertimeBlock(0);
+                                    setOtWins(0);
+                                    setOtLosses(0);
+                                    setIsLocked(false);
+                                    setResultMessage("");
+                                    setMultiplier(null);
+                                }, 4000);
+                            } else {
+                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, true);
+                                setIsOvertime(false);
+                                setOvertimeBlock(0);
+                                setOtWins(0);
+                                setOtLosses(0);
+                                setIsLocked(false);
+                                setResultMessage("");
+                                setMultiplier(null);
+
+                                const k = seriesKey(nextPlayerSets, nextOppSets);
+                                const table = currentRewardsTable();
+                                const percent = table[k] ?? 0;
+                                const base = seriesInitialPoints || currentPoints;
+                                const change = Math.round((base * percent) / 100);
+                                const newPoints = base + change;
+
+                                setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                                setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
+                                setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+                                setTimeout(() => setIsSeriesActive(false), 3000);
+
+                                seriesResultTimeoutRef.current = setTimeout(() => {
+                                    setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+
+                                    if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
+                                    seriesResetTimeoutRef.current = setTimeout(() => {
+                                        resetSeriesState();
+                                        setRoundWins(0);
+                                        setRoundLosses(0);
+                                        setOtWins(0);
+                                        setOtLosses(0);
+                                        setIsOvertime(false);
+                                        setOvertimeBlock(0);
+                                        setResultMessage("");
+                                        setMultiplier(null);
+                                        seriesResetTimeoutRef.current = null;
+                                    }, 15000);
+                                }, 4000);
+
+                                const timestamp = Date.now();
+                                localStorage.setItem(
+                                    "pendingSeriesApply",
+                                    JSON.stringify({
+                                        newPoints,
+                                        change,
+                                        percent,
+                                        isWin: nextPlayerSets > nextOppSets,
+                                        timestamp,
+                                        delayEndsAt: timestamp + SERIES_APPLY_DELAY,
+                                    })
+                                );
+
+                                if (seriesApplyTimeoutRef.current) clearTimeout(seriesApplyTimeoutRef.current);
+                                seriesApplyTimeoutRef.current = setTimeout(() => {
+                                    const pending = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
+                                    if (!pending) return;
+
+                                    setCurrentPoints(pending.newPoints);
+                                    setPointsChange(pending.change);
+                                    setMaxPointsReached((m) => Math.max(m, pending.newPoints));
+
+                                    setTotalBets((t) => t + 1);
+                                    if (pending.change >= 0) {
+                                        setTotalEarned((e) => e + pending.change);
+                                        setTotalWins((w) => w + 1);
+                                        setBiggestWin((b) => Math.max(b, pending.change));
+                                        setConsecutiveWins((cw) => {
+                                            const nw = cw + 1;
+                                            setLongestWinStreak((lw) => Math.max(lw, nw));
+                                            return nw;
+                                        });
+                                        setConsecutiveLosses(0);
+                                    } else {
+                                        setTotalLost((l) => l + Math.abs(pending.change));
+                                        setConsecutiveLosses((cl) => {
+                                            const nl = cl + 1;
+                                            setLongestLossStreak((ll) => Math.max(ll, nl));
+                                            return nl;
+                                        });
+                                        setConsecutiveWins(0);
+                                    }
+
+                                    setSumOfMultipliers((s) => s + 1);
+
+                                    saveGameState({
+                                        currentPoints: pending.newPoints,
+                                        maxPointsReached,
+                                        pointsChange: pending.change,
+                                        totalBets: totalBets + 1,
+                                        totalWins: pending.change >= 0 ? totalWins + 1 : totalWins,
+                                        totalEarned: pending.change >= 0 ? totalEarned + pending.change : totalEarned,
+                                        totalLost: pending.change < 0 ? totalLost + Math.abs(pending.change) : totalLost,
+                                        biggestWin: pending.change >= 0 ? Math.max(biggestWin, pending.change) : biggestWin,
+                                        bestMultiplier,
+                                        worstMultiplier,
+                                        sumOfMultipliers,
+                                        sumOfStreakBonuses,
+                                        totalJackpots,
+                                        totalSuperJackpots,
+                                        consecutiveWins,
+                                        consecutiveLosses,
+                                        longestWinStreak,
+                                        longestLossStreak,
+                                    });
+
+                                    if (pending.newPoints >= goalPoints) {
+                                        setIsWin(true);
+                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                    } else if (pending.newPoints <= 0) {
+                                        setIsWin(false);
+                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                    }
+
+                                    localStorage.removeItem("pendingSeriesApply");
+                                    seriesApplyTimeoutRef.current = null;
+                                }, SERIES_APPLY_DELAY);
+
+                                localStorage.setItem("seriesEndTime", String(Date.now()));
+                            }
+                            return;
+                            
+                        }
+
+                        const playerWonOtRound = nextMiniWins >= 5;
+
+                        toast(`The OT round has been ${playerWonOtRound ? "won" : "lost"}!`, {
+                            icon: playerWonOtRound ? "😜" : "🥺",
+                            duration: 2000
+                        });
+
+                        if (otTiedBlock) {
+                            setIsLocked(true);
+                            const msg =
+                                overtimeBlock === 1 ? "Overtime is tied 3-3! Starting new overtime block..." :
+                                    overtimeBlock === 2 ? "Another overtime block tied 3-3! Starting new overtime block..." :
+                                        overtimeBlock === 3 ? "That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block..." :
+                                            "A tie again! Impressing! Starting new overtime block...";
+                            toast(msg, { icon: "🔄", duration: 4000 });
+                            setTimeout(() => {
+                                setOvertimeBlock((b) => b + 1);
+                                setRoundNumber(1);
+                                setOtWins(0);
+                                setOtLosses(0);
+                                setIsOvertime(true);
+                                setIsLocked(false);
+                                setResultMessage("");
+                                setMultiplier(null);
+                            }, 4000);
+                            return;
+                        }
+
+                        return;
+                    }
+
+                    let nextMiniWins = miniWins;
+                    let nextMiniLosses = miniLosses;
+
+                    if (playerWonGamble) nextMiniWins++;
+                    else if (playerLostGamble) nextMiniLosses++;
+
+                    const awardRound = nextMiniWins >= 5 || nextMiniLosses >= 5;
+                    if (awardRound) {
+                        const playerWonRound = nextMiniWins >= 5;
+                        const updatedRoundWins = playerWonRound ? roundWins + 1 : roundWins;
+                        const updatedRoundLosses = playerWonRound ? roundLosses : roundLosses + 1;
+
+                        setRoundWins(updatedRoundWins);
+                        setRoundLosses(updatedRoundLosses);
+                        setRoundNumber((n) => n + 1);
+                        setMiniWins(0);
+                        setMiniLosses(0);
+
+                        if (updatedRoundWins === 12 && updatedRoundLosses === 12) {
                             setIsLocked(true);
                             toast(`Overtime coming in for this ${setsToWin === 1 ? 'match' : 'set'}! 🔥`, { icon: "⚔️", duration: 4000 });
                             setTimeout(() => {
@@ -1112,44 +1345,45 @@ const GamblingPage = () => {
                             return;
                         }
 
-                        if (nextWins >= needWins || nextLosses >= needWins || (nextWins + nextLosses) >= maxRounds) {
-                            const playerWonSet = nextWins > nextLosses;
+                        const setShouldEnd =
+                            updatedRoundWins >= baseRoundsToWin ||
+                            updatedRoundLosses >= baseRoundsToWin ||
+                            (updatedRoundWins + updatedRoundLosses) >= baseMaxRounds;
+
+                        if (setShouldEnd) {
+                            const playerWonSet = updatedRoundWins > updatedRoundLosses;
                             const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
                             const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
                             const isSeriesOver =
                                 maybeEndSeries(nextPlayerSets, nextOppSets) ||
-                                setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
+                                (setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1));
 
                             setIsLocked(true);
-
                             if (isSeriesOver) {
-                                if (playerWonSet) {
-                                    toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been WON! 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
-                                } else {
-                                    toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been LOST!`, { icon: "😢", duration: SERIES_APPLY_DELAY });
-                                }
+                                toast(
+                                    `${setsToWin === 1 ? 'This match has' : 'These series have'} been ${playerWonSet ? 'WON! 🏆🔥' : 'LOST!'}`,
+                                    { icon: playerWonSet ? "🎉" : "😢", duration: SERIES_APPLY_DELAY }
+                                );
                             } else {
-                                if (playerWonSet) {
-                                    toast(`The set ${playerSets + opponentSets + 1} has been won!`, { icon: "🤯", duration: 4000 });
-                                } else {
-                                    toast(`The set ${playerSets + opponentSets + 1} has been lost!`, { icon: "😞", duration: 4000 });
-                                }
+                                toast(
+                                    `The set ${playerSets + opponentSets + 1} has been ${playerWonSet ? 'won' : 'lost'}!`,
+                                    { icon: playerWonSet ? "🤯" : "😞", duration: 4000 }
+                                );
                             }
-                            if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
+
+                            if (!isSeriesOver) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet, nextWins, nextLosses, false);
+                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, false);
                                     setIsLocked(false);
                                     setResultMessage("");
                                     setMultiplier(null);
                                 }, 4000);
                             } else {
-                                endSet(playerWonSet, nextWins, nextLosses, true);
+                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, true);
                                 setIsLocked(false);
                                 setResultMessage("");
                                 setMultiplier(null);
-                            }
 
-                            if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
                                 const k = seriesKey(nextPlayerSets, nextOppSets);
                                 const table = currentRewardsTable();
                                 const percent = table[k] ?? 0;
@@ -1160,9 +1394,7 @@ const GamblingPage = () => {
                                 setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
                                 setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
                                 setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
-                                setTimeout(() => {
-                                    setIsSeriesActive(false);
-                                }, 4000);
+                                setTimeout(() => setIsSeriesActive(false), 4000);
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
                                     setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
@@ -1265,209 +1497,13 @@ const GamblingPage = () => {
                             return;
                         }
 
-                        return;
-                    }
-
-                    const nextOtWins = playerWonRound ? otWins + 1 : otWins;
-                    const nextOtLosses = !playerWonRound && effectiveMultiplier < 1.0 ? otLosses + 1 : otLosses;
-
-                    setOtWins(nextOtWins);
-                    setOtLosses(nextOtLosses);
-                    const isFinalOtRound =
-                        nextOtWins === otRoundsToWin ||
-                        nextOtLosses === otRoundsToWin ||
-                        (nextOtWins === 3 && nextOtLosses === 3);
-
-                    if (effectiveMultiplier !== 1.0 && !isFinalOtRound) {
-                        setRoundNumber((n) => n + 1);
-                    }
-                    setRoundWins((w) => w + (playerWonRound ? 1 : 0));
-                    setRoundLosses((l) => l + (!playerWonRound && effectiveMultiplier < 1.0 ? 1 : 0));
-
-                    if (nextOtWins === otRoundsToWin || nextOtLosses === otRoundsToWin) {
-                        const playerWonSet = nextOtWins > nextOtLosses;
-                        const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
-                        const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
-                        const isSeriesOver =
-                            maybeEndSeries(nextPlayerSets, nextOppSets) ||
-                            setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1);
-                        const finalWins = roundWins + (playerWonRound ? 1 : 0);
-                        const finalLosses = roundLosses + (!playerWonRound && effectiveMultiplier < 1.0 ? 1 : 0);
-
-                        setIsLocked(true);
-
-                        if (isSeriesOver) {
-                            if (playerWonSet) {
-                                toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been WON in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`} 🏆🔥`, { icon: "🎉", duration: SERIES_APPLY_DELAY });
-                            } else {
-                                toast(`${setsToWin === 1 ? 'This match has' : 'These series have'} been LOST in Overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`}`, { icon: "😢", duration: SERIES_APPLY_DELAY });
-                            }
-                        } else {
-                            if (playerWonSet) {
-                                toast(`The set ${playerSets + opponentSets + 1} has been won in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`}`, { icon: "🤯", duration: 4000 });
-                            } else {
-                                toast(`The set ${playerSets + opponentSets + 1} has been lost in overtime ${overtimeBlock === 0 || overtimeBlock === 1 ? '!' : ` #${overtimeBlock}!`}`, { icon: "😞", duration: 4000 });
-                            }
-                        }
-                        if (!maybeEndSeries(nextPlayerSets, nextOppSets)) {
-                            setTimeout(() => {
-                                endSet(playerWonSet, finalWins, finalLosses, false);
-                                setIsOvertime(false);
-                                setOvertimeBlock(0);
-                                setOtWins(0);
-                                setOtLosses(0);
-                                setIsLocked(false);
-                                setResultMessage("");
-                                setMultiplier(null);
-                            }, 4000);
-                        } else {
-                            endSet(playerWonSet, finalWins, finalLosses, true);
-                            setIsOvertime(false);
-                            setOvertimeBlock(0);
-                            setOtWins(0);
-                            setOtLosses(0);
-                            setIsLocked(false);
-                            setResultMessage("");
-                            setMultiplier(null);
-                        }
-
-                        if (maybeEndSeries(nextPlayerSets, nextOppSets)) {
-                            const k = seriesKey(nextPlayerSets, nextOppSets);
-                            const table = currentRewardsTable();
-                            const percent = table[k] ?? 0;
-                            const base = seriesInitialPoints || currentPoints;
-                            const change = Math.round((base * percent) / 100);
-                            const newPoints = base + change;
-
-                            setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
-                            setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
-                            setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
-                            setTimeout(() => {
-                                setIsSeriesActive(false);
-                            }, 3000);
-
-                            seriesResultTimeoutRef.current = setTimeout(() => {
-                                setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
-
-                                if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
-                                seriesResetTimeoutRef.current = setTimeout(() => {
-                                    resetSeriesState();
-                                    setRoundWins(0);
-                                    setRoundLosses(0);
-                                    setOtWins(0);
-                                    setOtLosses(0);
-                                    setIsOvertime(false);
-                                    setOvertimeBlock(0);
-                                    setResultMessage("");
-                                    setMultiplier(null);
-                                    seriesResetTimeoutRef.current = null;
-                                }, 15000);
-                            }, 4000);
-                            
-                            const timestamp = Date.now();
-                            localStorage.setItem(
-                                "pendingSeriesApply",
-                                JSON.stringify({
-                                    newPoints,
-                                    change,
-                                    percent,
-                                    isWin: nextPlayerSets > nextOppSets,
-                                    timestamp,
-                                    delayEndsAt: timestamp + SERIES_APPLY_DELAY,
-                                })
-                            );
-
-                            if (seriesApplyTimeoutRef.current) clearTimeout(seriesApplyTimeoutRef.current);
-                            seriesApplyTimeoutRef.current = setTimeout(() => {
-                                const pending = JSON.parse(localStorage.getItem("pendingSeriesApply") || "null");
-                                if (!pending) return;
-
-                                setCurrentPoints(pending.newPoints);
-                                setPointsChange(pending.change);
-                                setMaxPointsReached((m) => Math.max(m, pending.newPoints));
-
-                                setTotalBets((t) => t + 1);
-                                if (pending.change >= 0) {
-                                    setTotalEarned((e) => e + pending.change);
-                                    setTotalWins((w) => w + 1);
-                                    setBiggestWin((b) => Math.max(b, pending.change));
-                                    setConsecutiveWins((cw) => {
-                                        const nw = cw + 1;
-                                        setLongestWinStreak((lw) => Math.max(lw, nw));
-                                        return nw;
-                                    });
-                                    setConsecutiveLosses(0);
-                                } else {
-                                    setTotalLost((l) => l + Math.abs(pending.change));
-                                    setConsecutiveLosses((cl) => {
-                                        const nl = cl + 1;
-                                        setLongestLossStreak((ll) => Math.max(ll, nl));
-                                        return nl;
-                                    });
-                                    setConsecutiveWins(0);
-                                }
-
-                                setSumOfMultipliers((s) => s + 1);
-
-                                saveGameState({
-                                    currentPoints: pending.newPoints,
-                                    maxPointsReached,
-                                    pointsChange: pending.change,
-                                    totalBets: totalBets + 1,
-                                    totalWins: pending.change >= 0 ? totalWins + 1 : totalWins,
-                                    totalEarned: pending.change >= 0 ? totalEarned + pending.change : totalEarned,
-                                    totalLost: pending.change < 0 ? totalLost + Math.abs(pending.change) : totalLost,
-                                    biggestWin: pending.change >= 0 ? Math.max(biggestWin, pending.change) : biggestWin,
-                                    bestMultiplier,
-                                    worstMultiplier,
-                                    sumOfMultipliers,
-                                    sumOfStreakBonuses,
-                                    totalJackpots,
-                                    totalSuperJackpots,
-                                    consecutiveWins,
-                                    consecutiveLosses,
-                                    longestWinStreak,
-                                    longestLossStreak,
-                                });
-
-                                if (pending.newPoints >= goalPoints) {
-                                    setIsWin(true);
-                                    setTimeout(() => setShowGameOverScreen(true), 2000);
-                                } else if (pending.newPoints <= 0) {
-                                    setIsWin(false);
-                                    setTimeout(() => setShowGameOverScreen(true), 2000);
-                                }
-
-                                localStorage.removeItem("pendingSeriesApply");
-                                seriesApplyTimeoutRef.current = null;
-                            }, SERIES_APPLY_DELAY);
-
-                            localStorage.setItem("seriesEndTime", String(Date.now()));
-                        }
-                        return;
-                    }
-
-                    if (nextOtWins === 3 && nextOtLosses === 3) {
-                        setIsLocked(true);
-                        if (overtimeBlock === 1) {
-                            toast("Overtime is tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
-                        } else if (overtimeBlock === 2) {
-                            toast("Another overtime block tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
-                        } else if (overtimeBlock === 3) {
-                            toast("That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block...", { icon: "🔄", duration: 4000 });
-                        } else if (overtimeBlock >= 4) {
-                            toast("A tie again! Impressing! Starting new overtime block...", { icon: "🔄", duration: 4000 });
-                        }
-                        setTimeout(() => {
-                            setOvertimeBlock((b) => b + 1);
-                            setRoundNumber(1);
-                            setOtWins(0);
-                            setOtLosses(0);
-                            setIsOvertime(true);
-                            setIsLocked(false);
-                            setResultMessage("");
-                            setMultiplier(null);
-                        }, 4000);
+                        toast(`The round has been ${playerWonRound ? "won" : "lost"}!`, {
+                            icon: playerWonRound ? "😜" : "🥺",
+                            duration: 2000
+                        });
+                    } else {
+                        setMiniWins(nextMiniWins);
+                        setMiniLosses(nextMiniLosses);
                     }
 
                     return;
@@ -1513,11 +1549,13 @@ const GamblingPage = () => {
                     localStorage.removeItem(STORAGE_KEY);
                     setTimeout(() => setShowGameOverScreen(true), 2000);
                 }
+            } catch (err) {
+                console.error("Error in handleGamble:", err);
             } finally {
                 setIsCalculating(false);
                 betInputRef.current?.focus();
             }
-        }, 2000);
+        }, 1000);
     };
 
     const confirmRestart = () => {
@@ -1572,6 +1610,8 @@ const GamblingPage = () => {
         setLoserOpacity(null);
         setSeriesBanner("");
         setLoserOpacity("");
+        setMiniWins(0);
+        setMiniLosses(0);
     };
 
     const applyPendingSeriesChange = () => {
@@ -2097,7 +2137,18 @@ const GamblingPage = () => {
                                     </button>
                                 ) : (
                                     <div className={css.scoreboard}>
-                                        <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
+                                            
+                                        <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: '20px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
+                                            <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
+                                                {!seriesBanner && (
+                                                    [...Array(5)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className={`${css.square} ${i < miniWins ? css.lineWin : css.lineDarkWin}`}
+                                                            style={{ boxShadow: 'none' }}
+                                                        />
+                                                    )))}
+                                            </div>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span className={css.round_text}>
                                                     <CountUp
@@ -2110,28 +2161,28 @@ const GamblingPage = () => {
                                                 </span>
                                             </div>
                                             <div
-                                                className={`${css.squares} ${css.winRow}`}
+                                                className={`${css.lines} ${css.winRow}`}
                                             >
                                                 {setsToWin === 4 ? (
                                                     <>
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 3 ? css.squareWin : css.squareDarkWin}`} />
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${playerSets >= 4 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
                                                     </>
                                                 ) : setsToWin === 3 ? (
                                                     <>
-                                                        <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
-                                                        <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
-                                                        <span style={{ width: '16px' }} className={`${css.square} ${playerSets >= 3 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
                                                     </>
                                                 ) : setsToWin === 2 ? (
                                                     <>
-                                                        <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
-                                                        <span className={`${css.square} ${playerSets >= 2 ? css.squareWin : css.squareDarkWin}`} />
+                                                        <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <span className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
                                                     </>
                                                 ) : (
-                                                    <span className={`${css.square} ${playerSets >= 1 ? css.squareWin : css.squareDarkWin}`} />
+                                                    <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
                                                 )}
                                             </div>
                                         </div>
@@ -2222,7 +2273,17 @@ const GamblingPage = () => {
                                                 </motion.span>
                                             </div>
                                         )}
-                                        <div style={{ display: 'flex', flexDirection: "column", alignItems: 'center', gap: '12px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
+                                            <div className={css.miniSquares}>
+                                                {!seriesBanner && (
+                                                    [...Array(5)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className={`${css.square} ${i < miniLosses ? css.lineLoss : css.lineDarkLoss}`}
+                                                            style={{ boxShadow: 'none' }}
+                                                        />
+                                                    )))}
+                                            </div>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span className={css.round_text}>
                                                     <CountUp
@@ -2235,27 +2296,27 @@ const GamblingPage = () => {
                                                 </span>
                                             </div>
 
-                                            <div className={css.squares}>
+                                            <div className={css.lines}>
                                                 {setsToWin === 4 ? (
                                                     <>
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 3 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                        <span style={{ width: '14px' }} className={`${css.square} ${opponentSets >= 4 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 4 ? css.lineLoss : css.lineDarkLoss}`} />
                                                     </>
                                                 ) : setsToWin === 3 ? (
                                                     <>
-                                                        <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                        <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                        <span style={{ width: '16px' }} className={`${css.square} ${opponentSets >= 3 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
                                                     </>
                                                 ) : setsToWin === 2 ? (
                                                     <>
-                                                        <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
-                                                        <span className={`${css.square} ${opponentSets >= 2 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                        <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <span className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
                                                     </>
                                                 ) : (
-                                                    <span className={`${css.square} ${opponentSets >= 1 ? css.squareLoss : css.squareDarkLoss}`} />
+                                                    <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                 )}
                                             </div>
                                         </div>
