@@ -1555,7 +1555,7 @@ const GamblingPage = () => {
                 setIsCalculating(false);
                 betInputRef.current?.focus();
             }
-        }, 1000);
+        }, isSeriesActive ? 1000 : 3000);
     };
 
     const confirmRestart = () => {
