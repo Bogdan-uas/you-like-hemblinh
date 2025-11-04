@@ -1071,9 +1071,9 @@ const GamblingPage = () => {
             if (inSeries) {
                 if (effectiveMultiplier === 0) message = "💀 That's good that you got it during the series!";
                 else if (effectiveMultiplier <= 0.1) message = "Imagine, you get it on your whole score 😭!";
-                else if (effectiveMultiplier < 1.0) message = "That's a round loss 😢!";
+                else if (effectiveMultiplier < 1.0) message = "That's a loss 😢!";
                 else if (effectiveMultiplier === 1.0) message = "Neither win nor loss 😐!";
-                else message = "That's a round win👏!";
+                else message = "That's a win👏!";
             }
 
             setResultMessage(message);
@@ -2148,7 +2148,7 @@ const GamblingPage = () => {
                                                             style={{ boxShadow: 'none' }}
                                                         />
                                                     )))}
-                                            </div>
+                                                </div>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span className={css.round_text}>
                                                     <CountUp
@@ -2283,7 +2283,7 @@ const GamblingPage = () => {
                                                             style={{ boxShadow: 'none' }}
                                                         />
                                                     )))}
-                                            </div>
+                                                </div>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span className={css.round_text}>
                                                     <CountUp

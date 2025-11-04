@@ -931,6 +931,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    height: 81px;
     margin-top: 12px;
     animation: fadeInS 0.5s ease;
 }
