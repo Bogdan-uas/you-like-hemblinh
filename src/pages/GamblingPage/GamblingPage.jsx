@@ -989,13 +989,11 @@ const GamblingPage = () => {
         let rawMultiplier;
         let jackpotTypeLocal = null;
 
-        if (inSeries) {
-            rawMultiplier = min + Math.random() * (max - min);
-        } else if (superjackpot && Math.random() < superjackpot.chance) {
+        if (!inSeries && superjackpot && Math.random() < superjackpot.chance) {
             const [sjMin, sjMax] = superjackpot.range;
             rawMultiplier = sjMin + Math.random() * (sjMax - sjMin);
             jackpotTypeLocal = "superjackpot";
-        } else if (jackpot && Math.random() < jackpot.chance) {
+        } else if (!inSeries && jackpot && Math.random() < jackpot.chance) {
             const [jpMin, jpMax] = jackpot.range;
             rawMultiplier = jpMin + Math.random() * (jpMax - jpMin);
             jackpotTypeLocal = "jackpot";
@@ -1561,7 +1559,7 @@ const GamblingPage = () => {
                 setIsCalculating(false);
                 betInputRef.current?.focus();
             }
-        }, isSeriesActive ? 250 : 3000);
+        }, isSeriesActive ? 250 : 2000);
     };
 
     const confirmRestart = () => {
