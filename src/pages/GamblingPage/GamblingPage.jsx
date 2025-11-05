@@ -724,8 +724,6 @@ const GamblingPage = () => {
         setMiniLosses(0);
         setIsOvertime(false);
         setOvertimeBlock(0);
-        setMiniWins(0);
-        setMiniLosses(0);
     };
 
     const endSet = (playerWon, finalWins, finalLosses, isFinal = false) => {
@@ -1192,6 +1190,8 @@ const GamblingPage = () => {
                                         setOvertimeBlock(0);
                                         setResultMessage("");
                                         setMultiplier(null);
+                                        setMiniWins(0);
+                                        setMiniLosses(0);
                                         seriesResetTimeoutRef.current = null;
                                     }, 15000);
                                 }, 4000);
@@ -1304,6 +1304,8 @@ const GamblingPage = () => {
                                 setIsLocked(false);
                                 setResultMessage("");
                                 setMultiplier(null);
+                                setMiniWins(0);
+                                setMiniLosses(0);
                             }, 4000);
                             return;
                         }
@@ -1341,6 +1343,8 @@ const GamblingPage = () => {
                                 setIsLocked(false);
                                 setResultMessage("");
                                 setMultiplier(null);
+                                setMiniWins(0);
+                                setMiniLosses(0);
                             }, 4000);
                             return;
                         }
@@ -1410,6 +1414,8 @@ const GamblingPage = () => {
                                         setOvertimeBlock(0);
                                         setResultMessage("");
                                         setMultiplier(null);
+                                        setMiniWins(0);
+                                        setMiniLosses(0);
                                         seriesResetTimeoutRef.current = null;
                                     }, 15000);
                                 }, 4000);
@@ -1555,7 +1561,7 @@ const GamblingPage = () => {
                 setIsCalculating(false);
                 betInputRef.current?.focus();
             }
-        }, isSeriesActive ? 1000 : 3000);
+        }, isSeriesActive ? 500 : 3000);
     };
 
     const confirmRestart = () => {
@@ -1780,6 +1786,15 @@ const GamblingPage = () => {
     }, []);
 
     const overtimeTarget = 13 + overtimeBlock * 3;
+    const threshold = overtimeTarget - 1;
+
+    const isSetPointWins = roundWins === threshold && roundLosses < threshold;
+    const isSetPointLosses = roundLosses === threshold && roundWins < threshold;
+
+    const isSeriesPointWins =
+        isSetPointWins && playerSets === setsToWin - 1;
+    const isSeriesPointLosses =
+        isSetPointLosses && opponentSets === setsToWin - 1;
 
     const extendedLabel = (() => {
         switch (hoveredDifficulty) {
@@ -2137,53 +2152,75 @@ const GamblingPage = () => {
                                     </button>
                                 ) : (
                                     <div className={css.scoreboard}>
-                                            
-                                        <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: '20px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
-                                            <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
-                                                {!seriesBanner && (
-                                                    [...Array(5)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            className={`${css.square} ${i < miniWins ? css.lineWin : css.lineDarkWin}`}
-                                                            style={{ boxShadow: 'none' }}
-                                                        />
-                                                    )))}
-                                                </div>
-                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                <span className={css.round_text}>
-                                                    <CountUp
-                                                        key={roundWins}
-                                                        start={Math.max(roundWins - 1, 0)}
-                                                        end={roundWins}
-                                                        duration={1}
-                                                        style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}
-                                                    />
-                                                </span>
-                                            </div>
-                                            <div
-                                                className={`${css.lines} ${css.winRow}`}
-                                            >
-                                                {setsToWin === 4 ? (
-                                                    <>
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
-                                                    </>
-                                                ) : setsToWin === 3 ? (
-                                                    <>
-                                                        <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                        <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
-                                                        <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
-                                                    </>
-                                                ) : setsToWin === 2 ? (
-                                                    <>
-                                                        <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                        <span className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
-                                                    </>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                                {isSeriesPointWins ? (
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
+                                                    </motion.span>
                                                 ) : (
-                                                    <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                )}
+                                                    isSetPointWins &&
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        Set point!
+                                                    </motion.span>
+                                                )
+                                                }
+                                            <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: '20px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
+                                                <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
+                                                    {!seriesBanner && (
+                                                        [...Array(5)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className={`${css.square} ${i < miniWins ? css.lineWin : css.lineDarkWin}`}
+                                                                style={{ boxShadow: 'none' }}
+                                                            />
+                                                        )))}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                    <span className={css.round_text}>
+                                                        <CountUp
+                                                            key={roundWins}
+                                                            start={Math.max(roundWins - 1, 0)}
+                                                            end={roundWins}
+                                                            duration={1}
+                                                            style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}
+                                                        />
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className={`${css.lines} ${css.winRow}`}
+                                                >
+                                                    {setsToWin === 4 ? (
+                                                        <>
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
+                                                        </>
+                                                    ) : setsToWin === 3 ? (
+                                                        <>
+                                                            <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
+                                                        </>
+                                                    ) : setsToWin === 2 ? (
+                                                        <>
+                                                            <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                        </>
+                                                    ) : (
+                                                        <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         {seriesBanner ? (
@@ -2273,51 +2310,74 @@ const GamblingPage = () => {
                                                 </motion.span>
                                             </div>
                                         )}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
-                                            <div className={css.miniSquares}>
-                                                {!seriesBanner && (
-                                                    [...Array(5)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            className={`${css.square} ${i < miniLosses ? css.lineLoss : css.lineDarkLoss}`}
-                                                            style={{ boxShadow: 'none' }}
-                                                        />
-                                                    )))}
-                                                </div>
-                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                <span className={css.round_text}>
-                                                    <CountUp
-                                                        key={roundLosses}
-                                                        start={Math.max(roundLosses - 1, 0)}
-                                                        end={roundLosses}
-                                                        duration={1}
-                                                        style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}
-                                                    />
-                                                </span>
-                                            </div>
-
-                                            <div className={css.lines}>
-                                                {setsToWin === 4 ? (
-                                                    <>
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                        <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 4 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                    </>
-                                                ) : setsToWin === 3 ? (
-                                                    <>
-                                                        <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                        <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                        <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                    </>
-                                                ) : setsToWin === 2 ? (
-                                                    <>
-                                                        <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                        <span className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                    </>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                {isSeriesPointLosses ? (
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
+                                                    </motion.span>
                                                 ) : (
-                                                    <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                )}
+                                                    isSetPointLosses &&
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                                style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        Set point!
+                                                    </motion.span>
+                                                )
+                                                }
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
+                                                <div className={css.miniSquares}>
+                                                    {!seriesBanner && (
+                                                        [...Array(5)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className={`${css.square} ${i < miniLosses ? css.lineLoss : css.lineDarkLoss}`}
+                                                                style={{ boxShadow: 'none' }}
+                                                            />
+                                                        )))}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                    <span className={css.round_text}>
+                                                        <CountUp
+                                                            key={roundLosses}
+                                                            start={Math.max(roundLosses - 1, 0)}
+                                                            end={roundLosses}
+                                                            duration={1}
+                                                            style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}
+                                                        />
+                                                    </span>
+                                                </div>
+
+                                                <div className={css.lines}>
+                                                    {setsToWin === 4 ? (
+                                                        <>
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 4 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        </>
+                                                    ) : setsToWin === 3 ? (
+                                                        <>
+                                                            <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        </>
+                                                    ) : setsToWin === 2 ? (
+                                                        <>
+                                                            <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        </>
+                                                    ) : (
+                                                        <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -847,6 +847,7 @@
 .scoreboard {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 24px;
     margin-top: 8px;
     margin-bottom: 8px;
