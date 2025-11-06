@@ -26,68 +26,69 @@ const DIFFICULTIES = {
     Easy: {
         start: [500, 1000],
         goal: [7000, 10000],
-        multiplier: [0.3, 3.0],
+        multiplier: [0.6, 2.4],
     },
     Normal: {
         start: [300, 700],
         goal: [10000, 20000],
-        multiplier: [0.1, 3.0],
+        multiplier: [0.3, 2.5],
     },
     Challenging: {
         start: [200, 600],
         goal: [12000, 25000],
-        multiplier: [0.1, 2.5],
+        multiplier: [0.1, 2.4],
     },
     Hard: {
         start: [100, 400],
         goal: [15000, 30000],
-        multiplier: [0.05, 2.25],
-        jackpot: { chance: 0.003, range: [4, 10] },
+        multiplier: [0.0, 2.3],
+        jackpot: { chance: 0.0025, range: [3.5, 8] },
     },
     Brutal: {
         start: [100, 300],
         goal: [20000, 45000],
-        multiplier: [0.03, 2.1],
-        jackpot: { chance: 0.004, range: [5, 11] },
+        multiplier: [0.0, 2.2],
+        unstableMin: true,
+        jackpot: { chance: 0.003, range: [4, 9] },
     },
     Insane: {
         start: [100, 250],
         goal: [25000, 50000],
-        multiplier: [0.025, 2.0],
+        multiplier: [-0.15, 2.1],
         unstableMin: true,
-        jackpot: { chance: 0.004, range: [6, 12] },
+        jackpot: { chance: 0.0035, range: [5, 10] },
     },
     "Impossible": {
         start: [80, 200],
         goal: [40000, 75000],
-        multiplier: [0, 2.0],
+        multiplier: [-0.3, 2.0],
         unstableMin: true,
-        jackpot: { chance: 0.005, range: [10, 18] },
-        superjackpot: { chance: 0.001, range: [20, 40] },
+        jackpot: { chance: 0.004, range: [8, 15] },
+        superjackpot: { chance: 0.001, range: [18, 35] },
     },
     "Tuff Luck": {
         start: [50, 150],
         goal: [50000, 100000],
-        multiplier: [0, 2.0],
+        multiplier: [-0.6, 2.2],
         unstableMin: true,
-        jackpot: { chance: 0.005, range: [8, 20] },
-        superjackpot: { chance: 0.0015, range: [20, 70] },
+        jackpot: { chance: 0.005, range: [8, 18] },
+        superjackpot: { chance: 0.0015, range: [20, 60] },
     },
     "LUCK GOD": {
         start: [25, 25],
         goal: [75000, 500000],
-        multiplier: [0, 2.0],
+        multiplier: [-1.0, 2.6],
         unstableMin: true,
-        jackpot: { chance: 0.006, range: [5, 25] },
-        superjackpot: { chance: 0.003, range: [30, 100] },
+        jackpot: { chance: 0.006, range: [10, 25] },
+        superjackpot: { chance: 0.002, range: [30, 90] },
     },
     "Eternal Madness": {
         start: [25, 100],
         goal: [500000, 999999999999999e+6],
-        multiplier: [0, 2.0],
+        multiplier: [-1.0, 2.6],
         unstableMin: true,
-        jackpot: { chance: 0.01, range: [10, 50] },
-        superjackpot: { chance: 0.005, range: [100, 200] },
+        jackpot: { chance: 0.008, range: [12, 40] },
+        superjackpot: { chance: 0.004, range: [80, 200] },
     },
 };
 
@@ -999,12 +1000,22 @@ const GamblingPage = () => {
             jackpotTypeLocal = "jackpot";
         } else {
             if (unstableMin) {
-                const randomMin = randomUniform(0, min)();
-                const normalGen = randomNormal((max + randomMin) / 2, (max - randomMin) / 5);
-                rawMultiplier = Math.min(Math.max(normalGen(), 0), max);
+                const randomMin = randomUniform(min, Math.max(0, min + (max - min) / 3))();
+                const mean = (max + randomMin) / 1.8;
+                const stdev = Math.abs(max - randomMin) / 4.2;
+                let sample = randomNormal(mean, stdev)();
+                if (sample < 0 && Math.random() < 0.7) {
+                    sample = sample / 2;
+                }
+                rawMultiplier = Math.max(Math.min(sample, max), min);
             } else {
-                const normalGen = randomNormal((min + max) / 2, (max - min) / 6);
-                rawMultiplier = Math.min(Math.max(normalGen(), min), max);
+                const mean = (min + max) / 1.7;
+                const stdev = Math.abs(max - min) / 4.8;
+                let sample = randomNormal(mean, stdev)();
+                if (sample < 0 && Math.random() < 0.8) {
+                    sample = sample / 3;
+                }
+                rawMultiplier = Math.max(Math.min(sample, max), min);
             }
         }
 
@@ -1038,10 +1049,24 @@ const GamblingPage = () => {
 
         const effectiveMultiplierRaw = roundedMultiplier + streakBonusToApply;
         const effectiveMultiplier = Math.round(effectiveMultiplierRaw * 100) / 100;
-        const winnings = Math.round(betAmount * effectiveMultiplier);
 
         setTimeout(() => {
             setMultiplier(effectiveMultiplier);
+            let winnings;
+            if (inSeries) {
+                winnings = Math.round(betAmount * effectiveMultiplier);
+            } else {
+                winnings = Math.round(betAmount * effectiveMultiplier);
+            }
+
+            const netChange = winnings - betAmount;
+            const newPoints = Math.max(previousPoints + netChange, 0);
+
+            if (!inSeries) {
+                setCurrentPoints(newPoints);
+                setPointsChange(netChange);
+                setMaxPointsReached((prev) => Math.max(prev, newPoints));
+            }
 
             let message;
             if (jackpotTypeLocal === "superjackpot") {
@@ -1050,8 +1075,10 @@ const GamblingPage = () => {
             } else if (jackpotTypeLocal === "jackpot") {
                 message = "🎰 JACKPOT!🤯";
                 toast.success("🎰 JACKPOT!🤯 Multiplier boosted!", { duration: 3000 });
+            } else if (effectiveMultiplier < 0) {
+                message = '💀 Catastrophic failure!';
             } else if (effectiveMultiplier === 0) {
-                message = "💀 Total wipeout! You lost everything!";
+                message = "☠️ Total wipeout! You gained absolutely nothing!";
             } else if (effectiveMultiplier <= 0.1) {
                 message = "Total loss 😭!";
             } else if (effectiveMultiplier < 1.0) {
@@ -1065,7 +1092,8 @@ const GamblingPage = () => {
             }
 
             if (inSeries) {
-                if (effectiveMultiplier === 0) message = "💀 That's good that you got it during the series!";
+                if (effectiveMultiplier < 0) message = "💀 That's a complete disaster, but at least it's only in the series!";
+                else if (effectiveMultiplier === 0) message = "☠️ Total wipeout — but lucky it's only in the series!";
                 else if (effectiveMultiplier <= 0.1) message = "Imagine, you get it on your whole score 😭!";
                 else if (effectiveMultiplier < 1.0) message = "That's a loss 😢!";
                 else if (effectiveMultiplier === 1.0) message = "Neither win nor loss 😐!";
@@ -1633,14 +1661,14 @@ const GamblingPage = () => {
     const getMultiplierClass = (rawMultiplier) => {
         if (inSeries) {
             if (rawMultiplier === null) return "";
-            if (rawMultiplier === 0) return css.multiplier_totalWipeout;
+            if (rawMultiplier <= 0) return css.multiplier_totalWipeout;
             if (rawMultiplier <= 0.1) return css.multiplier_superFail;
             if (rawMultiplier < 1.0) return css.multiplier_fail;
             if (rawMultiplier === 1.0) return css.multiplier_mid;
             return css.multiplier_win;
         } else {
             if (rawMultiplier === null) return "";
-            if (rawMultiplier === 0) return css.multiplier_totalWipeout;
+            if (rawMultiplier <= 0) return css.multiplier_totalWipeout;
             if (rawMultiplier <= 0.1) return css.multiplier_superFail;
             if (rawMultiplier < 1.0) return css.multiplier_fail;
             if (rawMultiplier <= 1.2) return css.multiplier_mid;
@@ -1651,7 +1679,7 @@ const GamblingPage = () => {
 
     const getBestMultiplierClass = (value) => {
         if (value === null) return "";
-        if (value === 0) return css.multiplier_totalWipeout;
+        if (value <= 0) return css.multiplier_totalWipeout;
         if (value <= 0.1) return css.multiplier_superFail;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.2) return css.multiplier_mid;
@@ -1661,7 +1689,7 @@ const GamblingPage = () => {
 
     const getAvgMultiplierClass = (value) => {
         if (value === null) return "";
-        if (value === 0) return css.multiplier_totalWipeout;
+        if (value <= 0) return css.multiplier_totalWipeout;
         if (value <= 0.1) return css.multiplier_superFail;
         if (value < 1.0) return css.multiplier_fail;
         if (value <= 1.2) return css.multiplier_mid;
@@ -1670,7 +1698,9 @@ const GamblingPage = () => {
     };
 
     const getHitRateClass = (value) => {
-        if (value < 40) return css.multiplier_fail;
+        if (value <= 1) return css.multiplier_totalWipeout;
+        if (value <= 10) return css.multiplier_superFail;
+        if (value <= 40) return css.multiplier_fail;
         if (value <= 50) return css.multiplier_mid;
         return css.multiplier_win;
     };
@@ -2057,8 +2087,8 @@ const GamblingPage = () => {
 
                             <p className={`${css.info_text} ${css.fade_in_delay_more}`}>
                                 The multiplier varies from{" "}
-                                <span style={{ color: "red" }}>
-                                    {DIFFICULTIES[difficulty].unstableMin ? "0x" : `${DIFFICULTIES[difficulty].multiplier[0]}x`}
+                                <span className={getMultiplierClass(DIFFICULTIES[difficulty].multiplier[0])}>
+                                    {DIFFICULTIES[difficulty].multiplier[0]}x
                                 </span>{" "}
                                 to{" "}
                                 <span style={{ color: "green" }}>
@@ -2157,7 +2187,7 @@ const GamblingPage = () => {
                                                         animate={{ opacity: 1 }}
                                                         exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.4 }}
-                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px' }}>
                                                         {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
                                                     </motion.span>
                                                 ) : (
@@ -2167,7 +2197,7 @@ const GamblingPage = () => {
                                                         animate={{ opacity: 1 }}
                                                         exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.4 }}
-                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px' }}>
                                                         Set point!
                                                     </motion.span>
                                                 )
@@ -2315,7 +2345,7 @@ const GamblingPage = () => {
                                                         animate={{ opacity: 1 }}
                                                         exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.4 }}
-                                                        style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                        style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px' }}>
                                                         {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
                                                     </motion.span>
                                                 ) : (
@@ -2325,7 +2355,7 @@ const GamblingPage = () => {
                                                         animate={{ opacity: 1 }}
                                                         exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.4 }}
-                                                                style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px', position: 'absolute', top: '28%' }}>
+                                                                style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px' }}>
                                                         Set point!
                                                     </motion.span>
                                                 )
