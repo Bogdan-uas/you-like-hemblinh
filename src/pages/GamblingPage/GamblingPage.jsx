@@ -1703,6 +1703,11 @@ const GamblingPage = () => {
         return css.multiplier_win;
     };
 
+    const getSeriesResultClass = (value) => {
+        if (value <= 40) return css.multiplier_fail;
+        return css.multiplier_win;
+    }
+
     const getCurrentPointsStyle = () => {
         if (!firstGambleRef.current) {
             return { backgroundColor: "#ccc", color: "#2e2f42" };
@@ -2465,7 +2470,7 @@ const GamblingPage = () => {
                                             <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
                                                 {seriesResult.isWin ? "gain" : "lose"}
                                             </span>{" "}
-                                            <span style={{ fontWeight: "bold" }} className={getHitRateClass(seriesResult.percent)}>
+                                            <span style={{ fontWeight: "bold" }} className={getSeriesResultClass(seriesResult.percent)}>
                                                 {seriesResult.percent}%
                                             </span>
                                             .
