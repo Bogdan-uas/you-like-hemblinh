@@ -1110,6 +1110,8 @@ const GamblingPage = () => {
                     const playerWonGamble = effectiveMultiplier > 1.0;
                     const playerLostGamble = effectiveMultiplier < 1.0;
 
+                    if (playerWonGamble) setTotalWins((w) => w + 1);
+
                     if (isOvertime) {
                         let nextMiniWins = miniWins;
                         let nextMiniLosses = miniLosses;
@@ -1138,6 +1140,7 @@ const GamblingPage = () => {
                         setRoundNumber((n) => n + 1);
                         setMiniWins(0);
                         setMiniLosses(0);
+                        if (playerWonGamble) setTotalWins((w) => w + 1);
 
                         const otDecided =
                             updatedOtWins === otRoundsToWin ||
@@ -1240,11 +1243,8 @@ const GamblingPage = () => {
                                     setCurrentPoints(pending.newPoints);
                                     setPointsChange(pending.change);
                                     setMaxPointsReached((m) => Math.max(m, pending.newPoints));
-
-                                    setTotalBets((t) => t + 1);
                                     if (pending.change >= 0) {
                                         setTotalEarned((e) => e + pending.change);
-                                        setTotalWins((w) => w + 1);
                                         setBiggestWin((b) => Math.max(b, pending.change));
                                         setConsecutiveWins((cw) => {
                                             const nw = cw + 1;
@@ -1268,8 +1268,6 @@ const GamblingPage = () => {
                                         currentPoints: pending.newPoints,
                                         maxPointsReached,
                                         pointsChange: pending.change,
-                                        totalBets: totalBets + 1,
-                                        totalWins: pending.change >= 0 ? totalWins + 1 : totalWins,
                                         totalEarned: pending.change >= 0 ? totalEarned + pending.change : totalEarned,
                                         totalLost: pending.change < 0 ? totalLost + Math.abs(pending.change) : totalLost,
                                         biggestWin: pending.change >= 0 ? Math.max(biggestWin, pending.change) : biggestWin,
@@ -1464,11 +1462,8 @@ const GamblingPage = () => {
                                     setCurrentPoints(pending.newPoints);
                                     setPointsChange(pending.change);
                                     setMaxPointsReached((m) => Math.max(m, pending.newPoints));
-
-                                    setTotalBets((t) => t + 1);
                                     if (pending.change >= 0) {
                                         setTotalEarned((e) => e + pending.change);
-                                        setTotalWins((w) => w + 1);
                                         setBiggestWin((b) => Math.max(b, pending.change));
                                         setConsecutiveWins((cw) => {
                                             const nw = cw + 1;
@@ -1492,8 +1487,6 @@ const GamblingPage = () => {
                                         currentPoints: pending.newPoints,
                                         maxPointsReached,
                                         pointsChange: pending.change,
-                                        totalBets: totalBets + 1,
-                                        totalWins: pending.change >= 0 ? totalWins + 1 : totalWins,
                                         totalEarned: pending.change >= 0 ? totalEarned + pending.change : totalEarned,
                                         totalLost: pending.change < 0 ? totalLost + Math.abs(pending.change) : totalLost,
                                         biggestWin: pending.change >= 0 ? Math.max(biggestWin, pending.change) : biggestWin,
@@ -1558,7 +1551,6 @@ const GamblingPage = () => {
                 setBestMultiplier((prev) => (prev === null ? roundedMultiplier : Math.max(prev, roundedMultiplier)));
                 setWorstMultiplier((prev) => (prev === null ? roundedMultiplier : Math.min(prev, roundedMultiplier)));
 
-                setTotalBets((prev) => prev + 1);
                 if (netChange >= 0) setTotalEarned((prev) => prev + netChange);
                 else setTotalLost((prev) => prev + Math.abs(netChange));
                 if (netChange > 0) setBiggestWin((prev) => Math.max(prev, netChange));
