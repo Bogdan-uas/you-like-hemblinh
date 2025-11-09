@@ -26,17 +26,23 @@ const DIFFICULTIES = {
     Easy: {
         start: [500, 1000],
         goal: [7000, 10000],
-        multiplier: [0.3, 3.0],
+        multiplier: [0.3, 2.8],
     },
     Normal: {
-        start: [300, 700],
-        goal: [10000, 20000],
-        multiplier: [0.1, 3.0],
+        start: [400, 800],
+        goal: [9000, 15000],
+        multiplier: [0.15, 2.75],
     },
     Challenging: {
+        start: [300, 700],
+        goal: [12000, 20000],
+        multiplier: [0.1, 2.6],
+    },
+    Advanced: {
         start: [200, 600],
-        goal: [12000, 25000],
-        multiplier: [0.1, 2.5],
+        goal: [15000, 25000],
+        multiplier: [0.08, 2.5],
+        jackpot: { chance: 0.0015, range: [4, 10] },
     },
     Hard: {
         start: [100, 400],
@@ -104,6 +110,10 @@ const DIFFICULTY_END_MESSAGES = {
         win: "Nice! You overcame Challenging mode! ⚔️",
         lose: "Challenging mode showed you no mercy… 😓",
     },
+    Advanced: {
+        win: "Awesome! You cleared Advanced mode like a pro! 🚀",
+        lose: "Advanced mode proved tricky… but you're close! 💫",
+    },
     Hard: {
         win: "Impressive! You survived Hard mode! 💪",
         lose: "Hard mode crushed you…💀 That's why it's hard!",
@@ -144,8 +154,12 @@ const SUGGESTIONS = {
         lose: "Retry Normal to be able to proceed with next difficulties!",
     },
     Challenging: {
-        win: "Awesome! Maybe step up to Hard next! 🍀",
+        win: "Awesome! Maybe step up to Advanced next! 💪",
         lose: "Retry Challenging — your luck can flip anytime! 🎲",
+    },
+    Advanced: {
+        win: "Great job! Think you can handle Hard next? ⚔️",
+        lose: "Almost there! Retry Advanced and prove your skill! 💫",
     },
     Hard: {
         win: "Impressive! Ready for Insane next? 😈",
@@ -221,6 +235,21 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "This is where luck gets serious... 💫",
         "The RNG gods are watching closely... 👁️",
         "Balance wavers — can you tip it? ⚖️",
+    ],
+
+    Advanced: [
+    "You feel the tension build... ⚡",
+    "Advanced odds incoming... stay sharp! 🎯",
+    "Luck and logic start to blur... 🌀",
+    "The gamble intensifies... 🔥",
+    "You've come far — don't flinch now! 💪",
+    "The dice roll with intent... 🎲",
+    "Fate watches closely this time... 👁️",
+    "The numbers are less forgiving... 😬",
+    "Your instincts will decide this one... 🧠",
+    "Luck tests your patience... ⏳",
+    "It's not hard... but not easy either. ⚖️",
+    "A balanced battle between skill and chaos... 🌟",
     ],
 
     Hard: [
@@ -330,7 +359,7 @@ const SERIES_REWARDS_BO1 = {
     "0-1": -40,
 };
 
-const SERIES_REWARDS_BO1_CHALLENGING = {
+const SERIES_REWARDS_BO1_CHALLENGING_ADVANCED = {
     "1-0": +180,
     "0-1": -50,
 };
@@ -706,7 +735,7 @@ const GamblingPage = () => {
         if (difficulty === "LUCK GOD") return SERIES_REWARDS_BO7;
         if (difficulty === "Eternal Madness") return SERIES_REWARDS_BO7_EM;
         if (["Impossible", "Tuff Luck"].includes(difficulty)) return SERIES_REWARDS_BO5;
-        if (difficulty === "Challenging") return SERIES_REWARDS_BO1_CHALLENGING;
+        if (["Challenging", "Advanced"].includes(difficulty)) return SERIES_REWARDS_BO1_CHALLENGING_ADVANCED;
         if (["Easy", "Normal"].includes(difficulty)) return SERIES_REWARDS_BO1;
         return SERIES_REWARDS_BO3;
     };
@@ -915,7 +944,7 @@ const GamblingPage = () => {
         } else if (["Hard", "Brutal", "Insane"].includes(difficulty)) {
             setSetsToWin(2);
             setSeriesMode("extended");
-        } else if (["Easy", "Normal", "Challenging"].includes(difficulty)) {
+        } else if (["Easy", "Normal", "Challenging", "Advanced"].includes(difficulty)) {
             setSetsToWin(1);
             setSeriesMode("extended");
         } else {
@@ -1823,6 +1852,7 @@ const GamblingPage = () => {
             case "Easy":
             case "Normal":
             case "Challenging":
+            case "Advanced":
                 return "Best-of-1";
             case "Hard":
             case "Brutal":
@@ -1844,6 +1874,7 @@ const GamblingPage = () => {
             case "Easy":
             case "Normal":
             case "Challenging":
+            case "Advanced":
                 return "Best-of-1";
             case "Hard":
             case "Brutal":

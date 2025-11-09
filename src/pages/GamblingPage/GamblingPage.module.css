@@ -542,6 +542,13 @@
     color: white;
 }
 
+.option[data-difficulty="Advanced"]:hover,
+.option[data-difficulty="Advanced"]:focus,
+.option[data-difficulty="Advanced"].selected {
+    background: linear-gradient(90deg, #ff1b0b, #fff2e0);
+    color: white;
+}
+
 .option[data-difficulty="Hard"]:hover,
 .option[data-difficulty="Hard"]:focus,
 .option[data-difficulty="Hard"].selected {
