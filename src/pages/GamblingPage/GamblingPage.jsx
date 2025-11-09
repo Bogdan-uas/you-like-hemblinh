@@ -2447,21 +2447,46 @@ const GamblingPage = () => {
                                     >
                                         <p>
                                             and because you{" "}
-                                            <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                            <span
+                                                style={{ fontWeight: "bold" }}
+                                                className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}
+                                            >
                                                 {seriesResult.isWin ? "won" : "lost"}
                                             </span>{" "}
-                                            with the score of{" "}
-                                            <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
-                                                {playerSets}
-                                            </span>
-                                            -
-                                            <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
-                                                {opponentSets}
-                                            </span>, you{" "}
-                                            <span style={{ fontWeight: "bold" }} className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}>
+                                            {setsToWin === 1 ? (
+                                                <>
+                                                    this match with the score of{" "}
+                                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
+                                                        {roundWins}
+                                                    </span>
+                                                    -
+                                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
+                                                        {roundLosses}
+                                                    </span>,
+                                                    you{" "}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    the series with the score of{" "}
+                                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
+                                                        {playerSets}
+                                                    </span>
+                                                    -
+                                                    <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
+                                                        {opponentSets}
+                                                    </span>, you{" "}
+                                                </>
+                                            )}
+                                            <span
+                                                style={{ fontWeight: "bold" }}
+                                                className={seriesResult.isWin ? css.multiplier_win : css.multiplier_fail}
+                                            >
                                                 {seriesResult.isWin ? "gain" : "lose"}
                                             </span>{" "}
-                                            <span style={{ fontWeight: "bold" }} className={getSeriesResultClass(seriesResult.percent)}>
+                                            <span
+                                                style={{ fontWeight: "bold" }}
+                                                className={getSeriesResultClass(seriesResult.percent)}
+                                            >
                                                 {seriesResult.percent}%
                                             </span>
                                             .
