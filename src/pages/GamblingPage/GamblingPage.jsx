@@ -2155,8 +2155,8 @@ const GamblingPage = () => {
                                             : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
                                                 ? "2"
                                                 : "1"}{" "}
-                                    {difficulty === "Easy" || difficulty === "Normal" ? "set" : "sets"} to triumph!
-                                    {difficulty !== "Easy" && difficulty !== "Normal" &&
+                                    {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" ? "set" : "sets"} to triumph!
+                                    {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" &&
                                         " Your final gain or loss will depend on your match score."}
                                     <br />
                                     Tipp: Start playing{" "}
