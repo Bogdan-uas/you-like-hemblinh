@@ -74,7 +74,8 @@ const DIFFICULTIES = {
     "Tuff Luck": {
         start: [50, 150],
         goal: [50000, 100000],
-        multiplier: [-0.05, 2.0],
+        multiplier: [1, 2.0],
+        // multiplier: [-0.05, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.005, range: [8, 20] },
         superjackpot: { chance: 0.0015, range: [20, 70] },
