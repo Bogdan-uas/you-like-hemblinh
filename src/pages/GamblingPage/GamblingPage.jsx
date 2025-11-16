@@ -740,8 +740,8 @@ const GamblingPage = () => {
         return SERIES_REWARDS_BO3;
     };
 
-    const baseMaxRounds = 24;
-    const baseRoundsToWin = 13;
+    const baseMaxRounds = 30;
+    const baseRoundsToWin = 16;
     const otMaxRounds = 6;
     const otRoundsToWin = 4;
 
@@ -1162,6 +1162,8 @@ const GamblingPage = () => {
                         const updatedRoundWins = wonOtRound ? roundWins + 1 : roundWins;
                         const updatedRoundLosses = wonOtRound ? roundLosses : roundLosses + 1;
 
+                        const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
+
                         setOtWins(updatedOtWins);
                         setOtLosses(updatedOtLosses);
                         setRoundWins(updatedRoundWins);
@@ -1174,8 +1176,6 @@ const GamblingPage = () => {
                         const otDecided =
                             updatedOtWins === otRoundsToWin ||
                             updatedOtLosses === otRoundsToWin;
-
-                        const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
 
                         if (otDecided) {
                             const playerWonSet = updatedOtWins > updatedOtLosses;
@@ -1377,11 +1377,11 @@ const GamblingPage = () => {
 
                         setRoundWins(updatedRoundWins);
                         setRoundLosses(updatedRoundLosses);
-                        setRoundNumber((n) => n + 1);
+                            setRoundNumber((n) => n + 1);
                         setMiniWins(0);
                         setMiniLosses(0);
 
-                        if (updatedRoundWins === 12 && updatedRoundLosses === 12) {
+                        if (updatedRoundWins === 15 && updatedRoundLosses === 15) {
                             setIsLocked(true);
                             toast(`Overtime coming in for this ${setsToWin === 1 ? 'match' : 'set'}! 🔥`, { icon: "⚔️", duration: 4000 });
                             setTimeout(() => {
@@ -1605,7 +1605,7 @@ const GamblingPage = () => {
                 setIsCalculating(false);
                 betInputRef.current?.focus();
             }
-        }, isSeriesActive ? 250 : 2000);
+        }, isSeriesActive ? 100 : 2000);
     };
 
     const confirmRestart = () => {
@@ -1836,7 +1836,7 @@ const GamblingPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const overtimeTarget = 13 + overtimeBlock * 3;
+    const overtimeTarget = 16 + overtimeBlock * 3;
     const threshold = overtimeTarget - 1;
 
     const isSetPointWins = roundWins === threshold && roundLosses < threshold;
