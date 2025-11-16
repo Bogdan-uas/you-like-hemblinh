@@ -1377,7 +1377,7 @@ const GamblingPage = () => {
 
                         setRoundWins(updatedRoundWins);
                         setRoundLosses(updatedRoundLosses);
-                            setRoundNumber((n) => n + 1);
+                        setRoundNumber((n) => n + 1);
                         setMiniWins(0);
                         setMiniLosses(0);
 
@@ -2206,27 +2206,27 @@ const GamblingPage = () => {
                                 ) : (
                                     <div className={css.scoreboard}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                                {isSeriesPointWins ? (
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px' }}>
-                                                        {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
-                                                    </motion.span>
-                                                ) : (
-                                                    isSetPointWins &&
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                        style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px' }}>
-                                                        Set point!
-                                                    </motion.span>
-                                                )
-                                                }
+                                            {isSeriesPointWins ? (
+                                                <motion.span
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px' }}>
+                                                    {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
+                                                </motion.span>
+                                            ) : (
+                                                isSetPointWins &&
+                                                <motion.span
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    style={{ color: "limegreen", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(0, 255, 0, 1)', marginBottom: '4px' }}>
+                                                    Set point!
+                                                </motion.span>
+                                            )
+                                            }
                                             <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: '20px', opacity: loserOpacity === "win" ? 0.4 : 1 }}>
                                                 <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
                                                     {!seriesBanner && (
@@ -2363,28 +2363,28 @@ const GamblingPage = () => {
                                                 </motion.span>
                                             </div>
                                         )}
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                {isSeriesPointLosses ? (
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                        style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px' }}>
-                                                        {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
-                                                    </motion.span>
-                                                ) : (
-                                                    isSetPointLosses &&
-                                                    <motion.span
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                                style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px' }}>
-                                                        Set point!
-                                                    </motion.span>
-                                                )
-                                                }
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                            {isSeriesPointLosses ? (
+                                                <motion.span
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px' }}>
+                                                    {setsToWin === 1 ? 'MATCH' : 'SERIES'} {''} POINT!
+                                                </motion.span>
+                                            ) : (
+                                                isSetPointLosses &&
+                                                <motion.span
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.4 }}
+                                                    style={{ color: "red", fontSize: '16px', transition: 'all 500ms ease-in-out', textShadow: '0 0 10px rgba(255, 0, 0, 1)', marginBottom: '4px' }}>
+                                                    Set point!
+                                                </motion.span>
+                                            )
+                                            }
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', opacity: loserOpacity === "loss" ? 0.4 : 1 }}>
                                                 <div className={css.miniSquares}>
                                                     {!seriesBanner && (
@@ -2828,7 +2828,22 @@ const GamblingPage = () => {
                                             {worstMultiplier?.toFixed(2)}x
                                         </span>
                                     </p>
-                                    <p>🎲 Total bets made: {totalBets}</p>
+                                    <p style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>🎲 Total bets made: {totalBets} {''}
+                                        <span>of which successful:
+                                            <span
+                                                className={css.multiplier}
+                                                style={{ color: "green" }}>
+                                                {totalWins}
+                                            </span>,
+                                        </span>
+                                        <span>of which unsuccessful:
+                                            <span
+                                                className={css.multiplier}
+                                                style={{ color: "red" }}>
+                                                {totalBets - totalWins}
+                                            </span>
+                                        </span>
+                                    </p>
                                     <p>💰 Total points earned: {totalEarned}</p>
                                     <p>❌ Total points lost: {totalLost}</p>
                                     {(DIFFICULTIES[difficulty].jackpot || DIFFICULTIES[difficulty].superjackpot) && (
