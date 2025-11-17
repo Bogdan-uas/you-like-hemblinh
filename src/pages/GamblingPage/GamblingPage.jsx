@@ -66,7 +66,7 @@ const DIFFICULTIES = {
     "Impossible": {
         start: [80, 200],
         goal: [40000, 75000],
-        multiplier: [1, 2.0],
+        multiplier: [0, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.005, range: [10, 18] },
         superjackpot: { chance: 0.001, range: [20, 40] },
