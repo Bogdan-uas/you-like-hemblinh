@@ -74,7 +74,7 @@ const DIFFICULTIES = {
     "Tuff Luck": {
         start: [50, 150],
         goal: [50000, 100000],
-        multiplier: [-0.05, 2.0],
+        multiplier: [1, 2.0],
         unstableMin: true,
         jackpot: { chance: 0.005, range: [8, 20] },
         superjackpot: { chance: 0.0015, range: [20, 70] },
@@ -2159,7 +2159,7 @@ const GamblingPage = () => {
                                     {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" &&
                                         " Your final gain or loss will depend on your match score."}
                                     <br />
-                                    Tipp: Start playing{" "}
+                                    Tip: Start playing{" "}
                                     {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
                                         ? "Best-of-7"
                                         : difficulty === "Impossible" || difficulty === "Tuff Luck"
