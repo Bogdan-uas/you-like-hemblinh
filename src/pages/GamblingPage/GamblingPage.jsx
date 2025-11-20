@@ -26,7 +26,7 @@ const DIFFICULTIES = {
     Easy: {
         start: [500, 1000],
         goal: [7000, 10000],
-        multiplier: [0.3, 2.8],
+        multiplier: [1, 2.8],
     },
     Normal: {
         start: [400, 800],
@@ -2673,58 +2673,103 @@ const GamblingPage = () => {
                         </div>
 
                         {!inSeries && resultMessage && (
-                            <p className={`${css.info_text} ${css.result_message}`}>
-                                <AnimatePresence mode="wait">
-                                    {jackpotType === "superjackpot" ? (
-                                        <motion.span
-                                            key="superjackpot"
-                                            initial={{ opacity: 0, scale: 0 }}
-                                            animate={{ opacity: 1, scale: 1.5 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.6 }}
-                                            className={css.superjackpotFlash}
-                                        >
-                                            🌈💥 SUPER JACKPOT!!! 🚀
-                                        </motion.span>
-                                    ) : (
-                                        <motion.span
-                                            key="normal"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                        >
-                                            {resultMessage}
-                                        </motion.span>
-                                    )}
-                                </AnimatePresence>
-
+                            <>
                                 {multiplier !== null && (
                                     <>
-                                        {" "}Your multiplier is
-                                        <span className={`${css.multiplier} ${getMultiplierClass(multiplier - winStreakBonus)}`}>
-                                            {DIFFICULTIES[difficulty].unlimited
-                                                ? (multiplier - winStreakBonus).toFixed(4)
-                                                : (multiplier - winStreakBonus).toFixed(2)}x
-                                        </span>
-                                        !
-                                        {winStreakBonus > 0 && (
+                                        <p className={`${css.info_text} ${css.result_message}`}>
                                             <AnimatePresence mode="wait">
-                                                <motion.span
-                                                    key="streakbonus"
-                                                    initial={{ opacity: 0, scale: 0 }}
-                                                    animate={{ opacity: 1, scale: 1.5 }}
-                                                    exit={{ opacity: 0, scale: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
-                                                    transition={{ duration: 1 }}
-                                                    style={{ color: "gold", fontWeight: 'bolder', fontStyle: 'italic', marginLeft: '12px' }}
-                                                >
-                                                    +{winStreakBonus.toFixed(2)}x streak bonus!
-                                                </motion.span>
+                                                {jackpotType === "superjackpot" ? (
+                                                    <motion.span
+                                                        key="superjackpot"
+                                                        initial={{ opacity: 0, scale: 0 }}
+                                                        animate={{ opacity: 1, scale: 1.5 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.6 }}
+                                                        className={css.superjackpotFlash}
+                                                    >
+                                                        🌈💥 SUPER JACKPOT!!! 🚀
+                                                    </motion.span>
+                                                ) : (
+                                                    <motion.span
+                                                        key="normal"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                    >
+                                                        {resultMessage}
+                                                    </motion.span>
+                                                )}
                                             </AnimatePresence>
+
+                                            {" "}Your multiplier is{" "}
+                                            <span
+                                                className={`${css.multiplier} ${getMultiplierClass(
+                                                    multiplier - winStreakBonus
+                                                )}`}
+                                            >
+                                                {DIFFICULTIES[difficulty].unlimited
+                                                    ? (multiplier - winStreakBonus).toFixed(4)
+                                                    : (multiplier - winStreakBonus).toFixed(2)}x
+                                            </span>
+                                            !
+
+                                            {winStreakBonus > 0 && (
+                                                <AnimatePresence mode="wait">
+                                                    <motion.span
+                                                        key="streakbonus"
+                                                        initial={{ opacity: 0, scale: 0 }}
+                                                        animate={{ opacity: 1, scale: 1.5 }}
+                                                        exit={{
+                                                            opacity: 0,
+                                                            scale: 0,
+                                                            transition: { duration: 0.8, ease: "easeInOut" },
+                                                        }}
+                                                        transition={{ duration: 1 }}
+                                                        style={{
+                                                            color: "gold",
+                                                            fontWeight: "bolder",
+                                                            fontStyle: "italic",
+                                                            marginLeft: "12px",
+                                                        }}
+                                                    >
+                                                        +{winStreakBonus.toFixed(2)}x streak bonus!
+                                                    </motion.span>
+                                                </AnimatePresence>
+                                            )}
+                                        </p>
+
+                                        {winStreakBonus > 0 && (
+                                            <p className={`${css.info_text} ${css.result_message}`}>
+                                                Total Multiplier:{" "}
+                                                <span
+                                                    className={`${css.multiplier} ${getMultiplierClass(
+                                                        multiplier
+                                                    )}`}
+                                                >
+                                                    ({multiplier.toFixed(2)}x)
+                                                </span>
+                                            </p>
                                         )}
                                     </>
                                 )}
-                            </p>
+
+                                {multiplier === null && (
+                                    <p className={`${css.info_text} ${css.result_message}`}>
+                                        <AnimatePresence mode="wait">
+                                            <motion.span
+                                                key="normal-only"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }}
+                                            >
+                                                {resultMessage}
+                                            </motion.span>
+                                        </AnimatePresence>
+                                    </p>
+                                )}
+                            </>
                         )}
 
                         {isRestartModalOpen && (
