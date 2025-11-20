@@ -2747,7 +2747,7 @@ const GamblingPage = () => {
                                                         multiplier
                                                     )}`}
                                                 >
-                                                    ({multiplier.toFixed(2)}x)
+                                                    {multiplier.toFixed(2)}x
                                                 </span>
                                             </p>
                                         )}
