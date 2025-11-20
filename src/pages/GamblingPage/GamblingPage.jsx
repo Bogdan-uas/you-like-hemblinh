@@ -26,7 +26,7 @@ const DIFFICULTIES = {
     Easy: {
         start: [500, 1000],
         goal: [7000, 10000],
-        multiplier: [1, 2.8],
+        multiplier: [0.3, 2.8],
     },
     Normal: {
         start: [400, 800],
