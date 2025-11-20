@@ -2741,7 +2741,7 @@ const GamblingPage = () => {
 
                                         {winStreakBonus > 0 && (
                                             <p className={`${css.info_text} ${css.result_message}`}>
-                                                Total Multiplier:{" "}
+                                                Final Multiplier:{" "}
                                                 <span
                                                     className={`${css.multiplier} ${getMultiplierClass(
                                                         multiplier
