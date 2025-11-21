@@ -2226,9 +2226,9 @@ const GamblingPage = () => {
                                             ? "4"
                                             : difficulty === "Impossible" || difficulty === "Tuff Luck"
                                                 ? "3"
-                                            : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
-                                                ? "2"
-                                                : "1"}{" "}
+                                                : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
+                                                    ? "2"
+                                                    : "1"}{" "}
                                     {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" ? "set" : "sets"} to triumph!
                                     {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" &&
                                         " Your final gain or loss will depend on your match score."}
@@ -2330,33 +2330,30 @@ const GamblingPage = () => {
                                                 >
                                                     {setsToWin === 5 ? (
                                                         <>
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 5 ? css.lineWin : css.lineDarkWin}`} />
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <div key={i} style={{ height: '12px' }} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            ))}
                                                         </>
                                                     ) : setsToWin === 4 ? (
                                                         <>
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
-                                                        
+                                                            {[...Array(4)].map((_, i) => (
+                                                                <div key={i} style={{ height: '14px' }} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            ))}
                                                         </>
                                                     ) : setsToWin === 3 ? (
                                                         <>
-                                                            <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '16px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
+                                                            {[...Array(3)].map((_, i) => (
+                                                                <div key={i} style={{ height: '16px' }} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            ))}
                                                         </>
                                                     ) : setsToWin === 2 ? (
                                                         <>
-                                                            <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                            {[...Array(2)].map((_, i) => (
+                                                                <div key={i} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            ))}
                                                         </>
                                                     ) : (
-                                                        <span className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <div className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
                                                     )}
                                                 </div>
                                             </div>
@@ -2496,32 +2493,30 @@ const GamblingPage = () => {
                                                 <div className={css.lines}>
                                                     {setsToWin === 5 ? (
                                                         <>
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 4 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 5 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <div key={i} style={{ height: '12px' }} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            ))}
                                                         </>
                                                     ) : setsToWin === 4 ? (
                                                         <>
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 4 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            {[...Array(4)].map((_, i) => (
+                                                                <div key={i} style={{ height: '14px' }} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            ))}
                                                         </>
                                                     ) : setsToWin === 3 ? (
                                                         <>
-                                                            <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span style={{ height: '16px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            {[...Array(3)].map((_, i) => (
+                                                                <div key={i} style={{ height: '16px' }} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            ))}
                                                         </>
                                                     ) : setsToWin === 2 ? (
                                                         <>
-                                                            <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
-                                                            <span className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            {[...Array(2)].map((_, i) => (
+                                                                <div key={i} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            ))}
                                                         </>
                                                     ) : (
-                                                        <span className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <div className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                     )}
                                                 </div>
                                             </div>
