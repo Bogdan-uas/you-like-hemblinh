@@ -1024,7 +1024,7 @@ const GamblingPage = () => {
         lastLoadingMessageRef.current = randomLoadingMsg;
 
         if (!inSeries) setCurrentPoints((prev) => prev - betAmount);
-        if (!inSeries) setBet("1");
+        if (!inSeries) setBet("");
 
         setResultMessage(randomLoadingMsg);
         setMultiplier(null);
