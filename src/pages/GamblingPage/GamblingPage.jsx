@@ -2339,9 +2339,9 @@ const GamblingPage = () => {
                                                     ) : setsToWin === 4 ? (
                                                         <>
                                                             <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
                                                             <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
                                                         
                                                         </>
                                                     ) : setsToWin === 3 ? (
