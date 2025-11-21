@@ -365,7 +365,7 @@ const STREAK_BONUS_CAPS = {
     Impossible: 1.9,
     "Tuff Luck": 2.0,
     "LUCK GOD": 2.0,
-    "Eternal Madness": 2.0,
+    "Eternal Madness": 99999,
 };
 
 const SERIES_REWARDS_BO1 = {
@@ -405,15 +405,17 @@ const SERIES_REWARDS_BO7 = {
     "0-4": -70,
 };
 
-const SERIES_REWARDS_BO7_EM = {
-    "4-0": +1000,
-    "4-1": +800,
-    "4-2": +600,
-    "4-3": +400,
-    "3-4": -40,
-    "2-4": -55,
-    "1-4": -65,
-    "0-4": -85,
+const SERIES_REWARDS_BO9 = {
+    "5-0": +800,
+    "5-1": +650,
+    "5-2": +450,
+    "5-3": +300,
+    "5-4": +200,
+    "4-5": -25,
+    "3-5": -45,
+    "2-5": -55,
+    "1-5": -70,
+    "0-5": -85,
 };
 
 const SERIES_APPLY_DELAY = 6000;
@@ -747,7 +749,7 @@ const GamblingPage = () => {
 
     const currentRewardsTable = () => {
         if (difficulty === "LUCK GOD") return SERIES_REWARDS_BO7;
-        if (difficulty === "Eternal Madness") return SERIES_REWARDS_BO7_EM;
+        if (difficulty === "Eternal Madness") return SERIES_REWARDS_BO9;
         if (["Impossible", "Tuff Luck"].includes(difficulty)) return SERIES_REWARDS_BO5;
         if (["Challenging", "Advanced"].includes(difficulty)) return SERIES_REWARDS_BO1_CHALLENGING_ADVANCED;
         if (["Easy", "Normal"].includes(difficulty)) return SERIES_REWARDS_BO1;
@@ -949,7 +951,10 @@ const GamblingPage = () => {
         }
         if (isSeriesActive) return;
 
-        if (["LUCK GOD", "Eternal Madness"].includes(difficulty)) {
+        if (difficulty === "Eternal Madness") {
+            setSetsToWin(5);
+            setSeriesMode("extended");
+        } else if (difficulty === "LUCK GOD") {
             setSetsToWin(4);
             setSeriesMode("extended");
         } else if (["Impossible", "Tuff Luck"].includes(difficulty)) {
@@ -1019,7 +1024,7 @@ const GamblingPage = () => {
         lastLoadingMessageRef.current = randomLoadingMsg;
 
         if (!inSeries) setCurrentPoints((prev) => prev - betAmount);
-        if (!inSeries) setBet("");
+        if (!inSeries) setBet("1");
 
         setResultMessage(randomLoadingMsg);
         setMultiplier(null);
@@ -1621,7 +1626,7 @@ const GamblingPage = () => {
                 setIsCalculating(false);
                 betInputRef.current?.focus();
             }
-        }, isSeriesActive ? 100 : 2000);
+        }, isSeriesActive ? 50 : 2000);
     };
 
     const confirmRestart = () => {
@@ -1922,8 +1927,9 @@ const GamblingPage = () => {
             case "Tuff Luck":
                 return "Best-of-5";
             case "LUCK GOD":
-            case "Eternal Madness":
                 return "Best-of-7";
+            case "Eternal Madness":
+                return "Best-of-9";
             default:
                 return "Best-of-3";
         }
@@ -1944,8 +1950,9 @@ const GamblingPage = () => {
             case "Tuff Luck":
                 return "Best-of-5";
             case "LUCK GOD":
-            case "Eternal Madness":
                 return "Best-of-7";
+            case "Eternal Madness":
+                return "Best-of-9";
             default:
                 return "Best-of-3";
         }
@@ -1967,7 +1974,7 @@ const GamblingPage = () => {
                             <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
                                 Win streak is available on every difficulty.
                                 After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...<br/>
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...<br />
                                 But be cautious, as every difficulty has its own <span style={{ textDecoration: 'underline' }}>cap</span> on maximum win streak bonus!
                             </p>
 
@@ -2119,8 +2126,8 @@ const GamblingPage = () => {
                                             className={css.info_popup}
                                             style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                         >
-                                            🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7 series.<br />
-                                            Win 1/2/3/4 sets to triumph! Your final gain or loss will depend on your match score.<br />
+                                            🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7/9 series.<br />
+                                            Win 1/2/3/4/5 sets to triumph! Your final gain or loss will depend on your match score.<br />
                                         </div>
                                     )}
                                 </div>
@@ -2185,7 +2192,7 @@ const GamblingPage = () => {
 
                             <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
                                 After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on... <br/>
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on... <br />
                                 But be cautious, as {seriesMode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode has its own <span style={{ textDecoration: 'underline' }}>cap</span> (+{STREAK_BONUS_CAPS[difficulty] ?? 1}x) on maximum win streak bonus!
                             </p>
 
@@ -2201,20 +2208,24 @@ const GamblingPage = () => {
                                     }}
                                 >
                                     🏆 In Extended — {difficulty} Mode, you'll be able to play a{" "}
-                                    {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
-                                        ? "Best-of-7"
-                                        : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                            ? "Best-of-5"
-                                            : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
-                                                ? "Best-of-3"
-                                                : "Best-of-1"}{" "}
+                                    {difficulty === "Eternal Madness"
+                                        ? "Best-of-9"
+                                        : difficulty === "LUCK GOD"
+                                            ? "Best-of-7"
+                                            : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                                ? "Best-of-5"
+                                                : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
+                                                    ? "Best-of-3"
+                                                    : "Best-of-1"}{" "}
                                     series.
                                     <br />
                                     Win{" "}
-                                    {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
-                                        ? "4"
-                                        : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                            ? "3"
+                                    {difficulty === "Eternal Madness"
+                                        ? "5"
+                                        : difficulty === "LUCK GOD"
+                                            ? "4"
+                                            : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                                ? "3"
                                             : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
                                                 ? "2"
                                                 : "1"}{" "}
@@ -2223,13 +2234,15 @@ const GamblingPage = () => {
                                         " Your final gain or loss will depend on your match score."}
                                     <br />
                                     Tip: Start playing{" "}
-                                    {difficulty === "LUCK GOD" || difficulty === "Eternal Madness"
-                                        ? "Best-of-7"
-                                        : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                            ? "Best-of-5"
-                                            : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
-                                                ? "Best-of-3"
-                                                : "Best-of-1"}{" "}
+                                    {difficulty === "Eternal Madness"
+                                        ? "Best-of-9"
+                                        : difficulty === "LUCK GOD"
+                                            ? "Best-of-7"
+                                            : difficulty === "Impossible" || difficulty === "Tuff Luck"
+                                                ? "Best-of-5"
+                                                : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
+                                                    ? "Best-of-3"
+                                                    : "Best-of-1"}{" "}
                                     only when you have at least 100 points to avoid small gains from big wins.
                                 </p>
                             )}
@@ -2259,12 +2272,12 @@ const GamblingPage = () => {
                             <div className={css.best_of_9_container}>
                                 {!isSeriesActive ? (
                                     <button
-                                        className={`${css.gamble_button} ${currentPoints <= 50 ? css.locked : ""}`}
+                                        className={`${css.gamble_button} ${currentPoints < 50 ? css.locked : ""}`}
                                         onClick={startSeries}
-                                        disabled={isButtonLocked || currentPoints <= 50}
+                                        disabled={isButtonLocked || currentPoints < 50}
                                         style={{ marginTop: "8px", marginBottom: "8px" }}
                                     >
-                                        {currentPoints <= 50 ? 'You need more points to unlock this feature' : 'Wanna more at once?'}
+                                        {currentPoints < 50 ? 'You need more points to unlock this feature' : 'Wanna more at once?'}
                                     </button>
                                 ) : (
                                     <div className={css.scoreboard}>
@@ -2315,12 +2328,21 @@ const GamblingPage = () => {
                                                 <div
                                                     className={`${css.lines} ${css.winRow}`}
                                                 >
-                                                    {setsToWin === 4 ? (
+                                                    {setsToWin === 5 ? (
                                                         <>
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${playerSets >= 5 ? css.lineWin : css.lineDarkWin}`} />
+                                                        </>
+                                                    ) : setsToWin === 4 ? (
+                                                        <>
+                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 2 ? css.lineWin : css.lineDarkWin}`} />
                                                             <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 3 ? css.lineWin : css.lineDarkWin}`} />
-                                                            <span style={{ height: '14px' }} className={`${css.line} ${playerSets >= 4 ? css.lineWin : css.lineDarkWin}`} />
+                                                        
                                                         </>
                                                     ) : setsToWin === 3 ? (
                                                         <>
@@ -2472,7 +2494,15 @@ const GamblingPage = () => {
                                                 </div>
 
                                                 <div className={css.lines}>
-                                                    {setsToWin === 4 ? (
+                                                    {setsToWin === 5 ? (
+                                                        <>
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 3 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 4 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                            <span style={{ height: '12px' }} className={`${css.line} ${opponentSets >= 5 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        </>
+                                                    ) : setsToWin === 4 ? (
                                                         <>
                                                             <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                             <span style={{ height: '14px' }} className={`${css.line} ${opponentSets >= 2 ? css.lineLoss : css.lineDarkLoss}`} />
