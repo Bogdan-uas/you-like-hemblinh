@@ -41,7 +41,7 @@ const DIFFICULTIES = {
     Advanced: {
         start: [200, 600],
         goal: [15000, 25000],
-        multiplier: [0.08, 2.5],
+        multiplier: [1, 2.5],
         jackpot: { chance: 0.0015, range: [4, 10] },
     },
     Hard: {
@@ -63,7 +63,7 @@ const DIFFICULTIES = {
         unstableMin: true,
         jackpot: { chance: 0.004, range: [6, 12] },
     },
-    "Impossible": {
+    Impossible: {
         start: [80, 200],
         goal: [40000, 75000],
         multiplier: [0, 2.0],
@@ -126,7 +126,7 @@ const DIFFICULTY_END_MESSAGES = {
         win: "Incredible! You conquered Insane mode! 😵🔥",
         lose: "Insane mode drove you off the edge… 🌀",
     },
-    "Impossible": {
+    Impossible: {
         win: "Legendary! You beat Impossible mode! 🏆",
         lose: "Impossible mode was… well, impossible 😵",
     },
@@ -173,7 +173,7 @@ const SUGGESTIONS = {
         win: "Insane! You did it! Try Impossible next... if you dare. 💀",
         lose: "Insane mode bites back — sharpen your courage and retry! ⚡",
     },
-    "Impossible": {
+    Impossible: {
         win: "Legendary! Think you can survive Tuff Luck next? 🍀🔥",
         lose: "Retry Impossible to sharpen your luck for Tuff Luck!",
     },
@@ -293,7 +293,7 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "Sanity costs extra here... 🧠",
     ],
 
-    "Impossible": [
+    Impossible: [
         "Reality starts to twist... 🌀",
         "Logic takes a break... 🔮",
         "The void hums quietly... 🕳️",
@@ -352,6 +352,20 @@ const DIFFICULTY_LOADING_MESSAGES = {
         "Welcome to endless chaos... 🧠",
         "The dice have lost their minds... 🎲💫",
     ],
+};
+
+const STREAK_BONUS_CAPS = {
+    Easy: 1.0,
+    Normal: 1.0,
+    Challenging: 1.2,
+    Advanced: 1.4,
+    Hard: 1.6,
+    Brutal: 1.8,
+    Insane: 1.8,
+    Impossible: 1.9,
+    "Tuff Luck": 2.0,
+    "LUCK GOD": 2.0,
+    "Eternal Madness": 2.0,
 };
 
 const SERIES_REWARDS_BO1 = {
@@ -1058,7 +1072,9 @@ const GamblingPage = () => {
             newConsecutiveWins += 1;
             newConsecutiveLosses = 0;
             if (!inSeries) {
-                const streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
+                const difficultyCap = STREAK_BONUS_CAPS[difficulty] ?? 1;
+                let streakBonus = newConsecutiveWins >= 5 ? 0.2 * (newConsecutiveWins - 4) : 0;
+                streakBonus = Math.min(streakBonus, difficultyCap);
                 previousStreakBonusRef.current = streakBonus;
                 streakBonusToApply = streakBonus;
             }
@@ -1951,7 +1967,8 @@ const GamblingPage = () => {
                             <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
                                 Win streak is available on every difficulty.
                                 After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...<br/>
+                                But be cautious, as every difficulty has its own <span style={{ textDecoration: 'underline' }}>cap</span> on maximum win streak bonus!
                             </p>
 
                             <select
@@ -2044,6 +2061,7 @@ const GamblingPage = () => {
                                             <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
                                             <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
                                             <p style={{ fontWeight: '800', marginTop: '8px' }}>In Extended Mode: <span style={{ color: 'Highlight' }}>{extendedLabel}</span> available</p>
+                                            <p style={{ fontWeight: '800', marginTop: '8px', marginBottom: '4px' }}>Win streak bonus cap: <span style={{ color: 'gold' }}>+{STREAK_BONUS_CAPS[hoveredDifficulty] ?? 1}x</span></p>
                                             {DIFFICULTIES[hoveredDifficulty].unstableMin && (
                                                 <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
                                             )}
@@ -2167,7 +2185,8 @@ const GamblingPage = () => {
 
                             <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
                                 After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on... <br/>
+                                But be cautious, as {seriesMode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode has its own <span style={{ textDecoration: 'underline' }}>cap</span> (+{STREAK_BONUS_CAPS[difficulty] ?? 1}x) on maximum win streak bonus!
                             </p>
 
                             {seriesMode === "extended" && (
