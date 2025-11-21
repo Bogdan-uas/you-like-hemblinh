@@ -1314,10 +1314,10 @@ const GamblingPage = () => {
 
                                     if (pending.newPoints >= goalPoints) {
                                         setIsWin(true);
-                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                        setTimeout(() => setShowGameOverScreen(true), 4000);
                                     } else if (pending.newPoints <= 0) {
                                         setIsWin(false);
-                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                        setTimeout(() => setShowGameOverScreen(true), 4000);
                                     }
 
                                     localStorage.removeItem("pendingSeriesApply");
@@ -1533,10 +1533,10 @@ const GamblingPage = () => {
 
                                     if (pending.newPoints >= goalPoints) {
                                         setIsWin(true);
-                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                        setTimeout(() => setShowGameOverScreen(true), 4000);
                                     } else if (pending.newPoints <= 0) {
                                         setIsWin(false);
-                                        setTimeout(() => setShowGameOverScreen(true), 2000);
+                                        setTimeout(() => setShowGameOverScreen(true), 4000);
                                     }
 
                                     localStorage.removeItem("pendingSeriesApply");
@@ -1593,11 +1593,11 @@ const GamblingPage = () => {
                 if (newPoints >= goalPoints) {
                     setIsWin(true);
                     localStorage.removeItem(STORAGE_KEY);
-                    setTimeout(() => setShowGameOverScreen(true), 2000);
+                    setTimeout(() => setShowGameOverScreen(true), 4000);
                 } else if (newPoints <= 0) {
                     setIsWin(false);
                     localStorage.removeItem(STORAGE_KEY);
-                    setTimeout(() => setShowGameOverScreen(true), 2000);
+                    setTimeout(() => setShowGameOverScreen(true), 4000);
                 }
             } catch (err) {
                 console.error("Error in handleGamble:", err);
