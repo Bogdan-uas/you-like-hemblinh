@@ -25,7 +25,7 @@ const STORAGE_KEY = "gamblingGameState";
 const DIFFICULTIES = {
     Easy: {
         start: [500, 1000],
-        goal: [7000, 10000],
+        goal: [5000, 10000],
         multiplier: [0.3, 2.8],
     },
     Normal: {
@@ -1726,31 +1726,75 @@ const GamblingPage = () => {
     const getSeriesResultClass = (value) => {
         if (value <= 40) return css.multiplier_fail;
         return css.multiplier_win;
-    }
+    };
 
     const getCurrentPointsStyle = () => {
         if (!firstGambleRef.current) {
             return { backgroundColor: "#ccc", color: "#2e2f42" };
         }
 
-        const ratio = Math.min(currentPoints / goalPoints, 1);
-        let r, g, b;
+        const rawRatio = currentPoints / goalPoints || 0;
+        const ratio = Math.max(0, Math.min(rawRatio, 1));
+
+        if (ratio >= 1) {
+            return {
+                backgroundImage:
+                    "linear-gradient(90deg, #ff0040, #ffbf00, #00ff6a, #00c8ff, #7a00ff, #ff00c8, #ff0040)",
+                backgroundSize: "400% 400%",
+                animation: "rainbowFlash 1.5s linear infinite",
+                color: "#fff",
+                boxShadow:
+                    "0 0 25px #ff0040, 0 0 20px #ffbf00, 0 0 20px #00ff6a, 0 0 20px #00c8ff, 0 0 20px #7a00ff, 0 0 20px #ff00c8, 0 0 20px #ff0040",
+                transition: "box-shadow 0.4s ease, background-color 0.4s ease, background-image 0.4s ease",
+            };
+        }
+
+        const red = { r: 255, g: 0, b: 0 };
+        const gray = { r: 128, g: 128, b: 128 };
+        const green = { r: 34, g: 139, b: 34 };
+
+        let c1, c2, t;
 
         if (ratio <= 0.5) {
-            const t = ratio / 0.5;
-            r = Math.round(255 * (1 - t) + 128 * t);
-            g = Math.round(0 * (1 - t) + 128 * t);
-            b = Math.round(0 * (1 - t) + 128 * t);
+            c1 = red;
+            c2 = gray;
+            t = ratio / 0.5;
         } else {
-            const t = (ratio - 0.5) / 0.5;
-            r = Math.round(128 * (1 - t) + 34 * t);
-            g = Math.round(128 * (1 - t) + 139 * t);
-            b = Math.round(128 * (1 - t) + 34 * t);
+            c1 = gray;
+            c2 = green;
+            t = (ratio - 0.5) / 0.5;
         }
+
+        const r = Math.round(c1.r + (c2.r - c1.r) * t);
+        const g = Math.round(c1.g + (c2.g - c1.g) * t);
+        const b = Math.round(c1.b + (c2.b - c1.b) * t);
+
+        const glowFactor = Math.max(0, Math.min((ratio - 0.8) / 0.2, 1));
+
+        const baseBlur = 6;
+        const extraBlur = 16 * glowFactor;
+        const blur1 = baseBlur + extraBlur;
+        const blur2 = baseBlur * 2 + extraBlur * 1.3;
+        const blur3 = baseBlur * 3 + extraBlur * 1.6;
+
+        const glowAlpha = 0.3 + 0.4 * glowFactor;
+
+        const glow =
+            glowFactor > 0
+                ? {
+                    boxShadow: `
+                    0 0 ${blur1}px rgba(${r},${g},${b},${glowAlpha}),
+                    0 0 ${blur2}px rgba(${r},${g},${b},${glowAlpha * 0.7}),
+                    0 0 ${blur3}px rgba(${r},${g},${b},${glowAlpha * 0.5})
+                `,
+                }
+                : {};
 
         return {
             backgroundColor: `rgb(${r}, ${g}, ${b})`,
             color: "#fff",
+            transition: "box-shadow 0.4s ease, background-color 0.4s ease",
+            ...glow,
         };
     };
 

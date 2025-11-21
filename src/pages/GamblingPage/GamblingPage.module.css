@@ -979,3 +979,13 @@
     pointer-events: none;
     transition: opacity 0.4s ease, filter 0.4s ease;
 }
+
+@keyframes rainbowFlash {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 100% 50%;
+    }
+}
