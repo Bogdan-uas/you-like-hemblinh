@@ -771,15 +771,11 @@ const GamblingPage = () => {
         setOvertimeBlock(0);
     };
 
-    const endSet = (playerWon, finalWins, finalLosses, isFinal = false) => {
+    const endSet = (playerWon, finalWins, finalLosses) => {
         if (playerWon) setPlayerSets(v => v + 1);
         else setOpponentSets(v => v + 1);
 
-        if (isFinal) {
-            setTimeout(() => resetSet(), 19000);
-        } else {
-            resetSet();
-        }
+        resetSet();
 
         setSetHistory(prev => {
             const updated = [
@@ -1219,7 +1215,7 @@ const GamblingPage = () => {
 
                             if (!isSeriesOver) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, false);
+                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
                                     setIsOvertime(false);
                                     setOvertimeBlock(0);
                                     setOtWins(0);
@@ -1229,7 +1225,7 @@ const GamblingPage = () => {
                                     setMultiplier(null);
                                 }, 4000);
                             } else {
-                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, true);
+                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
                                 setIsOvertime(false);
                                 setOvertimeBlock(0);
                                 setOtWins(0);
@@ -1430,13 +1426,13 @@ const GamblingPage = () => {
 
                             if (!isSeriesOver) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, false);
+                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
                                     setIsLocked(false);
                                     setResultMessage("");
                                     setMultiplier(null);
                                 }, 4000);
                             } else {
-                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, true);
+                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
                                 setIsLocked(false);
                                 setResultMessage("");
                                 setMultiplier(null);
