@@ -1940,17 +1940,6 @@ const GamblingPage = () => {
             }
         }
 
-        const end = localStorage.getItem("seriesEndTime");
-        if (end) {
-            const elapsed = Date.now() - parseInt(end, 10);
-            if (elapsed < SERIES_RESET_WINDOW) {
-                setIsSeriesActive(false);
-                resetSet();
-                setSeriesBanner(null);
-                setSeriesResult(null);
-            }
-            localStorage.removeItem("seriesEndTime");
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
