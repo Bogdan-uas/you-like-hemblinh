@@ -771,13 +771,15 @@ const GamblingPage = () => {
         setOvertimeBlock(0);
     };
 
-    const endSet = (playerWon, finalWins, finalLosses) => {
+    const endSet = (playerWon, finalWins, finalLosses, isFinal = false) => {
         if (playerWon) setPlayerSets(v => v + 1);
         else setOpponentSets(v => v + 1);
 
-        setTimeout(() => {
+        if (isFinal) {
+            setTimeout(() => resetSet(), 5000);
+        } else {
             resetSet();
-        }, 5000);
+        }
 
         setSetHistory(prev => {
             const updated = [
@@ -1217,7 +1219,7 @@ const GamblingPage = () => {
 
                             if (!isSeriesOver) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
+                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, false);
                                     setIsOvertime(false);
                                     setOvertimeBlock(0);
                                     setOtWins(0);
@@ -1227,7 +1229,7 @@ const GamblingPage = () => {
                                     setMultiplier(null);
                                 }, 4000);
                             } else {
-                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
+                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, true);
                                 setIsOvertime(false);
                                 setOvertimeBlock(0);
                                 setOtWins(0);
@@ -1250,6 +1252,21 @@ const GamblingPage = () => {
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
                                     setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                                    if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
+                                    seriesResetTimeoutRef.current = setTimeout(() => {
+                                        resetSeriesState();
+                                        setRoundWins(0);
+                                        setRoundLosses(0);
+                                        setOtWins(0);
+                                        setOtLosses(0);
+                                        setIsOvertime(false);
+                                        setOvertimeBlock(0);
+                                        setResultMessage("");
+                                        setMultiplier(null);
+                                        setMiniWins(0);
+                                        setMiniLosses(0);
+                                        seriesResetTimeoutRef.current = null;
+                                    }, 15000);
                                 }, 4000);
 
                                 const timestamp = Date.now();
@@ -1428,13 +1445,13 @@ const GamblingPage = () => {
 
                             if (!isSeriesOver) {
                                 setTimeout(() => {
-                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
+                                    endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, false);
                                     setIsLocked(false);
                                     setResultMessage("");
                                     setMultiplier(null);
                                 }, 4000);
                             } else {
-                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses);
+                                endSet(playerWonSet, updatedRoundWins, updatedRoundLosses, true);
                                 setIsLocked(false);
                                 setResultMessage("");
                                 setMultiplier(null);
@@ -1453,6 +1470,21 @@ const GamblingPage = () => {
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
                                     setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                                    if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
+                                    seriesResetTimeoutRef.current = setTimeout(() => {
+                                        resetSeriesState();
+                                        setRoundWins(0);
+                                        setRoundLosses(0);
+                                        setOtWins(0);
+                                        setOtLosses(0);
+                                        setIsOvertime(false);
+                                        setOvertimeBlock(0);
+                                        setResultMessage("");
+                                        setMultiplier(null);
+                                        setMiniWins(0);
+                                        setMiniLosses(0);
+                                        seriesResetTimeoutRef.current = null;
+                                    }, 15000);
                                 }, 4000);
 
                                 const timestamp = Date.now();
@@ -1938,6 +1970,17 @@ const GamblingPage = () => {
             }
         }
 
+        const end = localStorage.getItem("seriesEndTime");
+        if (end) {
+            const elapsed = Date.now() - parseInt(end, 10);
+            if (elapsed < SERIES_RESET_WINDOW) {
+                setIsSeriesActive(false);
+                resetSet();
+                setSeriesBanner(null);
+                setSeriesResult(null);
+            }
+            localStorage.removeItem("seriesEndTime");
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
