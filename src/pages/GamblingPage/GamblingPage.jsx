@@ -775,7 +775,9 @@ const GamblingPage = () => {
         if (playerWon) setPlayerSets(v => v + 1);
         else setOpponentSets(v => v + 1);
 
-        resetSet();
+        setTimeout(() => {
+            resetSet();
+        }, 5000);
 
         setSetHistory(prev => {
             const updated = [
