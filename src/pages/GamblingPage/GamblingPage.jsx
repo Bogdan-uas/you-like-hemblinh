@@ -1252,22 +1252,6 @@ const GamblingPage = () => {
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
                                     setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
-
-                                    if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
-                                    seriesResetTimeoutRef.current = setTimeout(() => {
-                                        resetSeriesState();
-                                        setRoundWins(0);
-                                        setRoundLosses(0);
-                                        setOtWins(0);
-                                        setOtLosses(0);
-                                        setIsOvertime(false);
-                                        setOvertimeBlock(0);
-                                        setResultMessage("");
-                                        setMultiplier(null);
-                                        setMiniWins(0);
-                                        setMiniLosses(0);
-                                        seriesResetTimeoutRef.current = null;
-                                    }, 15000);
                                 }, 4000);
 
                                 const timestamp = Date.now();
@@ -1471,22 +1455,6 @@ const GamblingPage = () => {
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
                                     setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
-
-                                    if (seriesResetTimeoutRef.current) clearTimeout(seriesResetTimeoutRef.current);
-                                    seriesResetTimeoutRef.current = setTimeout(() => {
-                                        resetSeriesState();
-                                        setRoundWins(0);
-                                        setRoundLosses(0);
-                                        setOtWins(0);
-                                        setOtLosses(0);
-                                        setIsOvertime(false);
-                                        setOvertimeBlock(0);
-                                        setResultMessage("");
-                                        setMultiplier(null);
-                                        setMiniWins(0);
-                                        setMiniLosses(0);
-                                        seriesResetTimeoutRef.current = null;
-                                    }, 15000);
                                 }, 4000);
 
                                 const timestamp = Date.now();
