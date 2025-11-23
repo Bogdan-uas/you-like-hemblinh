@@ -1023,7 +1023,6 @@ const GamblingPage = () => {
         } while (randomLoadingMsg === lastLoadingMessageRef.current && availableMessages.length > 1);
         lastLoadingMessageRef.current = randomLoadingMsg;
 
-        if (!inSeries) setCurrentPoints((prev) => prev - betAmount);
         if (!inSeries) setBet("");
 
         setResultMessage(randomLoadingMsg);
@@ -1105,7 +1104,6 @@ const GamblingPage = () => {
             } else {
                 winnings = Math.round(betAmount * effectiveMultiplier);
             }
-
             const netChange = winnings - betAmount;
             const newPoints = Math.max(previousPoints + netChange, 0);
 
@@ -1754,7 +1752,94 @@ const GamblingPage = () => {
             return { backgroundColor: "#ccc", color: "#2e2f42" };
         }
 
+        if (currentPoints <= 0) {
+            return {
+                backgroundColor: "#000000",
+                color: "#fff",
+                boxShadow: "none",
+                transition: "background-color 400ms ease, color 400ms ease",
+            };
+        }
+
+        if (currentPoints <= 10) {
+            return {
+                backgroundColor: "#2a0000",
+                color: "#fff",
+                boxShadow: "0 0 12px rgba(255,0,0,0.4)",
+                transition: "background-color 400ms ease, color 400ms ease, box-shadow 400ms ease",
+            };
+        }
         const rawRatio = currentPoints / goalPoints || 0;
+        const ratio = Math.max(0, Math.min(rawRatio, 1));
+
+        if (ratio >= 1) {
+            return {
+                backgroundImage:
+                    "linear-gradient(90deg, #ff0040, #ffbf00, #00ff6a, #00c8ff, #7a00ff, #ff00c8, #ff0040)",
+                backgroundSize: "400% 400%",
+                animation: "rainbowFlash 1.5s linear infinite",
+                color: "#fff",
+                boxShadow:
+                    "0 0 25px #ff0040, 0 0 20px #ffbf00, 0 0 20px #00ff6a, 0 0 20px #00c8ff, 0 0 20px #7a00ff, 0 0 20px #ff00c8, 0 0 20px #ff0040",
+                transition: "box-shadow 0.4s ease, background-color 0.4s ease, background-image 0.4s ease",
+            };
+        }
+
+        const red = { r: 255, g: 0, b: 0 };
+        const gray = { r: 128, g: 128, b: 128 };
+        const green = { r: 34, g: 139, b: 34 };
+
+        let c1, c2, t;
+
+        if (ratio <= 0.5) {
+            c1 = red;
+            c2 = gray;
+            t = ratio / 0.5;
+        } else {
+            c1 = gray;
+            c2 = green;
+            t = (ratio - 0.5) / 0.5;
+        }
+
+        const r = Math.round(c1.r + (c2.r - c1.r) * t);
+        const g = Math.round(c1.g + (c2.g - c1.g) * t);
+        const b = Math.round(c1.b + (c2.b - c1.b) * t);
+
+        const glowFactor = Math.max(0, Math.min((ratio - 0.8) / 0.2, 1));
+        const baseBlur = 6;
+        const extraBlur = 16 * glowFactor;
+
+        const blur1 = baseBlur + extraBlur;
+        const blur2 = baseBlur * 2 + extraBlur * 1.3;
+        const blur3 = baseBlur * 3 + extraBlur * 1.6;
+
+        const glowAlpha = 0.3 + 0.4 * glowFactor;
+
+        const glow =
+            glowFactor > 0
+                ? {
+                    boxShadow: `
+                        0 0 ${blur1}px rgba(${r},${g},${b},${glowAlpha}),
+                        0 0 ${blur2}px rgba(${r},${g},${b},${glowAlpha * 0.7}),
+                        0 0 ${blur3}px rgba(${r},${g},${b},${glowAlpha * 0.5})
+                `,
+                }
+                : {};
+
+        return {
+            backgroundColor: `rgb(${r}, ${g}, ${b})`,
+            color: "#fff",
+            transition: "box-shadow 0.4s ease, background-color 0.4s ease",
+            ...glow,
+        };
+    };
+
+    const getHighestPointsStyle = () => {
+        if (!firstGambleRef.current) {
+            return { backgroundColor: "#ccc", color: "#2e2f42" };
+        }
+
+        const rawRatio = maxPointsReached / goalPoints || 0;
         const ratio = Math.max(0, Math.min(rawRatio, 1));
 
         if (ratio >= 1) {
@@ -1974,7 +2059,7 @@ const GamblingPage = () => {
                             <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
                                 Win streak is available on every difficulty.
                                 After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on...<br />
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 9 win streak and so on...<br />
                                 But be cautious, as every difficulty has its own <span style={{ textDecoration: 'underline' }}>cap</span> on maximum win streak bonus!
                             </p>
 
@@ -2192,7 +2277,7 @@ const GamblingPage = () => {
 
                             <p className={`${css.unstable_note} ${css.fade_in_delay_more}`} style={{ fontSize: '20px', marginTop: '0', textAlign: 'center', maxWidth: '60ch' }}>
                                 After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 8 win streak and so on... <br />
+                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 9 win streak and so on... <br />
                                 But be cautious, as {seriesMode === "extended" ? "Extended" : "Standard"} — {difficulty} Mode has its own <span style={{ textDecoration: 'underline' }}>cap</span> (+{STREAK_BONUS_CAPS[difficulty] ?? 1}x) on maximum win streak bonus!
                             </p>
 
@@ -2924,7 +3009,7 @@ const GamblingPage = () => {
                                         <p className={css.info_text}>
                                             Highest points amount achieved:
                                         </p>
-                                        <div className={css.points} style={getCurrentPointsStyle()}>
+                                        <div className={css.points} style={getHighestPointsStyle()}>
                                             <CountUp
                                                 start={0}
                                                 end={maxPointsReached}
