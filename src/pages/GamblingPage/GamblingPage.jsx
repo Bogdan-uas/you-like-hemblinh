@@ -467,8 +467,8 @@ const GamblingPage = () => {
 
     const [isSeriesActive, setIsSeriesActive] = useState(false);
     const [setsToWin, setSetsToWin] = useState(0);
-    const [playerSets, setPlayerSets] = useState(0);
-    const [opponentSets, setOpponentSets] = useState(0);
+    const [playerWonSets, setPlayerWonSets] = useState(0);
+    const [playerLostSets, setPlayerLostSets] = useState(0);
     const [loserOpacity, setLoserOpacity] = useState(null);
 
     const [roundWins, setRoundWins] = useState(0);
@@ -532,8 +532,8 @@ const GamblingPage = () => {
                 setSeriesMode(parsed.seriesMode || null);
                 setIsSeriesActive(parsed.isSeriesActive || false);
                 setSetsToWin(parsed.setsToWin || 2);
-                setPlayerSets(parsed.playerSets || 0);
-                setOpponentSets(parsed.opponentSets || 0);
+                setPlayerWonSets(parsed.playerWonSets || 0);
+                setPlayerLostSets(parsed.playerLostSets || 0);
                 setRoundWins(parsed.roundWins || 0);
                 setRoundLosses(parsed.roundLosses || 0);
                 setRoundNumber(parsed.roundNumber || 1);
@@ -597,8 +597,8 @@ const GamblingPage = () => {
         longestWinStreak,
         longestLossStreak,
         winStreakBonus,
-        playerSets,
-        opponentSets,
+        playerWonSets,
+        playerLostSets,
         roundWins,
         roundLosses,
         roundNumber,
@@ -635,8 +635,8 @@ const GamblingPage = () => {
             seriesMode,
             isSeriesActive,
             setsToWin,
-            playerSets,
-            opponentSets,
+            playerWonSets,
+            playerLostSets,
             roundWins,
             roundLosses,
             roundNumber,
@@ -772,8 +772,8 @@ const GamblingPage = () => {
     };
 
     const endSet = (playerWon, finalWins, finalLosses, isFinal = false) => {
-        if (playerWon) setPlayerSets(v => v + 1);
-        else setOpponentSets(v => v + 1);
+        if (playerWon) setPlayerWonSets(v => v + 1);
+        else setPlayerLostSets(v => v + 1);
 
         if (isFinal) {
             setTimeout(() => resetSet(), 6000);
@@ -857,8 +857,8 @@ const GamblingPage = () => {
         setSumOfStreakBonuses(0);
         previousStreakBonusRef.current = 0;
         setIsSeriesActive(false);
-        setPlayerSets(0);
-        setOpponentSets(0);
+        setPlayerWonSets(0);
+        setPlayerLostSets(0);
         resetSet();
         setSeriesBanner(null);
         setSeriesResult(null);
@@ -916,8 +916,8 @@ const GamblingPage = () => {
         setSumOfStreakBonuses(0);
         previousStreakBonusRef.current = 0;
         setIsSeriesActive(false);
-        setPlayerSets(0);
-        setOpponentSets(0);
+        setPlayerWonSets(0);
+        setPlayerLostSets(0);
         resetSet();
         setSeriesBanner(null);
         setSeriesResult(null);
@@ -972,8 +972,8 @@ const GamblingPage = () => {
         }
 
         setIsSeriesActive(true);
-        setPlayerSets(0);
-        setOpponentSets(0);
+        setPlayerWonSets(0);
+        setPlayerLostSets(0);
         resetSet();
         setSeriesBanner(null);
         setSeriesResult(null);
@@ -1198,11 +1198,11 @@ const GamblingPage = () => {
 
                         if (otDecided) {
                             const playerWonSet = updatedOtWins > updatedOtLosses;
-                            const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
-                            const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
+                            const nextPlayerWonSets = playerWonSet ? playerWonSets + 1 : playerWonSets;
+                            const nextPlayerLostSets = playerWonSet ? playerLostSets : playerLostSets + 1;
                             const isSeriesOver =
-                                maybeEndSeries(nextPlayerSets, nextOppSets) ||
-                                (setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1));
+                                maybeEndSeries(nextPlayerWonSets, nextPlayerLostSets) ||
+                                (setsToWin === 1 && (nextPlayerWonSets === 1 || nextPlayerLostSets === 1));
 
                             setIsLocked(true);
                             if (isSeriesOver) {
@@ -1212,7 +1212,7 @@ const GamblingPage = () => {
                                 );
                             } else {
                                 toast(
-                                    `The set ${playerSets + opponentSets + 1} has been ${playerWonSet ? 'won' : 'lost'} in overtime ${overtimeBlock <= 1 ? '!' : ` #${overtimeBlock}!`}`,
+                                    `The set ${playerWonSets + playerLostSets + 1} has been ${playerWonSet ? 'won' : 'lost'} in overtime ${overtimeBlock <= 1 ? '!' : ` #${overtimeBlock}!`}`,
                                     { icon: playerWonSet ? "🤯" : "😞", duration: 4000 }
                                 );
                             }
@@ -1238,20 +1238,20 @@ const GamblingPage = () => {
                                 setResultMessage("");
                                 setMultiplier(null);
 
-                                const k = seriesKey(nextPlayerSets, nextOppSets);
+                                const k = seriesKey(nextPlayerWonSets, nextPlayerLostSets);
                                 const table = currentRewardsTable();
                                 const percent = table[k] ?? 0;
                                 const base = seriesInitialPoints || currentPoints;
                                 const change = Math.round((base * percent) / 100);
                                 const newPoints = base + change;
 
-                                setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
-                                setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
-                                setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+                                setSeriesResult({ isWin: nextPlayerWonSets > nextPlayerLostSets, percent, change });
+                                setSeriesBanner(nextPlayerWonSets > nextPlayerLostSets ? "YOU WON!" : "YOU LOST!");
+                                setLoserOpacity(nextPlayerWonSets > nextPlayerLostSets ? "loss" : "win");
                                 setTimeout(() => setIsSeriesActive(false), 3000);
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
-                                    setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                                    setSeriesResult({ isWin: nextPlayerWonSets > nextPlayerLostSets, percent, change });
                                 }, 4000);
 
                                 const timestamp = Date.now();
@@ -1261,7 +1261,7 @@ const GamblingPage = () => {
                                         newPoints,
                                         change,
                                         percent,
-                                        isWin: nextPlayerSets > nextOppSets,
+                                        isWin: nextPlayerWonSets > nextPlayerLostSets,
                                         timestamp,
                                         delayEndsAt: timestamp + SERIES_APPLY_DELAY,
                                     })
@@ -1409,11 +1409,11 @@ const GamblingPage = () => {
 
                         if (setShouldEnd) {
                             const playerWonSet = updatedRoundWins > updatedRoundLosses;
-                            const nextPlayerSets = playerWonSet ? playerSets + 1 : playerSets;
-                            const nextOppSets = playerWonSet ? opponentSets : opponentSets + 1;
+                            const nextPlayerWonSets = playerWonSet ? playerWonSets + 1 : playerWonSets;
+                            const nextPlayerLostSets = playerWonSet ? playerLostSets : playerLostSets + 1;
                             const isSeriesOver =
-                                maybeEndSeries(nextPlayerSets, nextOppSets) ||
-                                (setsToWin === 1 && (nextPlayerSets === 1 || nextOppSets === 1));
+                                maybeEndSeries(nextPlayerWonSets, nextPlayerLostSets) ||
+                                (setsToWin === 1 && (nextPlayerWonSets === 1 || nextPlayerLostSets === 1));
 
                             setIsLocked(true);
                             if (isSeriesOver) {
@@ -1423,7 +1423,7 @@ const GamblingPage = () => {
                                 );
                             } else {
                                 toast(
-                                    `The set ${playerSets + opponentSets + 1} has been ${playerWonSet ? 'won' : 'lost'}!`,
+                                    `The set ${playerWonSets + playerLostSets + 1} has been ${playerWonSet ? 'won' : 'lost'}!`,
                                     { icon: playerWonSet ? "🤯" : "😞", duration: 4000 }
                                 );
                             }
@@ -1441,20 +1441,20 @@ const GamblingPage = () => {
                                 setResultMessage("");
                                 setMultiplier(null);
 
-                                const k = seriesKey(nextPlayerSets, nextOppSets);
+                                const k = seriesKey(nextPlayerWonSets, nextPlayerLostSets);
                                 const table = currentRewardsTable();
                                 const percent = table[k] ?? 0;
                                 const base = seriesInitialPoints || currentPoints;
                                 const change = Math.round((base * percent) / 100);
                                 const newPoints = base + change;
 
-                                setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
-                                setSeriesBanner(nextPlayerSets > nextOppSets ? "YOU WON!" : "YOU LOST!");
-                                setLoserOpacity(nextPlayerSets > nextOppSets ? "loss" : "win");
+                                setSeriesResult({ isWin: nextPlayerWonSets > nextPlayerLostSets, percent, change });
+                                setSeriesBanner(nextPlayerWonSets > nextPlayerLostSets ? "YOU WON!" : "YOU LOST!");
+                                setLoserOpacity(nextPlayerWonSets > nextPlayerLostSets ? "loss" : "win");
                                 setTimeout(() => setIsSeriesActive(false), 4000);
 
                                 seriesResultTimeoutRef.current = setTimeout(() => {
-                                    setSeriesResult({ isWin: nextPlayerSets > nextOppSets, percent, change });
+                                    setSeriesResult({ isWin: nextPlayerWonSets > nextPlayerLostSets, percent, change });
                                 }, 4000);
 
                                 const timestamp = Date.now();
@@ -1464,7 +1464,7 @@ const GamblingPage = () => {
                                         newPoints,
                                         change,
                                         percent,
-                                        isWin: nextPlayerSets > nextOppSets,
+                                        isWin: nextPlayerWonSets > nextPlayerLostSets,
                                         timestamp,
                                         delayEndsAt: timestamp + SERIES_APPLY_DELAY,
                                     })
@@ -1616,8 +1616,8 @@ const GamblingPage = () => {
 
         setSeriesMode(null);
         setIsSeriesActive(false);
-        setPlayerSets(0);
-        setOpponentSets(0);
+        setPlayerWonSets(0);
+        setPlayerLostSets(0);
         setRoundWins(0);
         setRoundLosses(0);
         setRoundNumber(1);
@@ -1633,8 +1633,8 @@ const GamblingPage = () => {
     };
 
     const resetSeriesState = () => {
-        setPlayerSets(0);
-        setOpponentSets(0);
+        setPlayerWonSets(0);
+        setPlayerLostSets(0);
         setRoundWins(0);
         setRoundLosses(0);
         setOtWins(0);
@@ -1949,9 +1949,9 @@ const GamblingPage = () => {
     const isSetPointLosses = roundLosses === threshold && roundWins < threshold;
 
     const isSeriesPointWins =
-        isSetPointWins && playerSets === setsToWin - 1;
+        isSetPointWins && playerWonSets === setsToWin - 1;
     const isSeriesPointLosses =
-        isSetPointLosses && opponentSets === setsToWin - 1;
+        isSetPointLosses && playerLostSets === setsToWin - 1;
 
     const extendedLabel = (() => {
         switch (hoveredDifficulty) {
@@ -2372,29 +2372,29 @@ const GamblingPage = () => {
                                                     {setsToWin === 5 ? (
                                                         <>
                                                             {[...Array(5)].map((_, i) => (
-                                                                <div key={i} style={{ height: '12px' }} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                                <div key={i} style={{ height: '12px' }} className={`${css.line} ${playerWonSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             ))}
                                                         </>
                                                     ) : setsToWin === 4 ? (
                                                         <>
                                                             {[...Array(4)].map((_, i) => (
-                                                                <div key={i} style={{ height: '14px' }} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                                <div key={i} style={{ height: '14px' }} className={`${css.line} ${playerWonSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             ))}
                                                         </>
                                                     ) : setsToWin === 3 ? (
                                                         <>
                                                             {[...Array(3)].map((_, i) => (
-                                                                <div key={i} style={{ height: '16px' }} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                                <div key={i} style={{ height: '16px' }} className={`${css.line} ${playerWonSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             ))}
                                                         </>
                                                     ) : setsToWin === 2 ? (
                                                         <>
                                                             {[...Array(2)].map((_, i) => (
-                                                                <div key={i} className={`${css.line} ${playerSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                                <div key={i} className={`${css.line} ${playerWonSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             ))}
                                                         </>
                                                     ) : (
-                                                        <div className={`${css.line} ${playerSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
+                                                        <div className={`${css.line} ${playerWonSets >= 1 ? css.lineWin : css.lineDarkWin}`} />
                                                     )}
                                                 </div>
                                             </div>
@@ -2428,7 +2428,7 @@ const GamblingPage = () => {
                                                         style={{ fontSize: "24px" }}
                                                     >
                                                         {(() => {
-                                                            const currentSet = playerSets + opponentSets + 1;
+                                                            const currentSet = playerWonSets + playerLostSets + 1;
                                                             const totalSets = setsToWin * 2 - 1;
                                                             const isDecider = currentSet === totalSets;
                                                             return isDecider ? 'Decider' : `Set ${currentSet}`;
@@ -2535,29 +2535,29 @@ const GamblingPage = () => {
                                                     {setsToWin === 5 ? (
                                                         <>
                                                             {[...Array(5)].map((_, i) => (
-                                                                <div key={i} style={{ height: '12px' }} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                                <div key={i} style={{ height: '12px' }} className={`${css.line} ${playerLostSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                             ))}
                                                         </>
                                                     ) : setsToWin === 4 ? (
                                                         <>
                                                             {[...Array(4)].map((_, i) => (
-                                                                <div key={i} style={{ height: '14px' }} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                                <div key={i} style={{ height: '14px' }} className={`${css.line} ${playerLostSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                             ))}
                                                         </>
                                                     ) : setsToWin === 3 ? (
                                                         <>
                                                             {[...Array(3)].map((_, i) => (
-                                                                <div key={i} style={{ height: '16px' }} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                                <div key={i} style={{ height: '16px' }} className={`${css.line} ${playerLostSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                             ))}
                                                         </>
                                                     ) : setsToWin === 2 ? (
                                                         <>
                                                             {[...Array(2)].map((_, i) => (
-                                                                <div key={i} className={`${css.line} ${opponentSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                                <div key={i} className={`${css.line} ${playerLostSets >= i + 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                             ))}
                                                         </>
                                                     ) : (
-                                                        <div className={`${css.line} ${opponentSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
+                                                        <div className={`${css.line} ${playerLostSets >= 1 ? css.lineLoss : css.lineDarkLoss}`} />
                                                     )}
                                                 </div>
                                             </div>
@@ -2617,11 +2617,11 @@ const GamblingPage = () => {
                                                 <>
                                                     this match with the score of{" "}
                                                     <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
-                                                        {roundWins}
+                                                        {playerWonSets}
                                                     </span>
                                                     -
                                                     <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
-                                                        {roundLosses}
+                                                        {playerLostSets}
                                                     </span>,
                                                     you{" "}
                                                 </>
@@ -2629,11 +2629,11 @@ const GamblingPage = () => {
                                                 <>
                                                     the series with the score of{" "}
                                                     <span style={{ fontWeight: "bold" }} className={css.multiplier_win}>
-                                                        {playerSets}
+                                                        {playerWonSets}
                                                     </span>
                                                     -
                                                     <span style={{ fontWeight: "bold" }} className={css.multiplier_fail}>
-                                                        {opponentSets}
+                                                        {playerLostSets}
                                                     </span>, you{" "}
                                                 </>
                                             )}
