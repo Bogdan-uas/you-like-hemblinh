@@ -2206,7 +2206,7 @@ const GamblingPage = () => {
                                     </p>
                                 )}
                                 <div className={`${css.points} ${css.slide_in_left}`}>
-                                    <CountUp start={0} end={currentPoints} duration={1.2} redraw={true} key={currentPoints} />
+                                    <CountUp start={0} end={currentPoints} duration={1.2} key={currentPoints} />
                                 </div>
                             </div>
 
@@ -2216,7 +2216,7 @@ const GamblingPage = () => {
                                     Range: {DIFFICULTIES[difficulty].goal[0]} to {DIFFICULTIES[difficulty].goal[1]}
                                 </p>
                                 <div className={`${css.points} ${css.slide_in_left}`}>
-                                    <CountUp start={0} end={goalPoints} duration={1.2} redraw={true} key={goalPoints} />
+                                    <CountUp start={0} end={goalPoints} duration={1.2} key={goalPoints} />
                                 </div>
                             </div>
 
@@ -2362,7 +2362,6 @@ const GamblingPage = () => {
                                                             start={Math.max(roundWins - 1, 0)}
                                                             end={roundWins}
                                                             duration={1}
-                                                            redraw={true}
                                                             style={{ color: "limegreen", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundWins === overtimeTarget ? '0 0 10px rgba(0, 255, 0, 1)' : 'none' }}
                                                         />
                                                     </span>
@@ -2460,8 +2459,7 @@ const GamblingPage = () => {
                                                                 key={roundNumber}
                                                                 start={Math.max(roundNumber - 1, 0)}
                                                                 end={roundNumber}
-                                                                        duration={1}
-                                                                        redraw={true}
+                                                                duration={1}
                                                             />
                                                             /{otMaxRounds}
                                                         </>
@@ -2472,8 +2470,7 @@ const GamblingPage = () => {
                                                                 key={roundWins + roundLosses + 1}
                                                                 start={Math.max(roundWins + roundLosses, 0)}
                                                                 end={roundWins + roundLosses + 1}
-                                                                            duration={1}
-                                                                            redraw={true}
+                                                                duration={1}
                                                             />
                                                             /{baseMaxRounds}
                                                         </>
@@ -2528,8 +2525,7 @@ const GamblingPage = () => {
                                                             key={roundLosses}
                                                             start={Math.max(roundLosses - 1, 0)}
                                                             end={roundLosses}
-                                                                duration={1}
-                                                                redraw={true}
+                                                            duration={1}
                                                             style={{ color: "red", fontSize: '40px', transition: 'all 2000ms ease-in-out', textShadow: roundLosses === overtimeTarget ? '0 0 10px rgba(255, 0, 0, 1)' : 'none' }}
                                                         />
                                                     </span>
@@ -2702,7 +2698,6 @@ const GamblingPage = () => {
                                                     duration={1.2}
                                                     onEnd={() => (prevPointsRef.current = currentPoints)}
                                                     key={currentPoints}
-                                                    redraw={true}
                                                 />
                                             </div>
                                             {seriesResult ? (pointsChange !== null && (
@@ -2733,7 +2728,6 @@ const GamblingPage = () => {
                                             duration={1.2}
                                             onEnd={() => (prevGoalRef.current = goalPoints)}
                                             key={goalPoints}
-                                            redraw={true}
                                         />
                                     </div>
                                 </div>
@@ -2980,7 +2974,6 @@ const GamblingPage = () => {
                                                     prevPointsRef.current = maxPointsReached;
                                                 }}
                                                 key={maxPointsReached}
-                                                redraw={true}
                                             />
                                         </div>
                                         <p className={css.info_text}>points</p>
