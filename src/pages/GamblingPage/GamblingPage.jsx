@@ -776,7 +776,7 @@ const GamblingPage = () => {
         else setOpponentSets(v => v + 1);
 
         if (isFinal) {
-            setTimeout(() => resetSet(), 5000);
+            setTimeout(() => resetSet(), 6000);
         } else {
             resetSet();
         }
