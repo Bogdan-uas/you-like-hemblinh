@@ -41,7 +41,7 @@ const DIFFICULTIES = {
     Advanced: {
         start: [200, 600],
         goal: [15000, 25000],
-        multiplier: [1, 2.5],
+        multiplier: [0.05, 2.5],
         jackpot: { chance: 0.0015, range: [4, 10] },
     },
     Hard: {
