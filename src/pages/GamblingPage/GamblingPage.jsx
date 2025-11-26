@@ -1872,7 +1872,7 @@ const GamblingPage = () => {
         };
     };
 
-    const hitRate = totalBets > 0 ? (totalWins / totalBets) * 100 : 0;
+    const hitRate = totalBets > 0 ? Number(((totalWins / totalBets) * 100).toFixed(2)) : 0;
     const avgMultiplier = totalBets > 0 ? (sumOfMultipliers / totalBets).toFixed(2) : 0;
     const avgMultiplierWithBonus = totalBets > 0
         ? Number(((sumOfMultipliers + sumOfStreakBonuses) / totalBets).toFixed(2))
