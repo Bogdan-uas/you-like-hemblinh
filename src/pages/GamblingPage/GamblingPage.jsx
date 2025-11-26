@@ -2271,7 +2271,7 @@ const GamblingPage = () => {
                                                     ? "2"
                                                     : "1"}{" "}
                                     {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" ? "set" : "sets"} to triumph!
-                                    {difficulty !== "Easy" || difficulty !== "Normal" || difficulty !== "Challenging" || difficulty !== "Advanced" &&
+                                    {difficulty !== "Easy" && difficulty !== "Normal" && difficulty !== "Challenging" && difficulty !== "Advanced" &&
                                         " Your final gain or loss will depend on your match score."}
                                     <br />
                                     Tip: Start playing{" "}
