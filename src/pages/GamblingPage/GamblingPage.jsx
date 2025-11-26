@@ -1955,21 +1955,15 @@ const GamblingPage = () => {
 
     const extendedLabel = (() => {
         switch (hoveredDifficulty) {
-            case "Easy":
-            case "Normal":
-            case "Challenging":
-            case "Advanced":
+            case setsToWin === 1:
                 return "Best-of-1";
-            case "Hard":
-            case "Brutal":
-            case "Insane":
+            case setsToWin === 2:
                 return "Best-of-3";
-            case "Impossible":
-            case "Tuff Luck":
+            case setsToWin === 3:
                 return "Best-of-5";
-            case "LUCK GOD":
+            case setsToWin === 4:
                 return "Best-of-7";
-            case "Eternal Madness":
+            case setsToWin === 5:
                 return "Best-of-9";
             default:
                 return "Best-of-3";
@@ -1978,21 +1972,15 @@ const GamblingPage = () => {
 
     const seriesLabel = (() => {
         switch (difficulty) {
-            case "Easy":
-            case "Normal":
-            case "Challenging":
-            case "Advanced":
+            case setsToWin === 1:
                 return "Best-of-1";
-            case "Hard":
-            case "Brutal":
-            case "Insane":
+            case setsToWin === 2:
                 return "Best-of-3";
-            case "Impossible":
-            case "Tuff Luck":
+            case setsToWin === 3:
                 return "Best-of-5";
-            case "LUCK GOD":
+            case setsToWin === 4:
                 return "Best-of-7";
-            case "Eternal Madness":
+            case setsToWin === 5:
                 return "Best-of-9";
             default:
                 return "Best-of-3";
@@ -2249,41 +2237,17 @@ const GamblingPage = () => {
                                     }}
                                 >
                                     🏆 In Extended — {difficulty} Mode, you'll be able to play a{" "}
-                                    {difficulty === "Eternal Madness"
-                                        ? "Best-of-9"
-                                        : difficulty === "LUCK GOD"
-                                            ? "Best-of-7"
-                                            : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                                ? "Best-of-5"
-                                                : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
-                                                    ? "Best-of-3"
-                                                    : "Best-of-1"}{" "}
+                                    {seriesLabel}{" "}
                                     series.
                                     <br />
                                     Win{" "}
-                                    {difficulty === "Eternal Madness"
-                                        ? "5"
-                                        : difficulty === "LUCK GOD"
-                                            ? "4"
-                                            : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                                ? "3"
-                                                : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
-                                                    ? "2"
-                                                    : "1"}{" "}
-                                    {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" ? "set" : "sets"} to triumph!
-                                    {difficulty === "Easy" || difficulty === "Normal" || difficulty === "Challenging" || difficulty === "Advanced" &&
-                                        " Your final gain or loss will depend on your match score."}
+                                    {setsToWin}{" "}
+                                    {setsToWin === 1 ? "set" : "sets"} to triumph!
+                                    {setsToWin !== 1 &&
+                                        "Your final gain or loss will depend on your match score."}
                                     <br />
                                     Tip: Start playing{" "}
-                                    {difficulty === "Eternal Madness"
-                                        ? "Best-of-9"
-                                        : difficulty === "LUCK GOD"
-                                            ? "Best-of-7"
-                                            : difficulty === "Impossible" || difficulty === "Tuff Luck"
-                                                ? "Best-of-5"
-                                                : difficulty === "Insane" || difficulty === "Brutal" || difficulty === "Hard"
-                                                    ? "Best-of-3"
-                                                    : "Best-of-1"}{" "}
+                                    {seriesLabel}{" "}
                                     only when you have at least 100 points to avoid small gains from big wins.
                                 </p>
                             )}
@@ -2371,7 +2335,7 @@ const GamblingPage = () => {
                                                 >
                                                     {setsToWin === 5 ? (
                                                         <>
-                                                            {[...Array(5)].map((_, i) => (
+                                                            {[...Array(setsToWin)].map((_, i) => (
                                                                 <div key={i} style={{ height: '12px' }} className={`${css.line} ${playerWonSets >= i + 1 ? css.lineWin : css.lineDarkWin}`} />
                                                             ))}
                                                         </>
