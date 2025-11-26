@@ -1955,15 +1955,21 @@ const GamblingPage = () => {
 
     const extendedLabel = (() => {
         switch (hoveredDifficulty) {
-            case setsToWin === 1:
+            case "Easy":
+            case "Normal":
+            case "Challenging":
+            case "Advanced":
                 return "Best-of-1";
-            case setsToWin === 2:
+            case "Hard":
+            case "Brutal":
+            case "Insane":
                 return "Best-of-3";
-            case setsToWin === 3:
+            case "Impossible":
+            case "Tuff Luck":
                 return "Best-of-5";
-            case setsToWin === 4:
+            case "LUCK GOD":
                 return "Best-of-7";
-            case setsToWin === 5:
+            case "Eternal Madness":
                 return "Best-of-9";
             default:
                 return "Best-of-3";
