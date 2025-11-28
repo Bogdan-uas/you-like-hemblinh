@@ -230,7 +230,7 @@
 .slide_in_out {
     position: absolute;
     top: 40%;
-    left: 74%;
+    left: 100%;
     animation: slideInOut 8s ease-in-out forwards;
 }
 
