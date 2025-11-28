@@ -2650,8 +2650,8 @@ const GamblingPage = () => {
                                                 className={getSeriesResultClass(seriesResult.percent)}
                                             >
                                                 {seriesResult.percent}%
-                                            </span>
-                                            .
+                                            </span> {''}
+                                            to your current points.
                                         </p>
                                     </motion.div>
                                 </DelayedMount>
