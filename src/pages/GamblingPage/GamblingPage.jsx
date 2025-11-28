@@ -435,6 +435,7 @@ const GamblingPage = () => {
     const [multiplier, setMultiplier] = useState(null);
     const [isWin, setIsWin] = useState(false);
     const [pointsChange, setPointsChange] = useState(null);
+    const [gambledAmount, setGambledAmount] = useState(0);
 
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
@@ -1023,6 +1024,7 @@ const GamblingPage = () => {
         } while (randomLoadingMsg === lastLoadingMessageRef.current && availableMessages.length > 1);
         lastLoadingMessageRef.current = randomLoadingMsg;
 
+        if (!inSeries) setGambledAmount(betAmount);
         if (!inSeries) setBet("");
 
         setResultMessage(randomLoadingMsg);
@@ -2688,37 +2690,39 @@ const GamblingPage = () => {
                                             )}
                                         </AnimatePresence>
                                     </div>
-                                    <div className={css.points_text_container}>
-                                        <p className={css.info_text}>Your current points:</p>
-                                        <div className={css.another_points_text_container}>
-                                            <div className={css.points} style={getCurrentPointsStyle()}>
-                                                <CountUp
-                                                    start={prevPointsRef.current}
-                                                    end={currentPoints}
-                                                    duration={1.2}
-                                                    onEnd={() => (prevPointsRef.current = currentPoints)}
-                                                    key={currentPoints}
-                                                />
+                                        <div className={css.points_text_container}>
+                                            <p className={css.info_text}>Your current points:</p>
+                                            <div className={css.another_points_text_container}>
+                                                <div className={css.points} style={getCurrentPointsStyle()}>
+                                                    <CountUp
+                                                        start={prevPointsRef.current}
+                                                        end={currentPoints}
+                                                        duration={1.2}
+                                                        onEnd={() => (prevPointsRef.current = currentPoints)}
+                                                        key={currentPoints}
+                                                    />
+                                                </div>
+                                                {seriesResult ? (pointsChange !== null && (
+                                                    <span
+                                                        className={css.points_gain_loss}
+                                                        style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                                    >
+                                                        {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                                    </span>
+                                                )) : (pointsChange !== null && (
+                                                    <span
+                                                        className={css.points_gain_loss}
+                                                        style={{ color: pointsChange >= 0 ? "green" : "red" }}
+                                                    >
+                                                        {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
+                                                    </span>
+                                                ))}
                                             </div>
-                                            {seriesResult ? (pointsChange !== null && (
-                                                <span
-                                                    className={css.points_gain_loss}
-                                                    style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                                >
-                                                    {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                                </span>
-                                            )) : (pointsChange !== null && (
-                                                <span
-                                                    className={css.points_gain_loss}
-                                                    style={{ color: pointsChange >= 0 ? "green" : "red" }}
-                                                >
-                                                    {pointsChange >= 0 ? `+${pointsChange}` : pointsChange}
-                                                </span>
-                                            ))}
                                         </div>
-                                    </div>
+                                        {isCalculating && !inSeries && (
+                                            <span style={{ fontStyle: 'normal', fontWeight: 'bold', fontSize: '20px', width: '200px' }} className={`${css.info_text} ${css.slide_in_out}`}>Gambling: {gambledAmount}</span>
+                                        )}
                                 </div>
-
                                 <div className={css.points_text_container} style={{ marginLeft: consecutiveWins >= 2 || consecutiveLosses >= 2 ? '80px' : '25px', transition: 'margin 1000ms ease-in-out' }}>
                                     <p className={css.info_text}>Goal:</p>
                                     <div className={css.points}>

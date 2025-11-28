@@ -227,6 +227,13 @@
     animation: slideInOut 8s ease-in-out forwards;
 }
 
+.slide_in_out {
+    position: absolute;
+    top: 40%;
+    left: 74%;
+    animation: slideInOut 8s ease-in-out forwards;
+}
+
 .restart_modal {
     position: fixed;
     top: 7%;
