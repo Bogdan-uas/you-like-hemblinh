@@ -1,7 +1,7 @@
 import css from './Header.module.css';
 
 const Header = ({
-    isGameWon,
+    isGameWon = false,
     setIsRestartModalOpen,
     setIsTerminateModalOpen,
     isButtonLocked,

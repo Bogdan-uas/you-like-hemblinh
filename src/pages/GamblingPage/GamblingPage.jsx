@@ -2013,176 +2013,252 @@ const GamblingPage = () => {
                 {showDifficultyOverlay && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content} style={{ maxHeight: "85vh", overflowY: "auto" }}>
-                            <p className={css.info_text}>Select Difficulty:</p>
-                            <p className={`${css.unstable_note}`} style={{ fontSize: '20px', margin: '0', textAlign: 'center', maxWidth: '60ch' }}>
-                                Win streak is available on every difficulty.
-                                After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
-                                With every other increase of win streak, you get +0.20x more, and so you can get +1.00x bonus with 9 win streak and so on...<br />
-                                But be cautious, as every difficulty has its own <span style={{ textDecoration: 'underline' }}>cap</span> on maximum win streak bonus!
-                            </p>
-
-                            <select
-                                value={difficulty}
-                                onChange={(e) => handleSelectDifficulty(e.target.value)}
-                                className={css.nativeSelect}
-                            >
-                                <option value=""></option>
-                                {Object.keys(DIFFICULTIES).map((key) => (
-                                    <option key={key} value={key}>{key}</option>
-                                ))}
-                            </select>
-
-                            <button
-                                type="button"
-                                className={css.toggleButton}
-                                onClick={toggleDropdown}
-                                ref={buttonRef}
-                                aria-haspopup="listbox"
-                                aria-expanded={open}
-                            >
-                                <span
-                                    className={
-                                        difficulty === "LUCK GOD"
-                                            ? css.luckGodShimmer
-                                            : difficulty === "Eternal Madness"
-                                                ? css.eternalMadnessShimmer
-                                                : ''
-                                    }
+                            {seriesModeDraft !== "special" ? (
+                                <p
+                                    className={`${css.unstable_note}`}
+                                    style={{ fontSize: "20px", margin: "0", textAlign: "center", maxWidth: "60ch" }}
                                 >
-                                    {selectedLabel}
-                                </span>
-                                <span className={css.arrow} />
-                            </button>
-
-                            {open && (
-                                <>
-                                    <ul
-                                        ref={dropdownRef}
-                                        role="listbox"
-                                        className={`${css.dropdownList} ${open ? css.open : ""}`}
-                                        style={{ position: "fixed", ...dropdownCoords.current }}
+                                    Win streak is available on every difficulty.
+                                    After 5 win streak, you'll get +0.20x bonus to your randomly generated multiplier.
+                                    With every other increase of win streak, you get +0.20x more, and so you can get +1.00x
+                                    bonus with 9 win streak and so on...<br />
+                                    But be cautious, as every difficulty has its own{" "}
+                                    <span style={{ textDecoration: "underline" }}>cap</span> on maximum win streak bonus!
+                                </p>
+                            ) : (
+                                <p
+                                    className={`${css.unstable_note}`}
+                                    style={{ fontSize: "20px", margin: "0", textAlign: "center", maxWidth: "60ch" }}
                                     >
+                                    In Special Mode, win streak is not available...
+                                </p>
+                            )}
+
+                            <div className={css.mode_select_container} style={{ marginTop: 20 }}>
+                                <p className={css.info_text}>Select Mode:</p>
+                                <div className={css.mode_buttons}>
+                                    <button
+                                        className={`${css.gamble_button} ${seriesModeDraft === "normal" ? css.active_mode : ""}`}
+                                        onMouseEnter={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setTooltipCoords({ top: rect.top + rect.height / 2, left: rect.right + 10 });
+                                            setHoveredMode("normal");
+                                        }}
+                                        onMouseLeave={() => setHoveredMode(null)}
+                                        onClick={() => setSeriesModeDraft("normal")}
+                                    >
+                                        Standard
+                                    </button>
+
+                                    <button
+                                        className={`${css.gamble_button} ${seriesModeDraft === "extended" ? css.active_mode : ""}`}
+                                        onMouseEnter={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setTooltipCoords({ top: rect.top + rect.height / 2, left: rect.right + 10 });
+                                            setHoveredMode("extended");
+                                        }}
+                                        onMouseLeave={() => setHoveredMode(null)}
+                                        onClick={() => setSeriesModeDraft("extended")}
+                                    >
+                                        Extended
+                                    </button>
+
+                                    <button
+                                        className={`${css.gamble_button} ${seriesModeDraft === "special" ? css.active_mode : ""}`}
+                                        onMouseEnter={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setTooltipCoords({ top: rect.top + rect.height / 2, left: rect.right + 10 });
+                                            setHoveredMode("special");
+                                        }}
+                                        onMouseLeave={() => setHoveredMode(null)}
+                                        onClick={() => setSeriesModeDraft("special")}
+                                    >
+                                        Special
+                                    </button>
+                                </div>
+
+                                {hoveredMode === "normal" && (
+                                    <div
+                                        ref={tooltipRef}
+                                        className={css.info_popup}
+                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                    >
+                                        🎯 Just a normal mode, nothing special.
+                                    </div>
+                                )}
+                                {hoveredMode === "extended" && (
+                                    <div
+                                        ref={tooltipRef}
+                                        className={css.info_popup}
+                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                    >
+                                        🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7/9 series.<br />
+                                        Win 1/2/3/4/5 sets to triumph! Your final gain or loss will depend on your match score.<br />
+                                    </div>
+                                )}
+                                {hoveredMode === "special" && (
+                                    <div
+                                        ref={tooltipRef}
+                                        className={css.info_popup}
+                                        style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                    >
+                                        🌟 Special mode includes partially Extended Mode in it, but Special Mode does not include any points or goals...<br />
+                                        This a tournament-like mode where 16 teams in playoffs style bracket compete in series from Extended Mode. <br />
+                                        Your goal will be to pick a team for every match and by the end of each match, earn Pick'em points if guessed correctly a winning team. You'll find out more once you select this mode and click the button "Let's Go!" below!
+                                    </div>
+                                )}
+                            </div>
+
+                            {seriesModeDraft && seriesModeDraft !== "special" && (
+                                <>
+                                    <p className={css.info_text}>Select Difficulty:</p>
+                                    <select
+                                        value={difficulty}
+                                        onChange={(e) => handleSelectDifficulty(e.target.value)}
+                                        className={css.nativeSelect}
+                                    >
+                                        <option value=""></option>
                                         {Object.keys(DIFFICULTIES).map((key) => (
-                                            <li
-                                                key={key}
-                                                data-difficulty={key}
-                                                role="option"
-                                                aria-selected={difficulty === key}
-                                                tabIndex={0}
-                                                className={`${css.option} ${difficulty === key ? css.selected : ""}`}
-                                                onClick={() => handleSelectDifficulty(key)}
-                                                onKeyDown={(e) =>
-                                                    (e.key === "Enter" || e.key === " ") && handleSelectDifficulty(key)
-                                                }
-                                                onMouseEnter={(e) => {
-                                                    const itemRect = e.currentTarget.getBoundingClientRect();
-                                                    const dropdownRect = dropdownRef.current?.getBoundingClientRect();
-
-                                                    if (dropdownRect) {
-                                                        let tooltipTop = itemRect.top + itemRect.height / 2;
-                                                        setTooltipCoords({
-                                                            top: tooltipTop,
-                                                            left: dropdownRect.right + 10,
-                                                        });
-                                                    }
-
-                                                    setHoveredDifficulty(key);
-                                                }}
-                                                onMouseLeave={() => setHoveredDifficulty(null)}
-                                            >
+                                            <option key={key} value={key}>
                                                 {key}
-                                            </li>
+                                            </option>
                                         ))}
-                                    </ul>
+                                    </select>
 
-                                    {hoveredDifficulty && (
-                                        <div
-                                            ref={tooltipRef}
-                                            className={css.info_popup}
-                                            style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                    <button
+                                        type="button"
+                                        className={css.toggleButton}
+                                        onClick={toggleDropdown}
+                                        ref={buttonRef}
+                                        aria-haspopup="listbox"
+                                        aria-expanded={open}
+                                    >
+                                        <span
+                                            className={
+                                                difficulty === "LUCK GOD"
+                                                    ? css.luckGodShimmer
+                                                    : difficulty === "Eternal Madness"
+                                                        ? css.eternalMadnessShimmer
+                                                        : ""
+                                            }
                                         >
-                                            <p>
-                                                <strong>Start:</strong>{" "}
-                                                {DIFFICULTIES[hoveredDifficulty].start[0] === DIFFICULTIES[hoveredDifficulty].start[1]
-                                                    ? DIFFICULTIES[hoveredDifficulty].start[0]
-                                                    : `${DIFFICULTIES[hoveredDifficulty].start[0]} to ${DIFFICULTIES[hoveredDifficulty].start[1]}`
-                                                }
-                                            </p>
-                                            <p><strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to {DIFFICULTIES[hoveredDifficulty].goal[1]}</p>
-                                            <p><strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x</p>
-                                            <p style={{ fontWeight: '800', marginTop: '8px' }}>In Extended Mode: <span style={{ color: 'Highlight' }}>{extendedLabel}</span> available</p>
-                                            <p style={{ fontWeight: '800', marginTop: '8px', marginBottom: '4px' }}>Win streak bonus cap: <span style={{ color: 'gold' }}>+{STREAK_BONUS_CAPS[hoveredDifficulty] ?? 1}x</span></p>
-                                            {DIFFICULTIES[hoveredDifficulty].unstableMin && (
-                                                <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
+                                            {selectedLabel}
+                                        </span>
+                                        <span className={css.arrow} />
+                                    </button>
+
+                                    {open && (
+                                        <>
+                                            <ul
+                                                ref={dropdownRef}
+                                                role="listbox"
+                                                className={`${css.dropdownList} ${open ? css.open : ""}`}
+                                                style={{ position: "fixed", ...dropdownCoords.current }}
+                                            >
+                                                {Object.keys(DIFFICULTIES).map((key) => (
+                                                    <li
+                                                        key={key}
+                                                        data-difficulty={key}
+                                                        role="option"
+                                                        aria-selected={difficulty === key}
+                                                        tabIndex={0}
+                                                        className={`${css.option} ${difficulty === key ? css.selected : ""}`}
+                                                        onClick={() => handleSelectDifficulty(key)}
+                                                        onKeyDown={(e) =>
+                                                            (e.key === "Enter" || e.key === " ") && handleSelectDifficulty(key)
+                                                        }
+                                                        onMouseEnter={(e) => {
+                                                            const itemRect = e.currentTarget.getBoundingClientRect();
+                                                            const dropdownRect = dropdownRef.current?.getBoundingClientRect();
+
+                                                            if (dropdownRect) {
+                                                                let tooltipTop = itemRect.top + itemRect.height / 2;
+                                                                setTooltipCoords({
+                                                                    top: tooltipTop,
+                                                                    left: dropdownRect.right + 10,
+                                                                });
+                                                            }
+
+                                                            setHoveredDifficulty(key);
+                                                        }}
+                                                        onMouseLeave={() => setHoveredDifficulty(null)}
+                                                    >
+                                                        {key}
+                                                    </li>
+                                                ))}
+                                            </ul>
+
+                                            {hoveredDifficulty && (
+                                                <div
+                                                    ref={tooltipRef}
+                                                    className={css.info_popup}
+                                                    style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
+                                                >
+                                                    <p>
+                                                        <strong>Start:</strong>{" "}
+                                                        {DIFFICULTIES[hoveredDifficulty].start[0] ===
+                                                            DIFFICULTIES[hoveredDifficulty].start[1]
+                                                            ? DIFFICULTIES[hoveredDifficulty].start[0]
+                                                            : `${DIFFICULTIES[hoveredDifficulty].start[0]} to ${DIFFICULTIES[hoveredDifficulty].start[1]}`}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Goal:</strong> {DIFFICULTIES[hoveredDifficulty].goal[0]} to{" "}
+                                                        {DIFFICULTIES[hoveredDifficulty].goal[1]}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Multiplier:</strong> {DIFFICULTIES[hoveredDifficulty].multiplier[0]}x to{" "}
+                                                        {DIFFICULTIES[hoveredDifficulty].multiplier[1]}x
+                                                    </p>
+                                                    <p style={{ fontWeight: "800", marginTop: "8px" }}>
+                                                        In Extended Mode: <span style={{ color: "Highlight" }}>{extendedLabel}</span> available
+                                                    </p>
+                                                    <p style={{ fontWeight: "800", marginTop: "8px", marginBottom: "4px" }}>
+                                                        Win streak bonus cap: <span style={{ color: "gold" }}>+{STREAK_BONUS_CAPS[hoveredDifficulty] ?? 1}x</span>
+                                                    </p>
+                                                    {DIFFICULTIES[hoveredDifficulty].unstableMin && (
+                                                        <p className={css.unstable_note}>⚠️ Unstable minimum multiplier</p>
+                                                    )}
+                                                    {DIFFICULTIES[hoveredDifficulty].jackpot && (
+                                                        <p className={css.unstable_note}>
+                                                            🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%):{" "}
+                                                            {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to{" "}
+                                                            {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
+                                                        </p>
+                                                    )}
+                                                    {DIFFICULTIES[hoveredDifficulty].superjackpot && (
+                                                        <p className={css.unstable_note}>
+                                                            🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%):{" "}
+                                                            {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to{" "}
+                                                            {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
+                                                        </p>
+                                                    )}
+                                                </div>
                                             )}
-                                            {DIFFICULTIES[hoveredDifficulty].jackpot && (
-                                                <p className={css.unstable_note}>
-                                                    🎰 Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].jackpot.chance * 100}%): {''} {DIFFICULTIES[hoveredDifficulty].jackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].jackpot.range[1]}x
-                                                </p>
-                                            )}
-                                            {DIFFICULTIES[hoveredDifficulty].superjackpot && (
-                                                <p className={css.unstable_note}>
-                                                    🌈💥 Super Jackpot possible (chance of {DIFFICULTIES[hoveredDifficulty].superjackpot.chance * 100}%): {''}
-                                                    {DIFFICULTIES[hoveredDifficulty].superjackpot.range[0]}x to {DIFFICULTIES[hoveredDifficulty].superjackpot.range[1]}x
-                                                </p>
-                                            )}
-                                        </div>
+                                        </>
                                     )}
                                 </>
                             )}
 
-                            {difficulty && (
-                                <div className={css.mode_select_container} style={{ marginTop: 20 }}>
-                                    <p className={css.info_text}>Select Mode:</p>
-                                    <div className={css.mode_buttons}>
-                                        <button
-                                            className={`${css.gamble_button} ${seriesModeDraft === "normal" ? css.active_mode : ""}`}
-                                            onMouseEnter={() => setHoveredMode("normal")}
-                                            onMouseLeave={() => setHoveredMode(null)}
-                                            onClick={() => setSeriesModeDraft("normal")}
-                                        >
-                                            Standard
-                                        </button>
-
-                                        <button
-                                            className={`${css.gamble_button} ${seriesModeDraft === "extended" ? css.active_mode : ""}`}
-                                            onMouseEnter={() => setHoveredMode("extended")}
-                                            onMouseLeave={() => setHoveredMode(null)}
-                                            onClick={() => setSeriesModeDraft("extended")}
-                                        >
-                                            Extended
-                                        </button>
-                                    </div>
-
-                                    {hoveredMode === "normal" && (
-                                        <div
-                                            ref={tooltipRef}
-                                            className={css.info_popup}
-                                            style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
-                                        >
-                                            🎯 Just a normal mode, nothing special.
-                                        </div>
-                                    )}
-                                    {hoveredMode === "extended" && (
-                                        <div
-                                            ref={tooltipRef}
-                                            className={css.info_popup}
-                                            style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
-                                        >
-                                            🏆 In Extended mode , you'll be able to play a Best-of-1/3/5/7/9 series.<br />
-                                            Win 1/2/3/4/5 sets to triumph! Your final gain or loss will depend on your match score.<br />
-                                        </div>
-                                    )}
-                                </div>
+                            {seriesModeDraft === "special" && (
+                                <p className={css.info_text} style={{ marginTop: "12px" }}>
+                                    No difficulty needed — pressing "Let's go!" will activate Special Mode even though there's no difficulty selected.
+                                </p>
                             )}
 
                             <button
-                                className={`${css.proceed_button} ${!difficulty || !seriesModeDraft ? css.locked : ""}`}
-                                onClick={startGame}
-                                disabled={!difficulty || !seriesModeDraft}
+                                className={`${css.proceed_button} ${seriesModeDraft === "special" ? "" : (!difficulty || !seriesModeDraft ? css.locked : "")}`}
+                                onClick={() => {
+                                    if (seriesModeDraft === "special") {
+                                        setShowDifficultyOverlay(false);
+                                        navigate("/special-mode");
+                                    } else {
+                                        startGame();
+                                    }
+                                }}
+                                disabled={seriesModeDraft === "special" ? false : (!difficulty || !seriesModeDraft)}
                                 style={{ marginTop: 20 }}
                             >
-                                Let's go?
+                                Let's go!
                             </button>
                         </div>
                     </div>
