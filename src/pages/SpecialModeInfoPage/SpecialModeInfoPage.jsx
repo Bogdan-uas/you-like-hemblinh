@@ -1,5 +1,17 @@
 import css from './SpecialModeInfoPage.module.css'
 import { Link } from "react-router-dom";
+import bracketImg from "../../../assets/images/image.png";
+import matchModalImg from "../../../assets/images/image-2.png";
+import chosenTeamImg from "../../../assets/images/image-3.png";
+import seriesScreenImg from "../../../assets/images/image-4.png";
+import miniRoundRedImg from "../../../assets/images/image-5.png";
+import miniRoundLimeImg from "../../../assets/images/image-6.png";
+import seriesPointImg from "../../../assets/images/image-7.png";
+import finishedMatchRedImg from "../../../assets/images/image-8.png";
+import finishedMatchModalImg from "../../../assets/images/image-9.png";
+import secondQuarterfinalistImg from "../../../assets/images/image-10.png";
+import winnersScreenImg from "../../../assets/images/image-11.png";
+import resultsScreenImg from "../../../assets/images/image-12.png";
 
 const COLORS = {
     red: {
@@ -216,7 +228,7 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p className={css.info_text}>By starting off (clicking the "Start Game" button), you'll see Single Elimination bracket with <b>16</b> teams:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image.png" alt="Single Elimination bracket" className={css.image} />
+                    <img src={bracketImg} alt="Single Elimination bracket" className={css.image} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(The teams' classification is always different)</span>
                 </div>
                 <p className={css.info_text}>There are in total <b>32</b> colors for teams, only <b>16</b> are randomly being taken. <br />
@@ -333,12 +345,12 @@ const SpecialModeInfoPage = () => {
                 <span style={{ fontStyle: 'italic', color: 'black', marginBottom: '24px' }} className={css.info_text}>(Dashed border shows that it is the next match)</span>
                 <p className={css.info_text}>and click on it. Then, you will get this modal opened:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-2.png" alt="Opened match modal" className={css.image} style={{ width: '25vw', height: '32vh' }} />
+                    <img src={matchModalImg} alt="Opened match modal" className={css.image} style={{ width: '25vw', height: '32vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(We'll just proceed with this example)</span>
                 </div>
                 <p className={css.info_text}>You need to choose here the team, which you think we will win this match and click "Start Match". In my case, it is Team Lime:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-3.png" alt="Chosen team on the match modal" className={css.image} style={{ width: '25vw', height: '32vh' }} />
+                    <img src={chosenTeamImg} alt="Chosen team on the match modal" className={css.image} style={{ width: '25vw', height: '32vh' }} />
                 </div>
                 <div style={{ marginTop: '24px' }} className={css.divider_container}>
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Wat du ai du during ze metch?</h3>
@@ -346,7 +358,7 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p className={css.info_text}>After starting the match, you're being redirected to the "series screen":</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-4.png" alt="'Series screen'" className={css.image} style={{ width: '30vw', height: '37vh' }} />
+                    <img src={seriesScreenImg} alt="'Series screen'" className={css.image} style={{ width: '30vw', height: '37vh' }} />
                 </div>
                 <p className={css.info_text}>At the very top, there is stage name and number + which teams are now currently playing. <br />
                     In the center, there is a the scoreboard with scores of both teams. On the left side, there's always your picked team. <br />
@@ -358,19 +370,19 @@ const SpecialModeInfoPage = () => {
                 </b>
                 <p className={css.info_text}>And the win <i>here</i> counts for <span style={{ textDecoration: 'underline' }}>your chosen team</span>. A bad multiplier (below 0x) counts then for the team, that is against your chosen team:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-5.png" alt="Won mini-round for Team Red" className={css.image} style={{ width: '30vw', height: '40vh' }} />
-                    <img src="../../../assets/images/image-6.png" alt="Won mini-round for Team Lime" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={miniRoundRedImg} alt="Won mini-round for Team Red" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={miniRoundLimeImg} alt="Won mini-round for Team Lime" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                 </div>
                 <p className={css.info_text}>And as it is a Best-of-3 in Rounds of 16, a team needs two sets to win:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-7.png" alt="SERIES POINT for the Team Lime!" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={seriesPointImg} alt="SERIES POINT for the Team Lime!" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>Team Lime lost this somehow :(</span>
                 </div>
                 <p className={css.info_text}>After one of the both teams wins, this team goes then into Quarterfinals and the loser team flies out of the tournament. The rectangle of the match gets either light-red or light-green, depending if your chosen team won <br />
                     (in my case, that was a loss for my chosen team):
                 </p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-8.png" alt="Team Lime flies out and Team Red progresses into Quarterfinals" className={css.image} style={{ width: '35vw', height: '30vh' }} />
+                    <img src={finishedMatchRedImg} alt="Team Lime flies out and Team Red progresses into Quarterfinals" className={css.image} style={{ width: '35vw', height: '30vh' }} />
                 </div>
                 <div style={{ marginTop: '24px' }} className={css.divider_container}>
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Wat tu du nekst?</h3>
@@ -378,11 +390,11 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p className={css.info_text}>Already finished match is finished, but you can click on it and see results of the match in that same modal:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-9.png" alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                 </div>
                 <p className={css.info_text}>The next match winner fills then second circle:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-10.png" alt="Second quarterfinalist" className={css.image} style={{ width: '35vw', height: '30vh' }} />
+                    <img src={secondQuarterfinalistImg} alt="Second quarterfinalist" className={css.image} style={{ width: '35vw', height: '30vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(P. s. You still are only able to start the match when all Rounds of 16 are finished)</span>
                 </div>
                 <p className={css.info_text}>On the header of the modal, we can see the reminder of whether your chosen team lost or won. <br />
@@ -399,17 +411,17 @@ const SpecialModeInfoPage = () => {
                 </p>
                 <p className={css.info_text}>That's why also I get here <b>+1 Pick&apos;em point</b>, even though my chosen team lost overall:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-9.png" alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                 </div>
                 <p style={{ marginBottom: '24px' }} className={css.info_text}>And of course after building one Quarterfinal match, you proceed with further matches up to Grand Final.</p>
                 <p className={css.info_text}>After Grand Final ends and there is determined a winner of the tournament, we get a winner screen:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-11.png" alt="Winner Screen" className={css.image} style={{ width: '30vw', height: '70vh' }} />
+                    <img src={winnersScreenImg} alt="Winner Screen" className={css.image} style={{ width: '30vw', height: '70vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>Third and fourth places are being decided in the Third Place Decider</span>
                 </div>
                 <p className={css.info_text}>By clicking "Proceed", you will be redirected to your end screen, where the results of your Pick&apos;ems are being shown:</p>
                 <div className={css.image_container}>
-                    <img src="../../../assets/images/image-12.png" alt="Results Screen" className={css.image} style={{ width: '45vw', height: '70vh' }} />
+                    <img src={resultsScreenImg} alt="Results Screen" className={css.image} style={{ width: '45vw', height: '70vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(I increased the chances of multipliers, so I get this screen faster, that's why don't think that it is that easy to get such stats)</span>
                 </div>
                 <div style={{ marginTop: '24px' }} className={css.divider} />
