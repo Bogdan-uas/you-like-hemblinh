@@ -17,7 +17,7 @@ const OT_ROUNDS_TO_WIN = 4;
 const MULTIPLIER_MIN = -1.5;
 const MULTIPLIER_MAX = 1.5;
 
-const MIN_NEEDED_PICKEM = 45;
+const MIN_NEEDED_PICKEM = 53;
 const MAX_NEEDED_PICKEM = 74;
 const neededPickemPointsAmount = Math.floor(
     Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)
@@ -135,8 +135,8 @@ const COLORS = {
         name: "Silver"
     },
     navy: {
-        shadow: "0 0 10px rgba(0, 0, 128, 0.5)",
-        color: "#000080",
+        shadow: "0 0 10px rgba(0, 0, 90, 0.5)",
+        color: "#00005aff",
         unlitColor: "#00001a",
         name: "Navy"
     },
@@ -217,6 +217,198 @@ const COLORS = {
         color: "#4682B4",
         unlitColor: "#172637",
         name: "Steel"
+    },
+    emerald: {
+        shadow: "0 0 10px rgba(0, 201, 87, 0.5)",
+        color: "#00C957",
+        unlitColor: "#024023",
+        name: "Emerald"
+    },
+    ruby: {
+        shadow: "0 0 10px rgba(224, 17, 95, 0.5)",
+        color: "#E0115F",
+        unlitColor: "#3a071c",
+        name: "Ruby"
+    },
+    sapphire: {
+        shadow: "0 0 10px rgba(15, 82, 186, 0.5)",
+        color: "#0F52BA",
+        unlitColor: "#042040",
+        name: "Sapphire"
+    },
+    amber: {
+        shadow: "0 0 10px rgba(255, 191, 0, 0.5)",
+        color: "#FFBF00",
+        unlitColor: "#4b3a00",
+        name: "Amber"
+    },
+    bronze: {
+        shadow: "0 0 10px rgba(205, 127, 50, 0.5)",
+        color: "#CD7F32",
+        unlitColor: "#3f2610",
+        name: "Bronze"
+    },
+    copper: {
+        shadow: "0 0 10px rgba(184, 115, 51, 0.5)",
+        color: "#B87333",
+        unlitColor: "#3b210f",
+        name: "Copper"
+    },
+    sand: {
+        shadow: "0 0 10px rgba(244, 164, 96, 0.5)",
+        color: "#F4A460",
+        unlitColor: "#4a3119",
+        name: "Sand"
+    },
+    seafoam: {
+        shadow: "0 0 10px rgba(120, 219, 226, 0.5)",
+        color: "#78DBE2",
+        unlitColor: "#1f4044",
+        name: "Seafoam"
+    },
+    forest: {
+        shadow: "0 0 10px rgba(34, 139, 34, 0.5)",
+        color: "#228B22",
+        unlitColor: "#0b2d0b",
+        name: "Forest"
+    },
+    midnight: {
+        shadow: "0 0 10px rgba(25, 25, 112, 0.5)",
+        color: "#191970",
+        unlitColor: "#05051f",
+        name: "Midnight"
+    },
+    peach: {
+        shadow: "0 0 10px rgba(255, 218, 185, 0.5)",
+        color: "#FFDAB9",
+        unlitColor: "#4b3c29",
+        name: "Peach"
+    },
+    apricot: {
+        shadow: "0 0 10px rgba(251, 206, 177, 0.5)",
+        color: "#FBCEB1",
+        unlitColor: "#4a3626",
+        name: "Apricot"
+    },
+    periwinkle: {
+        shadow: "0 0 10px rgba(204, 204, 255, 0.5)",
+        color: "#CCCCFF",
+        unlitColor: "#33334a",
+        name: "Periwinkle"
+    },
+    sunflower: {
+        shadow: "0 0 10px rgba(255, 215, 0, 0.5)",
+        color: "#FFD700",
+        unlitColor: "#4b3d00",
+        name: "Sunflower"
+    },
+    raspberry: {
+        shadow: "0 0 10px rgba(227, 11, 93, 0.5)",
+        color: "#E30B5D",
+        unlitColor: "#3b051b",
+        name: "Raspberry"
+    },
+    chocolate: {
+        shadow: "0 0 10px rgba(95, 56, 23, 0.5)",
+        color: "#5F3817",
+        unlitColor: "#1e1207",
+        name: "Chocolate"
+    },
+    ivory: {
+        shadow: "0 0 10px rgba(255, 255, 240, 0.5)",
+        color: "#FFFFF0",
+        unlitColor: "#4a4a3b",
+        name: "Ivory"
+    },
+    charcoal: {
+        shadow: "0 0 10px rgba(54, 69, 79, 0.5)",
+        color: "#36454F",
+        unlitColor: "#101519",
+        name: "Charcoal"
+    },
+    denim: {
+        shadow: "0 0 10px rgba(21, 96, 189, 0.5)",
+        color: "#1560BD",
+        unlitColor: "#062445",
+        name: "Denim"
+    },
+    spring: {
+        shadow: "0 0 10px rgba(0, 255, 127, 0.5)",
+        color: "#00FF7F",
+        unlitColor: "#014426",
+        name: "Spring"
+    },
+    ocean: {
+        shadow: "0 0 10px rgba(0, 105, 148, 0.5)",
+        color: "#006994",
+        unlitColor: "#012030",
+        name: "Ocean"
+    },
+    lilac: {
+        shadow: "0 0 10px rgba(200, 162, 200, 0.5)",
+        color: "#C8A2C8",
+        unlitColor: "#3f2c3f",
+        name: "Lilac"
+    },
+    rose: {
+        shadow: "0 0 10px rgba(255, 102, 204, 0.5)",
+        color: "#FF66CC",
+        unlitColor: "#4b1f3e",
+        name: "Rose"
+    },
+    frost: {
+        shadow: "0 0 10px rgba(210, 230, 255, 0.5)",
+        color: "#D2E6FF",
+        unlitColor: "#344056",
+        name: "Frost"
+    },
+    slate: {
+        shadow: "0 0 10px rgba(112, 128, 144, 0.5)",
+        color: "#708090",
+        unlitColor: "#252a30",
+        name: "Slate"
+    },
+    moss: {
+        shadow: "0 0 10px rgba(138, 154, 91, 0.5)",
+        color: "#8A9A5B",
+        unlitColor: "#2a3114",
+        name: "Moss"
+    },
+    wine: {
+        shadow: "0 0 10px rgba(114, 47, 55, 0.5)",
+        color: "#722F37",
+        unlitColor: "#230c0e",
+        name: "Wine"
+    },
+    honey: {
+        shadow: "0 0 10px rgba(240, 196, 0, 0.5)",
+        color: "#F0C400",
+        unlitColor: "#433304",
+        name: "Honey"
+    },
+    azure: {
+        shadow: "0 0 10px rgba(0, 127, 255, 0.5)",
+        color: "#007FFF",
+        unlitColor: "#00264b",
+        name: "Azure"
+    },
+    blush: {
+        shadow: "0 0 10px rgba(222, 93, 131, 0.5)",
+        color: "#DE5D83",
+        unlitColor: "#421626",
+        name: "Blush"
+    },
+    jade: {
+        shadow: "0 0 10px rgba(0, 168, 107, 0.5)",
+        color: "#00A86B",
+        unlitColor: "#024028",
+        name: "Jade"
+    },
+    royal: {
+        shadow: "0 0 10px rgba(65, 105, 225, 0.5)",
+        color: "#4169E1",
+        unlitColor: "#192650",
+        name: "Royal"
     }
 };
 

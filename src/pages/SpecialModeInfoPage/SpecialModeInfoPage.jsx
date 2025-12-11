@@ -123,8 +123,8 @@ const COLORS = {
         name: "Silver"
     },
     navy: {
-        shadow: "0 0 10px rgba(0, 0, 128, 0.5)",
-        color: "#000080",
+        shadow: "0 0 10px rgba(0, 0, 90, 0.5)",
+        color: "#00005aff",
         unlitColor: "#00001a",
         name: "Navy"
     },
