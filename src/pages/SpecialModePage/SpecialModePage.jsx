@@ -920,13 +920,12 @@ export default function SpecialModePage() {
 
         if (counts.sf > 0) {
             const isPerfect = counts.sf === 2;
-            const isAwful = counts.sf <= 1;
             parts.push(
                 <>
                     <span
                         style={{
                             fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
+                            color: isPerfect ? "#2e7d32" : undefined,
                         }}
                     >
                         {counts.sf}/2
