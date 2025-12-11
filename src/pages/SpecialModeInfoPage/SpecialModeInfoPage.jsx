@@ -87,8 +87,8 @@ const COLORS = {
         name: "Black"
     },
     white: {
-        shadow: "0 0 10px rgba(186, 186, 186, 0.5)",
-        color: "#bebebeff",
+        shadow: "0 0 10px rgba(194, 194, 194, 0.5)",
+        color: "#d5d5d5ff",
         unlitColor: "#656565ff",
         name: "White"
     },
