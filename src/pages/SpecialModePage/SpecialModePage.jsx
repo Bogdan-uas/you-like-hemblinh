@@ -17,7 +17,7 @@ const OT_ROUNDS_TO_WIN = 4;
 const MULTIPLIER_MIN = -1.5;
 const MULTIPLIER_MAX = 1.5;
 
-const MIN_NEEDED_PICKEM = 53;
+const MIN_NEEDED_PICKEM = 48;
 const MAX_NEEDED_PICKEM = 74;
 const neededPickemPointsAmount = Math.floor(
     Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)
