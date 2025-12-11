@@ -884,12 +884,13 @@ export default function SpecialModePage() {
 
         if (counts.ro16 > 0) {
             const isPerfect = counts.ro16 === 8;
+            const isAwful = counts.ro16 <= 2;
             parts.push(
                 <>
                     <span
                         style={{
                             fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : undefined,
+                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
                         }}
                     >
                         {counts.ro16}/8
@@ -901,12 +902,13 @@ export default function SpecialModePage() {
 
         if (counts.qf > 0) {
             const isPerfect = counts.qf === 4;
+            const isAwful = counts.qf <= 1;
             parts.push(
                 <>
                     <span
                         style={{
                             fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : undefined,
+                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
                         }}
                     >
                         {counts.qf}/4
@@ -918,12 +920,13 @@ export default function SpecialModePage() {
 
         if (counts.sf > 0) {
             const isPerfect = counts.sf === 2;
+            const isAwful = counts.sf <= 1;
             parts.push(
                 <>
                     <span
                         style={{
                             fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : undefined,
+                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
                         }}
                     >
                         {counts.sf}/2
