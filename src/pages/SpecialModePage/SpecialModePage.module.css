@@ -946,7 +946,7 @@
 }
 
 .thirdPlace_rect {
-    width: 190px;
+    min-width: 190px;
     background: #ccc;
     padding: 10px;
     border-radius: 8px;
