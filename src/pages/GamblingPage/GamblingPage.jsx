@@ -709,10 +709,10 @@ const GamblingPage = () => {
 
     // useEffect(() => {
     //     const handleBefore = () => {
-    //         confirmRestart();
+    //          confirmRestart();
     //     };
-    //     window.addEventListener("beforeunload", handleBefore);
-    //     return () => window.removeEventListener("beforeunload", handleBefore);
+    //    window.addEventListener("beforeunload", handleBefore);
+    //    return () => window.removeEventListener("beforeunload", handleBefore);
     // }, []);
 
     useEffect(() => {
