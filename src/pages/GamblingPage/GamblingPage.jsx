@@ -707,13 +707,13 @@ const GamblingPage = () => {
         }
     }, [seriesResult]);
 
-   // useEffect(() => {
-   //     const handleBefore = () => {
-   //          confirmRestart();
-   //     };
-   //    window.addEventListener("beforeunload", handleBefore);
-   //    return () => window.removeEventListener("beforeunload", handleBefore);
-   // }, []);
+    // useEffect(() => {
+    //     const handleBefore = () => {
+    //          confirmRestart();
+    //     };
+    //    window.addEventListener("beforeunload", handleBefore);
+    //    return () => window.removeEventListener("beforeunload", handleBefore);
+    // }, []);
 
     useEffect(() => {
         if (hoveredDifficulty && dropdownRef.current && tooltipRef.current) {
