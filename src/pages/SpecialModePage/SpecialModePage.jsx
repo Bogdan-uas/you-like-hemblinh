@@ -85,7 +85,7 @@ const COLORS = {
     beige: makeColor("#FFC0CB", "Beige"),
 
     black: makeColor("#000000", "Black", { unlitAmount: 0.35 }),
-    white: makeColor("#ffffff", "White", { unlitAmount: 0.85, shadowAlpha: 0.25 }),
+    white: makeColor("#e6e6e6ff", "White", { unlitAmount: 0.85, shadowAlpha: 0.25 }),
     gray: makeColor("#808080", "Gray"),
 
     brown: makeColor("#7F3900", "Brown"),
