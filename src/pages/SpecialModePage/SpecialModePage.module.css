@@ -113,7 +113,7 @@
     gap: 12px;
     align-items: center;
     transform: translateX(0%);
-    animation: scrollLeft 50s linear infinite;
+    animation: scrollLeft 75s linear infinite;
 }
 
 @keyframes scrollLeft {
@@ -189,11 +189,20 @@
     justify-content: center;
 }
 
+.columnRo32 {
+    width: 190px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+}
+
 .columnRo16{
     width: 190px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 32px;
     align-items: center;
     justify-content: center;
 }
@@ -202,7 +211,7 @@
     width: 190px;
     display: flex;
     flex-direction: column;
-    gap: 90px;
+    gap: 131px;
     align-items: center;
     justify-content: center;
 }
@@ -211,7 +220,7 @@
     width: 190px;
     display: flex;
     flex-direction: column;
-    gap: 250px;
+    gap: 328px;
     align-items: center;
     justify-content: center;
 }
@@ -253,6 +262,21 @@
     background: #b3b3b3;
 }
 
+.ro32_rect,
+.ro32_rect_down {
+    position: relative;
+    width: 80%;
+    background: #ccc;
+    padding: 4px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.ro32_rect:hover,
+.ro32_rect_down:hover {
+    background: #b3b3b3;
+}
+
 .grandFinal_rect {
     position: relative;
     width: 100%;
@@ -268,6 +292,8 @@
 
 .match_rect::after,
 .match_rect_down::after,
+.ro32_rect::after,
+.ro32_rect_down::after,
 .quarters_rect::after,
 .quarters_rect_down::after,
 .semis_rect::after,
@@ -277,12 +303,17 @@
     display: block;
     clear: both;
     position: absolute;
-    height: 1px;
+    height: 0.5px;
     width: 30px;
-    top: 51%;
+    top: 51.5%;
     left: 100%;
     background: #606060;
     z-index: -1;
+}
+
+.ro32_rect::after,
+.ro32_rect_down::after {
+    width: 40px;
 }
 
 .quarters_rect::after,
@@ -293,23 +324,36 @@
     left: -29px;
 }
 
+.match_rect::after,
+.match_rect_down::after {
+    width: 260px;
+    left: -39px;
+}
+
 .grandFinal_rect::after {
     width: 200px;
     left: -29px;
 }
 
 .match_rect::before,
+.ro32_rect::before,
 .quarters_rect::before,
 .semis_rect::before {
     content: "";
     display: block;
     clear: both;
     position: absolute;
-    height: 40px;
-    width: 1px;
-    top: -7%;
+    height: 50px;
+    width: 0.5px;
+    top: -21%;
     left: 116%;
     background: #606060;
+}
+
+.ro32_rect::before {
+    height: 30px;
+    left: 126%;
+    top: -16%;
 }
 
 .quarters_rect::before {
@@ -323,21 +367,28 @@
 }
 
 .match_rect_down::before,
+.ro32_rect_down::before,
 .quarters_rect_down::before,
 .semis_rect_down::before {
     content: "";
     display: block;
     clear: both;
     position: absolute;
-    height: 45px;
-    width: 1px;
+    height: 54px;
+    width: 0.5px;
     top: 51%;
     left: 116%;
     background: #606060;
 }
 
+.ro32_rect_down::before {
+    height: 30px;
+    left: 126%;
+    top: 52%;
+}
+
 .quarters_rect_down::before {
-    height: 90px;
+    height: 120px;
 }
 
 .semis_rect_down::before {
@@ -357,9 +408,23 @@
     justify-content: center;
 }
 
+.team_cell_ro32 {
+    width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .team_circle {
     width: 48px;
     height: 48px;
+    border-radius: 50%;
+    border: 3px solid #999;
+}
+
+.team_circle_ro32 {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: 3px solid #999;
 }
@@ -379,6 +444,12 @@
 .vs_cell {
     flex: 1;
     text-align: center;
+}
+
+.vs_cell_ro32 {
+    width: fit-content;
+    text-align: center;
+    font-size: 14px;
 }
 
 .vs_text {
@@ -932,7 +1003,7 @@
 .thirdPlace_container {
     position: absolute;
     top: 75%;
-    left: 73%;
+    left: 78.5%;
     margin-top: 32px;
     display: flex;
     flex-direction: column;
