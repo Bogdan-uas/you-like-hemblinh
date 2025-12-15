@@ -14,7 +14,7 @@ const BASE_ROUNDS_TO_WIN = 13;
 const OT_MAX_ROUNDS = 6;
 const OT_ROUNDS_TO_WIN = 4;
 
-const MULTIPLIER_MIN = -1.5;
+const MULTIPLIER_MIN = 1.5;
 const MULTIPLIER_MAX = 1.5;
 
 const MIN_NEEDED_PICKEM = 54;
@@ -1132,7 +1132,7 @@ export default function SpecialModePage() {
                             if (winner && winner.id === prev.leftTeam.id) {
                                 userPickWon = true;
                             }
-                            
+
                             if (userPickWon) {
                                 toast("Your pick has won!!!", {
                                     icon: "🤯",
@@ -1673,7 +1673,7 @@ export default function SpecialModePage() {
         isSetPointWins && playerWonSets === setsToWin - 1;
     const isSeriesPointLosses =
         isSetPointLosses && playerLostSets === setsToWin - 1;
-    
+
     const getMultiplierClass = (mult) => {
         if (mult == null) return "";
         if (mult > 0) return seriesState.leftTeam.color;
@@ -1712,7 +1712,7 @@ export default function SpecialModePage() {
 
     const didUserWin =
         isPlayed && currentMatch?.winnerTeamId === currentMatch?.slotA?.id;
-    
+
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
 
@@ -1967,7 +1967,7 @@ export default function SpecialModePage() {
                 {!showIntro && bracket && !isSeriesActive && !showWinnersScreen && (
                     <div className={css.bracket_container}>
                         <div className={css.bracket_inner}>
-                            
+
                             <div className={css.column_container}>
                                 <h4 className={css.column_title}>
                                     Rounds of 32
@@ -2141,7 +2141,7 @@ export default function SpecialModePage() {
                                             nextMatch &&
                                             nextMatch.stage === "ro16" &&
                                             nextMatch.index === idx;
-                                        
+
                                         const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
                                         const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
 
@@ -2149,7 +2149,7 @@ export default function SpecialModePage() {
                                             isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
                                         const winnerIsRight =
                                             isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-                                        
+
                                         const canPlay = canOpenMatch("ro16", m);
                                         const isClickable = !isButtonLocked && (canPlay || m.played);
 
@@ -2296,7 +2296,7 @@ export default function SpecialModePage() {
                                                 ? css.match_win
                                                 : css.match_loss
                                             : "";
-                                        
+
                                         const isCurrent =
                                             currentPlayableMatch &&
                                             currentPlayableMatch.stage === "qf" &&
@@ -2306,7 +2306,7 @@ export default function SpecialModePage() {
                                             nextMatch &&
                                             nextMatch.stage === "qf" &&
                                             nextMatch.index === idx;
-                                        
+
                                         const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
                                         const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
 
@@ -2314,7 +2314,7 @@ export default function SpecialModePage() {
                                             isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
                                         const winnerIsRight =
                                             isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-                                        
+
                                         const canPlay = canOpenMatch("qf", m);
                                         const isClickable = !isButtonLocked && (canPlay || m.played);
 
@@ -2451,7 +2451,7 @@ export default function SpecialModePage() {
                                                 ? css.match_win
                                                 : css.match_loss
                                             : "";
-                                        
+
                                         const isCurrent =
                                             currentPlayableMatch &&
                                             currentPlayableMatch.stage === "sf" &&
@@ -2461,7 +2461,7 @@ export default function SpecialModePage() {
                                             nextMatch &&
                                             nextMatch.stage === "sf" &&
                                             nextMatch.index === idx;
-                                        
+
                                         const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
                                         const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
 
@@ -2469,7 +2469,7 @@ export default function SpecialModePage() {
                                             isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
                                         const winnerIsRight =
                                             isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-                                        
+
                                         const canPlay = canOpenMatch("sf", m);
                                         const isClickable = !isButtonLocked && (canPlay || m.played);
 
@@ -2601,7 +2601,7 @@ export default function SpecialModePage() {
                                                 ? css.match_win
                                                 : css.match_loss
                                             : "";
-                                        
+
                                         const isCurrent =
                                             currentPlayableMatch &&
                                             currentPlayableMatch.stage === "gf" &&
@@ -2611,7 +2611,7 @@ export default function SpecialModePage() {
                                             nextMatch &&
                                             nextMatch.stage === "gf" &&
                                             nextMatch.index === idx;
-                                        
+
                                         const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
                                         const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
 
@@ -2619,7 +2619,7 @@ export default function SpecialModePage() {
                                             isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
                                         const winnerIsRight =
                                             isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-                                        
+
                                         const canPlay = canOpenMatch("gf", m);
                                         const isClickable = !isButtonLocked && (canPlay || m.played);
 
@@ -2748,7 +2748,7 @@ export default function SpecialModePage() {
                                                     ? css.match_win
                                                     : css.match_loss
                                                 : "";
-                                            
+
                                             const isCurrent =
                                                 currentPlayableMatch &&
                                                 currentPlayableMatch.stage === "thirdPlace" &&
@@ -2758,7 +2758,7 @@ export default function SpecialModePage() {
                                                 nextMatch &&
                                                 nextMatch.stage === "thirdPlace" &&
                                                 nextMatch.index === idx;
-                                        
+
                                             const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
                                             const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
 
@@ -2766,7 +2766,7 @@ export default function SpecialModePage() {
                                                 isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
                                             const winnerIsRight =
                                                 isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-                                        
+
                                             const canPlay = canOpenMatch("thirdPlace", m);
                                             const isClickable = !isButtonLocked && (canPlay || m.played);
 
