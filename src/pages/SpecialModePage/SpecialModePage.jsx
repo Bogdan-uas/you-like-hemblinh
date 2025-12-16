@@ -1775,7 +1775,7 @@ export default function SpecialModePage() {
         }
     }
 
-    const finalPickemPointsWithoutLosses = pickemCounts.ro32 - pickemCounts.ro16 * 3 - pickemCounts.qf * 5 - pickemCounts.sf * 7 - pickemCounts.tpd * 7 - pickemCounts.gf * 9;
+    const finalPickemPointsWithoutLosses = pickemCounts.ro32 + pickemCounts.ro16 * 3 + pickemCounts.qf * 5 + pickemCounts.sf * 7 + pickemCounts.tpd * 7 + pickemCounts.gf * 9;
 
     if (showPickemSummary) {
         return (
