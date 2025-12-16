@@ -1780,7 +1780,11 @@ export default function SpecialModePage() {
             <div className={css.page_wrapper}>
                 <div className={css.game_container}>
                     <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '40px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
-                        {buildGuessedSentence(pickemCounts)}
+                        {buildGuessedSentence(pickemCounts)} <br />
+                        <span style={{ color: "gold", fontWeight: "700" }}>
+                            <span style={{ fontWeight: '800' }}>+{finalPickemPoints - pickemCounts}</span>
+                            Pick&apos;em point{finalPickemPoints - pickemCounts === 1 ? '' : 's'} from correctly guessed won sets in lost matches
+                        </span>
                     </p>
 
                     {showPickemLine2 && (
