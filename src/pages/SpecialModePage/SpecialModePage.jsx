@@ -1775,6 +1775,8 @@ export default function SpecialModePage() {
         }
     }
 
+    const finalPickemPointsWithoutLosses = finalPickemPoints - pickemCounts.ro32 - pickemCounts.ro16 * 3 - pickemCounts.qf * 5 - pickemCounts.sf * 7 - pickemCounts.tpd * 7 - pickemCounts.gf * 9;
+
     if (showPickemSummary) {
         return (
             <div className={css.page_wrapper}>
@@ -1782,8 +1784,8 @@ export default function SpecialModePage() {
                     <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '40px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
                         {buildGuessedSentence(pickemCounts)} <br />
                         <span style={{ color: "gold", fontWeight: "700" }}>
-                            <span style={{ fontWeight: '800' }}>+{finalPickemPoints - pickemCounts}</span>
-                            Pick&apos;em point{finalPickemPoints - pickemCounts === 1 ? '' : 's'} from correctly guessed won sets in lost matches
+                            <span style={{ fontWeight: '800' }}>+{finalPickemPoints - finalPickemPointsWithoutLosses}</span> {' '}
+                            Pick&apos;em point{finalPickemPoints - finalPickemPointsWithoutLosses === 1 ? '' : 's'} from correctly guessed won sets in lost matches
                         </span>
                     </p>
 
