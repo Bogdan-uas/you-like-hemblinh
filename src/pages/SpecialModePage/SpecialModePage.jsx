@@ -1785,7 +1785,7 @@ export default function SpecialModePage() {
                         {buildGuessedSentence(pickemCounts)} <br />
                         <span style={{ color: "gold", fontWeight: "700" }}>
                             <span style={{ fontWeight: '800' }}>+{finalPickemPoints - finalPickemPointsWithoutLosses}</span> {' '}
-                            Pick&apos;em point{finalPickemPoints - finalPickemPointsWithoutLosses === 1 ? '' : 's'} from correctly guessed won sets in lost matches
+                            Pick&apos;em point{finalPickemPoints - finalPickemPointsWithoutLosses === 1 ? '' : 's'} from correctly guessed sets in not guessed matches
                         </span>
                     </p>
 
