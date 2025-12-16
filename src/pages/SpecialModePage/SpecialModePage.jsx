@@ -93,7 +93,7 @@ const COLORS = {
     gold: makeColor("#D4AF37", "Gold"),
     silver: makeColor("#C0C0C0", "Silver", { shadowAlpha: 0.35 }),
 
-    navy: makeColor("#00005aff", "Navy"),
+    navy: makeColor("#00005aff", "Navy", { unlitAmount: 0.9 }),
     olive: makeColor("#808000", "Olive"),
     coral: makeColor("#FF6F61", "Coral"),
     magenta: makeColor("#D81BFF", "Magenta"),
