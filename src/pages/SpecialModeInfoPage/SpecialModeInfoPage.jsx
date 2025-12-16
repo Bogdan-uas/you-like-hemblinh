@@ -226,20 +226,24 @@ const SpecialModeInfoPage = () => {
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Starting off</h3>
                     <div className={css.divider} />
                 </div>
-                <p className={css.info_text}>By starting off (clicking the "Start Game" button), you'll see Single Elimination bracket with <b>16</b> teams:</p>
+                <p className={css.info_text}>By starting off (clicking the "Start Game" button), you'll see Single Elimination bracket with <b>32</b> teams:</p>
                 <div className={css.image_container}>
-                    <img src={bracketImg} alt="Single Elimination bracket" className={css.image} />
+                    <img src={bracketImg} alt="Single Elimination bracket" className={css.image} style={{ width: '30vw', height: '37vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(The teams' classification is always different)</span>
                 </div>
-                <p className={css.info_text}>There are in total <b>32</b> colors for teams, only <b>16</b> are randomly being taken. <br />
-                    But there are four exceptions: <br />
+                <p className={css.info_text}>There are in total <b>64</b> colors for teams, only <b>32</b> are randomly being taken. <br />
+                    But there are eight exceptions: <br />
                     <span style={{ color: COLORS.blue.color, fontWeight: '800' }}>Team Blue</span>, {' '}
                     <span style={{ color: COLORS.yellow.color, fontWeight: '800' }}>Team Yellow</span>, {' '}
-                    <span style={{ color: COLORS.lime.color, fontWeight: '800' }}>Team Lime</span> and {' '}
-                    <span style={{ color: COLORS.red.color, fontWeight: '800' }}>Team Red</span> <br />
+                    <span style={{ color: COLORS.lime.color, fontWeight: '800' }}>Team Lime</span>, {' '}
+                    <span style={{ color: COLORS.red.color, fontWeight: '800' }}>Team Red</span>, {' '}
+                    <span style={{ color: COLORS.green.color, fontWeight: '800' }}>Team Green</span>, {' '}
+                    <span style={{ color: COLORS.brown.color, fontWeight: '800' }}>Team Brown</span>, {' '}
+                    <span style={{ color: COLORS.beige.color, fontWeight: '800' }}>Team Beige</span>, and {' '}
+                    <span style={{ color: COLORS.orange.color, fontWeight: '800' }}>Team Orange</span> <br />
                     which are in every new tournament.
                 </p>
-                <p className={css.info_text}>That's why there are only <b>12</b> always random teams out of <b>28</b> (excluding four exceptional ones).</p>
+                <p className={css.info_text}>That's why there are only <b>24</b> always random teams out of <b>56</b> (excluding eight exceptional ones).</p>
                 <div style={{ marginTop: '24px' }} className={css.divider_container}>
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Hau tu start a metch?</h3>
                     <div className={css.divider} />
@@ -394,7 +398,7 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p className={css.info_text}>The next match winner fills then second circle:</p>
                 <div className={css.image_container}>
-                    <img src={secondQuarterfinalistImg} alt="Second quarterfinalist" className={css.image} style={{ width: '35vw', height: '30vh' }} />
+                    <img src={secondQuarterfinalistImg} alt="Second quarterfinalist" className={css.image} style={{ width: '35vw', height: '35vh' }} />
                     <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(P. s. You still are only able to start the match when all Rounds of 16 are finished)</span>
                 </div>
                 <p className={css.info_text}>On the header of the modal, we can see the reminder of whether your chosen team lost or won. <br />
@@ -407,9 +411,9 @@ const SpecialModeInfoPage = () => {
                     if in Quarterfinals, you get <i>+5 Pick&apos;em points</i> per match, <br />
                     if in Semi-finals or in Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match, <br />
                     and if in Grand Final, you get <i>+9 Pick&apos;em points</i>. <br />
-                    If your chosen team loses in whatever stage, you get as many points as many sets your chosen team won but still lost overall.
+                    If your chosen team loses in whatever stage, you get twice as many points as many sets your chosen team won but still lost overall.
                 </p>
-                <p className={css.info_text}>That's why also I get here <b>+1 Pick&apos;em point</b>, even though my chosen team lost overall:</p>
+                <p className={css.info_text}>That's why also I get here <b>+2 Pick&apos;em points</b>, even though my chosen team lost overall:</p>
                 <div className={css.image_container}>
                     <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                 </div>

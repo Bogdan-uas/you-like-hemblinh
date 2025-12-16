@@ -628,7 +628,7 @@ export default function SpecialModePage() {
                     let pickedSets = 0;
                     if (pickedIsLeft) pickedSets = m.scoreLeft ?? 0;
                     if (pickedIsRight) pickedSets = m.scoreRight ?? 0;
-                    total += pickedSets;
+                    total += pickedSets * 2;
                 }
             });
         };
@@ -1755,7 +1755,7 @@ export default function SpecialModePage() {
         if (pickedWon) {
             wonPickemPoints = base;
         } else {
-            wonPickemPoints = pickedSets;
+            wonPickemPoints = pickedSets * 2;
         }
     }
 
