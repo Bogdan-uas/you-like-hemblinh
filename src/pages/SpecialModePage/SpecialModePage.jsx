@@ -668,7 +668,7 @@ export default function SpecialModePage() {
 
         if (counts.ro32 > 0) {
             const isPerfect = counts.ro32 === 16;
-            const isAwful = counts.ro32 <= 8;
+            const isAwful = counts.ro32 <= 4;
 
             pushChunk(
                 <>
