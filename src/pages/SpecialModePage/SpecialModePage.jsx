@@ -1783,7 +1783,7 @@ export default function SpecialModePage() {
                 <div className={css.game_container}>
                     <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '40px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
                         {buildGuessedSentence(pickemCounts)} <br />
-                        <span style={{ color: "gold", fontWeight: "700" }}>
+                        <span style={{ color: "#d4cebaff", fontWeight: "700" }}>
                             <span style={{ fontWeight: '800' }}>+{finalPickemPoints - finalPickemPointsWithoutLosses}</span> {' '}
                             Pick&apos;em point{finalPickemPoints - finalPickemPointsWithoutLosses === 1 ? '' : 's'} from correctly guessed sets in not guessed matches
                         </span>
