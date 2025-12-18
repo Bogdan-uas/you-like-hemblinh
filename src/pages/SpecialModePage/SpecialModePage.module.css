@@ -860,6 +860,10 @@
     box-shadow: 0 0 12px rgba(255, 215, 0, 0.9);
 }
 
+*.match_current:hover {
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+
 .match_next {
     outline: 2px dashed #888;
     box-shadow: 0 0 12px rgba(160, 160, 160, 0.43);
