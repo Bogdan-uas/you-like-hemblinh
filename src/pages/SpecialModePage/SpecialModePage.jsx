@@ -1741,7 +1741,7 @@ export default function SpecialModePage() {
             setTimeout(() => {
                 setNeededPickemPoints(67);
                 toast("67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67...", {
-                    duration: 5000,
+                    duration: 8000,
                     icon: "6️⃣7️⃣"
                 });
             }, 9000);
