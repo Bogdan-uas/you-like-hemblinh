@@ -1738,10 +1738,27 @@ export default function SpecialModePage() {
         const t1 = setTimeout(() => setShowPickemLine2(true), 1500);
         const t2 = setTimeout(() => setShowPickemResult(true), 3000);
 
+        if (finalPickemPoints === 67) {
+            setTimeout(() => {
+                toast("67?!...", {
+                    duration: 4000,
+                    icon: "🤯"
+                });
+            }, 3000);
+            setTimeout(() => {
+                setNeededPickemPoints(67);
+                toast("You know what? 67 is a special one, you win!", {
+                    duration: 5000,
+                    icon: "😎"
+                });
+            }, 9000);
+        }
+
         return () => {
             clearTimeout(t1);
             clearTimeout(t2);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showPickemSummary]);
 
     let wonPickemPoints = null;
