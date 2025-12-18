@@ -1740,9 +1740,9 @@ export default function SpecialModePage() {
             }, 3000);
             setTimeout(() => {
                 setNeededPickemPoints(67);
-                toast("You know what? 67 is a special one, you win!", {
+                toast("67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67...", {
                     duration: 5000,
-                    icon: "😎"
+                    icon: "6️⃣7️⃣"
                 });
             }, 9000);
         }
