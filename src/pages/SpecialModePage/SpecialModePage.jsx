@@ -1861,6 +1861,12 @@ export default function SpecialModePage() {
                                 }}
                             >
                                 <button
+                                    className={`${css.gamble_button} ${css.back_button}`}
+                                    onClick={() => setShowPickemSummary(false)}
+                                >
+                                    To the bracket
+                                </button>
+                                <button
                                     className={css.gamble_button}
                                     onClick={handleBackToSpecialStart}
                                 >
@@ -1974,6 +1980,34 @@ export default function SpecialModePage() {
 
                 {!showIntro && bracket && !isSeriesActive && !showWinnersScreen && (
                     <div className={css.bracket_container}>
+                        {showPickemLine2 && (
+                            <div className={css.pickem_buttons}>
+                                <button
+                                    className={`${css.gamble_button} ${css.back_button}`}
+                                    onClick={() => setShowPickemSummary(true)}
+                                >
+                                    Back to the Pick'em challenge summary
+                                </button>
+                                <button
+                                    className={css.gamble_button}
+                                    onClick={handleBackToHome}
+                                >
+                                    To Home Page
+                                </button>
+                                <button
+                                    className={css.gamble_button}
+                                    onClick={handleBackToSpecialStart}
+                                >
+                                    Back to the start of Special Mode
+                                </button>
+                                <button
+                                    className={css.gamble_button}
+                                    onClick={handleBackToGambling}
+                                >
+                                    Back to normal Gambling
+                                </button>
+                            </div>
+                        )}
                         <div className={css.bracket_inner}>
 
                             <div className={css.column_container}>
