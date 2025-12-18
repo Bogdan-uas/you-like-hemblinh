@@ -456,7 +456,6 @@ export default function SpecialModePage() {
 
     const [showPickemLine2, setShowPickemLine2] = useState(false);
     const [showPickemResult, setShowPickemResult] = useState(false);
-    const [pickemWin, setPickemWin] = useState(false);
 
     useEffect(() => {
         const savedState = localStorage.getItem(STORAGE_KEY);
@@ -486,7 +485,6 @@ export default function SpecialModePage() {
                     setPickemCounts(parsed.pickemCounts)
                     setShowPickemLine2(parsed.showPickemLine2 ?? false)
                     setShowPickemResult(parsed.showPickemResult ?? false)
-                    setPickemWin(parsed.pickemWin ?? false)
                     setNeededPickemPoints(parsed.neededPickemPoints ?? false)
                     return;
                 }
@@ -514,7 +512,6 @@ export default function SpecialModePage() {
             pickemCounts,
             showPickemLine2,
             showPickemResult,
-            pickemWin,
             neededPickemPoints
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -532,7 +529,6 @@ export default function SpecialModePage() {
         pickemCounts,
         showPickemLine2,
         showPickemResult,
-        pickemWin,
         neededPickemPoints
     ]);
 
@@ -1439,9 +1435,6 @@ export default function SpecialModePage() {
             gf: summary.gf,
         });
 
-        const didWin = summary.total >= neededPickemPoints;
-        setPickemWin(didWin);
-
         setShowWinnersScreen(false);
         setShowPickemSummary(true);
     };
@@ -1793,6 +1786,7 @@ export default function SpecialModePage() {
     }
 
     const finalPickemPointsWithoutLosses = pickemCounts.ro32 + pickemCounts.ro16 * 3 + pickemCounts.qf * 5 + pickemCounts.sf * 7 + pickemCounts.tpd * 7 + pickemCounts.gf * 9;
+    const isPickemWin = finalPickemPoints >= neededPickemPoints;
 
     if (showPickemSummary) {
         return (
@@ -1859,13 +1853,13 @@ export default function SpecialModePage() {
                             <h1
                                 className={css.game_title}
                                 style={{
-                                    color: pickemWin ? "#00ff7f" : "#ff4c4c",
-                                    textShadow: pickemWin
+                                    color: isPickemWin ? "#00ff7f" : "#ff4c4c",
+                                    textShadow: isPickemWin
                                         ? "0 0 5px rgba(0,255,127,0.8)"
                                         : "0 0 5px rgba(255,76,76,0.8)",
                                 }}
                             >
-                                {pickemWin ? "You Won! 🎉" : "You Lost! 😢"}
+                                {isPickemWin ? "You Won! 🎉" : "You Lost! 😢"}
                             </h1>
 
                             <div
