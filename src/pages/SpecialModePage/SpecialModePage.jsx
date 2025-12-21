@@ -2786,7 +2786,7 @@ export default function SpecialModePage() {
                             </div>
                             {bracket.thirdPlace && (
                                 <div className={css.thirdPlace_container}>
-                                    <h4 style={{ width: '300px' }} className={css.column_title}>Third Place Decider (BO7)</h4>
+                                    <h4 style={{ width: '300px' }} className={css.column_title}>Third Place Decider</h4>
                                     <div className={css.columnThirdPlace}>
                                         {bracket.thirdPlace.map((m, idx) => {
                                             const isPlayed = !!m.played;
