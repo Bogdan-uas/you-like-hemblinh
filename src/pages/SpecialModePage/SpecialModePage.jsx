@@ -3402,22 +3402,20 @@ export default function SpecialModePage() {
                                         ? ""
                                         : ` #${activeMatchInfo.index + 1}`}
                                 </h3>
-                                {!isPlayed && !pickemLabelText && (
-                                    <span
-                                        style={{
-                                            color: isPlayed
-                                                ? didUserWin
-                                                    ? '#fff'
-                                                    : '#fff'
-                                                : "",
-                                            margin: '0',
-                                            fontSize: '16px',
-                                        }}
-                                        className={css.match_modal_title}
-                                    >
-                                        Best of {getBestOfForStage(activeMatchInfo.stage)}
-                                    </span>
-                                )}
+                                <span
+                                    style={{
+                                        color: isPlayed
+                                            ? didUserWin
+                                                ? '#fff'
+                                                : '#fff'
+                                            : "",
+                                        margin: '0',
+                                        fontSize: '18px',
+                                    }}
+                                    className={css.match_modal_title}
+                                >
+                                    Best of {getBestOfForStage(activeMatchInfo.stage)}
+                                </span>
 
                                 {isPlayed && pickemLabelText && (
                                     <span
