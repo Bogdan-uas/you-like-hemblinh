@@ -3580,9 +3580,9 @@ export default function SpecialModePage() {
                                                         const rightOpacity = won ? 0.2 : 1;
 
                                                         return (
-                                                            <li key={set} style={{ fontSize: "20px" }}>
+                                                            <li key={set} style={{ fontSize: "20px" }} className={css.seriesSummaryItem}>
                                                                 <span
-                                                                    className={css.multiplier_win}
+                                                                    className={`${css.multiplier_win} ${label === "Decider" ? css.leftSpecial : css.left}`}
                                                                     style={{ color: leftColor, fontWeight: 700, opacity: leftOpacity }}
                                                                 >
                                                                     {wins}
@@ -3597,7 +3597,7 @@ export default function SpecialModePage() {
                                                                 &nbsp;&nbsp;&nbsp;&nbsp;
 
                                                                 <span
-                                                                    className={css.multiplier_fail}
+                                                                    className={`${css.multiplier_fail} ${label === "Decider" ? css.rightSpecial : css.right}`}
                                                                     style={{ color: rightColor, fontWeight: 700, opacity: rightOpacity }}
                                                                 >
                                                                     {losses}

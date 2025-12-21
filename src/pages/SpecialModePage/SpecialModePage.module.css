@@ -900,6 +900,32 @@
     gap: 4px;
 } 
 
+.seriesSummaryItem {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.left {
+    position: absolute;
+    right: 150%;
+}
+
+.right {
+    position: absolute;
+    left: 150%;
+}
+
+.leftSpecial {
+    position: absolute;
+    right: 128%;
+}
+
+.rightSpecial {
+    position: absolute;
+    left: 128%;
+}
+
 .winnerScreen {
     position: fixed;
     inset: 0;
