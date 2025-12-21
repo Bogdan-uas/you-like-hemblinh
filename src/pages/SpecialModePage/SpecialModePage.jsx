@@ -1634,13 +1634,13 @@ export default function SpecialModePage() {
     const overtimeTarget = BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
 
     const seriesLabel = seriesState.stage ? (
-        <span>
+        <span className={css.series_label}>
             {stageLabel(seriesState.stage)} {seriesState.stage !== "gf" && seriesState.stage !== "thirdPlace" && `#${seriesState.matchIndex + 1}`} <br />
-            <span style={{ color: seriesState.leftTeam?.color }}>
+            <span className={css.team_name_left} style={{ color: seriesState.leftTeam?.color }}>
                 Team {seriesState.leftTeam?.name}
             </span>{" "}
             VS{" "}
-            <span style={{ color: seriesState.rightTeam?.color }}>
+            <span className={css.team_name_right} style={{ color: seriesState.rightTeam?.color }}>
                 Team {seriesState.rightTeam?.name}
             </span>
         </span>
@@ -3101,7 +3101,7 @@ export default function SpecialModePage() {
                                             className={css.round_text}
                                             style={{ fontSize: "24px" }}
                                         >
-                                            Best-of-{setsToWin * 2 - 1}
+                                            Best of {setsToWin * 2 - 1}
                                         </motion.span>
                                         {setsToWin !== 1 && (
                                             <motion.span
@@ -3402,6 +3402,22 @@ export default function SpecialModePage() {
                                         ? ""
                                         : ` #${activeMatchInfo.index + 1}`}
                                 </h3>
+                                {!isPlayed && !pickemLabelText && (
+                                    <span
+                                        style={{
+                                            color: isPlayed
+                                                ? didUserWin
+                                                    ? '#fff'
+                                                    : '#fff'
+                                                : "",
+                                            margin: '0',
+                                            fontSize: '16px',
+                                        }}
+                                        className={css.match_modal_title}
+                                    >
+                                        Best of {getBestOfForStage(activeMatchInfo.stage)}
+                                    </span>
+                                )}
 
                                 {isPlayed && pickemLabelText && (
                                     <span

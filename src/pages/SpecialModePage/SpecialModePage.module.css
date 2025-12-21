@@ -1079,6 +1079,8 @@
     position: relative;
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-direction: column;
     gap: 8px;
 }
 
@@ -1116,4 +1118,23 @@
     width: max-content;
     top: 10%;
     left: 80%;
+}
+
+.series_label {
+    position: relative;
+    display: inline-block;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.team_name_left {
+    position: absolute;
+    width: max-content;
+    right: 75%;
+}
+
+.team_name_right {
+    position: absolute;
+    width: max-content;
+    left: 75%;
 }
