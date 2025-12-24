@@ -14,8 +14,8 @@ const BASE_ROUNDS_TO_WIN = 13;
 const OT_MAX_ROUNDS = 6;
 const OT_ROUNDS_TO_WIN = 4;
 
-const MULTIPLIER_MIN = -1.5;
-const MULTIPLIER_MAX = 1.5;
+const MULTIPLIER_MIN = 0;
+const MULTIPLIER_MAX = 2.0;
 
 const MIN_NEEDED_PICKEM = 54;
 const MAX_NEEDED_PICKEM = 90;
