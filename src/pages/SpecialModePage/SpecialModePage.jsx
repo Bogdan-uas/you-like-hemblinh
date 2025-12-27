@@ -338,7 +338,7 @@ const stageLabel = (stage) => {
         case "qf":
             return "Quarterfinal";
         case "sf":
-            return "Semi-final";
+            return "Semifinal";
         case "gf":
             return "Grand Final";
         case "thirdPlace":
@@ -732,7 +732,7 @@ export default function SpecialModePage() {
                     >
                         {counts.sf}/2
                     </span>{" "}
-                    Semi-finals
+                    Semifinals
                 </>
             );
         }
@@ -2482,7 +2482,7 @@ export default function SpecialModePage() {
 
                             <div className={css.column_container}>
                                 <h4 className={css.column_title}>
-                                    Semi-finals
+                                    Semifinals
                                 </h4>
                                 <div className={css.columnSemis}>
                                     {bracket.sf.map((m, idx) => {
