@@ -409,7 +409,7 @@ const SpecialModeInfoPage = () => {
                     Since we are able to pick for every match, we need to get a reward, if chosen a winner team. <br />
                     If your chosen team wins in Round of 16, you get <i>+3 Pick&apos;em points</i> per match, <br />
                     if in Quarterfinals, you get <i>+5 Pick&apos;em points</i> per match, <br />
-                    if in Semi-finals or in Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match, <br />
+                    if in Semifinals or in Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match, <br />
                     and if in Grand Final, you get <i>+9 Pick&apos;em points</i>. <br />
                     If your chosen team loses in whatever stage, you get twice as many points as many sets your chosen team won but still lost overall.
                 </p>

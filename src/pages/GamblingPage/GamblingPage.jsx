@@ -2727,7 +2727,7 @@ const GamblingPage = () => {
                                             >
                                                 {seriesResult.percent}%
                                             </span> {''}
-                                            to your current points.
+                                            of your current points.
                                         </p>
                                     </motion.div>
                                 </DelayedMount>

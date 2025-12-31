@@ -6,7 +6,6 @@ const Header = ({
     setIsTerminateModalOpen,
     isButtonLocked,
 }) => {
-
     return (
         <header className={css.header}>
             <div className={css.bottom_buttons}>
