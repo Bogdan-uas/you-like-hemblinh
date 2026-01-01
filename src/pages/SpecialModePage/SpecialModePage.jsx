@@ -406,9 +406,8 @@ export default function SpecialModePage() {
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
 
-    const tournamentColorEntries = useMemo(
-        () => buildTournamentColorPool(),
-        []
+    const [tournamentColorEntries, setTournamentColorEntries] = useState(() =>
+        buildTournamentColorPool()
     );
 
     const uniqueTeams = useMemo(
@@ -535,16 +534,21 @@ export default function SpecialModePage() {
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
         setIsRestartModalOpen(false);
-        const fresh = buildInitialBracket(uniqueTeams);
+
+        const nextPool = buildTournamentColorPool();
+        setTournamentColorEntries(nextPool);
+
+        const fresh = buildInitialBracket(getUniqueTeams(nextPool));
         setBracket(fresh);
+
         setShowIntro(true);
         setSeriesState(defaultSeriesState);
-        setShowWinnersScreen(false)
-        setTournamentResults(null)
-        setShowWinnerText(false)
-        setShowWinnerTeam(false)
-        setShowPodium(false)
-        setShowProceed(false)
+        setShowWinnersScreen(false);
+        setTournamentResults(null);
+        setShowWinnerText(false);
+        setShowWinnerTeam(false);
+        setShowPodium(false);
+        setShowProceed(false);
     };
 
     const confirmTerminate = () => {
