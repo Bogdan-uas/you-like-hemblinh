@@ -1995,7 +1995,7 @@ export default function SpecialModePage() {
 
                 {!showIntro && bracket && !isSeriesActive && !showWinnersScreen && (
                     <div className={css.bracket_container}>
-                        {showPickemLine2 && (
+                        {!showPickemResult && showPickemLine2 && (
                             <div className={css.pickem_buttons}>
                                 <button
                                     className={`${css.gamble_button} ${css.back_button}`}
