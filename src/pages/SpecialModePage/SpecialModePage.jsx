@@ -3336,22 +3336,22 @@ export default function SpecialModePage() {
                                     </div>
                                 </div>
                             </div>
-                            {seriesState.lastResult && (
-                                <div className={css.seriesGambleMessage}>
-                                    <p className={css.seriesResultMessage}>
-                                        {seriesState.lastResult}
-                                    </p>
+                            <div className={css.seriesGambleMessage}>
+                                {seriesState.lastResult && (
+                                    <>
+                                        <p className={css.seriesResultMessage}>
+                                            {seriesState.lastResult}
+                                        </p>
 
-                                    {seriesState.lastMultiplier !== null && (
                                         <span
                                             className={css.seriesMultiplier}
                                             style={{ color: getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
                                         >
                                             {seriesState.lastMultiplier.toFixed(2)}x
                                         </span>
-                                    )}
-                                </div>
-                            )}
+                                    </>
+                                )}
+                            </div>
                             {!seriesBanner && (
                                 <div className={css.series_gamble_wrapper}>
                                     <button
