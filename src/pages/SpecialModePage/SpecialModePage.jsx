@@ -543,11 +543,19 @@ export default function SpecialModePage() {
 
         setShowIntro(true);
         setSeriesState(defaultSeriesState);
-        setShowWinnersScreen(false);
         setTournamentResults(null);
+        setShowWinnersScreen(false);
         setShowWinnerText(false);
         setShowWinnerTeam(false);
         setShowPodium(false);
+        setShowProceed(false);
+        setShowPickemSummary(false);
+        setFinalPickemPoints(0);
+        setShowPickemLine2(false);
+        setShowPickemResult(false);
+        setNeededPickemPoints(false);
+        setShowPickemSummary(false);
+        setFinalPickemPoints(0);
         setShowProceed(false);
     };
 
@@ -562,6 +570,15 @@ export default function SpecialModePage() {
         setSeriesState(defaultSeriesState);
         setTournamentResults(null);
         setShowWinnersScreen(false);
+        setShowWinnerText(false);
+        setShowWinnerTeam(false);
+        setShowPodium(false);
+        setShowProceed(false);
+        setShowPickemSummary(false);
+        setFinalPickemPoints(0);
+        setShowPickemLine2(false);
+        setShowPickemResult(false);
+        setNeededPickemPoints(false);
         setShowPickemSummary(false);
         setFinalPickemPoints(0);
         setPickemCounts({ ro32: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0 });
@@ -1995,7 +2012,7 @@ export default function SpecialModePage() {
 
                 {!showIntro && bracket && !isSeriesActive && !showWinnersScreen && (
                     <div className={css.bracket_container}>
-                        {!showPickemResult && showPickemLine2 && (
+                        {showPickemLine2 && (
                             <div className={css.pickem_buttons}>
                                 <button
                                     className={`${css.gamble_button} ${css.back_button}`}
