@@ -2041,7 +2041,7 @@ export default function SpecialModePage() {
                                 </button>
                             </div>
                         ) : (
-                            <div style={{ gap: '0', top: '12.5%' }} className={css.pickem_buttons}>
+                            <div style={{ gap: '0', top: '12.5%', left: '84%' }} className={css.pickem_buttons}>
                                 <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
                                 <span className={css.points}>
                                     <CountUp
