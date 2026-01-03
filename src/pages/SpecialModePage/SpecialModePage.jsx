@@ -19,9 +19,9 @@ const MULTIPLIER_MAX = 2.0;
 
 const MIN_NEEDED_PICKEM = 54;
 const MAX_NEEDED_PICKEM = 90;
-const neededPickemPointsAmount = Math.floor(
-    Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)
-) + MIN_NEEDED_PICKEM;
+const getRandomNeededPickemPoints = () =>
+    Math.floor(Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)) +
+    MIN_NEEDED_PICKEM;
 
 const STAGE_ORDER = ["ro32", "ro16", "qf", "sf", "thirdPlace", "gf"];
 
@@ -328,7 +328,6 @@ const buildInitialBracket = (teams) => {
     return { ro32, ro16, qf, sf, gf, thirdPlace };
 };
 
-
 const stageLabel = (stage) => {
     switch (stage) {
         case "ro32":
@@ -442,7 +441,9 @@ export default function SpecialModePage() {
 
     const [showPickemSummary, setShowPickemSummary] = useState(false);
     const [finalPickemPoints, setFinalPickemPoints] = useState(0);
-    const [neededPickemPoints, setNeededPickemPoints] = useState(neededPickemPointsAmount);
+    const [neededPickemPoints, setNeededPickemPoints] = useState(() =>
+        getRandomNeededPickemPoints()
+    );
 
     const [pickemCounts, setPickemCounts] = useState({
         ro32: 0,
@@ -484,7 +485,9 @@ export default function SpecialModePage() {
                     setPickemCounts(parsed.pickemCounts)
                     setShowPickemLine2(parsed.showPickemLine2 ?? false)
                     setShowPickemResult(parsed.showPickemResult ?? false)
-                    setNeededPickemPoints(parsed.neededPickemPoints ?? false)
+                    setNeededPickemPoints(
+                        parsed.neededPickemPoints ?? getRandomNeededPickemPoints()
+                    );
                     return;
                 }
             } catch (err) {
@@ -553,9 +556,8 @@ export default function SpecialModePage() {
         setFinalPickemPoints(0);
         setShowPickemLine2(false);
         setShowPickemResult(false);
-        setNeededPickemPoints(false);
+        setNeededPickemPoints(getRandomNeededPickemPoints());
         setShowPickemSummary(false);
-        setFinalPickemPoints(0);
         setShowProceed(false);
     };
 
@@ -578,9 +580,8 @@ export default function SpecialModePage() {
         setFinalPickemPoints(0);
         setShowPickemLine2(false);
         setShowPickemResult(false);
-        setNeededPickemPoints(false);
+        setNeededPickemPoints(getRandomNeededPickemPoints());
         setShowPickemSummary(false);
-        setFinalPickemPoints(0);
         setPickemCounts({ ro32: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0 });
     };
 
@@ -2012,7 +2013,7 @@ export default function SpecialModePage() {
 
                 {!showIntro && bracket && !isSeriesActive && !showWinnersScreen && (
                     <div className={css.bracket_container}>
-                        {showPickemLine2 && (
+                        {showPickemLine2 ? (
                             <div className={css.pickem_buttons}>
                                 <button
                                     className={`${css.gamble_button} ${css.back_button}`}
@@ -2038,6 +2039,18 @@ export default function SpecialModePage() {
                                 >
                                     Back to normal Gambling
                                 </button>
+                            </div>
+                        ) : (
+                            <div style={{ gap: '0', top: '12.5%' }} className={css.pickem_buttons}>
+                                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                                <span className={css.points}>
+                                    <CountUp
+                                        start={0}
+                                        duration={1.2}
+                                        end={neededPickemPoints}
+                                        key={neededPickemPoints}
+                                    />
+                                </span>
                             </div>
                         )}
                         <div className={css.bracket_inner}>
