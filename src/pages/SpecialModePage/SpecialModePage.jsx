@@ -445,6 +445,10 @@ export default function SpecialModePage() {
         getRandomNeededPickemPoints()
     );
 
+    const [multiplierMin, setMultiplierMin] = useState(MULTIPLIER_MIN);
+    const [multiplierMax, setMultiplierMax] = useState(MULTIPLIER_MAX);
+    const [isCheatEnabled, setIsCheatEnabled] = useState(false);
+
     const [pickemCounts, setPickemCounts] = useState({
         ro32: 0,
         ro16: 0,
@@ -1015,8 +1019,8 @@ export default function SpecialModePage() {
         if (!seriesState.active || seriesState.banner) return;
 
         const raw =
-            MULTIPLIER_MIN +
-            Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN);
+            multiplierMin +
+            Math.random() * (multiplierMax - multiplierMin);
         const mult = Number(raw.toFixed(2));
 
         setIsCalculating(true);
@@ -1473,6 +1477,24 @@ export default function SpecialModePage() {
     const handleBackToHome = () => {
         resetSpecialModeState();
         navigate("/");
+    };
+
+    const toggleSecretGuaranteedWin = () => {
+        setIsCheatEnabled((prev) => {
+            const next = !prev;
+            if (next) {
+                setMultiplierMin(MULTIPLIER_MAX);
+                setMultiplierMax(MULTIPLIER_MAX);
+            } else {
+                setMultiplierMin(MULTIPLIER_MIN);
+                setMultiplierMax(MULTIPLIER_MAX);
+            }
+            return next;
+        });
+        toast(
+            !isCheatEnabled ? "Don't tell anyone about this!!!" : "Secret mode disabled",
+            { duration: 2000, icon: "🤫" }
+        );
     };
 
     useEffect(() => {
@@ -2977,6 +2999,25 @@ export default function SpecialModePage() {
                     seriesState.leftTeam &&
                     seriesState.rightTeam && (
                         <div className={css.series_container}>
+                            <button
+                                type="button"
+                                onClick={toggleSecretGuaranteedWin}
+                                className={css.gamble_button}
+                                style={{
+                                    position: "absolute",
+                                    top: "15%",
+                                    left: "43%",
+                                    background: "#f7f7f7ff",
+                                    color: "transparent",
+                                    fontSize: "12px",
+                                    border: "none",
+                                    cursor: "auto",
+                                    opacity: 0.1,
+                                    zIndex: 9999,
+                                }}
+                            >
+                                Secret
+                            </button>
                             <motion.h2
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
