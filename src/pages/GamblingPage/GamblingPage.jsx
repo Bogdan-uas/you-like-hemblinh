@@ -2103,7 +2103,7 @@ const GamblingPage = () => {
                                         style={{ position: "fixed", top: tooltipCoords.top, left: tooltipCoords.left }}
                                     >
                                         🌟 Special mode includes partially Extended Mode in it, but Special Mode does not include any points or goals...<br />
-                                        This a tournament-like mode where 16 teams in playoffs style bracket compete in series from Extended Mode. <br />
+                                        This a tournament-like mode where 32 teams in playoffs style bracket compete in series from Extended Mode. <br />
                                         Your goal will be to pick a team for every match and by the end of each match, earn Pick'em points if guessed correctly a winning team. You'll find out more once you select this mode and click the button "Let's Go!" below!
                                     </div>
                                 )}
