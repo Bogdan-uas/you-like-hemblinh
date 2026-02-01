@@ -1669,23 +1669,23 @@ export default function SpecialModePage() {
         miniLosses,
         isOvertime,
         overtimeBlock,
-        roundNumber,
         banner: seriesBanner,
     } = seriesState;
-
-    const baseMaxRounds = BASE_MAX_ROUNDS;
-    const otMaxRounds = OT_MAX_ROUNDS;
+    
     const overtimeTarget = BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
 
     const seriesLabel = seriesState.stage ? (
         <span className={css.series_label}>
             {stageLabel(seriesState.stage)} {seriesState.stage !== "gf" && seriesState.stage !== "thirdPlace" && `#${seriesState.matchIndex + 1}`} <br />
-            <span className={css.team_name_left} style={{ color: seriesState.leftTeam?.color }}>
-                Team {seriesState.leftTeam?.name}
-            </span>{" "}
-            VS{" "}
-            <span className={css.team_name_right} style={{ color: seriesState.rightTeam?.color }}>
-                Team {seriesState.rightTeam?.name}
+            <span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className={css.round_text}
+                style={{ fontSize: "28px" }}
+            >
+                Best of {setsToWin * 2 - 1}
             </span>
         </span>
     ) : (
@@ -3027,6 +3027,74 @@ export default function SpecialModePage() {
                             >
                                 {seriesLabel}
                             </motion.h2>
+                            {!seriesBanner && (
+                                <div className={css.game_info_text}>
+                                    {setsToWin !== 1 && (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className={css.round_text}
+                                            style={{ fontSize: "28px" }}
+                                        >
+                                            {(() => {
+                                                const currentSet =
+                                                    playerWonSets + playerLostSets + 1;
+                                                const totalSets = setsToWin * 2 - 1;
+                                                const isDecider = currentSet === totalSets;
+                                                return isDecider
+                                                    ? "Decider"
+                                                    : `Set ${currentSet}`;
+                                            })()}
+                                        </motion.span>
+                                    )}
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className={css.round_text}
+                                    >
+                                        Round{" "}
+                                        <CountUp
+                                            key={roundWins + roundLosses + 1}
+                                            start={Math.max(
+                                                roundWins + roundLosses,
+                                                0
+                                            )}
+                                            end={roundWins + roundLosses + 1}
+                                            duration={1}
+                                        />
+                                    </motion.span>
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className={css.round_text}
+                                        style={{ textAlign: "center", fontSize: "16px", marginBottom: "12px" }}
+                                    >
+                                        First to {overtimeTarget}
+                                    </motion.span>
+                                    {isOvertime && (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className={css.round_text}
+                                            style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                                        >
+                                            Overtime
+                                            {overtimeBlock === 0
+                                                ? ""
+                                                : ` #${overtimeBlock}`}
+                                            <br />
+                                        </motion.span>
+                                    )}
+                                </div>
+                            )}
                             <div className={css.scoreboard}>
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                                     {isSeriesPointWins ? (
@@ -3041,9 +3109,10 @@ export default function SpecialModePage() {
                                                 transition: "all 500ms ease-in-out",
                                                 textShadow: seriesState.leftTeam?.shadow,
                                                 marginBottom: "4px",
+                                                marginTop: "-28px"
                                             }}
                                         >
-                                            {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!
+                                            {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
                                         </motion.span>
                                     ) : (
                                         isSetPointWins && (
@@ -3058,11 +3127,25 @@ export default function SpecialModePage() {
                                                     transition: "all 500ms ease-in-out",
                                                     textShadow: seriesState.leftTeam?.shadow,
                                                     marginBottom: "4px",
+                                                    marginTop: "-28px"
                                                 }}
                                             >
                                                 Set point!
                                             </motion.span>
                                         )
+                                    )}
+                                    {!seriesBanner && (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            style={{
+                                                color: seriesState.leftTeam?.color,
+                                                transition: "all 500ms ease-in-out",
+                                            }} className={css.team_name_left}>
+                                            Team {seriesState.leftTeam?.name}
+                                        </motion.span>
                                     )}
 
                                     <div
@@ -3074,18 +3157,7 @@ export default function SpecialModePage() {
                                             opacity: loserOpacity === "win" ? 0.4 : 1,
                                         }}
                                     >
-                                        <div className={css.miniSquares} style={{ flexDirection: "row-reverse" }}>
-                                            {!seriesBanner &&
-                                                [...Array(5)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={css.square}
-                                                        style={{ backgroundColor: i < miniWins ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor }}
-                                                    />
-                                                ))}
-                                        </div>
-
-                                        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", flexDirection: 'column' }}>
                                             <span className={css.round_text}>
                                                 <CountUp
                                                     key={roundWins}
@@ -3094,7 +3166,7 @@ export default function SpecialModePage() {
                                                     duration={1}
                                                     style={{
                                                         color: seriesState.leftTeam?.color,
-                                                        fontSize: "40px",
+                                                        fontSize: "45px",
                                                         transition: "all 2000ms ease-in-out",
                                                         textShadow:
                                                             roundWins === overtimeTarget
@@ -3103,15 +3175,13 @@ export default function SpecialModePage() {
                                                     }}
                                                 />
                                             </span>
-                                        </div>
-
-                                        <div className={`${css.lines} ${css.winRow}`}>
+                                            <div className={css.lines}>
                                             {setsToWin === 5 ? (
                                                 <>
                                                     {[...Array(5)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{ height: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                            style={{ width: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
                                                             className={css.line}
                                                         />
                                                     ))}
@@ -3121,7 +3191,7 @@ export default function SpecialModePage() {
                                                     {[...Array(4)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{ height: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                            style={{ width: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
                                                             className={css.line}
                                                         />
                                                     ))}
@@ -3131,7 +3201,7 @@ export default function SpecialModePage() {
                                                     {[...Array(3)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{ height: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                            style={{ width: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
                                                             className={css.line}
                                                         />
                                                     ))}
@@ -3152,7 +3222,28 @@ export default function SpecialModePage() {
                                                     className={css.line}
                                                 />
                                             )}
+                                            </div>
                                         </div>
+                                        {!seriesBanner && (
+                                            <div className={css.miniSquares}>
+                                                {[...Array(5)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={css.square}
+                                                        style={{
+                                                            backgroundColor:
+                                                                i < miniWins
+                                                                    ? seriesState.leftTeam?.color
+                                                                    : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow:
+                                                                i < miniWins
+                                                                    ? seriesState.leftTeam?.shadow
+                                                                    : 'none',
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -3167,102 +3258,9 @@ export default function SpecialModePage() {
                                         {seriesBanner}
                                     </motion.span>
                                 ) : (
-                                    <div className={css.game_info_text}>
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            className={css.round_text}
-                                            style={{ fontSize: "24px" }}
-                                        >
-                                            Best of {setsToWin * 2 - 1}
-                                        </motion.span>
-                                        {setsToWin !== 1 && (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                className={css.round_text}
-                                                style={{ fontSize: "24px" }}
-                                            >
-                                                {(() => {
-                                                    const currentSet =
-                                                        playerWonSets + playerLostSets + 1;
-                                                    const totalSets = setsToWin * 2 - 1;
-                                                    const isDecider = currentSet === totalSets;
-                                                    return isDecider
-                                                        ? "Decider"
-                                                        : `Set ${currentSet}`;
-                                                })()}
-                                            </motion.span>
-                                        )}
-
-                                        {isOvertime && (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                className={css.round_text}
-                                                style={{ textAlign: "center", fontSize: "20px" }}
-                                            >
-                                                Overtime
-                                                {overtimeBlock === 0 || overtimeBlock === 1
-                                                    ? ""
-                                                    : ` #${overtimeBlock}`}
-                                                !
-                                                <br />
-                                            </motion.span>
-                                        )}
-
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            className={css.round_text}
-                                        >
-                                            {isOvertime ? (
-                                                <>
-                                                    Round{" "}
-                                                    <CountUp
-                                                        key={roundNumber}
-                                                        start={Math.max(roundNumber - 1, 0)}
-                                                        end={roundNumber}
-                                                        duration={1}
-                                                    />
-                                                    /{otMaxRounds}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    Round{" "}
-                                                    <CountUp
-                                                        key={roundWins + roundLosses + 1}
-                                                        start={Math.max(
-                                                            roundWins + roundLosses,
-                                                            0
-                                                        )}
-                                                        end={roundWins + roundLosses + 1}
-                                                        duration={1}
-                                                    />
-                                                    /{baseMaxRounds}
-                                                </>
-                                            )}
-                                        </motion.span>
-
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            className={css.round_text}
-                                            style={{ textAlign: "center", fontSize: "16px" }}
-                                        >
-                                            First to {overtimeTarget}
-                                        </motion.span>
-                                    </div>
+                                    <p className={css.vs}>
+                                        VS
+                                    </p>
                                 )}
 
                                 <div
@@ -3284,9 +3282,10 @@ export default function SpecialModePage() {
                                                 transition: "all 500ms ease-in-out",
                                                 textShadow: seriesState.rightTeam?.shadow,
                                                 marginBottom: "4px",
+                                                marginTop: "-28px"
                                             }}
                                         >
-                                            {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!
+                                            {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
                                         </motion.span>
                                     ) : (
                                         isSetPointLosses && (
@@ -3301,11 +3300,25 @@ export default function SpecialModePage() {
                                                     transition: "all 500ms ease-in-out",
                                                     textShadow: seriesState.rightTeam?.shadow,
                                                     marginBottom: "4px",
+                                                    marginTop: "-28px"
                                                 }}
                                             >
                                                 Set point!
                                             </motion.span>
                                         )
+                                    )}
+                                    {!seriesBanner && (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            style={{
+                                                color: seriesState.rightTeam?.color,
+                                                transition: "all 500ms ease-in-out",
+                                            }} className={css.team_name_right}>
+                                            Team {seriesState.rightTeam?.name}
+                                        </motion.span>
                                     )}
 
                                     <div
@@ -3316,22 +3329,11 @@ export default function SpecialModePage() {
                                             opacity: loserOpacity === "loss" ? 0.4 : 1,
                                         }}
                                     >
-                                        <div className={css.miniSquares}>
-                                            {!seriesBanner &&
-                                                [...Array(5)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={css.square}
-                                                        style={{ boxShadow: "none", backgroundColor: i < miniLosses ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor }}
-                                                    />
-                                                ))}
-                                        </div>
-
                                         <div
                                             style={{
                                                 display: "flex",
-                                                alignItems: "baseline",
-                                                gap: "8px",
+                                                alignItems: "center",
+                                                flexDirection: 'column',
                                             }}
                                         >
                                             <span className={css.round_text}>
@@ -3342,7 +3344,7 @@ export default function SpecialModePage() {
                                                     duration={1}
                                                     style={{
                                                         color: seriesState.rightTeam?.color,
-                                                        fontSize: "40px",
+                                                        fontSize: "45px",
                                                         transition: "all 2000ms ease-in-out",
                                                         textShadow:
                                                             roundLosses === overtimeTarget
@@ -3351,15 +3353,13 @@ export default function SpecialModePage() {
                                                     }}
                                                 />
                                             </span>
-                                        </div>
-
-                                        <div className={css.lines}>
+                                            <div className={css.lossLines}>
                                             {setsToWin === 5 ? (
                                                 <>
                                                     {[...Array(5)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{ height: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                            style={{ width: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
                                                             className={css.line}
                                                         />
                                                     ))}
@@ -3369,7 +3369,7 @@ export default function SpecialModePage() {
                                                     {[...Array(4)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{ height: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                            style={{ width: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
                                                             className={css.line}
                                                         />
                                                     ))}
@@ -3379,7 +3379,7 @@ export default function SpecialModePage() {
                                                     {[...Array(3)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{ height: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                            style={{ width: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
                                                             className={css.line}
                                                         />
                                                     ))}
@@ -3403,8 +3403,29 @@ export default function SpecialModePage() {
                                                         }`}
                                                 />
                                             )}
+                                            </div>
                                         </div>
-                                    </div>
+                                        {!seriesBanner && (
+                                            <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
+                                                {[...Array(5)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={css.lossSquare}
+                                                        style={{
+                                                            backgroundColor:
+                                                                i < miniLosses
+                                                                    ? seriesState.rightTeam?.color
+                                                                    : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow:
+                                                                i < miniLosses
+                                                                    ? seriesState.rightTeam?.shadow
+                                                                    : 'none'
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                </div>
                                 </div>
                             </div>
                             <div className={css.seriesGambleMessage}>

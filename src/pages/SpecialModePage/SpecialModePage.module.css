@@ -794,20 +794,23 @@
     margin-top: 8px;
 }
 
-.winRow {
-    flex-direction: column-reverse;
+.lossLines {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 4px;
 }
 
 .lines {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     gap: 4px;
 }
 
 .line {
-    width: 5px;
-    height: 20px;
+    height: 5px;
+    width: 20px;
     border-radius: 12px;
     transition: all 300ms ease-in-out;
 }
@@ -815,20 +818,48 @@
 .miniSquares {
     display: flex;
     align-items: center;
-    gap: 6px;
 }
 
-.square {
+.square:first-child {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.square:last-child {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.lossSquare:first-child {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.lossSquare:last-child {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.lossSquare:not(:last-child),
+.lossSquare:not(:first-child) {
     width: 20px;
-    height: 20px;
-    border-radius: 6px;
+    height: 10px;
+    border-right: 1px solid #fff;
+    transition: all 300ms ease-in-out;
+}
+
+.square:not(:last-child),
+.square:not(:first-child) {
+    width: 20px;
+    height: 10px;
+    border-right: 1px solid #fff;
     transition: all 300ms ease-in-out;
 }
 
 .game_info_text {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    flex-direction: column;
     gap: 4px;
 }
 
@@ -1120,20 +1151,39 @@
 }
 
 .series_label {
-    position: relative;
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
     font-weight: 700;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .team_name_left {
-    position: absolute;
     width: max-content;
-    right: 75%;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: -12px;
 }
 
 .team_name_right {
-    position: absolute;
     width: max-content;
-    left: 75%;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: -12px;
+}
+
+.teams_container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #2e2f42;
+    font-size: 42px;
+    gap: 32px;
+}
+
+.vs {
+    font-weight: 700;
+    color: #2e2f42;
+    font-size: 32px;
+    margin-top: 24px;
 }
