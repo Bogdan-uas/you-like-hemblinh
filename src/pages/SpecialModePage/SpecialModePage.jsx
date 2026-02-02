@@ -385,6 +385,7 @@ const defaultSeriesState = {
     setsToWin: 2,
     playerWonSets: 0,
     playerLostSets: 0,
+    setNumber: 1,
     lastMultiplier: null,
     lastResult: "",
     banner: "",
@@ -1046,6 +1047,7 @@ export default function SpecialModePage() {
                 let {
                     playerWonSets,
                     playerLostSets,
+                    setNumber,
                     roundWins,
                     roundLosses,
                     roundNumber,
@@ -1168,7 +1170,7 @@ export default function SpecialModePage() {
 
                             toast(
                                 <span>
-                                    The set {playerWonSets + playerLostSets} has been won in Overtime
+                                    The set {setNumber} has been won in Overtime
                                     {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by{" "}
                                     {renderTeamLabel(otSetWinner)}!
                                 </span>,
@@ -1189,6 +1191,7 @@ export default function SpecialModePage() {
                                         roundWins: 0,
                                         roundLosses: 0,
                                         roundNumber: 1,
+                                        setNumber: curr.setNumber + 1,
                                         miniWins: 0,
                                         miniLosses: 0,
                                         isOvertime: false,
@@ -1238,6 +1241,7 @@ export default function SpecialModePage() {
                         lastResult: resultText,
                         playerWonSets,
                         playerLostSets,
+                        setNumber,
                         roundWins,
                         roundLosses,
                         roundNumber,
@@ -1392,7 +1396,7 @@ export default function SpecialModePage() {
 
                         toast(
                             <span>
-                                The set {playerWonSets + playerLostSets} has been won by{" "}
+                                The set {setNumber} has been won by{" "}
                                 {renderTeamLabel(setWinner)}!
                             </span>,
                             {
@@ -1411,6 +1415,7 @@ export default function SpecialModePage() {
                                     roundWins: 0,
                                     roundLosses: 0,
                                     roundNumber: 1,
+                                    setNumber: curr.setNumber + 1,
                                     miniWins: 0,
                                     miniLosses: 0,
                                     isOvertime: false,
@@ -1431,6 +1436,7 @@ export default function SpecialModePage() {
                     lastResult: resultText,
                     playerWonSets,
                     playerLostSets,
+                    setNumber,
                     roundWins,
                     roundLosses,
                     roundNumber,
@@ -1663,6 +1669,7 @@ export default function SpecialModePage() {
         setsToWin,
         playerWonSets,
         playerLostSets,
+        setNumber,
         roundWins,
         roundLosses,
         miniWins,
@@ -1698,7 +1705,7 @@ export default function SpecialModePage() {
                 >
                     {(() => {
                         const currentSet =
-                            playerWonSets + playerLostSets + 1;
+                            setNumber;
                         const totalSets = setsToWin * 2 - 1;
                         const isDecider = currentSet === totalSets;
                         return isDecider
