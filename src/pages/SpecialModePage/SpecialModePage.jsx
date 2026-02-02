@@ -3109,7 +3109,7 @@ export default function SpecialModePage() {
                                                 transition: "all 500ms ease-in-out",
                                                 textShadow: seriesState.leftTeam?.shadow,
                                                 marginBottom: "4px",
-                                                marginLeft: '16px',
+                                                marginLeft: setsToWin === 4 || setsToWin === 5 ? '16px' : '0',
                                                 marginTop: "-28px"
                                             }}
                                         >
@@ -3128,7 +3128,7 @@ export default function SpecialModePage() {
                                                     transition: "all 500ms ease-in-out",
                                                     textShadow: seriesState.leftTeam?.shadow,
                                                     marginBottom: "4px",
-                                                    marginLeft: '16px',
+                                                    marginLeft: setsToWin === 4 || setsToWin === 5 ? '16px' : '0',
                                                     marginTop: "-28px"
                                                 }}
                                             >
@@ -3308,7 +3308,7 @@ export default function SpecialModePage() {
                                                 transition: "all 500ms ease-in-out",
                                                 textShadow: seriesState.rightTeam?.shadow,
                                                 marginBottom: "4px",
-                                                marginRight: '16px',
+                                                marginRight: setsToWin === 4 || setsToWin === 5 ? '16px' : '0',
                                                 marginTop: "-28px"
                                             }}
                                         >
@@ -3327,7 +3327,7 @@ export default function SpecialModePage() {
                                                     transition: "all 500ms ease-in-out",
                                                     textShadow: seriesState.rightTeam?.shadow,
                                                     marginBottom: "4px",
-                                                    marginRight: '16px',
+                                                    marginRight: setsToWin === 4 || setsToWin === 5 ? '16px' : '0',
                                                     marginTop: "-28px"
                                                 }}
                                             >
