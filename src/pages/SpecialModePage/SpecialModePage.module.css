@@ -679,7 +679,6 @@
     font-size: 36px;
     line-height: 1.2;
     text-align: center;
-    text-transform: capitalize;
     color: #2e2f42;
 }
 
@@ -801,6 +800,14 @@
     gap: 4px;
 }
 
+.verticalLossLines {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-left: -4px;
+}
+
 .lines {
     display: flex;
     flex-direction: row;
@@ -808,9 +815,24 @@
     gap: 4px;
 }
 
+.verticalLines {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-right: -4px;
+}
+
 .line {
     height: 5px;
     width: 20px;
+    border-radius: 12px;
+    transition: all 300ms ease-in-out;
+}
+
+.verticalLine {
+    width: 5px;
+    height: 20px;
     border-radius: 12px;
     transition: all 300ms ease-in-out;
 }
@@ -1159,16 +1181,18 @@
 
 .team_name_left {
     width: max-content;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: -12px;
+    margin-bottom: -20px;
+    margin-left: 16px;
 }
 
 .team_name_right {
     width: max-content;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: -12px;
+    margin-bottom: -20px;
+    margin-right: 16px;
 }
 
 .teams_container {

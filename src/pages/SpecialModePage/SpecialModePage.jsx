@@ -1687,6 +1687,26 @@ export default function SpecialModePage() {
             >
                 Best of {setsToWin * 2 - 1}
             </span>
+            {setsToWin !== 1 && (
+                <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={css.round_text}
+                    style={{ fontSize: "28px" }}
+                >
+                    {(() => {
+                        const currentSet =
+                            playerWonSets + playerLostSets + 1;
+                        const totalSets = setsToWin * 2 - 1;
+                        const isDecider = currentSet === totalSets;
+                        return isDecider
+                            ? "Decider"
+                            : `Set ${currentSet}`;
+                    })()}
+                </motion.span>
+            )}
         </span>
     ) : (
         ""
@@ -3029,26 +3049,6 @@ export default function SpecialModePage() {
                             </motion.h2>
                             {!seriesBanner && (
                                 <div className={css.game_info_text}>
-                                    {setsToWin !== 1 && (
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            className={css.round_text}
-                                            style={{ fontSize: "28px" }}
-                                        >
-                                            {(() => {
-                                                const currentSet =
-                                                    playerWonSets + playerLostSets + 1;
-                                                const totalSets = setsToWin * 2 - 1;
-                                                const isDecider = currentSet === totalSets;
-                                                return isDecider
-                                                    ? "Decider"
-                                                    : `Set ${currentSet}`;
-                                            })()}
-                                        </motion.span>
-                                    )}
                                     <motion.span
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -3134,7 +3134,7 @@ export default function SpecialModePage() {
                                             </motion.span>
                                         )
                                     )}
-                                    {!seriesBanner && (
+                                    {setsToWin <= 3 && !seriesBanner ? (
                                         <motion.span
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
@@ -3146,7 +3146,7 @@ export default function SpecialModePage() {
                                             }} className={css.team_name_left}>
                                             Team {seriesState.leftTeam?.name}
                                         </motion.span>
-                                    )}
+                                    ) : null}
 
                                     <div
                                         style={{
@@ -3155,6 +3155,7 @@ export default function SpecialModePage() {
                                             alignItems: "center",
                                             gap: "20px",
                                             opacity: loserOpacity === "win" ? 0.4 : 1,
+                                            position: 'relative'
                                         }}
                                     >
                                         <div style={{ display: "flex", alignItems: "center", flexDirection: 'column' }}>
@@ -3176,52 +3177,32 @@ export default function SpecialModePage() {
                                                 />
                                             </span>
                                             <div className={css.lines}>
-                                            {setsToWin === 5 ? (
-                                                <>
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ width: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 4 ? (
-                                                <>
-                                                    {[...Array(4)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ width: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 3 ? (
-                                                <>
-                                                    {[...Array(3)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ width: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 2 ? (
-                                                <>
-                                                    {[...Array(2)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <div
-                                                    style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                    className={css.line}
-                                                />
-                                            )}
+                                                {setsToWin === 3 ? (
+                                                    <>
+                                                        {[...Array(3)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                style={{ width: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                                className={css.line}
+                                                            />
+                                                        ))}
+                                                    </>
+                                                ) : setsToWin === 2 ? (
+                                                    <>
+                                                        {[...Array(2)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                                className={css.line}
+                                                            />
+                                                        ))}
+                                                    </>
+                                                ) : setsToWin === 1 ? (
+                                                    <div
+                                                        style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                        className={css.line}
+                                                    />
+                                                ) : null}
                                             </div>
                                         </div>
                                         {!seriesBanner && (
@@ -3244,6 +3225,49 @@ export default function SpecialModePage() {
                                                 ))}
                                             </div>
                                         )}
+                                        <div className={css.verticalLines}>
+                                            {setsToWin === 5 ? (
+                                                <>
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{ height: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                            className={css.verticalLine}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : setsToWin === 4 ? (
+                                                <>
+                                                    {[...Array(4)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{ height: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                            className={css.verticalLine}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                <></>
+                                            )}
+                                        </div>
+                                        {!seriesBanner && setsToWin === 4 || setsToWin === 5 ? (
+                                            <motion.span
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }}
+                                                style={{
+                                                    color: seriesState.leftTeam?.color,
+                                                    transition: "all 500ms ease-in-out",
+                                                    margin: '0',
+                                                    position: 'absolute',
+                                                    right: '110%',
+                                                    zIndex: 9999,
+                                                    fontSize: '28px',
+                                                }} className={css.team_name_left}>
+                                                Team {seriesState.leftTeam?.name}
+                                            </motion.span>
+                                        ) : null}
                                     </div>
                                 </div>
 
@@ -3258,7 +3282,7 @@ export default function SpecialModePage() {
                                         {seriesBanner}
                                     </motion.span>
                                 ) : (
-                                    <p className={css.vs}>
+                                    <p style={{ marginTop: setsToWin === 4 || setsToWin === 5 ? '0' : '24px' }} className={css.vs}>
                                         VS
                                     </p>
                                 )}
@@ -3307,7 +3331,7 @@ export default function SpecialModePage() {
                                             </motion.span>
                                         )
                                     )}
-                                    {!seriesBanner && (
+                                    {setsToWin <= 3 && !seriesBanner ? (
                                         <motion.span
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
@@ -3319,7 +3343,7 @@ export default function SpecialModePage() {
                                             }} className={css.team_name_right}>
                                             Team {seriesState.rightTeam?.name}
                                         </motion.span>
-                                    )}
+                                    ) : null}
 
                                     <div
                                         style={{
@@ -3327,6 +3351,7 @@ export default function SpecialModePage() {
                                             alignItems: "center",
                                             gap: "20px",
                                             opacity: loserOpacity === "loss" ? 0.4 : 1,
+                                            position: 'relative'
                                         }}
                                     >
                                         <div
@@ -3354,55 +3379,35 @@ export default function SpecialModePage() {
                                                 />
                                             </span>
                                             <div className={css.lossLines}>
-                                            {setsToWin === 5 ? (
-                                                <>
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ width: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 4 ? (
-                                                <>
-                                                    {[...Array(4)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ width: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 3 ? (
-                                                <>
-                                                    {[...Array(3)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ width: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 2 ? (
-                                                <>
-                                                    {[...Array(2)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                            className={css.line}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <div
-                                                    style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                    className={`${css.line} ${playerLostSets >= 1
-                                                        ? css.lineLoss
-                                                        : css.lineDarkLoss
-                                                        }`}
-                                                />
-                                            )}
+                                                {setsToWin === 3 ? (
+                                                    <>
+                                                        {[...Array(3)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                style={{ width: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                                className={css.line}
+                                                            />
+                                                        ))}
+                                                    </>
+                                                ) : setsToWin === 2 ? (
+                                                    <>
+                                                        {[...Array(2)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                                className={css.line}
+                                                            />
+                                                        ))}
+                                                    </>
+                                                ) : setsToWin === 1 ? (
+                                                    <div
+                                                        style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                        className={`${css.line} ${playerLostSets >= 1
+                                                            ? css.lineLoss
+                                                            : css.lineDarkLoss
+                                                            }`}
+                                                    />
+                                                ) : null}
                                             </div>
                                         </div>
                                         {!seriesBanner && (
@@ -3425,7 +3430,50 @@ export default function SpecialModePage() {
                                                 ))}
                                             </div>
                                         )}
-                                </div>
+                                        <div className={css.verticalLossLines}>
+                                            {setsToWin === 5 ? (
+                                                <>
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{ height: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                            className={css.verticalLine}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : setsToWin === 4 ? (
+                                                <>
+                                                    {[...Array(4)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{ height: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                            className={css.verticalLine}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                <></>
+                                            )}
+                                        </div>
+                                        {!seriesBanner && setsToWin === 4 || setsToWin === 5 ? (
+                                            <motion.span
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }}
+                                                style={{
+                                                    color: seriesState.rightTeam?.color,
+                                                    transition: "all 500ms ease-in-out",
+                                                    margin: '0',
+                                                    position: 'absolute',
+                                                    left: '110%',
+                                                    zIndex: 9999,
+                                                    fontSize: '28px',
+                                                }} className={css.team_name_right}>
+                                                Team {seriesState.rightTeam?.name}
+                                            </motion.span>
+                                        ) : null}
+                                    </div>
                                 </div>
                             </div>
                             <div className={css.seriesGambleMessage}>
