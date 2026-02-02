@@ -3109,6 +3109,7 @@ export default function SpecialModePage() {
                                                 transition: "all 500ms ease-in-out",
                                                 textShadow: seriesState.leftTeam?.shadow,
                                                 marginBottom: "4px",
+                                                marginLeft: '16px',
                                                 marginTop: "-28px"
                                             }}
                                         >
@@ -3127,6 +3128,7 @@ export default function SpecialModePage() {
                                                     transition: "all 500ms ease-in-out",
                                                     textShadow: seriesState.leftTeam?.shadow,
                                                     marginBottom: "4px",
+                                                    marginLeft: '16px',
                                                     marginTop: "-28px"
                                                 }}
                                             >
@@ -3306,6 +3308,7 @@ export default function SpecialModePage() {
                                                 transition: "all 500ms ease-in-out",
                                                 textShadow: seriesState.rightTeam?.shadow,
                                                 marginBottom: "4px",
+                                                marginRight: '16px',
                                                 marginTop: "-28px"
                                             }}
                                         >
@@ -3324,6 +3327,7 @@ export default function SpecialModePage() {
                                                     transition: "all 500ms ease-in-out",
                                                     textShadow: seriesState.rightTeam?.shadow,
                                                     marginBottom: "4px",
+                                                    marginRight: '16px',
                                                     marginTop: "-28px"
                                                 }}
                                             >
