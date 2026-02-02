@@ -1687,7 +1687,7 @@ export default function SpecialModePage() {
             >
                 Best of {setsToWin * 2 - 1}
             </span>
-            {setsToWin !== 1 && (
+            {setsToWin !== 1 && !seriesBanner && (
                 <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
