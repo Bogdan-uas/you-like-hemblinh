@@ -448,7 +448,8 @@ export default function SpecialModePage() {
 
     const [multiplierMin, setMultiplierMin] = useState(MULTIPLIER_MIN);
     const [multiplierMax, setMultiplierMax] = useState(MULTIPLIER_MAX);
-    const [isCheatEnabled, setIsCheatEnabled] = useState(false);
+    // eslint-disable-next-line no-unused-vars
+    const [cheatMode, setCheatMode] = useState(0);
 
     const [pickemCounts, setPickemCounts] = useState({
         ro32: 0,
@@ -1486,21 +1487,38 @@ export default function SpecialModePage() {
     };
 
     const toggleSecretGuaranteedWin = () => {
-        setIsCheatEnabled((prev) => {
-            const next = !prev;
-            if (next) {
+        setCheatMode((prev) => {
+            const next = (prev + 1) % 3;
+
+            if (next === 1) {
                 setMultiplierMin(MULTIPLIER_MAX);
                 setMultiplierMax(MULTIPLIER_MAX);
-            } else {
+                toast("Don't tell anyone about this!!!", {
+                    duration: 2000,
+                    icon: "🤫",
+                });
+            }
+
+            if (next === 2) {
+                setMultiplierMin(MULTIPLIER_MIN);
+                setMultiplierMax(MULTIPLIER_MIN);
+                toast("Even the odds...", {
+                    duration: 2000,
+                    icon: "😈",
+                });
+            }
+
+            if (next === 0) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MAX);
+                toast("Secret mode disabled", {
+                    duration: 2000,
+                    icon: "🔓",
+                });
             }
+
             return next;
         });
-        toast(
-            !isCheatEnabled ? "Don't tell anyone about this!!!" : "Secret mode disabled",
-            { duration: 2000, icon: "🤫" }
-        );
     };
 
     useEffect(() => {
