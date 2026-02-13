@@ -7,36 +7,33 @@ import Header from "../../components/Header/Header.jsx";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
-const STORAGE_KEY = "specialPageState";
+const STORAGE_KEY = "specialPageState_swiss_v2";
 
 const BASE_MAX_ROUNDS = 24;
 const BASE_ROUNDS_TO_WIN = 13;
-const OT_MAX_ROUNDS = 6;
 const OT_ROUNDS_TO_WIN = 4;
 
 const MULTIPLIER_MIN = -2.0;
 const MULTIPLIER_MAX = 2.0;
 
-const MIN_NEEDED_PICKEM = 54;
-const MAX_NEEDED_PICKEM = 90;
+const MIN_NEEDED_PICKEM = 278;
+const MAX_NEEDED_PICKEM = 428;
 const getRandomNeededPickemPoints = () =>
     Math.floor(Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)) +
     MIN_NEEDED_PICKEM;
 
-const STAGE_ORDER = ["ro32", "ro16", "qf", "sf", "thirdPlace", "gf"];
-
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
-    const full = clean.length === 3
-        ? clean.split("").map((c) => c + c).join("")
-        : clean;
+    const full =
+        clean.length === 3
+            ? clean
+                .split("")
+                .map((c) => c + c)
+                .join("")
+            : clean;
 
     const num = parseInt(full, 16);
-    return {
-        r: (num >> 16) & 255,
-        g: (num >> 8) & 255,
-        b: num & 255,
-    };
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 };
 
 const clamp = (n) => Math.max(0, Math.min(255, n));
@@ -46,25 +43,34 @@ const darkenHex = (hex, amount = 0.68) => {
     const dr = clamp(Math.round(r * (1 - amount)));
     const dg = clamp(Math.round(g * (1 - amount)));
     const db = clamp(Math.round(b * (1 - amount)));
-    return `#${[dr, dg, db].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+    return `#${[dr, dg, db]
+        .map((x) => x.toString(16).padStart(2, "0"))
+        .join("")}`;
 };
 
-const makeColor = (hex, name, { shadowAlpha = 0.55, unlitAmount = 0.7 } = {}) => {
+const makeColor = (
+    hex,
+    name,
+    { shadowAlpha = 0.55, unlitAmount = 0.7, hoverAmount = 0.35 } = {}
+) => {
     const normalized = hex.toUpperCase();
 
     if (normalized === "#000000") {
         return {
             shadow: `0 0 10px rgba(0, 0, 0, ${shadowAlpha})`,
             color: "#000000",
+            hoverOn: "#2A2A2A",
             unlitColor: "#5D5D5D",
             name,
         };
     }
 
     const { r, g, b } = hexToRgb(hex);
+
     return {
         shadow: `0 0 10px rgba(${r}, ${g}, ${b}, ${shadowAlpha})`,
         color: hex,
+        hoverOn: darkenHex(hex, hoverAmount),
         unlitColor: darkenHex(hex, unlitAmount),
         name,
     };
@@ -152,6 +158,217 @@ const COLORS = {
     royal: makeColor("#5B5BE6", "Royal"),
 };
 
+const getAllTeams64 = () => {
+    const entries = Object.entries(COLORS);
+    return entries.map(([key, val], idx) => ({
+        id: String(idx + 1),
+        key,
+        name: val.name,
+        color: val.color,
+        unlitColor: val.unlitColor,
+        shadow: val.shadow,
+    }));
+};
+
+const shuffle = (array) => {
+    const a = [...array];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+};
+
+const SWISS_COLUMNS = [
+    ["0:0"],
+    ["1:0", "0:1"],
+    ["2:0", "1:1", "0:2"],
+    ["2:1", "1:2"],
+    ["2:2"],
+];
+
+const isBo1Net = (net) => net === "0:0" || net === "1:0" || net === "0:1" || net === "1:1";
+const getBestOfForSwissNet = (net) => (isBo1Net(net) ? 1 : 3);
+
+const calcSetsToWin = (bestOf) => Math.ceil(bestOf / 2);
+
+const swissNetTitle = (net, matchNumber) => {
+    if (net === "0:0") return `Match of 0:0 net #${matchNumber}`;
+    if (net === "1:0") return `Match of 1:0 net #${matchNumber}`;
+    if (net === "0:1") return `Match of 0:1 net #${matchNumber}`;
+    if (net === "2:0") return `2:0 net  —  Progression Match #${matchNumber}`;
+    if (net === "1:1") return `Match of 1:1 net #${matchNumber}`;
+    if (net === "0:2") return `0:2 net  —  Elimination Match  #${matchNumber}`;
+    if (net === "2:1") return `2:1 net  —  Progression Match #${matchNumber}`;
+    if (net === "1:2") return `1:2 net  —  Elimination Match  #${matchNumber}`;
+    if (net === "2:2") return `2:2 net  —  Deciding Match #${matchNumber}`;
+    return `Match #${matchNumber}`;
+};
+
+const BOX_SLOTS = {
+    "3:0": 4,
+    "3:1": 6,
+    "3:2": 6,
+    "0:3": 4,
+    "1:3": 6,
+    "2:3": 6,
+};
+
+const makeSwissTeam = (t) => ({
+    ...t,
+    wins: 0,
+    losses: 0,
+    qualified: false,
+    eliminated: false,
+
+    qualifiedAt: null,
+    qualifiedVia: null,
+    eliminatedAt: null,
+    eliminatedVia: null,  
+});
+
+const buildNetMatches = (teams, stageKey, net) => {
+    const [wStr, lStr] = net.split(":");
+    const w = Number(wStr);
+    const l = Number(lStr);
+
+    const eligible = teams.filter(
+        (t) => !t.qualified && !t.eliminated && t.wins === w && t.losses === l
+    );
+
+    const shuffled = shuffle(eligible);
+
+    const matches = [];
+    for (let i = 0; i < shuffled.length; i += 2) {
+        matches.push({
+            id: `${stageKey}-${net}-${i / 2 + 1}`,
+            stageKey,
+            net,
+            matchNoInNet: i / 2 + 1,
+
+            slotA: shuffled[i] || null,
+            slotB: shuffled[i + 1] || null,
+
+            played: false,
+            scoreLeft: null,
+            scoreRight: null,
+            winnerTeamId: null,
+            loserTeamId: null,
+
+            pickTeamId: null,
+            setHistory: [],
+        });
+    }
+
+    return matches;
+};
+
+const buildSwissStage = (stageKey, teams) => {
+    const stageTeams = teams.map(makeSwissTeam);
+    return {
+        stageKey,
+        teams: stageTeams,
+        matchesByNet: {
+            "0:0": buildNetMatches(stageTeams, stageKey, "0:0"),
+        },
+        resultCounter: 0,
+    };
+};
+
+const isNetFinished = (stage, net) => {
+    const arr = stage.matchesByNet[net];
+    if (!arr) return false;
+    return arr.every((m) => m.played);
+};
+
+const canBuildColumn = (stage, colIndex) => {
+    if (colIndex === 0) return true;
+    const prevCol = SWISS_COLUMNS[colIndex - 1];
+    return prevCol.every((net) => isNetFinished(stage, net));
+};
+
+const isNetUnlocked = (stage, net) => {
+    const colIndex = SWISS_COLUMNS.findIndex((col) => col.includes(net));
+    if (colIndex < 0) return false;
+    return canBuildColumn(stage, colIndex);
+};
+
+const tryBuildUnlockedNets = (stage) => {
+    SWISS_COLUMNS.forEach((nets, colIndex) => {
+        if (!canBuildColumn(stage, colIndex)) return;
+        nets.forEach((net) => {
+            if (!stage.matchesByNet[net]) {
+                stage.matchesByNet[net] = buildNetMatches(stage.teams, stage.stageKey, net);
+            }
+        });
+    });
+};
+
+const resolveSwissMatchResult = (stage, match, winnerTeamId, scoreLeft, scoreRight) => {
+    if (!match?.slotA || !match?.slotB) return;
+
+    const winner = winnerTeamId === match.slotA.id ? match.slotA : match.slotB;
+    const loser = winnerTeamId === match.slotA.id ? match.slotB : match.slotA;
+
+    winner.wins += 1;
+    loser.losses += 1;
+
+    match.played = true;
+    match.scoreLeft = scoreLeft;
+    match.scoreRight = scoreRight;
+    match.winnerTeamId = winner.id;
+    match.loserTeamId = loser.id;
+
+    if (typeof stage.resultCounter !== "number") stage.resultCounter = 0;
+
+    if (!winner.qualified && winner.wins >= 3) {
+        winner.qualified = true;
+        winner.qualifiedVia = `3:${winner.losses}`;
+        winner.qualifiedAt = ++stage.resultCounter;
+    }
+
+    if (!loser.eliminated && loser.losses >= 3) {
+        loser.eliminated = true;
+        loser.eliminatedVia = `${loser.wins}:3`;
+        loser.eliminatedAt = ++stage.resultCounter;
+    }
+};
+
+const isSwissStageFinished = (stage) =>
+    stage.teams.every((t) => t.qualified || t.eliminated);
+
+const getSwissQualified = (stage) => stage.teams.filter((t) => t.qualified);
+
+const teamsInNet = (stage, net) => {
+    const [wStr, lStr] = net.split(":");
+    const w = Number(wStr);
+    const l = Number(lStr);
+    return stage.teams.filter((t) => !t.qualified && !t.eliminated && t.wins === w && t.losses === l);
+};
+
+function makeColorSequence(baseColors, repeats = 12) {
+    const base = baseColors;
+    const out = [];
+    let prev = null;
+
+    for (let r = 0; r < repeats; r++) {
+        const pool = [...base];
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+
+        if (prev && pool[0]?.color === prev) {
+            pool.push(pool.shift());
+        }
+
+        pool.forEach((c) => out.push(c));
+        prev = out[out.length - 1]?.color ?? prev;
+    }
+
+    return out;
+}
+
 const ALWAYS_COLOR_KEYS = ["red", "yellow", "lime", "blue", "green", "brown", "beige", "orange"];
 const TOURNAMENT_COLOR_COUNT = 32;
 
@@ -186,76 +403,36 @@ const buildTournamentColorPool = () => {
     return [...always, ...selected];
 };
 
-const getUniqueTeams = (entries = Object.entries(COLORS)) =>
-    entries.map(([key, val], i) => ({
-        id: i + 1,
-        key,
-        name: val.name,
-        color: val.color,
-        unlitColor: val.unlitColor,
-        shadow: val.shadow
-    }));
-
-function makeColorSequence(baseColors, repeats = 12) {
-    const base = baseColors;
-    const out = [];
-    let prev = null;
-
-    for (let r = 0; r < repeats; r++) {
-        const pool = [...base];
-        for (let i = pool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [pool[i], pool[j]] = [pool[j], pool[i]];
-        }
-
-        if (prev && pool[0]?.color === prev) {
-            pool.push(pool.shift());
-        }
-
-        pool.forEach((c) => out.push(c));
-        prev = out[out.length - 1]?.color ?? prev;
+const stageLabelPlayoffs = (stage) => {
+    switch (stage) {
+        case "ro16": return "Round of 16";
+        case "qf": return "Quarterfinal";
+        case "sf": return "Semifinal";
+        case "thirdPlace": return "Third Place Decider";
+        case "gf": return "Grand Final";
+        default: return "";
     }
-
-    return out;
-}
-
-const shuffle = (arr) => {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
 };
 
-const buildInitialBracket = (teams) => {
-    const shuffled = shuffle(teams);
+const getBestOfForPlayoffs = (stage) => {
+    if (stage === "gf") return 9;
+    if (stage === "sf") return 7;
+    if (stage === "thirdPlace") return 7;
+    if (stage === "qf") return 5;
+    return 3;
+};
 
-    const ro32 = [];
-    for (let i = 0; i < 16; i++) {
-        ro32.push({
-            id: `ro32-${i + 1}`,
-            slotA: shuffled[i * 2],
-            slotB: shuffled[i * 2 + 1],
-            played: false,
-            score: null,
-            scoreLeft: null,
-            scoreRight: null,
-            winnerTeamId: null,
-            loserTeamId: null,
-            pickTeamId: null,
-            setHistory: [],
-        });
-    }
+const buildPlayoffsBracket = (teams16) => {
+    const shuffled = shuffle(teams16);
 
     const ro16 = [];
     for (let i = 0; i < 8; i++) {
         ro16.push({
             id: `ro16-${i + 1}`,
-            slotA: null,
-            slotB: null,
+            stage: "ro16",
+            slotA: shuffled[i * 2],
+            slotB: shuffled[i * 2 + 1],
             played: false,
-            score: null,
             scoreLeft: null,
             scoreRight: null,
             winnerTeamId: null,
@@ -265,194 +442,349 @@ const buildInitialBracket = (teams) => {
         });
     }
 
-    const qf = Array.from({ length: 4 }).map((_, i) => ({
-        id: `qf-${i + 1}`,
-        slotA: null,
-        slotB: null,
-        played: false,
-        score: null,
-        scoreLeft: null,
-        scoreRight: null,
-        winnerTeamId: null,
-        loserTeamId: null,
-        pickTeamId: null,
-        setHistory: [],
-    }));
-
-    const sf = Array.from({ length: 2 }).map((_, i) => ({
-        id: `sf-${i + 1}`,
-        slotA: null,
-        slotB: null,
-        played: false,
-        score: null,
-        scoreLeft: null,
-        scoreRight: null,
-        winnerTeamId: null,
-        loserTeamId: null,
-        pickTeamId: null,
-        setHistory: [],
-    }));
-
-    const gf = [
-        {
-            id: `gf-1`,
+    const mk = (stage, n) =>
+        Array.from({ length: n }).map((_, i) => ({
+            id: `${stage}-${i + 1}`,
+            stage,
             slotA: null,
             slotB: null,
             played: false,
-            score: null,
             scoreLeft: null,
             scoreRight: null,
             winnerTeamId: null,
             loserTeamId: null,
             pickTeamId: null,
             setHistory: [],
-        },
-    ];
+        }));
 
-    const thirdPlace = [
-        {
-            id: "3rd-1",
-            slotA: null,
-            slotB: null,
-            played: false,
-            score: null,
-            scoreLeft: null,
-            scoreRight: null,
-            winnerTeamId: null,
-            loserTeamId: null,
-            pickTeamId: null,
-            setHistory: [],
-        },
-    ];
-
-    return { ro32, ro16, qf, sf, gf, thirdPlace };
+    return { ro16, qf: mk("qf", 4), sf: mk("sf", 2), thirdPlace: mk("thirdPlace", 1), gf: mk("gf", 1) };
 };
 
-const stageLabel = (stage) => {
-    switch (stage) {
-        case "ro32":
-            return "Round of 32";
-        case "ro16":
-            return "Round of 16";
-        case "qf":
-            return "Quarterfinal";
-        case "sf":
-            return "Semifinal";
-        case "gf":
-            return "Grand Final";
-        case "thirdPlace":
-            return "Third Place Decider";
-        default:
-            return "";
+const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
+    const stageArr = bracket[stage];
+    const match = stageArr[matchIndex];
+    if (!match || !match.slotA || !match.slotB) return false;
+    if (match.played) return false;
+
+    for (let i = 0; i < matchIndex; i++) {
+        if (!stageArr[i].played) return false;
     }
-};
 
-const getBestOfForStage = (stage) => {
-    if (stage === "gf") return 9;
-    if (stage === "sf") return 7;
-    if (stage === "thirdPlace") return 7;
-    if (stage === "qf") return 5;
-    if (stage === "ro16") return 3;
-    if (stage === "ro32") return 1;
-    return 3;
-};
+    if (stage === "qf" && bracket.ro16.some((m) => !m.played)) return false;
+    if (stage === "sf" && bracket.qf.some((m) => !m.played)) return false;
+    if (stage === "thirdPlace" && bracket.sf.some((m) => !m.played)) return false;
 
-const getStagePickemBase = (stage) => {
-    switch (stage) {
-        case "ro32":
-            return 1;
-        case "ro16":
-            return 3;
-        case "qf":
-            return 5;
-        case "sf":
-            return 7;
-        case "thirdPlace":
-            return 7;
-        case "gf":
-            return 9;
-        default:
-            return 0;
+    if (stage === "gf") {
+        if (bracket.sf.some((m) => !m.played)) return false;
+        if (bracket.thirdPlace[0] && !bracket.thirdPlace[0].played) return false;
     }
+
+    return true;
 };
 
 const defaultSeriesState = {
     active: false,
-    stage: null,
-    matchIndex: null,
+
+    phase: null,
+
+    swissStageKey: null,
+    swissNet: null,
+    swissMatchId: null,
+
+    playoffsStage: null,
+    playoffsMatchId: null,
+
     leftTeam: null,
     rightTeam: null,
+
     setsToWin: 2,
     playerWonSets: 0,
     playerLostSets: 0,
     setNumber: 1,
+
     lastMultiplier: null,
     lastResult: "",
-    banner: "",
+
     roundWins: 0,
     roundLosses: 0,
     roundNumber: 1,
+
     miniWins: 0,
     miniLosses: 0,
+
     isOvertime: false,
     overtimeBlock: 0,
     otWins: 0,
-    otLosses: 0
+    otLosses: 0,
+
+    banner: "",
+
+    swissMatchNumber: 1,
+    playoffsMatchNumber: 1,
 };
+
+const round2 = (n) => Number(n.toFixed(2));
+
+const TeamCircle = ({ team, dim, specialStyle = {} }) => {
+    if (!team) {
+        return (
+            <div
+                style={{
+                    width: '24px',
+                    height: '24px',
+                    fontSize: '14px'
+                }}
+                className={css.placeholder_circle}
+            >
+                <span style={{ marginRight: '0.3px', marginTop: '1.3px' }}>?</span>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className={css.team_circle_ro32}
+            style={{
+                background: team.color,
+                opacity: dim ? 0.25 : 1,
+                ...specialStyle,
+            }}
+            title={`Team ${team.name}`}
+        />
+    );
+};
+
+const MatchRect = ({
+    match,
+    isClickable,
+    onClick,
+    isButtonLocked,
+    className = "",
+    dataNet,
+    dataPos,
+    dataIdx,
+    dataNotStarted,
+}) => {
+    const isPlayed = !!match.played;
+
+    const slotA = match.slotA || null;
+    const slotB = match.slotB || null;
+
+    const shouldSwap =
+        !!match.pickTeamId &&
+        slotA &&
+        slotB &&
+        match.pickTeamId === slotB.id;
+
+    const leftTeam = shouldSwap ? slotB : slotA;
+    const rightTeam = shouldSwap ? slotA : slotB;
+
+    const rawLeftScore = match.scoreLeft;
+    const rawRightScore = match.scoreRight;
+
+    const displayScoreLeft = shouldSwap ? rawRightScore : rawLeftScore;
+    const displayScoreRight = shouldSwap ? rawLeftScore : rawRightScore;
+
+    const hasScores =
+        displayScoreLeft !== null &&
+        displayScoreLeft !== undefined &&
+        displayScoreRight !== null &&
+        displayScoreRight !== undefined;
+
+    const isUserWin =
+        isPlayed &&
+        match.pickTeamId &&
+        match.winnerTeamId &&
+        match.pickTeamId === match.winnerTeamId;
+
+    const resultClass = isPlayed
+        ? isUserWin
+            ? css.match_win
+            : css.match_loss
+        : "";
+
+    const winnerIsLeft =
+        isPlayed && match.winnerTeamId && leftTeam && match.winnerTeamId === leftTeam.id;
+    const winnerIsRight =
+        isPlayed && match.winnerTeamId && rightTeam && match.winnerTeamId === rightTeam.id;
+
+    const isLeftLoser =
+        isPlayed && match.loserTeamId && leftTeam && match.loserTeamId === leftTeam.id;
+    const isRightLoser =
+        isPlayed && match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
+
+    return (
+        <div
+            className={`${resultClass} ${css.ro32_rect} ${css.swiss_rect} ${className}`}
+            data-net={dataNet}
+            data-pos={dataPos}
+            data-idx={dataIdx}
+            data-not-started={dataNotStarted}
+            style={{
+                pointerEvents: !isClickable || isButtonLocked ? "none" : "auto",
+                marginBottom: 8,
+            }}
+            onClick={onClick}
+        >
+            <div className={css.team_cell_ro32} style={{ opacity: isLeftLoser ? 0.3 : 1 }}>
+                <TeamCircle team={leftTeam} />
+            </div>
+
+            <div className={css.vs_cell_ro32} style={{ textAlign: "center" }}>
+                {!isPlayed || !hasScores ? (
+                    <span style={{ fontSize: "12px", fontWeight: 600 }} className={css.vs_text}>
+                        VS
+                    </span>
+                ) : (
+                    <span style={{ fontSize: "12px", fontWeight: 600 }} className={css.score_text}>
+                        <span
+                            style={{
+                                color: winnerIsLeft ? "#2e7d32" : "red",
+                                fontWeight: 600,
+                            }}
+                        >
+                            {displayScoreLeft}
+                        </span>
+                        <span> : </span>
+                        <span
+                            style={{
+                                color: winnerIsRight ? "#2e7d32" : "red",
+                                fontWeight: 600,
+                            }}
+                        >
+                            {displayScoreRight}
+                        </span>
+                    </span>
+                )}
+            </div>
+
+            <div className={css.team_cell_ro32} style={{ opacity: isRightLoser ? 0.3 : 1 }}>
+                <TeamCircle team={rightTeam} />
+            </div>
+        </div>
+    );
+};
+
+const PlaceholderRect = ({ teams, height = 264 }) => (
+    <div
+        className={css.placeholder_rect}
+        style={{ minHeight: height }}
+    >
+        <div style={{ width: "100%", height: "max-content", display: "flex", flexWrap: "wrap", rowGap: 16.5, columnGap: 4, justifyContent: "center", alignItems: "flex-start" }}>
+            {teams.map((t) => (
+                <div
+                    key={t.id}
+                    style={{
+                        width: "calc(50% - 6px)",
+                        display: "flex",
+                        justifyContent: "center",
+                    }}
+                >
+                    <TeamCircle team={t} />
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const BoxPlaceholderCircle = ({ tone = "green" }) => {
+    const bg = tone === "green" ? "#005e00" : "#4a0000";
+    return (
+        <div
+            className={css.placeholder_circle_elimination}
+            style={{ background: bg }}
+        >
+            <span>?</span>
+        </div>
+    );
+};
+
+const SwissResultBox = ({ title, tone, teams }) => {
+    const slots = BOX_SLOTS[title] ?? 6;
+    const items = Array.from({ length: slots }).map((_, i) => teams?.[i] || null);
+
+    return (
+        <div
+            className={`${css.swiss_result_box} ${tone === "green" ? css.swiss_result_box_green : css.swiss_result_box_red}`}
+            style={{
+                maxWidth: title === "3:2" || title === "2:3" || title === '3:1' || title === '1:3' ? '79px' : '',
+                borderRadius: title === "3:0" || title === "0:3" ? '12px 0 0 12px' : title === "3:1" ? '0 0 0 12px' : title === "1:3" ? '12px 0 0 0' : title === "2:3" || title === "3:2" ? '0 12px 12px 0' : '',
+            }}
+        >
+            <div className={css.swiss_result_box_title}>
+                {title}
+            </div>
+
+            <div style={{
+                display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center",
+                gap: title === "3:0" || title === "0:3" ? 13.6 : title === "1:3" || title === "3:1" || title === "3:2" || title === "2:3" ? 16 : 8,
+            }}>
+                {items.map((t, idx) =>
+                    t ? <TeamCircle specialStyle={{ border: '1.5px solid #999' }} key={t.id} team={t} /> : <BoxPlaceholderCircle key={`${title}-ph-${idx}`} tone={tone} />
+                )}
+            </div>
+        </div>
+    );
+};
+
+const getQualifiedBy = (stage, key) =>
+    stage.teams
+        .filter((t) => t.qualified && t.qualifiedVia === key)
+        .sort((a, b) => (a.qualifiedAt ?? 1e9) - (b.qualifiedAt ?? 1e9));
+
+const getEliminatedBy = (stage, key) =>
+    stage.teams
+        .filter((t) => t.eliminated && t.eliminatedVia === key)
+        .sort((a, b) => (a.eliminatedAt ?? 1e9) - (b.eliminatedAt ?? 1e9));
 
 export default function SpecialModePage() {
     const navigate = useNavigate();
+    const allTeams = useMemo(() => getAllTeams64(), []);
+    
+    const colorSeq = useMemo(
+        () => makeColorSequence(buildTournamentColorPool().map(([, v]) => v)),
+        []
+    );
+    const stage3Seeds = useMemo(() => allTeams.slice(0, 16), [allTeams]);
+    const stage2Seeds = useMemo(() => allTeams.slice(16, 32), [allTeams]);
+    const stage1Seeds = useMemo(() => allTeams.slice(32, 64), [allTeams]);
+
     const [showIntro, setShowIntro] = useState(true);
+
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
 
-    const [tournamentColorEntries, setTournamentColorEntries] = useState(() =>
-        buildTournamentColorPool()
-    );
+    const [activePhase, setActivePhase] = useState("stage1");
 
-    const uniqueTeams = useMemo(
-        () => getUniqueTeams(tournamentColorEntries),
-        [tournamentColorEntries]
-    );
+    const [viewPhase, setViewPhase] = useState("stage1");
 
-    const colorSeq = useMemo(
-        () => makeColorSequence(tournamentColorEntries.map(([, v]) => v)),
-        [tournamentColorEntries]
-    );
-
-    const [bracket, setBracket] = useState(null);
+    const [stage1, setStage1] = useState(null);
+    const [stage2, setStage2] = useState(null);
+    const [stage3, setStage3] = useState(null);
+    const [playoffs, setPlayoffs] = useState(null);
 
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-    const [activeMatchInfo, setActiveMatchInfo] = useState(null);
+    const [modalContext, setModalContext] = useState(null);
     const [modalLeftTeam, setModalLeftTeam] = useState(null);
     const [modalRightTeam, setModalRightTeam] = useState(null);
     const [hasChosen, setHasChosen] = useState(false);
-    const [isCalculating, setIsCalculating] = useState(false);
-    const [isLocked, setIsLocked] = useState(false);
-
-    const [showWinnersScreen, setShowWinnersScreen] = useState(false);
-    const [tournamentResults, setTournamentResults] = useState(null);
-
-    const [showWinnerText, setShowWinnerText] = useState(false);
-    const [showWinnerTeam, setShowWinnerTeam] = useState(false);
-    const [showPodium, setShowPodium] = useState(false);
-    const [showProceed, setShowProceed] = useState(false);
 
     const [seriesState, setSeriesState] = useState(defaultSeriesState);
-
-    const [showPickemSummary, setShowPickemSummary] = useState(false);
-    const [finalPickemPoints, setFinalPickemPoints] = useState(0);
-    const [neededPickemPoints, setNeededPickemPoints] = useState(() =>
-        getRandomNeededPickemPoints()
-    );
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [isLocked, setIsLocked] = useState(false);
 
     const [multiplierMin, setMultiplierMin] = useState(MULTIPLIER_MIN);
     const [multiplierMax, setMultiplierMax] = useState(MULTIPLIER_MAX);
     // eslint-disable-next-line no-unused-vars
     const [cheatMode, setCheatMode] = useState(0);
 
-    const [pickemCounts, setPickemCounts] = useState({
-        ro32: 0,
+    const [neededPickemPoints, setNeededPickemPoints] = useState(() => getRandomNeededPickemPoints());
+    const [finalPickemPoints, setFinalPickemPoints] = useState(0);
+
+    const [guessedCounts, setGuessedCounts] = useState({
+        stage1: 0,
+        stage2: 0,
+        stage3: 0,
         ro16: 0,
         qf: 0,
         sf: 0,
@@ -460,111 +792,168 @@ export default function SpecialModePage() {
         gf: 0,
     });
 
+    const [showPickemSummary, setShowPickemSummary] = useState(false);
     const [showPickemLine2, setShowPickemLine2] = useState(false);
     const [showPickemResult, setShowPickemResult] = useState(false);
 
-    useEffect(() => {
-        const savedState = localStorage.getItem(STORAGE_KEY);
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                if (parsed.bracket) {
-                    if (!parsed.bracket.ro32) {
-                        setBracket(buildInitialBracket(uniqueTeams));
-                    } else {
-                        setBracket(parsed.bracket);
-                    }
-                    setShowIntro(parsed.showIntro ?? true);
-                    setSeriesState(
-                        parsed.seriesState
-                            ? { ...defaultSeriesState, ...parsed.seriesState }
-                            : defaultSeriesState
-                    );
-                    setShowWinnersScreen(parsed.showWinnersScreen ?? false)
-                    setTournamentResults(parsed.tournamentResults ?? null)
-                    setShowWinnerText(parsed.showWinnerText ?? false)
-                    setShowWinnerTeam(parsed.showWinnerText ?? false)
-                    setShowPodium(parsed.showWinnerText ?? false)
-                    setShowProceed(parsed.showWinnerText ?? false)
-                    setShowPickemSummary(parsed.showPickemSummary ?? false)
-                    setFinalPickemPoints(parsed.finalPickemPoints ?? 0)
-                    setPickemCounts(parsed.pickemCounts)
-                    setShowPickemLine2(parsed.showPickemLine2 ?? false)
-                    setShowPickemResult(parsed.showPickemResult ?? false)
-                    setNeededPickemPoints(
-                        parsed.neededPickemPoints ?? getRandomNeededPickemPoints()
-                    );
-                    return;
-                }
-            } catch (err) {
-                console.error("Failed to parse saved game state:", err);
-            }
-        }
-        setBracket(buildInitialBracket(uniqueTeams));
-    }, [uniqueTeams]);
+    const [showWinnersScreen, setShowWinnersScreen] = useState(false);
+    const [tournamentResults, setTournamentResults] = useState(null);
+    const [showWinnerText, setShowWinnerText] = useState(false);
+    const [showWinnerTeam, setShowWinnerTeam] = useState(false);
+    const [showPodium, setShowPodium] = useState(false);
+    const [showProceed, setShowProceed] = useState(false);
+
+    const [hover, setHover] = useState(false);
+
+    const isSeriesActive = seriesState.active;
+
+    const isButtonLocked =
+        isCalculating ||
+        isRestartModalOpen ||
+        isTerminateModalOpen ||
+        showIntro ||
+        isLocked;
+
+    const isReadOnlyView = viewPhase.startsWith("results_");
 
     useEffect(() => {
-        if (!bracket) return;
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            const s1 = buildSwissStage("stage1", stage1Seeds);
+            setStage1(s1);
+            setStage2(null);
+            setStage3(null);
+            setPlayoffs(null);
+            setActivePhase("stage1");
+            setViewPhase("stage1");
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(saved);
+
+            setShowIntro(parsed.showIntro ?? true);
+
+            setActivePhase(parsed.activePhase ?? "stage1");
+            setViewPhase(parsed.viewPhase ?? "stage1");
+
+            setStage1(parsed.stage1 ?? null);
+            setStage2(parsed.stage2 ?? null);
+            setStage3(parsed.stage3 ?? null);
+            setPlayoffs(parsed.playoffs ?? null);
+
+            setSeriesState(parsed.seriesState ? { ...defaultSeriesState, ...parsed.seriesState } : defaultSeriesState);
+
+            setNeededPickemPoints(parsed.neededPickemPoints ?? getRandomNeededPickemPoints());
+            setFinalPickemPoints(parsed.finalPickemPoints ?? 0);
+            setGuessedCounts(parsed.guessedCounts ?? guessedCounts);
+
+            setShowPickemSummary(parsed.showPickemSummary ?? false);
+            setShowPickemLine2(parsed.showPickemLine2 ?? false);
+            setShowPickemResult(parsed.showPickemResult ?? false);
+
+            setShowWinnersScreen(parsed.showWinnersScreen ?? false);
+            setTournamentResults(parsed.tournamentResults ?? null);
+            setShowWinnerText(parsed.showWinnerText ?? false)
+            setShowWinnerTeam(parsed.showWinnerText ?? false)
+            setShowPodium(parsed.showWinnerText ?? false)
+            setShowProceed(parsed.showWinnerText ?? false)
+        } catch (e) {
+            console.error(e);
+            const s1 = buildSwissStage("stage1", stage1Seeds);
+            setStage1(s1);
+            setStage2(null);
+            setStage3(null);
+            setPlayoffs(null);
+            setActivePhase("stage1");
+            setViewPhase("stage1");
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
         const stateToSave = {
-            bracket,
             showIntro,
+            activePhase,
+            viewPhase,
+            stage1,
+            stage2,
+            stage3,
+            playoffs,
             seriesState,
+            neededPickemPoints,
+            finalPickemPoints,
+            guessedCounts,
+            showPickemSummary,
+            showPickemLine2,
+            showPickemResult,
             showWinnersScreen,
             tournamentResults,
             showWinnerText,
             showWinnerTeam,
             showPodium,
             showProceed,
-            showPickemSummary,
-            finalPickemPoints,
-            pickemCounts,
-            showPickemLine2,
-            showPickemResult,
-            neededPickemPoints
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    }, [bracket,
+    }, [
         showIntro,
+        activePhase,
+        viewPhase,
+        stage1,
+        stage2,
+        stage3,
+        playoffs,
         seriesState,
+        neededPickemPoints,
+        finalPickemPoints,
+        guessedCounts,
+        showPickemSummary,
+        showPickemLine2,
+        showPickemResult,
         showWinnersScreen,
         tournamentResults,
         showWinnerText,
         showWinnerTeam,
         showPodium,
         showProceed,
-        showPickemSummary,
-        finalPickemPoints,
-        pickemCounts,
-        showPickemLine2,
-        showPickemResult,
-        neededPickemPoints
     ]);
 
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
-        setIsRestartModalOpen(false);
 
-        const nextPool = buildTournamentColorPool();
-        setTournamentColorEntries(nextPool);
+        const s1 = buildSwissStage("stage1", stage1Seeds);
+        setStage1(s1);
+        setStage2(null);
+        setStage3(null);
+        setPlayoffs(null);
 
-        const fresh = buildInitialBracket(getUniqueTeams(nextPool));
-        setBracket(fresh);
-
+        setActivePhase("stage1");
+        setViewPhase("stage1");
         setShowIntro(true);
+
         setSeriesState(defaultSeriesState);
-        setTournamentResults(null);
-        setShowWinnersScreen(false);
-        setShowWinnerText(false);
-        setShowWinnerTeam(false);
-        setShowPodium(false);
-        setShowProceed(false);
-        setShowPickemSummary(false);
+
+        setNeededPickemPoints(getRandomNeededPickemPoints());
         setFinalPickemPoints(0);
+        setGuessedCounts({
+            stage1: 0,
+            stage2: 0,
+            stage3: 0,
+            ro16: 0,
+            qf: 0,
+            sf: 0,
+            tpd: 0,
+            gf: 0,
+        });
+
+        setShowPickemSummary(false);
         setShowPickemLine2(false);
         setShowPickemResult(false);
-        setNeededPickemPoints(getRandomNeededPickemPoints());
-        setShowPickemSummary(false);
-        setShowProceed(false);
+
+        setShowWinnersScreen(false);
+        setTournamentResults(null);
+
+        setIsRestartModalOpen(false);
     };
 
     const confirmTerminate = () => {
@@ -574,379 +963,144 @@ export default function SpecialModePage() {
 
     const resetSpecialModeState = () => {
         confirmRestart();
-        setBracket(null);
-        setSeriesState(defaultSeriesState);
-        setTournamentResults(null);
-        setShowWinnersScreen(false);
-        setShowWinnerText(false);
-        setShowWinnerTeam(false);
-        setShowPodium(false);
-        setShowProceed(false);
-        setShowPickemSummary(false);
-        setFinalPickemPoints(0);
-        setShowPickemLine2(false);
-        setShowPickemResult(false);
-        setNeededPickemPoints(getRandomNeededPickemPoints());
-        setShowPickemSummary(false);
-        setPickemCounts({ ro32: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0 });
+        setIsRestartModalOpen(false);
+        setIsTerminateModalOpen(false);
     };
 
-    const isButtonLocked = isCalculating || isRestartModalOpen || isTerminateModalOpen || showIntro || isLocked;
+    const buildStage2IfNeeded = (s1) => {
+        if (stage2) return stage2;
+        const qualifiers = getSwissQualified(s1);
+        const combined = [...stage2Seeds, ...qualifiers].map((t) => ({ ...t }));
+        return buildSwissStage("stage2", combined);
+    };
 
-    const calculatePickemFromBracket = (bracket) => {
-        if (!bracket) {
-            return {
-                total: 0,
-                ro32: 0,
-                ro16: 0,
-                qf: 0,
-                sf: 0,
-                tpd: 0,
-                gf: 0,
-            };
+    const buildStage3IfNeeded = (s2) => {
+        if (stage3) return stage3;
+        const qualifiers = getSwissQualified(s2);
+        const combined = [...stage3Seeds, ...qualifiers].map((t) => ({ ...t }));
+        return buildSwissStage("stage3", combined);
+    };
+
+    const buildPlayoffsIfNeeded = (s3) => {
+        if (playoffs) return playoffs;
+        const qualifiers = getSwissQualified(s3).slice(0, 16);
+        return buildPlayoffsBracket(qualifiers);
+    };
+
+    const swissMatchPoints = (match) => {
+        if (!match.played || !match.pickTeamId) return 0;
+
+        const bestOf = getBestOfForSwissNet(match.net);
+        if (bestOf === 1) {
+            return match.winnerTeamId === match.pickTeamId ? 1 : 0;
         }
 
-        const stageConfig = {
-            ro32: 1,
-            ro16: 3,
-            qf: 5,
-            sf: 7,
-            tpd: 7,
-            gf: 9,
+        if (match.winnerTeamId === match.pickTeamId) return 3;
+
+        const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
+        const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
+        return pickedSets >= 1 ? 2 : 0;
+    };
+
+    const playoffsMatchPoints = (match) => {
+        if (!match.played || !match.pickTeamId) return 0;
+        const baseMap = { ro16: 3, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+        const base = baseMap[match.stage] ?? 0;
+
+        if (match.winnerTeamId === match.pickTeamId) return base;
+
+        const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
+        const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
+        return (pickedSets || 0) * 2;
+    };
+
+    const recomputePickemTotals = () => {
+        let total = 0;
+        const nextCounts = {
+            stage1: 0,
+            stage2: 0,
+            stage3: 0,
+            ro16: 0,
+            qf: 0,
+            sf: 0,
+            tpd: 0,
+            gf: 0,
         };
 
-        let total = 0;
-        let ro32 = 0;
-        let ro16 = 0;
-        let qf = 0;
-        let sf = 0;
-        let tpd = 0;
-        let gf = 0;
-
-        const applyStage = (matches, stageKey) => {
-            if (!matches) return;
-
-            matches.forEach((m) => {
-                if (!m || !m.played) return;
-                if (!m.slotA || !m.slotB) return;
-
-                const pickedId = m.pickTeamId;
-                if (!pickedId) return;
-
-                const pickedIsLeft = m.slotA && pickedId === m.slotA.id;
-                const pickedIsRight = m.slotB && pickedId === m.slotB.id;
-                if (!pickedIsLeft && !pickedIsRight) return;
-
-                const pickedWon = m.winnerTeamId === pickedId;
-
-                if (pickedWon) {
-                    total += stageConfig[stageKey] || 0;
-
-                    if (stageKey === "ro32") ro32++;
-                    else if (stageKey === "ro16") ro16++;
-                    else if (stageKey === "qf") qf++;
-                    else if (stageKey === "sf") sf++;
-                    else if (stageKey === "tpd") tpd++;
-                    else if (stageKey === "gf") gf++;
-                } else {
-                    let pickedSets = 0;
-                    if (pickedIsLeft) pickedSets = m.scoreLeft ?? 0;
-                    if (pickedIsRight) pickedSets = m.scoreRight ?? 0;
-                    total += pickedSets * 2;
-                }
+        const applySwiss = (stg, countKey) => {
+            if (!stg) return;
+            Object.values(stg.matchesByNet || {}).forEach((arr) => {
+                arr.forEach((m) => {
+                    if (!m.played || !m.pickTeamId) return;
+                    total += swissMatchPoints(m);
+                    if (m.winnerTeamId === m.pickTeamId) nextCounts[countKey] += 1;
+                });
             });
         };
 
-        applyStage(bracket.ro32, "ro32");
-        applyStage(bracket.ro16, "ro16");
-        applyStage(bracket.qf, "qf");
-        applyStage(bracket.sf, "sf");
+        const applyPlayoffs = (br) => {
+            if (!br) return;
+            const addStage = (stageKey, countKey) => {
+                const arr = br[stageKey] || [];
+                arr.forEach((m) => {
+                    if (!m.played || !m.pickTeamId) return;
+                    total += playoffsMatchPoints(m);
+                    if (m.winnerTeamId === m.pickTeamId) nextCounts[countKey] += 1;
+                });
+            };
 
-        if (bracket.thirdPlace) {
-            const thirdMatches = Array.isArray(bracket.thirdPlace)
-                ? bracket.thirdPlace
-                : [bracket.thirdPlace];
-            applyStage(thirdMatches, "tpd");
-        }
-
-        applyStage(bracket.gf, "gf");
-
-        return {
-            total,
-            ro32,
-            ro16,
-            qf,
-            sf,
-            tpd,
-            gf,
-        };
-    };
-
-    const buildGuessedSentence = (counts) => {
-        const chunks = [];
-
-        const pushChunk = (node) => {
-            if (!node) return;
-            chunks.push(node);
+            addStage("ro16", "ro16");
+            addStage("qf", "qf");
+            addStage("sf", "sf");
+            addStage("thirdPlace", "tpd");
+            addStage("gf", "gf");
         };
 
-        if (counts.ro32 > 0) {
-            const isPerfect = counts.ro32 === 16;
-            const isAwful = counts.ro32 <= 4;
+        applySwiss(stage1, "stage1");
+        applySwiss(stage2, "stage2");
+        applySwiss(stage3, "stage3");
+        applyPlayoffs(playoffs);
 
-            pushChunk(
-                <>
-                    <span
-                        style={{
-                            fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
-                        }}
-                    >
-                        {counts.ro32}/16
-                    </span>{" "}
-                    Rounds of 32
-                </>
-            );
-        }
-
-        if (counts.ro16 > 0) {
-            const isPerfect = counts.ro16 === 8;
-            const isAwful = counts.ro16 <= 2;
-
-            pushChunk(
-                <>
-                    <span
-                        style={{
-                            fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
-                        }}
-                    >
-                        {counts.ro16}/8
-                    </span>{" "}
-                    Rounds of 16
-                </>
-            );
-        }
-
-        if (counts.qf > 0) {
-            const isPerfect = counts.qf === 4;
-            const isAwful = counts.qf <= 1;
-
-            pushChunk(
-                <>
-                    <span
-                        style={{
-                            fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined,
-                        }}
-                    >
-                        {counts.qf}/4
-                    </span>{" "}
-                    Quarterfinals
-                </>
-            );
-        }
-
-        if (counts.sf > 0) {
-            const isPerfect = counts.sf === 2;
-
-            pushChunk(
-                <>
-                    <span
-                        style={{
-                            fontWeight: 800,
-                            color: isPerfect ? "#2e7d32" : undefined,
-                        }}
-                    >
-                        {counts.sf}/2
-                    </span>{" "}
-                    Semifinals
-                </>
-            );
-        }
-
-        if (counts.tpd > 0) {
-            pushChunk(
-                <span
-                    style={{
-                        fontWeight: 800,
-                        color: "#2e7d32",
-                    }}
-                >
-                    the Third Place Decider
-                </span>
-            );
-        }
-
-        if (counts.gf > 0) {
-            pushChunk(
-                <span
-                    style={{
-                        fontWeight: 800,
-                        color: "#2e7d32",
-                    }}
-                >
-                    the Grand Final
-                </span>
-            );
-        }
-
-        if (chunks.length === 0) {
-            return <>YOU guessed no matches correctly 🥺</>;
-        }
-
-        return (
-            <>
-                YOU guessed{" "}
-                {chunks.map((node, idx) => {
-                    const isLast = idx === chunks.length - 1;
-                    const isSecondLast = idx === chunks.length - 2;
-
-                    return (
-                        <React.Fragment key={idx}>
-                            {isLast && chunks.length > 1 ? "and " : ""}
-                            {node}
-                            {!isLast && !isSecondLast ? ", " : " "}
-                        </React.Fragment>
-                    );
-                })}
-            </>
-        );
+        setFinalPickemPoints(total);
+        setGuessedCounts(nextCounts);
     };
 
-    const appendSetToMatchHistory = (stage, matchIndex, finalWins, finalLosses, playerWonSet) => {
-        setBracket((prev) => {
-            if (!prev) return prev;
-
-            const copy = { ...prev };
-            const stageArr = [...copy[stage]];
-            const match = { ...stageArr[matchIndex] };
-
-            const history = match.setHistory || [];
-            const nextSetNumber = history.length + 1;
-
-            match.setHistory = [
-                ...history,
-                {
-                    set: nextSetNumber,
-                    wins: finalWins,
-                    losses: finalLosses,
-                    won: playerWonSet,
-                },
-            ];
-
-            stageArr[matchIndex] = match;
-            copy[stage] = stageArr;
-            return copy;
-        });
-    };
-
-    const canOpenMatch = (stage, match) => {
-        if (!bracket) return false;
-        if (!match.slotA || !match.slotB) return false;
-
-        if (stage === "ro16" && bracket.ro32 && bracket.ro32.some((m) => !m.played)) {
-            return false;
-        }
-
-        if (stage === "qf" && bracket.ro16.some((m) => !m.played)) {
-            return false;
-        }
-        if (stage === "sf" && bracket.qf.some((m) => !m.played)) {
-            return false;
-        }
-
-        if (stage === "thirdPlace") {
-            if (!bracket.sf || bracket.sf.some((m) => !m.played)) {
-                return false;
-            }
-        }
-
-        if (stage === "gf") {
-            if (bracket.sf.some((m) => !m.played)) {
-                return false;
-            }
-            const third = bracket.thirdPlace && bracket.thirdPlace[0];
-            if (third && !third.played) {
-                return false;
-            }
-        }
-
-        const index = parseInt(match.id.split("-")[1], 10) - 1;
-        const stageMatches = bracket[stage];
-
-        for (let i = 0; i < index; i++) {
-            if (!stageMatches[i].played) return false;
-        }
-
-        if (match.played) {
-            return false;
-        }
-
-        return true;
-    };
-
-    const currentPlayableMatch = useMemo(() => {
-        if (!bracket) return null;
-
-        for (const stage of STAGE_ORDER) {
-            const stageMatches = bracket[stage];
-            if (!stageMatches) continue;
-
-            for (let i = 0; i < stageMatches.length; i++) {
-                const match = stageMatches[i];
-                if (canOpenMatch(stage, match)) {
-                    return { stage, index: i };
-                }
-            }
-        }
-
+    const getStageObj = (key) => {
+        if (key === "stage1") return stage1;
+        if (key === "stage2") return stage2;
+        if (key === "stage3") return stage3;
         return null;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bracket]);
+    };
 
-    const nextMatch = useMemo(() => {
-        if (!bracket || !currentPlayableMatch) return null;
+    const openSwissMatchModal = (stageKey, net, matchId, readOnly = false) => {
+        const stg = getStageObj(stageKey);
+        if (!stg) return;
 
-        const { stage, index } = currentPlayableMatch;
-        const stageMatches = bracket[stage];
-        if (!stageMatches) return null;
+        const match = (stg.matchesByNet[net] || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
 
-        for (let i = index + 1; i < stageMatches.length; i++) {
-            const m = stageMatches[i];
-            if (m.slotA && m.slotB) {
-                return { stage, index: i };
-            }
-        }
-
-        return null;
-    }, [bracket, currentPlayableMatch]);
-
-    const handleMatchClick = (stage, index) => {
-        if (!bracket) return;
-        const match = bracket[stage][index];
-
-        if (!match.slotA || !match.slotB) return;
-
-        const playable = canOpenMatch(stage, match);
-
-        if (!match.played && !playable) return;
-
+        setModalContext({ type: "swiss", stageKey, net, matchId, readOnly });
         setModalLeftTeam(match.slotA);
         setModalRightTeam(match.slotB);
         setHasChosen(false);
-        setActiveMatchInfo({
-            stage,
-            index,
-            playable,
-            played: !!match.played,
-        });
+        setIsMatchModalOpen(true);
+    };
+
+    const openPlayoffsMatchModal = (stage, matchId, readOnly = false) => {
+        if (!playoffs) return;
+        const match = (playoffs[stage] || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type: "playoffs", stage, matchId, readOnly });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
         setIsMatchModalOpen(true);
     };
 
     const closeMatchModal = () => {
         setIsMatchModalOpen(false);
-        setActiveMatchInfo(null);
+        setModalContext(null);
         setModalLeftTeam(null);
         setModalRightTeam(null);
         setHasChosen(false);
@@ -964,54 +1118,379 @@ export default function SpecialModePage() {
     };
 
     const handleStartMatch = () => {
-        if (!hasChosen || !activeMatchInfo || !modalLeftTeam || !modalRightTeam) return;
-        if (!bracket) return;
+        if (!hasChosen || !modalContext || !modalLeftTeam || !modalRightTeam) return;
+        if (modalContext.readOnly) return;
 
-        const { stage, index } = activeMatchInfo;
+        const pickedTeamId = modalLeftTeam.id;
 
-        setBracket((prev) => {
-            if (!prev) return prev;
-            const copy = {
-                ro32: [...prev.ro32],
-                ro16: [...prev.ro16],
-                qf: [...prev.qf],
-                sf: [...prev.sf],
-                gf: [...prev.gf],
-                thirdPlace: [...prev.thirdPlace],
+        if (modalContext.type === "swiss") {
+            const { stageKey, net, matchId } = modalContext;
+            const bestOf = getBestOfForSwissNet(net);
+
+            const stageObj = stageKey === "stage1" ? stage1 : stageKey === "stage2" ? stage2 : stage3;
+            const netArr = (stageObj && stageObj.matchesByNet && stageObj.matchesByNet[net]) ? stageObj.matchesByNet[net] : [];
+            const swissMatchNumber = Math.max(1, (netArr || []).findIndex((m) => m.id === matchId) + 1);
+
+            const applyPick = (setter, stageObj) => {
+                const copy = {
+                    ...stageObj,
+                    teams: stageObj.teams.map((t) => ({ ...t })),
+                    matchesByNet: { ...stageObj.matchesByNet },
+                };
+                const arr = [...(copy.matchesByNet[net] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return;
+                const m = { ...arr[idx] };
+                m.pickTeamId = pickedTeamId;
+                m.setHistory = [];
+                arr[idx] = m;
+                copy.matchesByNet[net] = arr;
+                setter(copy);
             };
-            const stageArr = copy[stage];
-            const match = { ...stageArr[index] };
 
-            match.slotA = modalLeftTeam;
-            match.slotB = modalRightTeam;
-            match.pickTeamId = modalLeftTeam.id;
-            match.setHistory = [];
+            if (stageKey === "stage1") applyPick(setStage1, stage1);
+            if (stageKey === "stage2") applyPick(setStage2, stage2);
+            if (stageKey === "stage3") applyPick(setStage3, stage3);
 
-            stageArr[index] = match;
-            copy[stage] = stageArr;
-            return copy;
+            setSeriesState({
+                ...defaultSeriesState,
+                active: true,
+                phase: stageKey,
+                swissStageKey: stageKey,
+                swissNet: net,
+                swissMatchId: matchId,
+                leftTeam: modalLeftTeam,
+                rightTeam: modalRightTeam,
+                swissMatchNumber: swissMatchNumber,
+                setsToWin: calcSetsToWin(bestOf),
+            });
+
+            closeMatchModal();
+            return;
+        }
+
+        if (modalContext.type === "playoffs") {
+            const { stage, matchId } = modalContext;
+            const bestOf = getBestOfForPlayoffs(stage);
+
+            const stageArr = (playoffs && playoffs[stage]) ? playoffs[stage] : [];
+            const playoffsMatchNumber = Math.max(
+                1,
+                stageArr.findIndex((m) => m.id === matchId) + 1
+            );
+
+            setPlayoffs((prev) => {
+                if (!prev) return prev;
+                const copy = { ...prev, [stage]: [...prev[stage]] };
+                const idx = copy[stage].findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                const m = { ...copy[stage][idx] };
+                m.pickTeamId = pickedTeamId;
+                m.setHistory = [];
+                copy[stage][idx] = m;
+                return copy;
+            });
+
+            setSeriesState({
+                ...defaultSeriesState,
+                active: true,
+                phase: "playoffs",
+                playoffsStage: stage,
+                playoffsMatchId: matchId,
+                playoffsMatchNumber,
+                leftTeam: modalLeftTeam,
+                rightTeam: modalRightTeam,
+                setsToWin: calcSetsToWin(bestOf),
+            });
+
+            closeMatchModal();
+        }
+    };
+
+    const appendSetToCurrentMatchHistory = (wins, losses, won) => {
+        const setEntry = (history) => [
+            ...(history || []),
+            { set: (history?.length || 0) + 1, wins, losses, won },
+        ];
+        if (seriesState.phase === "playoffs" && playoffs && seriesState.playoffsStage && seriesState.playoffsMatchId) {
+            const stageKey = seriesState.playoffsStage;
+            const matchId = seriesState.playoffsMatchId;
+
+            setPlayoffs((prev) => {
+                if (!prev) return prev;
+                const copy = { ...prev, [stageKey]: [...prev[stageKey]] };
+                const idx = copy[stageKey].findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                const m = { ...copy[stageKey][idx] };
+                m.setHistory = setEntry(m.setHistory);
+                copy[stageKey][idx] = m;
+                return copy;
+            });
+            return;
+        }
+        const stageKey = seriesState.swissStageKey;
+        const net = seriesState.swissNet;
+        const matchId = seriesState.swissMatchId;
+
+        const apply = (setter, stg) => {
+            const copy = {
+                ...stg,
+                teams: stg.teams.map((t) => ({ ...t })),
+                matchesByNet: { ...stg.matchesByNet },
+            };
+            const arr = [...(copy.matchesByNet[net] || [])];
+            const idx = arr.findIndex((m) => m.id === matchId);
+            if (idx < 0) return;
+            const m = { ...arr[idx] };
+            m.setHistory = setEntry(m.setHistory);
+            arr[idx] = m;
+            copy.matchesByNet[net] = arr;
+            setter(copy);
+        };
+
+        if (stageKey === "stage1" && stage1) apply(setStage1, stage1);
+        if (stageKey === "stage2" && stage2) apply(setStage2, stage2);
+        if (stageKey === "stage3" && stage3) apply(setStage3, stage3);
+    };
+
+    const mapSeriesScoresToSlots = (match, leftTeam, rightTeam, leftSets, rightSets) => {
+        if (!match?.slotA || !match?.slotB || !leftTeam || !rightTeam) {
+            return { scoreLeft: leftSets, scoreRight: rightSets };
+        }
+
+        const slotAId = match.slotA.id;
+        const slotBId = match.slotB.id;
+
+        const leftId = leftTeam.id;
+        const rightId = rightTeam.id;
+
+        const scoreLeft =
+            slotAId === leftId ? leftSets :
+                slotAId === rightId ? rightSets :
+                    0;
+
+        const scoreRight =
+            slotBId === rightId ? rightSets :
+                slotBId === leftId ? leftSets :
+                    0;
+
+        return { scoreLeft, scoreRight };
+    };
+
+    const getPickOrientedModalView = (match, isBo1) => {
+        if (!match) {
+            return {
+                leftTeam: null,
+                rightTeam: null,
+                shouldSwap: false,
+                displayLeft: null,
+                displayRight: null,
+                didUserWin: false,
+                leftIsPick: false,
+                rightIsPick: false,
+                winnerIsLeft: false,
+                winnerIsRight: false,
+                leftIsLoser: false,
+                rightIsLoser: false,
+            };
+        }
+
+        const slotA = match.slotA || null;
+        const slotB = match.slotB || null;
+
+        const shouldSwap =
+            !!match.pickTeamId && slotA && slotB && match.pickTeamId === slotB.id;
+
+        const leftTeam = shouldSwap ? slotB : slotA;
+        const rightTeam = shouldSwap ? slotA : slotB;
+
+        const bo1MapScore =
+            isBo1 && match.setHistory && match.setHistory.length > 0
+                ? { left: match.setHistory[0].wins, right: match.setHistory[0].losses }
+                : null;
+
+        const slotOrientedLeft =
+            bo1MapScore && bo1MapScore.left != null ? bo1MapScore.left : match.scoreLeft;
+
+        const slotOrientedRight =
+            bo1MapScore && bo1MapScore.right != null ? bo1MapScore.right : match.scoreRight;
+
+        const displayLeft =
+            bo1MapScore
+                ? bo1MapScore.left
+                : (shouldSwap ? slotOrientedRight : slotOrientedLeft);
+
+        const displayRight =
+            bo1MapScore
+                ? bo1MapScore.right
+                : (shouldSwap ? slotOrientedLeft : slotOrientedRight);
+
+        const didUserWin =
+            !!match.played &&
+            !!match.pickTeamId &&
+            !!match.winnerTeamId &&
+            match.pickTeamId === match.winnerTeamId;
+
+        const leftIsPick = !!match.pickTeamId && leftTeam && match.pickTeamId === leftTeam.id;
+        const rightIsPick = !!match.pickTeamId && rightTeam && match.pickTeamId === rightTeam.id;
+
+        const winnerIsLeft = !!match.winnerTeamId && leftTeam && match.winnerTeamId === leftTeam.id;
+        const winnerIsRight = !!match.winnerTeamId && rightTeam && match.winnerTeamId === rightTeam.id;
+
+        const leftIsLoser = !!match.loserTeamId && leftTeam && match.loserTeamId === leftTeam.id;
+        const rightIsLoser = !!match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
+
+        return {
+            leftTeam,
+            rightTeam,
+            shouldSwap,
+            displayLeft,
+            displayRight,
+            didUserWin,
+            leftIsPick,
+            rightIsPick,
+            winnerIsLeft,
+            winnerIsRight,
+            leftIsLoser,
+            rightIsLoser,
+        };
+    };
+
+    const getSwissNetHighlights = (stageObj, net) => {
+        if (!stageObj) return { currentId: null, nextId: null };
+
+        const matches = stageObj?.matchesByNet?.[net] || [];
+        if (!matches.length) return { currentId: null, nextId: null };
+        const currentIndex = matches.findIndex((m) => canOpenSwissMatch(stageObj, net, m));
+
+        if (currentIndex < 0) return { currentId: null, nextId: null };
+
+        const current = matches[currentIndex];
+
+        const nextIndex = matches.findIndex((m, idx) => {
+            if (idx <= currentIndex) return false;
+            if (m.played) return false;
+            return !!m.slotA && !!m.slotB;
         });
 
-        const bestOf = getBestOfForStage(stage);
-        const setsRequired = (bestOf + 1) / 2;
+        return {
+            currentId: current?.id ?? null,
+            nextId: nextIndex >= 0 ? matches[nextIndex]?.id ?? null : null,
+        };
+    };
 
-        setSeriesState({
-            ...defaultSeriesState,
-            active: true,
-            stage,
-            matchIndex: index,
-            leftTeam: modalLeftTeam,
-            rightTeam: modalRightTeam,
-            setsToWin: setsRequired
+    const getCommittedSeriesScore = ({
+        bestOf,
+        seriesState,
+        matchObj,
+        seriesLeftSets,
+        seriesRightSets,
+    }) => {
+        if (bestOf === 1) {
+            const roundLeft = seriesState.roundWins;
+            const roundRight = seriesState.roundLosses;
+
+            return mapSeriesScoresToSlots(
+                matchObj,
+                seriesState.leftTeam,
+                seriesState.rightTeam,
+                roundLeft,
+                roundRight
+            );
+        }
+
+        return mapSeriesScoresToSlots(
+            matchObj,
+            seriesState.leftTeam,
+            seriesState.rightTeam,
+            seriesLeftSets,
+            seriesRightSets
+        );
+    };
+
+    const STAGE_ORDER = ["ro16", "qf", "sf", "thirdPlace", "gf"];
+
+    const currentPlayablePlayoffsMatch = useMemo(() => {
+        if (!playoffs) return null;
+
+        for (const stage of STAGE_ORDER) {
+            const stageMatches = playoffs[stage];
+            if (!stageMatches) continue;
+
+            for (let i = 0; i < stageMatches.length; i++) {
+                if (canOpenPlayoffsMatch(playoffs, stage, i)) {
+                    return { stage, index: i, id: stageMatches[i]?.id };
+                }
+            }
+        }
+
+        return null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playoffs]);
+
+    const nextPlayoffsMatch = useMemo(() => {
+        if (!playoffs || !currentPlayablePlayoffsMatch) return null;
+
+        const { stage, index } = currentPlayablePlayoffsMatch;
+        const stageMatches = playoffs[stage];
+        if (!stageMatches) return null;
+
+        for (let i = index + 1; i < stageMatches.length; i++) {
+            const m = stageMatches[i];
+            if (m && m.slotA && m.slotB && !m.played) {
+                return { stage, index: i, id: m.id };
+            }
+        }
+
+        return null;
+    }, [playoffs, currentPlayablePlayoffsMatch]);
+
+    const toggleSecretGuaranteedWin = () => {
+        setCheatMode((prev) => {
+            const next = (prev + 1) % 3;
+
+            if (next === 1) {
+                setMultiplierMin(MULTIPLIER_MAX);
+                setMultiplierMax(MULTIPLIER_MAX);
+                toast("Don't tell anyone about this!!!", {
+                    duration: 2000,
+                    icon: "🤫",
+                });
+            }
+
+            if (next === 2) {
+                setMultiplierMin(MULTIPLIER_MIN);
+                setMultiplierMax(MULTIPLIER_MIN);
+                toast("Even the odds...", {
+                    duration: 2000,
+                    icon: "😈",
+                });
+            }
+
+            if (next === 0) {
+                setMultiplierMin(MULTIPLIER_MIN);
+                setMultiplierMax(MULTIPLIER_MAX);
+                toast("Secret mode disabled", {
+                    duration: 2000,
+                    icon: "🔓",
+                });
+            }
+
+            return next;
         });
+    };
 
-        closeMatchModal();
+    const getMultiplierClass = (mult) => {
+        if (mult == null) return "";
+        if (mult > 0) return seriesState.leftTeam.color;
+        if (mult < 0) return seriesState.rightTeam.color;
+        return '#757575';
     };
 
     const renderTeamLabel = (team) => {
         if (!team) return null;
         return (
-            <span style={{ color: team.color || "#ffffff", fontWeight: 800 }}>
+            <span style={{ color: team.color || "#fff", fontWeight: 900 }}>
                 Team {team.name}
             </span>
         );
@@ -1020,16 +1499,11 @@ export default function SpecialModePage() {
     const handleSeriesGamble = () => {
         if (!seriesState.active || seriesState.banner) return;
 
-        const raw =
-            multiplierMin +
-            Math.random() * (multiplierMax - multiplierMin);
-        const mult = Number(raw.toFixed(2));
+        const mult = round2(multiplierMin + Math.random() * (multiplierMax - multiplierMin));
 
         setIsCalculating(true);
 
         setTimeout(() => {
-            let userPickWon = false;
-
             setSeriesState((prev) => {
                 if (!prev.active || prev.banner) return prev;
 
@@ -1037,13 +1511,9 @@ export default function SpecialModePage() {
                 const playerLostMini = mult < 0;
 
                 let resultText;
-                if (mult > 0) {
-                    resultText = `Team ${prev.leftTeam.name} wins the mini-round!`;
-                } else if (mult < 0) {
-                    resultText = `Team ${prev.rightTeam.name} wins the mini-round!`;
-                } else {
-                    resultText = "No one wins this mini-round.";
-                }
+                if (mult > 0) resultText = `Team ${prev.leftTeam.name} wins the mini-round!`;
+                else if (mult < 0) resultText = `Team ${prev.rightTeam.name} wins the mini-round!`;
+                else resultText = "No one wins this mini-round.";
 
                 let {
                     playerWonSets,
@@ -1058,11 +1528,10 @@ export default function SpecialModePage() {
                     overtimeBlock,
                     otWins,
                     otLosses,
-                    setsToWin,
+                    setsToWin: toWin,
                 } = prev;
 
                 let banner = prev.banner;
-
                 if (isOvertime) {
                     let nextMiniWins = miniWins;
                     let nextMiniLosses = miniLosses;
@@ -1089,103 +1558,64 @@ export default function SpecialModePage() {
                     const updatedRoundWins = roundWins + (wonOtRound ? 1 : 0);
                     const updatedRoundLosses = roundLosses + (wonOtRound ? 0 : 1);
 
-                    const otTiedBlock =
-                        updatedOtWins === 3 && updatedOtLosses === 3;
+                    const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
 
                     miniWins = 0;
                     miniLosses = 0;
+
                     roundNumber = roundNumber + 1;
+
                     otWins = updatedOtWins;
                     otLosses = updatedOtLosses;
                     roundWins = updatedRoundWins;
                     roundLosses = updatedRoundLosses;
 
-                    const otRoundWinner = wonOtRound ? prev.leftTeam : prev.rightTeam;
-
                     toast(
                         <span>
-                            {renderTeamLabel(otRoundWinner)} has won this OT round!
+                            {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this OT round!
                         </span>,
-                        {
-                            icon: "😜",
-                            duration: 2000,
-                        }
+                        { icon: "😜", duration: 2000 }
                     );
 
                     const otDecided =
-                        updatedOtWins === OT_ROUNDS_TO_WIN ||
-                        updatedOtLosses === OT_ROUNDS_TO_WIN;
+                        updatedOtWins === OT_ROUNDS_TO_WIN || updatedOtLosses === OT_ROUNDS_TO_WIN;
 
                     if (otDecided) {
-                        const playerWonSet =
-                            updatedOtWins > updatedOtLosses;
+                        const playerWonSet = updatedOtWins > updatedOtLosses;
 
-                        appendSetToMatchHistory(
-                            prev.stage,
-                            prev.matchIndex,
-                            updatedRoundWins,
-                            updatedRoundLosses,
-                            playerWonSet
-                        );
+                        appendSetToCurrentMatchHistory(updatedRoundWins, updatedRoundLosses, playerWonSet);
 
                         playerWonSets += playerWonSet ? 1 : 0;
                         playerLostSets += playerWonSet ? 0 : 1;
 
-                        const seriesOver =
-                            playerWonSets >= setsToWin ||
-                            playerLostSets >= setsToWin;
+                        const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
 
                         if (seriesOver) {
-                            const winner =
-                                playerWonSets > playerLostSets
-                                    ? prev.leftTeam
-                                    : prev.rightTeam;
+                            const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
 
                             toast(
                                 <span>
-                                    {setsToWin === 1 ? "This match has" : "This series have"} been WON in
-                                    Overtime{" "}
-                                    {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by{" "}
-                                    {renderTeamLabel(winner)}!
+                                    {toWin === 1 ? "This match has" : "This series have"} been WON in Overtime{" "}
+                                    {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by {renderTeamLabel(winner)}!
                                 </span>,
-                                {
-                                    icon: "🎉",
-                                    duration: 4000,
-                                }
+                                { icon: "🎉", duration: 4000 }
                             );
-
-                            if (winner && winner.id === prev.leftTeam.id) {
-                                userPickWon = true;
-                            }
-
-                            if (userPickWon) {
-                                toast("Your pick has won!!!", {
-                                    icon: "🤯",
-                                    duration: 4000,
-                                });
-                            }
 
                             banner = `Team ${winner.name} has won this series!`;
                         } else {
-                            const otSetWinner = playerWonSet ? prev.leftTeam : prev.rightTeam;
-
                             toast(
                                 <span>
-                                    The set {setNumber} has been won in Overtime
-                                    {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by{" "}
-                                    {renderTeamLabel(otSetWinner)}!
+                                    The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
+                                    {overtimeBlock <= 1 ? "" : `#${overtimeBlock}`} by{" "}
+                                    {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                                 </span>,
-                                {
-                                    icon: "🤯",
-                                    duration: 4000,
-                                }
+                                { icon: "🤯", duration: 4000 }
                             );
 
                             setIsLocked(true);
                             setTimeout(() => {
                                 setSeriesState((curr) => {
-                                    if (!curr.active) return curr;
-                                    if (curr.banner) return curr;
+                                    if (!curr.active || curr.banner) return curr;
                                     setIsLocked(false);
                                     return {
                                         ...curr,
@@ -1203,7 +1633,30 @@ export default function SpecialModePage() {
                                 });
                             }, 4000);
                         }
-                    } else if (otTiedBlock) {
+
+                        setIsCalculating(false);
+
+                        return {
+                            ...prev,
+                            lastMultiplier: mult,
+                            lastResult: resultText,
+                            playerWonSets,
+                            playerLostSets,
+                            setNumber,
+                            roundWins,
+                            roundLosses,
+                            roundNumber,
+                            miniWins,
+                            miniLosses,
+                            isOvertime,
+                            overtimeBlock,
+                            otWins,
+                            otLosses,
+                            banner,
+                        };
+                    }
+
+                    if (otTiedBlock) {
                         const msg =
                             overtimeBlock === 1
                                 ? "Overtime is tied 3-3! Starting new overtime block..."
@@ -1223,7 +1676,7 @@ export default function SpecialModePage() {
                                 return {
                                     ...curr,
                                     isOvertime: true,
-                                    overtimeBlock: curr.overtimeBlock + 1,
+                                    overtimeBlock: (curr.overtimeBlock || 1) + 1,
                                     roundNumber: 1,
                                     otWins: 0,
                                     otLosses: 0,
@@ -1232,6 +1685,27 @@ export default function SpecialModePage() {
                                 };
                             });
                         }, 4000);
+
+                        setIsCalculating(false);
+
+                        return {
+                            ...prev,
+                            lastMultiplier: mult,
+                            lastResult: resultText,
+                            playerWonSets,
+                            playerLostSets,
+                            setNumber,
+                            roundWins,
+                            roundLosses,
+                            roundNumber,
+                            miniWins,
+                            miniLosses,
+                            isOvertime: true,
+                            overtimeBlock,
+                            otWins,
+                            otLosses,
+                            banner,
+                        };
                     }
 
                     setIsCalculating(false);
@@ -1277,32 +1751,22 @@ export default function SpecialModePage() {
                 roundWins += playerWonRound ? 1 : 0;
                 roundLosses += playerWonRound ? 0 : 1;
                 roundNumber += 1;
+
                 miniWins = 0;
                 miniLosses = 0;
 
-                const roundWinner = playerWonRound ? prev.leftTeam : prev.rightTeam;
-
                 toast(
                     <span>
-                        {renderTeamLabel(roundWinner)} has won this round!
+                        {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this round!
                     </span>,
-                    {
-                        icon: "😜",
-                        duration: 2000,
-                    }
+                    { icon: "😜", duration: 2000 }
                 );
 
-                const setShouldEnd =
-                    roundWins >= BASE_ROUNDS_TO_WIN ||
-                    roundLosses >= BASE_ROUNDS_TO_WIN ||
-                    roundWins + roundLosses >= BASE_MAX_ROUNDS;
-
                 if (roundWins === 12 && roundLosses === 12) {
-                    toast(
-                        `Overtime coming in for this ${setsToWin === 1 ? "match" : "set"
-                        }! 🔥`,
-                        { icon: "⚔️", duration: 4000 }
-                    );
+                    toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
+                        icon: "⚔️",
+                        duration: 4000,
+                    });
 
                     setIsLocked(true);
                     setTimeout(() => {
@@ -1312,9 +1776,7 @@ export default function SpecialModePage() {
                             return {
                                 ...curr,
                                 isOvertime: true,
-                                overtimeBlock: curr.overtimeBlock
-                                    ? curr.overtimeBlock + 1
-                                    : 1,
+                                overtimeBlock: curr.overtimeBlock ? curr.overtimeBlock + 1 : 1,
                                 otWins: 0,
                                 otLosses: 0,
                                 roundNumber: 1,
@@ -1337,7 +1799,7 @@ export default function SpecialModePage() {
                         roundNumber,
                         miniWins,
                         miniLosses,
-                        isOvertime,
+                        isOvertime: true,
                         overtimeBlock,
                         otWins,
                         otLosses,
@@ -1345,65 +1807,39 @@ export default function SpecialModePage() {
                     };
                 }
 
+                const setShouldEnd =
+                    roundWins >= BASE_ROUNDS_TO_WIN ||
+                    roundLosses >= BASE_ROUNDS_TO_WIN ||
+                    roundWins + roundLosses >= BASE_MAX_ROUNDS;
+
                 if (setShouldEnd) {
                     const playerWonSet = roundWins > roundLosses;
 
-                    appendSetToMatchHistory(
-                        prev.stage,
-                        prev.matchIndex,
-                        roundWins,
-                        roundLosses,
-                        playerWonSet
-                    );
+                    appendSetToCurrentMatchHistory(roundWins, roundLosses, playerWonSet);
 
                     playerWonSets += playerWonSet ? 1 : 0;
                     playerLostSets += playerWonSet ? 0 : 1;
 
-                    const seriesOver =
-                        playerWonSets >= setsToWin ||
-                        playerLostSets >= setsToWin;
+                    const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
 
                     if (seriesOver) {
-                        const winner =
-                            playerWonSets > playerLostSets
-                                ? prev.leftTeam
-                                : prev.rightTeam;
+                        const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
 
                         toast(
                             <span>
-                                {setsToWin === 1 ? "This match has" : "This series have"} been WON by{" "}
-                                {renderTeamLabel(winner)}!
+                                {toWin === 1 ? "This match has" : "This series have"} been WON by {renderTeamLabel(winner)}!
                             </span>,
-                            {
-                                icon: "🎉",
-                                duration: 4000,
-                            }
+                            { icon: "🎉", duration: 4000 }
                         );
-
-                        if (winner && winner.id === prev.leftTeam.id) {
-                            userPickWon = true;
-                        }
-
-                        if (userPickWon) {
-                            toast("Your pick has won!!!", {
-                                icon: "🤯",
-                                duration: 4000,
-                            });
-                        }
 
                         banner = `Team ${winner.name} has won this series!`;
                     } else {
-                        const setWinner = playerWonSet ? prev.leftTeam : prev.rightTeam;
-
                         toast(
                             <span>
-                                The set {setNumber} has been won by{" "}
-                                {renderTeamLabel(setWinner)}!
+                                The set {playerWonSets + playerLostSets} has been won by{" "}
+                                {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                             </span>,
-                            {
-                                icon: "🤯",
-                                duration: 4000,
-                            }
+                            { icon: "🤯", duration: 4000 }
                         );
 
                         setIsLocked(true);
@@ -1453,363 +1889,227 @@ export default function SpecialModePage() {
         }, 50);
     };
 
-    const handleProceed = () => {
-        if (!bracket) return;
-
-        const summary = calculatePickemFromBracket(bracket);
-
-        setFinalPickemPoints(summary.total);
-        setPickemCounts({
-            ro32: summary.ro32,
-            ro16: summary.ro16,
-            qf: summary.qf,
-            sf: summary.sf,
-            tpd: summary.tpd,
-            gf: summary.gf,
-        });
-
-        setShowWinnersScreen(false);
-        setShowPickemSummary(true);
-    };
-
-    const handleBackToSpecialStart = () => {
-        resetSpecialModeState();
-    };
-
-    const handleBackToGambling = () => {
-        resetSpecialModeState();
-        navigate("/gambling");
-    };
-
-    const handleBackToHome = () => {
-        resetSpecialModeState();
-        navigate("/");
-    };
-
-    const toggleSecretGuaranteedWin = () => {
-        setCheatMode((prev) => {
-            const next = (prev + 1) % 3;
-
-            if (next === 1) {
-                setMultiplierMin(MULTIPLIER_MAX);
-                setMultiplierMax(MULTIPLIER_MAX);
-                toast("Don't tell anyone about this!!!", {
-                    duration: 2000,
-                    icon: "🤫",
-                });
-            }
-
-            if (next === 2) {
-                setMultiplierMin(MULTIPLIER_MIN);
-                setMultiplierMax(MULTIPLIER_MIN);
-                toast("Even the odds...", {
-                    duration: 2000,
-                    icon: "😈",
-                });
-            }
-
-            if (next === 0) {
-                setMultiplierMin(MULTIPLIER_MIN);
-                setMultiplierMax(MULTIPLIER_MAX);
-                toast("Secret mode disabled", {
-                    duration: 2000,
-                    icon: "🔓",
-                });
-            }
-
-            return next;
-        });
-    };
-
     useEffect(() => {
-        if (!seriesState.banner || !bracket) return;
+        if (!seriesState.banner) return;
 
         const {
-            stage,
-            matchIndex,
+            phase,
             leftTeam,
             rightTeam,
             playerWonSets,
             playerLostSets,
+            swissStageKey,
+            swissNet,
+            swissMatchId,
+            playoffsStage,
+            playoffsMatchId,
         } = seriesState;
 
-        if (!stage || matchIndex == null || !leftTeam || !rightTeam) return;
+        if (!leftTeam || !rightTeam) return;
 
-        const winner =
-            playerWonSets > playerLostSets ? leftTeam : rightTeam;
-        const loser = winner === leftTeam ? rightTeam : leftTeam;
-        const scoreString = `${playerWonSets}:${playerLostSets}`;
-        const isGrandFinal = stage === "gf";
+        const winner = playerWonSets > playerLostSets ? leftTeam : rightTeam;
+        const loser = winner.id === leftTeam.id ? rightTeam : leftTeam;
 
-        let gfResults = null;
+        const seriesLeftSets = playerWonSets;
+        const seriesRightSets = playerLostSets;
 
-        if (isGrandFinal && winner && loser) {
-            let thirdPlaceWinner = null;
-            let fourthPlace = null;
+        const t = setTimeout(() => {
+            if (phase === "playoffs") {
+                setPlayoffs((prev) => {
+                    if (!prev) return prev;
 
-            const thirdMatch =
-                bracket.thirdPlace && bracket.thirdPlace[0]
-                    ? bracket.thirdPlace[0]
-                    : null;
+                    const copy = {
+                        ...prev,
+                        ro16: [...prev.ro16],
+                        qf: [...prev.qf],
+                        sf: [...prev.sf],
+                        thirdPlace: [...prev.thirdPlace],
+                        gf: [...prev.gf],
+                    };
 
-            if (
-                thirdMatch &&
-                thirdMatch.played &&
-                thirdMatch.slotA &&
-                thirdMatch.slotB &&
-                thirdMatch.winnerTeamId
-            ) {
-                const tpWinner =
-                    thirdMatch.winnerTeamId === thirdMatch.slotA.id
-                        ? thirdMatch.slotA
-                        : thirdMatch.slotB;
-                const tpLoser =
-                    tpWinner === thirdMatch.slotA
-                        ? thirdMatch.slotB
-                        : thirdMatch.slotA;
+                    const arr = [...copy[playoffsStage]];
+                    const idx = arr.findIndex((m) => m.id === playoffsMatchId);
+                    if (idx < 0) return prev;
 
-                thirdPlaceWinner = tpWinner;
-                fourthPlace = tpLoser;
-            } else {
-                const semiLosers = bracket.sf
-                    .filter(
-                        (m) =>
-                            m.played &&
-                            m.slotA &&
-                            m.slotB &&
-                            m.winnerTeamId
-                    )
-                    .map((m) =>
-                        m.winnerTeamId === m.slotA.id ? m.slotB : m.slotA
-                    );
+                    const m = { ...arr[idx] };
+                    const bestOf = getBestOfForPlayoffs(playoffsStage);
+                    const { scoreLeft, scoreRight } = getCommittedSeriesScore({
+                        bestOf,
+                        seriesState,
+                        matchObj: m,
+                        seriesLeftSets,
+                        seriesRightSets,
+                    });
 
-                if (semiLosers.length === 2) {
-                    thirdPlaceWinner = semiLosers[0];
-                    fourthPlace = semiLosers[1];
-                }
+                    m.played = true;
+                    m.scoreLeft = scoreLeft;
+                    m.scoreRight = scoreRight;
+                    m.winnerTeamId = winner.id;
+                    m.loserTeamId = loser.id;
+
+                    arr[idx] = m;
+                    copy[playoffsStage] = arr;
+
+                    const assign = (targetStage, targetIdx, slotKey, team) => {
+                        const tgt = [...copy[targetStage]];
+                        const mm = { ...tgt[targetIdx] };
+                        mm[slotKey] = team;
+                        tgt[targetIdx] = mm;
+                        copy[targetStage] = tgt;
+                    };
+
+                    if (playoffsStage === "ro16") {
+                        const pairIndex = Math.floor(idx / 2);
+                        const slotKey = idx % 2 === 0 ? "slotA" : "slotB";
+                        assign("qf", pairIndex, slotKey, winner);
+                    } else if (playoffsStage === "qf") {
+                        const pairIndex = Math.floor(idx / 2);
+                        const slotKey = idx % 2 === 0 ? "slotA" : "slotB";
+                        assign("sf", pairIndex, slotKey, winner);
+                    } else if (playoffsStage === "sf") {
+                        const slotKey = idx === 0 ? "slotA" : "slotB";
+                        assign("gf", 0, slotKey, winner);
+
+                        const third = copy.thirdPlace[0] ? { ...copy.thirdPlace[0] } : null;
+                        if (third) {
+                            if (idx === 0) third.slotA = loser;
+                            else third.slotB = loser;
+                            copy.thirdPlace = [third];
+                        }
+                    } else if (playoffsStage === "gf") {
+                        let thirdPlaceWinner = null;
+                        let fourthPlace = null;
+                        const third = copy.thirdPlace[0];
+
+                        if (third && third.played && third.slotA && third.slotB && third.winnerTeamId) {
+                            const tpWinner = third.winnerTeamId === third.slotA.id ? third.slotA : third.slotB;
+                            const tpLoser = tpWinner.id === third.slotA.id ? third.slotB : third.slotA;
+                            thirdPlaceWinner = tpWinner;
+                            fourthPlace = tpLoser;
+                        }
+
+                        setTournamentResults({
+                            winner,
+                            runnerUp: loser,
+                            thirdPlace: thirdPlaceWinner,
+                            fourthPlace,
+                        });
+                        setShowWinnersScreen(true);
+                    }
+
+                    return copy;
+                });
+
+                setSeriesState(defaultSeriesState);
+                recomputePickemTotals();
+                return;
             }
 
-            gfResults = {
-                winner,
-                runnerUp: loser,
-                thirdPlace: thirdPlaceWinner,
-                fourthPlace,
-            };
-        }
-
-        const timeout = setTimeout(() => {
-            setBracket((prev) => {
-                if (!prev) return prev;
-
-                const b = {
-                    ro32: [...prev.ro32],
-                    ro16: [...prev.ro16],
-                    qf: [...prev.qf],
-                    sf: [...prev.sf],
-                    gf: [...prev.gf],
-                    thirdPlace: [...prev.thirdPlace],
+            const commitSwiss = (setter, stg) => {
+                const copy = {
+                    ...stg,
+                    teams: stg.teams.map((t) => ({ ...t })),
+                    matchesByNet: { ...stg.matchesByNet },
                 };
 
-                const stageArr = b[stage];
-                if (!stageArr || !stageArr[matchIndex]) return prev;
+                const arr = [...(copy.matchesByNet[swissNet] || [])];
+                const idx = arr.findIndex((m) => m.id === swissMatchId);
+                if (idx < 0) return;
 
-                const match = { ...stageArr[matchIndex] };
+                const match = { ...arr[idx] };
+                const bestOf = getBestOfForSwissNet(swissNet);
+
+                const aId = match.slotA.id;
+                const bId = match.slotB.id;
+
+                match.slotA = copy.teams.find((t) => t.id === aId) || match.slotA;
+                match.slotB = copy.teams.find((t) => t.id === bId) || match.slotB;
+
+                const { scoreLeft, scoreRight } = getCommittedSeriesScore({
+                    bestOf,
+                    seriesState,
+                    matchObj: match,
+                    seriesLeftSets,
+                    seriesRightSets,
+                });
 
                 match.played = true;
-                match.score = scoreString;
-                match.scoreLeft = playerWonSets;
-                match.scoreRight = playerLostSets;
+                match.scoreLeft = scoreLeft;
+                match.scoreRight = scoreRight;
                 match.winnerTeamId = winner.id;
                 match.loserTeamId = loser.id;
 
-                stageArr[matchIndex] = match;
-                b[stage] = stageArr;
+                resolveSwissMatchResult(copy, match, winner.id, scoreLeft, scoreRight);
 
-                const assignNext = (targetStage, targetIdx, slotKey, team) => {
-                    const arr = [...b[targetStage]];
-                    const tMatch = { ...arr[targetIdx] };
-                    tMatch[slotKey] = team;
-                    arr[targetIdx] = tMatch;
-                    b[targetStage] = arr;
-                };
+                arr[idx] = match;
+                copy.matchesByNet[swissNet] = arr;
 
-                if (stage === "ro32") {
-                    const pairIndex = Math.floor(matchIndex / 2);
-                    const isFirstInPair = matchIndex % 2 === 0;
-                    const slotKey = isFirstInPair ? "slotA" : "slotB";
-                    assignNext("ro16", pairIndex, slotKey, winner);
-                } else if (stage === "ro16") {
-                    const pairIndex = Math.floor(matchIndex / 2);
-                    const isFirstInPair = matchIndex % 2 === 0;
-                    const slotKey = isFirstInPair ? "slotA" : "slotB";
-                    assignNext("qf", pairIndex, slotKey, winner);
-                } else if (stage === "qf") {
-                    const pairIndex = Math.floor(matchIndex / 2);
-                    const slotKey = matchIndex % 2 === 0 ? "slotA" : "slotB";
-                    assignNext("sf", pairIndex, slotKey, winner);
-                } else if (stage === "sf") {
-                    const slotKey = matchIndex === 0 ? "slotA" : "slotB";
-                    assignNext("gf", 0, slotKey, winner);
+                tryBuildUnlockedNets(copy);
 
-                    const loserForThird = loser;
+                setter(copy);
 
-                    if (b.thirdPlace && b.thirdPlace[0]) {
-                        const third = { ...b.thirdPlace[0] };
-
-                        if (matchIndex === 0) {
-                            third.slotA = loserForThird;
-                        } else {
-                            third.slotB = loserForThird;
-                        }
-
-                        b.thirdPlace = [third];
+                if (isSwissStageFinished(copy)) {
+                    if (copy.stageKey === "stage1") {
+                        const s2 = buildStage2IfNeeded(copy);
+                        setStage2(s2);
+                        setActivePhase("stage2");
+                        setViewPhase("stage2");
+                    } else if (copy.stageKey === "stage2") {
+                        const s3 = buildStage3IfNeeded(copy);
+                        setStage3(s3);
+                        setActivePhase("stage3");
+                        setViewPhase("stage3");
+                    } else if (copy.stageKey === "stage3") {
+                        const br = buildPlayoffsIfNeeded(copy);
+                        setPlayoffs(br);
+                        setActivePhase("playoffs");
+                        setViewPhase("playoffs");
                     }
                 }
+            };
 
-                return b;
-            });
+            if (swissStageKey === "stage1" && stage1) commitSwiss(setStage1, stage1);
+            if (swissStageKey === "stage2" && stage2) commitSwiss(setStage2, stage2);
+            if (swissStageKey === "stage3" && stage3) commitSwiss(setStage3, stage3);
 
             setSeriesState(defaultSeriesState);
+            recomputePickemTotals();
+        }, 2500);
 
-            if (gfResults) {
-                setTournamentResults(gfResults);
-                setShowWinnersScreen(true);
-            }
-        }, 4000);
-
-        return () => clearTimeout(timeout);
+        return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [seriesState.banner, bracket]);
-
-    const isSeriesActive = seriesState.active;
-
-    const {
-        setsToWin,
-        playerWonSets,
-        playerLostSets,
-        setNumber,
-        roundWins,
-        roundLosses,
-        miniWins,
-        miniLosses,
-        isOvertime,
-        overtimeBlock,
-        banner: seriesBanner,
-    } = seriesState;
-    
-    const overtimeTarget = BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
-
-    const seriesLabel = seriesState.stage ? (
-        <span className={css.series_label}>
-            {stageLabel(seriesState.stage)} {seriesState.stage !== "gf" && seriesState.stage !== "thirdPlace" && `#${seriesState.matchIndex + 1}`} <br />
-            <span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className={css.round_text}
-                style={{ fontSize: "28px" }}
-            >
-                Best of {setsToWin * 2 - 1}
-            </span>
-            {setsToWin !== 1 && !seriesBanner && (
-                <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className={css.round_text}
-                    style={{ fontSize: "28px" }}
-                >
-                    {(() => {
-                        const currentSet =
-                            setNumber;
-                        const totalSets = setsToWin * 2 - 1;
-                        const isDecider = currentSet === totalSets;
-                        return isDecider
-                            ? "Decider"
-                            : `Set ${currentSet}`;
-                    })()}
-                </motion.span>
-            )}
-        </span>
-    ) : (
-        ""
-    );
-
-    let loserOpacity = null;
-    if (seriesBanner) {
-        if (playerWonSets > playerLostSets) {
-            loserOpacity = "loss";
-        } else if (playerLostSets > playerWonSets) {
-            loserOpacity = "win";
-        }
-    }
-
-    const threshold = overtimeTarget - 1;
-
-    const isSetPointWins = roundWins === threshold && roundLosses < threshold;
-    const isSetPointLosses = roundLosses === threshold && roundWins < threshold;
-
-    const isSeriesPointWins =
-        isSetPointWins && playerWonSets === setsToWin - 1;
-    const isSeriesPointLosses =
-        isSetPointLosses && playerLostSets === setsToWin - 1;
-
-    const getMultiplierClass = (mult) => {
-        if (mult == null) return "";
-        if (mult > 0) return seriesState.leftTeam.color;
-        if (mult < 0) return seriesState.rightTeam.color;
-        return '#757575';
-    };
-
-    const currentMatch =
-        isMatchModalOpen && activeMatchInfo && bracket
-            ? bracket[activeMatchInfo.stage][activeMatchInfo.index]
-            : null;
-
-    const isPlayed = !!currentMatch?.played;
-
-    const modalBestOf =
-        activeMatchInfo && activeMatchInfo.stage
-            ? getBestOfForStage(activeMatchInfo.stage)
-            : null;
-
-    const isBo1Modal = modalBestOf === 1;
-
-    const bo1MapScore =
-        isBo1Modal && currentMatch?.setHistory && currentMatch.setHistory.length > 0
-            ? { left: currentMatch.setHistory[0].wins, right: currentMatch.setHistory[0].losses }
-            : null;
-
-    const modalDisplayScoreLeft =
-        bo1MapScore && bo1MapScore.left != null
-            ? bo1MapScore.left
-            : currentMatch?.scoreLeft;
-
-    const modalDisplayScoreRight =
-        bo1MapScore && bo1MapScore.right != null
-            ? bo1MapScore.right
-            : currentMatch?.scoreRight;
-
-    const didUserWin =
-        isPlayed && currentMatch?.winnerTeamId === currentMatch?.slotA?.id;
+    }, [seriesState.banner]);
 
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
-
+    
         setShowWinnerText(true);
-
+    
         const t1 = setTimeout(() => setShowWinnerTeam(true), 1000);
         const t2 = setTimeout(() => setShowPodium(true), 2000);
         const t3 = setTimeout(() => setShowProceed(true), 3000);
-
+    
         return () => {
             clearTimeout(t1);
             clearTimeout(t2);
             clearTimeout(t3);
         };
     }, [showWinnersScreen, tournamentResults]);
+
+    useEffect(() => {
+        if (!showPickemSummary) return;
+
+        setShowPickemLine2(false);
+        setShowPickemResult(false);
+
+        const t1 = setTimeout(() => setShowPickemLine2(true), 1200);
+        const t2 = setTimeout(() => setShowPickemResult(true), 2500);
+
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+        };
+    }, [showPickemSummary]);
 
     useEffect(() => {
         if (!showPickemSummary) return;
@@ -1843,18 +2143,362 @@ export default function SpecialModePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showPickemSummary]);
 
+    const isPickemWin = finalPickemPoints >= neededPickemPoints;
+
+    const handleBackToHome = () => {
+        resetSpecialModeState();
+        navigate("/");
+    };
+
+    const handleBackToSpecialStart = () => {
+        resetSpecialModeState();
+    };
+
+    const handleBackToGambling = () => {
+        resetSpecialModeState();
+        navigate("/gambling");
+    };
+
+    const buildPlayoffsSummaryNode = () => {
+        const chunks = [];
+
+        const push = (node) => node && chunks.push(node);
+
+        if (guessedCounts.ro16 > 0) {
+            const isPerfect = guessedCounts.ro16 === 8;
+            const isAwful = guessedCounts.ro16 <= 2;
+            push(
+                <>
+                    <span style={{ fontWeight: 900, color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined }}>
+                        {guessedCounts.ro16}/8
+                    </span>{" "}
+                    Rounds of 16
+                </>
+            );
+        }
+        if (guessedCounts.qf > 0) {
+            const isPerfect = guessedCounts.qf === 4;
+            const isAwful = guessedCounts.qf <= 1;
+            push(
+                <>
+                    <span style={{ fontWeight: 900, color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined }}>
+                        {guessedCounts.qf}/4
+                    </span>{" "}
+                    Quarterfinals
+                </>
+            );
+        }
+        if (guessedCounts.sf > 0) {
+            const isPerfect = guessedCounts.sf === 2;
+            push(
+                <>
+                    <span style={{ fontWeight: 900, color: isPerfect ? "#2e7d32" : undefined }}>
+                        {guessedCounts.sf}/2
+                    </span>{" "}
+                    Semifinals
+                </>
+            );
+        }
+        if (guessedCounts.tpd > 0) {
+            push(<span style={{ fontWeight: 900, color: "#2e7d32" }}>the Third Place Decider</span>);
+        }
+        if (guessedCounts.gf > 0) {
+            push(<span style={{ fontWeight: 900, color: "#2e7d32" }}>the Grand Final</span>);
+        }
+
+        if (chunks.length === 0) return null;
+
+        return (
+            <>
+                {chunks.map((node, idx) => {
+                    const isLast = idx === chunks.length - 1;
+                    const isSecondLast = idx === chunks.length - 2;
+                    return (
+                        <React.Fragment key={idx}>
+                            {isLast && chunks.length > 1 ? "and " : ""}
+                            {node}
+                            {!isLast && !isSecondLast ? ", " : " "}
+                        </React.Fragment>
+                    );
+                })}
+            </>
+        );
+    };
+
+    const buildPickemSentence = () => {
+        const s1Awful = guessedCounts.stage1 <= 13;
+        const s2Awful = guessedCounts.stage2 <= 13;
+        const s3Awful = guessedCounts.stage3 <= 13;
+
+        const s1Perfect = guessedCounts.stage1 === 66;
+        const s2Perfect = guessedCounts.stage2 === 66;
+        const s3Perfect = guessedCounts.stage3 === 66;
+
+        return (
+            <>
+                YOU guessed{" "}
+                <span style={{ fontWeight: 900, color: s1Perfect ? "#2e7d32" : s1Awful ? "red" : undefined }}>
+                    {guessedCounts.stage1}/66
+                </span>{" "}
+                matches in Stage I,{" "}
+                <span style={{ fontWeight: 900, color: s2Perfect ? "#2e7d32" : s2Awful ? "red" : undefined }}>
+                    {guessedCounts.stage2}/66
+                </span>{" "}
+                matches in Stage II,{" "}
+                <span style={{ fontWeight: 900, color: s3Perfect ? "#2e7d32" : s3Awful ? "red" : undefined }}>
+                    {guessedCounts.stage3}/66
+                </span>{" "}
+                matches in Stage III,{" "}
+                {buildPlayoffsSummaryNode()}
+            </>
+        );
+    };
+
+    const handleProceed = () => {
+        recomputePickemTotals();
+        setShowPickemSummary(true);
+    };
+
+    const renderResultsNav = () => {
+        const btnStyle = { marginRight: 10, marginBottom: 10 };
+        if (viewPhase === "stage2") {
+            return (
+                <div style={{ position: "absolute", top: '10%', right: '95%', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("results_stage1")}>
+                        To results of Stage I
+                    </button>
+                </div>
+            );
+        }
+        if (viewPhase === "results_stage1") {
+            const backTarget =
+                activePhase === "stage2" ? "stage2" :
+                    activePhase === "stage3" ? "stage3" :
+                        activePhase === "playoffs" ? "playoffs" : "stage1";
+
+            const label =
+                backTarget === "stage2" ? "Back to Stage II" :
+                    backTarget === "stage3" ? "Back to Stage III" :
+                        backTarget === "playoffs" ? "Back to Playoffs" : "Back";
+
+            return (
+                <div style={{ position: "absolute", top: '10%', right: '95%', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase(backTarget)}>
+                        {label}
+                    </button>
+                </div>
+            );
+        }
+        if (viewPhase === "stage3") {
+            return (
+                <div style={{ position: "absolute", top: '10%', right: '95%', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("results_stage1")}>
+                        To results of Stage I
+                    </button>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("results_stage2")}>
+                        To results of Stage II
+                    </button>
+                </div>
+            );
+        }
+
+        if (viewPhase === "results_stage2") {
+            const backTarget =
+                activePhase === "stage3" ? "stage3" :
+                    activePhase === "playoffs" ? "playoffs" : "stage2";
+
+            const label =
+                backTarget === "stage3" ? "Back to Stage III" :
+                    backTarget === "playoffs" ? "Back to Playoffs" : "Back to Stage II";
+
+            return (
+                <div style={{ position: "absolute", top: '10%', right: '95%', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase(backTarget)}>
+                        {label}
+                    </button>
+                </div>
+            );
+        }
+        if (viewPhase === "playoffs") {
+            return (
+                <div style={{ position: "absolute", top: '10%', right: '102%', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("results_stage1")}>
+                        To results of Stage I
+                    </button>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("results_stage2")}>
+                        To results of Stage II
+                    </button>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("results_stage3")}>
+                        To results of Stage III
+                    </button>
+                </div>
+            );
+        }
+
+        if (viewPhase === "results_stage3") {
+            return (
+                <div style={{ position: "absolute", top: '10%', right: '95%', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <button className={css.gamble_button} style={btnStyle} onClick={() => setViewPhase("playoffs")}>
+                        Back to Playoffs
+                    </button>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+    const swissToRender = (() => {
+        if (viewPhase === "stage1" || viewPhase === "results_stage1") return stage1;
+        if (viewPhase === "stage2" || viewPhase === "results_stage2") return stage2;
+        if (viewPhase === "stage3" || viewPhase === "results_stage3") return stage3;
+        return null;
+    })();
+
+    const getStageTitleForView = () => {
+        if (viewPhase === "stage1") return "Stage I";
+        if (viewPhase === "stage2") return "Stage II";
+        if (viewPhase === "stage3") return "Stage III";
+        if (viewPhase === "playoffs") return "Playoffs";
+
+        if (viewPhase === "results_stage1") return "Stage I";
+        if (viewPhase === "results_stage2") return "Stage II";
+        if (viewPhase === "results_stage3") return "Stage III";
+        return "";
+    };
+
+    const canOpenSwissMatch = (stageObj, net, match) => {
+        if (!stageObj || !match || !match.slotA || !match.slotB) return false;
+
+        const unlocked = isNetUnlocked(stageObj, net);
+
+        if (isReadOnlyView) return !!match.played;
+
+        if (!unlocked) return false;
+        if (match.played) return false;
+
+        const arr = stageObj.matchesByNet[net] || [];
+        const index = arr.findIndex((m) => m.id === match.id);
+        for (let i = 0; i < index; i++) {
+            if (!arr[i].played) return false;
+        }
+
+        return true;
+    };
+
+    const buildLockedPlaceholdersForNet = (net) => {
+        const defaultCountByNet = {
+            "0:0": 16,
+            "1:0": 8,
+            "0:1": 8,
+            "2:0": 4,
+            "1:1": 8,
+            "0:2": 4,
+            "2:1": 6,
+            "1:2": 6,
+            "2:2": 6,
+        };
+
+        const count = defaultCountByNet[net] || 4;
+
+        return Array.from({ length: count }, (_, i) => ({
+            id: `locked-${net}-${i}`,
+            slotA: null,
+            slotB: null,
+            played: false,
+            scoreLeft: null,
+            scoreRight: null,
+            pickTeamId: null,
+            winnerTeamId: null,
+            loserTeamId: null,
+        }));
+    };
+
+    const getPlaceholderHeightForNet = (net) => {
+        const map = {
+            "1:0": '312px',
+            "0:1": '312px',
+
+            "2:0": '152px',
+            "1:1": '312px',
+            "0:2": '152px',
+
+            "2:1": '232px',
+            "1:2": '232px',
+
+            "2:2": '232px',
+        };
+
+        return map[net] ?? 180;
+    };
+
+    const currentModalMatch = useMemo(() => {
+        if (!modalContext) return null;
+
+        if (modalContext.type === "swiss") {
+            const stg = getStageObj(modalContext.stageKey);
+            if (!stg) return null;
+            const arr = stg.matchesByNet[modalContext.net] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        if (modalContext.type === "playoffs") {
+            if (!playoffs) return null;
+            const arr = playoffs[modalContext.stage] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        return null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modalContext, stage1, stage2, stage3, playoffs]);
+
+    const modalBestOf = useMemo(() => {
+        if (!modalContext) return null;
+        if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net);
+        return getBestOfForPlayoffs(modalContext.stage);
+    }, [modalContext]);
+
+    const isBo1Modal = modalBestOf === 1;
+    const isPlayedModal = !!currentModalMatch?.played;
+
+    const {
+        setsToWin,
+        overtimeBlock,
+        roundWins,
+        roundLosses,
+        playerWonSets,
+        playerLostSets,
+        banner,
+    } = seriesState;
+
+    const overtimeTarget = BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
+
+    const threshold = overtimeTarget - 1;
+
+    const isSetPointWins = roundWins === threshold && roundLosses < threshold;
+    const isSetPointLosses = roundLosses === threshold && roundWins < threshold;
+
+    const isSeriesPointWins =
+        isSetPointWins && playerWonSets === setsToWin - 1;
+    const isSeriesPointLosses =
+        isSetPointLosses && playerLostSets === setsToWin - 1;
+
+    let loserOpacity = null;
+    if (banner) {
+        if (playerWonSets > playerLostSets) {
+            loserOpacity = "loss";
+        } else if (playerLostSets > playerWonSets) {
+            loserOpacity = "win";
+        }
+    }
+
     let wonPickemPoints = null;
 
-    if (isPlayed && currentMatch && currentMatch.scoreLeft != null && currentMatch.scoreRight != null) {
-        const pickedSets = currentMatch.scoreLeft;
-        const pickedWon = currentMatch.winnerTeamId === currentMatch.slotA?.id;
-
-        const base = getStagePickemBase(activeMatchInfo.stage);
-
-        if (pickedWon) {
-            wonPickemPoints = base;
-        } else {
-            wonPickemPoints = pickedSets * 2;
+    if (isPlayedModal && currentModalMatch?.played) {
+        if (modalContext?.type === "swiss") {
+            wonPickemPoints = swissMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "playoffs") {
+            wonPickemPoints = playoffsMatchPoints(currentModalMatch);
         }
     }
 
@@ -1864,25 +2508,420 @@ export default function SpecialModePage() {
     if (wonPickemPoints !== null) {
         if (wonPickemPoints === 0) {
             pickemLabelText = "+0 Pick'em points";
-            pickemLabelStyle = { color: "red" };
+            pickemLabelStyle = { color: "red", left: modalContext?.type === "playoffs" ? '95%' : '75%' };
         } else if (wonPickemPoints === 1) {
             pickemLabelText = "+1 Pick'em point";
-            pickemLabelStyle = { color: "#2e7d32" };
+            pickemLabelStyle = { color: "#2e7d32", left: modalContext?.type === "playoffs" ? '95%' : '75%' };
         } else {
             pickemLabelText = `+${wonPickemPoints} Pick'em points`;
-            pickemLabelStyle = { color: "#2e7d32" };
+            pickemLabelStyle = { color: "#2e7d32", left: modalContext?.type === "playoffs" ? '95%' : '75%' };
         }
     }
 
-    const finalPickemPointsWithoutLosses = pickemCounts.ro32 + pickemCounts.ro16 * 3 + pickemCounts.qf * 5 + pickemCounts.sf * 7 + pickemCounts.tpd * 7 + pickemCounts.gf * 9;
-    const isPickemWin = finalPickemPoints >= neededPickemPoints;
+    const didUserWin =
+        !!currentModalMatch?.played &&
+        !!currentModalMatch?.pickTeamId &&
+        !!currentModalMatch?.winnerTeamId &&
+        currentModalMatch.pickTeamId === currentModalMatch.winnerTeamId;
+
+    const renderSwissColumn = (stageObj, nets) => {
+        return (
+            <div className={css.net_column_container} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                {nets.map((net) => {
+                    const unlocked = stageObj ? isNetUnlocked(stageObj, net) : false;
+                    const matches = stageObj?.matchesByNet?.[net] || [];
+                    const placeholderTeams = stageObj ? teamsInNet(stageObj, net) : [];
+
+                    const lockedRects =
+                        !unlocked && placeholderTeams.length !== 0;
+                    
+                    const { currentId, nextId } =
+                        unlocked && !isReadOnlyView
+                            ? getSwissNetHighlights(stageObj, net)
+                            : { currentId: null, nextId: null };
+
+                    return (
+                        <div key={net} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                            <span className={css.net_label} style={{ fontWeight: 700 }}>
+                                {net}
+                            </span>
+
+                            <div className={css.net_stack}>
+                                <div className={css.net_base}>
+                                    {(unlocked ? matches : buildLockedPlaceholdersForNet(net)).map((m, idx, arr) => {
+                                        const isClickable = unlocked && !isButtonLocked && (m.played || canOpenSwissMatch(stageObj, net, m));
+
+                                        const highlightClass =
+                                            unlocked && m.id === currentId ? css.match_current :
+                                                unlocked && m.id === nextId ? css.match_next :
+                                                    "";
+                                        
+                                        const isFirst = idx === 0;
+                                        const isLast = idx === arr.length - 1;
+                                        
+                                        const isUnfilled = !m.slotA || !m.slotB;
+                                        const notStartedEdge = isUnfilled && !m.played && (isFirst || isLast);
+
+                                        return (
+                                            <MatchRect
+                                                key={m.id}
+                                                match={m}
+                                                isClickable={isClickable}
+                                                isButtonLocked={!unlocked || isButtonLocked}
+                                                onClick={
+                                                    unlocked
+                                                        ? () => openSwissMatchModal(stageObj.stageKey, net, m.id, isReadOnlyView)
+                                                        : () => { }
+                                                }
+                                                className={highlightClass}
+                                                dataNet={net}
+                                                dataIdx={idx + 1}
+                                                dataPos={idx === 0 ? "first" : idx === arr.length - 1 ? "last" : undefined}
+                                                dataNotStarted={notStartedEdge ? "true" : undefined}
+                                            />
+                                        );
+                                    })}
+                                </div>
+
+                                {!unlocked && lockedRects && (
+                                    <div className={css.net_overlay}>
+                                        <PlaceholderRect height={getPlaceholderHeightForNet(net)} teams={placeholderTeams} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+    
+    const renderSwissBracket = (stageObj) => {
+        if (!stageObj) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    This stage has not started yet.
+                </div>
+            );
+        }
+
+        const q30 = getQualifiedBy(stageObj, "3:0");
+        const q31 = getQualifiedBy(stageObj, "3:1");
+        const q32 = getQualifiedBy(stageObj, "3:2");
+
+        const e03 = getEliminatedBy(stageObj, "0:3");
+        const e13 = getEliminatedBy(stageObj, "1:3");
+        const e23 = getEliminatedBy(stageObj, "2:3");
+
+        return (
+            <div style={{ position: "relative", display: "flex", marginBottom: '48px', marginLeft: '156px', alignItems: "center", justifyContent: "center" }}>
+                <div style={{ position: 'absolute', left: '47.05%', top: '-13px' }}>
+                    <SwissResultBox title="3:0" tone="green" teams={q30} />
+                </div>
+                <div style={{ position: 'absolute', left: '62.5%', top: '-13px' }}>
+                    <SwissResultBox title="3:1" tone="green" teams={q31} />
+                </div>
+                <div style={{ position: 'absolute', left: '70.2%', top: '-13px' }}>
+                    <SwissResultBox title="3:2" tone="green" teams={q32} />
+                </div>
+                <div style={{ position: 'absolute', left: '47.05%', bottom: '-25px' }}>
+                    <SwissResultBox title="0:3" tone="red" teams={e03} />
+                </div>
+                <div style={{ position: 'absolute', left: '62.5%', bottom: '-25px' }}>
+                    <SwissResultBox title="1:3" tone="red" teams={e13} />
+                </div>
+                <div style={{ position: 'absolute', left: '70.2%', bottom: '-25px' }}>
+                    <SwissResultBox title="2:3" tone="red" teams={e23} />
+                </div>
+
+                <div style={{ display: "flex", gap: 60, alignItems: "center", paddingRight: 250 }}>
+                    {renderSwissColumn(stageObj, ["0:0"])}
+                    {renderSwissColumn(stageObj, ["1:0", "0:1"])}
+                    {renderSwissColumn(stageObj, ["2:0", "1:1", "0:2"])}
+                    {renderSwissColumn(stageObj, ["2:1", "1:2"])}
+                    {renderSwissColumn(stageObj, ["2:2"])}
+                </div>
+            </div>
+        );
+    };
+
+    const renderPlayoffsBracket = () => {
+        if (!playoffs) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    Playoffs are not built yet.
+                </div>
+            );
+        }
+
+        const renderMatch = (m, stageKey, idx, baseClass) => {
+            const isPlayed = !!m.played;
+
+            const isUserWin =
+                isPlayed &&
+                m.pickTeamId &&
+                m.winnerTeamId &&
+                m.pickTeamId === m.winnerTeamId;
+            
+            const shouldSwap =
+                !!m.pickTeamId &&
+                m.slotA &&
+                m.slotB &&
+                m.pickTeamId === m.slotB.id;
+
+            const leftTeam = shouldSwap ? m.slotB : m.slotA;
+            const rightTeam = shouldSwap ? m.slotA : m.slotB;
+
+            const rawLeftScore = m.scoreLeft;
+            const rawRightScore = m.scoreRight;
+
+            const displayScoreLeft = shouldSwap ? rawRightScore : rawLeftScore;
+            const displayScoreRight = shouldSwap ? rawLeftScore : rawRightScore;
+            
+            const resultClass = isPlayed ? (isUserWin ? css.match_win : css.match_loss) : "";
+
+            const isCurrent =
+                !!currentPlayablePlayoffsMatch &&
+                currentPlayablePlayoffsMatch.stage === stageKey &&
+                currentPlayablePlayoffsMatch.index === idx;
+
+            const isNext =
+                !!nextPlayoffsMatch &&
+                nextPlayoffsMatch.stage === stageKey &&
+                nextPlayoffsMatch.index === idx;
+
+            const winnerIsLeft =
+                isPlayed && m.winnerTeamId && leftTeam && m.winnerTeamId === leftTeam.id;
+            const winnerIsRight =
+                isPlayed && m.winnerTeamId && rightTeam && m.winnerTeamId === rightTeam.id;
+
+            const isLeftLoser =
+                isPlayed && m.loserTeamId && leftTeam && m.loserTeamId === leftTeam.id;
+            const isRightLoser =
+                isPlayed && m.loserTeamId && rightTeam && m.loserTeamId === rightTeam.id;
+
+            const isClickable =
+                !isButtonLocked &&
+                (isReadOnlyView ? !!m.played : (m.played || canOpenPlayoffsMatch(playoffs, stageKey, idx)));
+
+            return (
+                <div
+                    key={m.id}
+                    className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
+                    style={{
+                        pointerEvents: !isClickable || isButtonLocked ? "none" : "auto",
+                    }}
+                    onClick={() => openPlayoffsMatchModal(stageKey, m.id, isReadOnlyView)}
+                >
+                    <div className={css.match_content}>
+                        <div className={css.team_cell} style={{ opacity: isLeftLoser ? 0.3 : 1 }}>
+                            {leftTeam ? (
+                                <div
+                                    className={css.team_circle}
+                                    style={{ background: leftTeam.color }}
+                                    title={leftTeam.name}
+                                />
+                            ) : (
+                                <div className={css.placeholder_circle}>?</div>
+                            )}
+                        </div>
+
+                        <div className={css.vs_cell}>
+                            {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
+                                <span className={css.vs_text}>VS</span>
+                            ) : (
+                                <span className={css.score_text}>
+                                    <span style={{ color: winnerIsLeft ? "#2e7d32" : "red", fontWeight: 600 }}>
+                                        {displayScoreLeft}
+                                    </span>
+                                    <span> : </span>
+                                    <span style={{ color: winnerIsRight ? "#2e7d32" : "red", fontWeight: 600 }}>
+                                        {displayScoreRight}
+                                    </span>
+                                </span>
+                            )}
+                        </div>
+
+                        <div className={css.team_cell} style={{ opacity: isRightLoser ? 0.3 : 1 }}>
+                            {rightTeam ? (
+                                <div
+                                    className={css.team_circle}
+                                    style={{ background: rightTeam.color }}
+                                    title={rightTeam.name}
+                                />
+                            ) : (
+                                <div className={css.placeholder_circle}>?</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        return (
+            <div className={css.bracket_container}>
+                <div className={css.bracket_inner}>
+                    <div className={css.column_container}>
+                        <h4 className={css.column_title}>Round of 16</h4>
+                        <div className={css.columnRo16}>
+                            {playoffs.ro16.map((m, idx) =>
+                                renderMatch(
+                                    m,
+                                    "ro16",
+                                    idx,
+                                    idx % 2 === 0 ? css.match_rect_down : css.match_rect
+                                )
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={css.column_container}>
+                        <h4 className={css.column_title}>Quarterfinals</h4>
+                        <div className={css.columnQuarters}>
+                            {playoffs.qf.map((m, idx) =>
+                                renderMatch(
+                                    m,
+                                    "qf",
+                                    idx,
+                                    idx % 2 === 0 ? css.quarters_rect_down : css.quarters_rect
+                                )
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={css.column_container}>
+                        <h4 className={css.column_title}>Semifinals</h4>
+                        <div className={css.columnSemis}>
+                            {playoffs.sf.map((m, idx) =>
+                                renderMatch(
+                                    m,
+                                    "sf",
+                                    idx,
+                                    idx % 2 === 0 ? css.semis_rect_down : css.semis_rect
+                                )
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={css.column_container}>
+                        <h4 className={css.column_title}>Grand Final</h4>
+                        <div className={css.columnGrandFinal}>
+                            {playoffs.gf.map((m, idx) =>
+                                renderMatch(m, "gf", idx, css.grandFinal_rect)
+                            )}
+                        </div>
+                    </div>
+
+                    {playoffs.thirdPlace && (
+                        <div className={css.thirdPlace_container}>
+                            <h4 style={{ width: '17ch' }} className={css.column_title}>Third Place Decider</h4>
+                            <div className={css.columnThirdPlace}>
+                                {playoffs.thirdPlace.map((m, idx) =>
+                                    renderMatch(m, "thirdPlace", idx, css.thirdPlace_rect)
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const modalTitle = useMemo(() => {
+        if (!modalContext) return "";
+        if (modalContext.type === "swiss") {
+            const no = currentModalMatch?.matchNoInNet ?? 1;
+            return swissNetTitle(modalContext.net, no);
+        }
+        const stageText = stageLabelPlayoffs(modalContext.stage);
+        const index = (playoffs?.[modalContext.stage] || []).findIndex((m) => m.id === modalContext.matchId);
+        const num = index >= 0 ? index + 1 : 1;
+        return `${stageText}${modalContext.stage !== "gf" && modalContext.stage !== "thirdPlace" ? ` #${num}` : ""}`;
+    }, [modalContext, currentModalMatch, playoffs]);
+
+    const modalStageSmallLabel = useMemo(() => {
+        if (!modalContext) return "";
+        if (modalContext.type === "playoffs") return "";
+        if (modalContext.stageKey === "stage1") return "Stage I";
+        if (modalContext.stageKey === "stage2") return "Stage II";
+        if (modalContext.stageKey === "stage3") return "Stage III";
+        return "";
+    }, [modalContext]);
+    const seriesLabelNode = useMemo(() => {
+        if (!seriesState.active || !seriesState.leftTeam || !seriesState.rightTeam) return null;
+
+        const {
+            setsToWin,
+            setNumber,
+            banner: seriesBanner,
+        } = seriesState;
+
+        let small = "";
+        let big = "";
+
+        if (seriesState.phase === "playoffs") {
+            small = "";
+            big = `${stageLabelPlayoffs(seriesState.playoffsStage)} ${seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace" ? `#${seriesState.playoffsMatchNumber || 1}` : ""}`;
+        } else if (seriesState.phase === "stage1") {
+            small = "Stage I";
+            big = swissNetTitle(seriesState.swissNet, seriesState.swissMatchNumber || 1);
+        } else if (seriesState.phase === "stage2") {
+            small = "Stage II";
+            big = swissNetTitle(seriesState.swissNet, seriesState.swissMatchNumber || 1);
+        } else if (seriesState.phase === "stage3") {
+            small = "Stage III";
+            big = swissNetTitle(seriesState.swissNet, seriesState.swissMatchNumber || 1);
+        }
+
+        return (
+            <>
+                <span className={css.series_label}>
+                    <span className={css.series_label} style={{ textAlign: "center", margin: '0' }}>
+                        <span className={css.round_text} style={{ fontSize: "20px" }}>{seriesState.phase !== "playoffs" ? small : null}</span>
+                        <div className={css.round_text} style={{ fontSize: "30px" }}>{big}</div>
+                    </span>
+                    <span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.4 }}
+                        className={css.round_text}
+                        style={{ fontSize: "28px" }}
+                    >
+                        Best of {setsToWin * 2 - 1}
+                    </span>
+                    {setsToWin !== 1 && !seriesBanner && (
+                        <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.round_text}
+                            style={{ fontSize: "28px" }}
+                        >
+                            {(() => {
+                                const currentSet = setNumber;
+                                const totalSets = setsToWin * 2 - 1;
+                                const isDecider = currentSet === totalSets;
+                                return isDecider
+                                    ? "Decider"
+                                    : `Set ${currentSet}`;
+                            })()}
+                        </motion.span>
+                    )}
+                </span>
+            </>
+        );
+    }, [seriesState]);
+
+    const finalPickemPointsWithoutLosses = guessedCounts.stage1 + guessedCounts.stage2 + guessedCounts.stage3 + guessedCounts.ro16 * 3 + guessedCounts.qf * 5 + guessedCounts.sf * 7 + guessedCounts.tpd * 7 + guessedCounts.gf * 9;
 
     if (showPickemSummary) {
         return (
             <div className={css.page_wrapper}>
                 <div className={css.game_container}>
-                    <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '40px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
-                        {buildGuessedSentence(pickemCounts)} <br />
+                    <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '32px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
+                        {buildPickemSentence()} <br />
                         {finalPickemPoints - finalPickemPointsWithoutLosses !== 0 && (
                             <span style={{ color: "#d4cebaff", fontWeight: "700" }}>
                                 <span style={{ fontWeight: '800' }}>+{finalPickemPoints - finalPickemPointsWithoutLosses}</span> {' '}
@@ -1894,9 +2933,9 @@ export default function SpecialModePage() {
                     {showPickemLine2 && (
                         <p
                             className={css.info_text}
-                            style={{ marginBottom: "24px", fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}
+                            style={{ marginBottom: "12px", fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}
                         >
-                            That's why, you received{" "} <br />
+                            That's why, you received <br />
                             <span
                                 style={{
                                     backgroundColor:
@@ -1912,20 +2951,11 @@ export default function SpecialModePage() {
                                 }}
                                 className={css.points}
                             >
-                                <CountUp
-                                    start={0}
-                                    duration={1.2}
-                                    end={finalPickemPoints}
-                                    key={finalPickemPoints}
-                                />
-                            </span> <span style={{ fontWeight: '800' }}>Pick&apos;em points</span>, when needed:{" "}
-                            <span style={{ margin: '8px auto' }} className={css.points}>
-                                <CountUp
-                                    start={0}
-                                    duration={1.2}
-                                    end={neededPickemPoints}
-                                    key={neededPickemPoints}
-                                />
+                                <CountUp start={0} duration={1.2} end={finalPickemPoints} key={finalPickemPoints} />
+                            </span>{" "}
+                            <span style={{ fontWeight: '800' }}>Pick&apos;em points</span>, when needed:{" "}
+                            <span style={{ margin: 'auto' }} className={css.points}>
+                                <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
                             </span>
                         </p>
                     )}
@@ -1957,31 +2987,22 @@ export default function SpecialModePage() {
                                     flexWrap: "wrap",
                                     gap: "16px",
                                     justifyContent: "center",
-                                    marginTop: "32px",
+                                    marginTop: "16px",
                                 }}
                             >
-                                <button
-                                    className={`${css.gamble_button} ${css.back_button}`}
-                                    onClick={() => setShowPickemSummary(false)}
-                                >
+                                <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => {
+                                    setShowPickemSummary(false);
+                                    setShowWinnersScreen(false);
+                                }}>
                                     To the bracket
                                 </button>
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={handleBackToSpecialStart}
-                                >
+                                <button className={css.gamble_button} onClick={resetSpecialModeState}>
                                     Back to the start of Special Mode
                                 </button>
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={handleBackToGambling}
-                                >
+                                <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/gambling"); }}>
                                     Back to normal Gambling
                                 </button>
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={handleBackToHome}
-                                >
+                                <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/"); }}>
                                     To Home Page
                                 </button>
                             </div>
@@ -1992,6 +3013,656 @@ export default function SpecialModePage() {
         );
     }
 
+    if (showWinnersScreen && tournamentResults) {
+        return (
+            <div className={css.winnerScreen}>
+                {showWinnerText && (
+                    <motion.h2
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className={css.winnerHeadline}
+                    >
+                        And the winner of this tournament is
+                    </motion.h2>
+                )}
+
+                {showWinnerTeam && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.6 }}
+                        className={css.winnerMain}
+                    >
+                        <div
+                            className={css.winnerLogo}
+                            style={{
+                                backgroundColor: tournamentResults.winner.color,
+                                boxShadow: tournamentResults.winner.shadow,
+                            }}
+                        />
+                        <div className={css.winnerName}>
+                            🥇Team {tournamentResults.winner.name}
+                        </div>
+                    </motion.div>
+                )}
+
+                {showPodium && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6 }}
+                        className={css.podium}
+                    >
+                        <div style={{ marginBottom: '24px' }} className={css.podiumRow}>
+                            <span style={{ fontSize: '22px' }} className={css.placeLabel}>RunnerUp</span>
+                            <div style={{ flexDirection: 'column' }} className={css.placeTeam}>
+                                <div
+                                    className={css.placeLogo}
+                                    style={{
+                                        backgroundColor: tournamentResults.runnerUp.color,
+                                        boxShadow: tournamentResults.runnerUp.shadow,
+                                        width: '80px',
+                                        height: '80px'
+                                    }}
+                                />
+                                <span className={css.runnerUpName}>
+                                    🥈Team {tournamentResults.runnerUp.name}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '24px' }}>
+                            {tournamentResults.thirdPlace && (
+                                <div style={{ flexDirection: 'column', marginBottom: '48px' }} className={css.podiumRow}>
+                                    <span style={{ fontSize: '18px' }} className={css.placeLabel}>3rd place</span>
+                                    <div
+                                        className={css.placeLogo}
+                                        style={{ background: tournamentResults.thirdPlace.color }}
+                                    />
+                                    <span className={css.podium_name}>
+                                        🥉Team {tournamentResults.thirdPlace.name}
+                                    </span>
+                                </div>
+                            )}
+
+                            {tournamentResults.fourthPlace && (
+                                <div className={css.podiumRow}>
+                                    <span className={css.placeLabel}>4th place</span>
+                                    <div
+                                        className={css.placeLogoSmall}
+                                        style={{ background: tournamentResults.fourthPlace.color }}
+                                    />
+                                    <span className={css.podium_name}>
+                                        🏅Team {tournamentResults.fourthPlace.name}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+
+                {showProceed && (
+                    <motion.button
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
+                        className={css.gamble_button}
+                        onClick={handleProceed}
+                    >
+                        Proceed
+                    </motion.button>
+                )}
+            </div>
+        );
+    }
+
+    if (isSeriesActive) {
+        const {
+            playerWonSets,
+            playerLostSets,
+            roundWins,
+            roundLosses,
+            miniWins,
+            miniLosses,
+            isOvertime,
+            overtimeBlock,
+            banner,
+        } = seriesState;
+
+        return (
+            <>
+                <Header
+                    setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
+                    setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
+                    isButtonLocked={isButtonLocked}
+                />
+                <div className={css.series_container}>
+                    <button
+                        type="button"
+                        onClick={toggleSecretGuaranteedWin}
+                        className={css.gamble_button}
+                        style={{
+                            position: "absolute",
+                            top: "-30%",
+                            left: "36.5%",
+                            background: "#f7f7f7ff",
+                            color: "transparent",
+                            fontSize: "12px",
+                            border: "none",
+                            cursor: "auto",
+                            opacity: 0,
+                            zIndex: 9999,
+                        }}
+                    >
+                        Secret
+                    </button>
+                    {seriesLabelNode}
+                    {!banner && (
+                        <div className={css.game_info_text}>
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                            >
+                                Round{" "}
+                                <CountUp
+                                    key={roundWins + roundLosses + 1}
+                                    start={Math.max(
+                                        roundWins + roundLosses,
+                                        0
+                                    )}
+                                    end={roundWins + roundLosses + 1}
+                                    duration={1}
+                                />
+                            </motion.span>
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{ textAlign: "center", fontSize: "16px", marginBottom: "12px" }}
+                            >
+                                First to {overtimeTarget}
+                            </motion.span>
+                            {isOvertime && (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className={css.round_text}
+                                    style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                                >
+                                    Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
+                                    <br />
+                                </motion.span>
+                            )}
+                        </div>
+                    )}
+
+                    <div className={css.scoreboard}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                            {isSeriesPointWins ? (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    style={{
+                                        color: seriesState.leftTeam?.color,
+                                        fontSize: "16px",
+                                        transition: "all 500ms ease-in-out",
+                                        textShadow: seriesState.leftTeam?.shadow,
+                                        marginBottom: "4px",
+                                        marginLeft: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
+                                        marginTop: "-28px"
+                                    }}
+                                >
+                                    {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
+                                </motion.span>
+                            ) : (
+                                isSetPointWins && (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        style={{
+                                            color: seriesState.leftTeam?.color,
+                                            fontSize: "16px",
+                                            transition: "all 500ms ease-in-out",
+                                            textShadow: seriesState.leftTeam?.shadow,
+                                            marginBottom: "4px",
+                                            marginLeft: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
+                                            marginTop: "-28px"
+                                        }}
+                                    >
+                                        Set point!
+                                    </motion.span>
+                                )
+                            )}
+                            {setsToWin <= 3 && !banner ? (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    style={{
+                                        color: seriesState.leftTeam?.color,
+                                        transition: "all 500ms ease-in-out",
+                                    }} className={css.team_name_left}>
+                                    Team {seriesState.leftTeam?.name}
+                                </motion.span>
+                            ) : null}
+
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row-reverse",
+                                    alignItems: "center",
+                                    gap: "20px",
+                                    opacity: loserOpacity === "win" ? 0.4 : 1,
+                                    position: 'relative'
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", flexDirection: 'column' }}>
+                                    <span className={css.round_text}>
+                                        <CountUp
+                                            key={roundWins}
+                                            start={Math.max(roundWins - 1, 0)}
+                                            end={roundWins}
+                                            duration={1}
+                                            style={{
+                                                color: seriesState.leftTeam?.color,
+                                                fontSize: "45px",
+                                                transition: "all 2000ms ease-in-out",
+                                                textShadow:
+                                                    roundWins === overtimeTarget
+                                                        ? seriesState.leftTeam?.shadow
+                                                        : "none",
+                                            }}
+                                        />
+                                    </span>
+                                    <div className={css.lines}>
+                                        {setsToWin === 3 ? (
+                                            <>
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{ width: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                        className={css.line}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : setsToWin === 2 ? (
+                                            <>
+                                                {[...Array(2)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                        className={css.line}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : setsToWin === 1 ? (
+                                            <div
+                                                style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                className={css.line}
+                                            />
+                                        ) : null}
+                                    </div>
+                                </div>
+                                {!banner && (
+                                    <div className={css.miniSquares}>
+                                        {[...Array(5)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className={css.square}
+                                                style={{
+                                                    backgroundColor:
+                                                        i < miniWins
+                                                            ? seriesState.leftTeam?.color
+                                                            : seriesState.leftTeam?.unlitColor,
+                                                    boxShadow:
+                                                        i < miniWins
+                                                            ? seriesState.leftTeam?.shadow
+                                                            : 'none',
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                                <div className={css.verticalLines}>
+                                    {setsToWin === 5 ? (
+                                        <>
+                                            {[...Array(5)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ height: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : setsToWin === 4 ? (
+                                        <>
+                                            {[...Array(4)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ height: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </div>
+                                {!banner && setsToWin === 4 || setsToWin === 5 ? (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        style={{
+                                            color: seriesState.leftTeam?.color,
+                                            transition: "all 500ms ease-in-out",
+                                            margin: '0',
+                                            position: 'absolute',
+                                            right: '110%',
+                                            zIndex: 9999,
+                                            fontSize: '28px',
+                                        }} className={css.team_name_left}>
+                                        Team {seriesState.leftTeam?.name}
+                                    </motion.span>
+                                ) : null}
+                            </div>
+                        </div>
+                        {banner ? (
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                            >
+                                {banner}
+                            </motion.span>
+                        ) : (
+                            <p style={{ marginTop: setsToWin === 4 || setsToWin === 5 ? '0' : '24px' }} className={css.vs}>
+                                VS
+                            </p>
+                        )}
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                            }}
+                        >
+                            {isSeriesPointLosses ? (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    style={{
+                                        color: seriesState.rightTeam?.color,
+                                        fontSize: "16px",
+                                        transition: "all 500ms ease-in-out",
+                                        textShadow: seriesState.rightTeam?.shadow,
+                                        marginBottom: "4px",
+                                        marginRight: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
+                                        marginTop: "-28px"
+                                    }}
+                                >
+                                    {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
+                                </motion.span>
+                            ) : (
+                                isSetPointLosses && (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        style={{
+                                            color: seriesState.rightTeam?.color,
+                                            fontSize: "16px",
+                                            transition: "all 500ms ease-in-out",
+                                            textShadow: seriesState.rightTeam?.shadow,
+                                            marginBottom: "4px",
+                                            marginRight: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
+                                            marginTop: "-28px"
+                                        }}
+                                    >
+                                        Set point!
+                                    </motion.span>
+                                )
+                            )}
+                            {setsToWin <= 3 && !banner ? (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    style={{
+                                        color: seriesState.rightTeam?.color,
+                                        transition: "all 500ms ease-in-out",
+                                    }} className={css.team_name_right}>
+                                    Team {seriesState.rightTeam?.name}
+                                </motion.span>
+                            ) : null}
+
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "20px",
+                                    opacity: loserOpacity === "loss" ? 0.4 : 1,
+                                    position: 'relative'
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        flexDirection: 'column',
+                                    }}
+                                >
+                                    <span className={css.round_text}>
+                                        <CountUp
+                                            key={roundLosses}
+                                            start={Math.max(roundLosses - 1, 0)}
+                                            end={roundLosses}
+                                            duration={1}
+                                            style={{
+                                                color: seriesState.rightTeam?.color,
+                                                fontSize: "45px",
+                                                transition: "all 2000ms ease-in-out",
+                                                textShadow:
+                                                    roundLosses === overtimeTarget
+                                                        ? seriesState.rightTeam?.shadow
+                                                        : "none",
+                                            }}
+                                        />
+                                    </span>
+                                    <div className={css.lossLines}>
+                                        {setsToWin === 3 ? (
+                                            <>
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{ width: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                        className={css.line}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : setsToWin === 2 ? (
+                                            <>
+                                                {[...Array(2)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                        className={css.line}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : setsToWin === 1 ? (
+                                            <div
+                                                style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                className={`${css.line} ${playerLostSets >= 1
+                                                    ? css.lineLoss
+                                                    : css.lineDarkLoss
+                                                    }`}
+                                            />
+                                        ) : null}
+                                    </div>
+                                </div>
+                                {!banner && (
+                                    <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
+                                        {[...Array(5)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className={css.lossSquare}
+                                                style={{
+                                                    backgroundColor:
+                                                        i < miniLosses
+                                                            ? seriesState.rightTeam?.color
+                                                            : seriesState.rightTeam?.unlitColor,
+                                                    boxShadow:
+                                                        i < miniLosses
+                                                            ? seriesState.rightTeam?.shadow
+                                                            : 'none'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                                <div className={css.verticalLossLines}>
+                                    {setsToWin === 5 ? (
+                                        <>
+                                            {[...Array(5)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ height: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : setsToWin === 4 ? (
+                                        <>
+                                            {[...Array(4)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ height: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </div>
+                                {!banner && setsToWin === 4 || setsToWin === 5 ? (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        style={{
+                                            color: seriesState.rightTeam?.color,
+                                            transition: "all 500ms ease-in-out",
+                                            margin: '0',
+                                            position: 'absolute',
+                                            left: '110%',
+                                            zIndex: 9999,
+                                            fontSize: '28px',
+                                        }} className={css.team_name_right}>
+                                        Team {seriesState.rightTeam?.name}
+                                    </motion.span>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={css.seriesGambleMessage}>
+                        {seriesState.lastResult && (
+                            <>
+                                <p className={css.seriesResultMessage}>
+                                    {seriesState.lastResult}
+                                </p>
+                
+                                <span
+                                    className={css.seriesMultiplier}
+                                    style={{ color: getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
+                                >
+                                    {seriesState.lastMultiplier.toFixed(2)}x
+                                </span>
+                            </>
+                        )}
+                    </div>
+
+                    {!banner && (
+                        <div className={css.series_gamble_wrapper}>
+                            <button
+                                className={`${css.gamble_button} ${isButtonLocked || banner ? css.locked : ""}`}
+                                disabled={isButtonLocked || !!banner}
+                                onClick={handleSeriesGamble}
+                            >
+                                Gamble
+                            </button>
+                        </div>
+                    )}
+                </div>
+                {isRestartModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to restart the game?
+                        </p>
+                        <div className={css.restart_buttons}>
+                            <button
+                                className={css.cancel_button}
+                                onClick={() => setIsRestartModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className={css.confirm_button}
+                                onClick={confirmRestart}
+                            >
+                                Restart
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isTerminateModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to terminate the game?
+                        </p>
+                        <div className={css.restart_buttons}>
+                            <button
+                                className={css.cancel_button}
+                                onClick={() => setIsTerminateModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className={css.confirm_button}
+                                onClick={confirmTerminate}
+                            >
+                                Terminate
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    }
     return (
         <>
             <Header
@@ -2000,20 +3671,17 @@ export default function SpecialModePage() {
                 isButtonLocked={isButtonLocked}
             />
 
-            <div className={css.page_container}>
-                {showIntro && (
+            <div className={css.page_container} style={{ position: "relative" }}>
+                {showIntro ? (
                     <>
                         <div className={css.header_row}>
                             <h2 className={css.title}>
-                                Are you intuitive enough to guess which team
-                                could win?
+                                Are you intuitive enough to guess which team could win?
                             </h2>
                             <button
                                 aria-label="Special mode info"
                                 className={css.info_button}
-                                onClick={() =>
-                                    navigate("/special-mode-info")
-                                }
+                                onClick={() => navigate("/special-mode-info")}
                             >
                                 ?
                             </button>
@@ -2038,7 +3706,7 @@ export default function SpecialModePage() {
                                         </div>
                                     ))}
                                 </div>
-
+                        
                                 <div
                                     className={css.marquee_group}
                                     aria-hidden
@@ -2062,1894 +3730,400 @@ export default function SpecialModePage() {
                         </div>
 
                         <footer className={css.footer_row}>
-                            <button
-                                className={css.gamble_button}
-                                onClick={() => setShowIntro(false)}
-                            >
+                            <button className={css.gamble_button} onClick={() => setShowIntro(false)}>
                                 Start Game
                             </button>
-                            <Link
-                                className={`${css.gamble_button} ${css.back_button}`}
-                                to="/gambling"
-                            >
+                            <Link className={`${css.gamble_button} ${css.back_button}`} to="/gambling">
                                 Back to Normal Gambling
                             </Link>
                         </footer>
                     </>
-                )}
+                ) : (
+                    <div className={css.bracket_container} style={{ position: "relative" }}>
+                        {renderResultsNav()}
 
-                {!showIntro && bracket && !isSeriesActive && !showWinnersScreen && (
-                    <div className={css.bracket_container}>
-                        {showPickemLine2 ? (
-                            <div className={css.pickem_buttons}>
-                                <button
-                                    className={`${css.gamble_button} ${css.back_button}`}
-                                    onClick={() => setShowPickemSummary(true)}
-                                >
-                                    Back to the Pick'em challenge summary
-                                </button>
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={handleBackToHome}
-                                >
-                                    To Home Page
-                                </button>
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={handleBackToSpecialStart}
-                                >
-                                    Back to the start of Special Mode
-                                </button>
-                                <button
-                                    className={css.gamble_button}
-                                    onClick={handleBackToGambling}
-                                >
-                                    Back to normal Gambling
-                                </button>
-                            </div>
-                        ) : (
-                            <div style={{ gap: '0', top: '12.5%', left: '84%' }} className={css.pickem_buttons}>
-                                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
-                                <span className={css.points}>
-                                    <CountUp
-                                        start={0}
-                                        duration={1.2}
-                                        end={neededPickemPoints}
-                                        key={neededPickemPoints}
-                                    />
-                                </span>
-                            </div>
-                        )}
-                        <div className={css.bracket_inner}>
-
-                            <div className={css.column_container}>
-                                <h4 className={css.column_title}>
-                                    Rounds of 32
-                                </h4>
-                                <div className={css.columnRo32}>
-                                    {bracket.ro32.map((m, idx) => {
-                                        const isPlayed = !!m.played;
-                                        const isUserWin =
-                                            isPlayed &&
-                                            m.pickTeamId &&
-                                            m.winnerTeamId &&
-                                            m.pickTeamId === m.winnerTeamId;
-
-                                        const baseClass =
-                                            idx % 2 === 0 ? css.ro32_rect_down : css.ro32_rect;
-
-                                        const resultClass = isPlayed
-                                            ? isUserWin
-                                                ? css.match_win
-                                                : css.match_loss
-                                            : "";
-
-                                        const isCurrent =
-                                            currentPlayableMatch &&
-                                            currentPlayableMatch.stage === "ro32" &&
-                                            currentPlayableMatch.index === idx;
-
-                                        const isNext =
-                                            nextMatch &&
-                                            nextMatch.stage === "ro32" &&
-                                            nextMatch.index === idx;
-
-                                        const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
-                                        const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
-
-                                        const winnerIsLeft =
-                                            isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
-                                        const winnerIsRight =
-                                            isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-
-                                        const bo1Score =
-                                            m.setHistory && m.setHistory.length > 0
-                                                ? { left: m.setHistory[0].wins, right: m.setHistory[0].losses }
-                                                : null;
-
-                                        const displayScoreLeft =
-                                            bo1Score && bo1Score.left != null
-                                                ? bo1Score.left
-                                                : m.scoreLeft;
-
-                                        const displayScoreRight =
-                                            bo1Score && bo1Score.right != null
-                                                ? bo1Score.right
-                                                : m.scoreRight;
-
-                                        const hasDisplayScore =
-                                            isPlayed &&
-                                            displayScoreLeft != null &&
-                                            displayScoreRight != null;
-
-                                        const canPlay = canOpenMatch("ro32", m);
-                                        const isClickable = !isButtonLocked && (canPlay || m.played);
-
-                                        return (
-                                            <div
-                                                key={m.id}
-                                                className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
-                                                style={{
-                                                    pointerEvents:
-                                                        !isClickable || isButtonLocked
-                                                            ? "none"
-                                                            : "auto",
-                                                }}
-                                                onClick={() => handleMatchClick("ro32", idx)}
-                                            >
-                                                <div className={css.match_content}>
-                                                    <div
-                                                        className={css.team_cell_ro32}
-                                                        style={{ opacity: isLeftLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotA ? (
-                                                            <div
-                                                                className={css.team_circle_ro32}
-                                                                style={{
-                                                                    background: m.slotA.color
-                                                                }}
-                                                                title={m.slotA.name}
-                                                            />
-                                                        ) : (
-                                                            <div className={css.placeholder_circle}>?</div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className={css.vs_cell_ro32}>
-                                                        {!hasDisplayScore ? (
-                                                            <span className={css.vs_text}>VS</span>
-                                                        ) : (
-                                                            <span className={css.score_text}>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsLeft ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {displayScoreLeft}
-                                                                </span>
-                                                                <span> : </span>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsRight ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {displayScoreRight}
-                                                                </span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        className={css.team_cell_ro32}
-                                                        style={{ opacity: isRightLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotB ? (
-                                                            <div
-                                                                className={css.team_circle_ro32}
-                                                                style={{
-                                                                    background: m.slotB.color
-                                                                }}
-                                                                title={m.slotB.name}
-                                                            />
-                                                        ) : (
-                                                            <div className={css.placeholder_circle}>?</div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 10,
+                                right: 10,
+                                zIndex: 5,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                gap: 6,
+                            }}
+                        >
+                            {showPickemLine2 ? (
+                                <div className={css.pickem_buttons}>
+                                    <button
+                                        className={`${css.gamble_button} ${css.back_button}`}
+                                        onClick={() => setShowPickemSummary(true)}
+                                    >
+                                        Back to the Pick'em challenge summary
+                                    </button>
+                                    <button
+                                        className={`${css.gamble_button} ${css.back_back_button}`}
+                                        style={{
+                                            backgroundColor: hover ? tournamentResults.winner.hoverOn : tournamentResults.winner.color,
+                                        }}
+                                        onMouseEnter={() => setHover(true)}
+                                        onMouseLeave={() => setHover(false)}
+                                        onClick={() => setShowPickemSummary(true)}
+                                    >
+                                        Back to the Winners' screen
+                                    </button>
+                                    <button
+                                        className={css.gamble_button}
+                                        onClick={handleBackToHome}
+                                    >
+                                        To Home Page
+                                    </button>
+                                    <button
+                                        className={css.gamble_button}
+                                        onClick={handleBackToSpecialStart}
+                                    >
+                                        Back to the start of Special Mode
+                                    </button>
+                                    <button
+                                        className={css.gamble_button}
+                                        onClick={handleBackToGambling}
+                                    >
+                                        Back to normal Gambling
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className={css.column_container}>
-                                <h4 className={css.column_title}>
-                                    Rounds of 16
-                                </h4>
-                                <div className={css.columnRo16}>
-                                    {bracket.ro16.map((m, idx) => {
-                                        const isPlayed = !!m.played;
-                                        const isUserWin =
-                                            isPlayed &&
-                                            m.pickTeamId &&
-                                            m.winnerTeamId &&
-                                            m.pickTeamId === m.winnerTeamId;
-
-                                        const baseClass =
-                                            idx % 2 === 0 ? css.match_rect_down : css.match_rect;
-
-                                        const resultClass = isPlayed
-                                            ? isUserWin
-                                                ? css.match_win
-                                                : css.match_loss
-                                            : "";
-
-                                        const isCurrent =
-                                            currentPlayableMatch &&
-                                            currentPlayableMatch.stage === "ro16" &&
-                                            currentPlayableMatch.index === idx;
-
-                                        const isNext =
-                                            nextMatch &&
-                                            nextMatch.stage === "ro16" &&
-                                            nextMatch.index === idx;
-
-                                        const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
-                                        const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
-
-                                        const winnerIsLeft =
-                                            isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
-                                        const winnerIsRight =
-                                            isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-
-                                        const canPlay = canOpenMatch("ro16", m);
-                                        const isClickable = !isButtonLocked && (canPlay || m.played);
-
-                                        return (
-                                            <div
-                                                key={m.id}
-                                                className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
-                                                style={{
-                                                    pointerEvents:
-                                                        !isClickable || isButtonLocked
-                                                            ? "none"
-                                                            : "auto",
-                                                }}
-                                                onClick={() => handleMatchClick("ro16", idx)}
-                                            >
-                                                <div
-                                                    className={
-                                                        css.match_content
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isLeftLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotA ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotA
-                                                                            .color
-                                                                }}
-                                                                title={
-                                                                    m.slotA
-                                                                        .name
-                                                                }
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        className={
-                                                            css.vs_cell
-                                                        }
-                                                    >
-                                                        {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                                            <span className={css.vs_text}>VS</span>
-                                                        ) : (
-                                                            <span className={css.score_text}>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsLeft ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreLeft}
-                                                                </span>
-                                                                <span> : </span>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsRight ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreRight}
-                                                                </span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isRightLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotB ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotB
-                                                                            .color
-                                                                }}
-                                                                title={
-                                                                    m.slotB
-                                                                        .name
-                                                                }
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div className={css.column_container}>
-                                <h4 className={css.column_title}>
-                                    Quarterfinals
-                                </h4>
-                                <div className={css.columnQuarters}>
-                                    {bracket.qf.map((m, idx) => {
-                                        const isPlayed = !!m.played;
-                                        const isUserWin =
-                                            isPlayed &&
-                                            m.pickTeamId &&
-                                            m.winnerTeamId &&
-                                            m.pickTeamId ===
-                                            m.winnerTeamId;
-
-                                        const baseClass =
-                                            idx % 2 === 0
-                                                ? css.quarters_rect_down
-                                                : css.quarters_rect;
-
-                                        const resultClass = isPlayed
-                                            ? isUserWin
-                                                ? css.match_win
-                                                : css.match_loss
-                                            : "";
-
-                                        const isCurrent =
-                                            currentPlayableMatch &&
-                                            currentPlayableMatch.stage === "qf" &&
-                                            currentPlayableMatch.index === idx;
-
-                                        const isNext =
-                                            nextMatch &&
-                                            nextMatch.stage === "qf" &&
-                                            nextMatch.index === idx;
-
-                                        const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
-                                        const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
-
-                                        const winnerIsLeft =
-                                            isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
-                                        const winnerIsRight =
-                                            isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-
-                                        const canPlay = canOpenMatch("qf", m);
-                                        const isClickable = !isButtonLocked && (canPlay || m.played);
-
-                                        return (
-                                            <div
-                                                key={m.id}
-                                                className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
-                                                style={{
-                                                    pointerEvents:
-                                                        !isClickable || isButtonLocked
-                                                            ? "none"
-                                                            : "auto",
-                                                }}
-                                                onClick={() => handleMatchClick("qf", idx)}
-                                            >
-                                                <div
-                                                    className={
-                                                        css.match_content
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isLeftLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotA ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotA
-                                                                            .color
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            css.vs_cell
-                                                        }
-                                                    >
-                                                        {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                                            <span className={css.vs_text}>VS</span>
-                                                        ) : (
-                                                            <span className={css.score_text}>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsLeft ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreLeft}
-                                                                </span>
-                                                                <span> : </span>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsRight ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreRight}
-                                                                </span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isRightLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotB ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotB
-                                                                            .color
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div className={css.column_container}>
-                                <h4 className={css.column_title}>
-                                    Semifinals
-                                </h4>
-                                <div className={css.columnSemis}>
-                                    {bracket.sf.map((m, idx) => {
-                                        const isPlayed = !!m.played;
-                                        const isUserWin =
-                                            isPlayed &&
-                                            m.pickTeamId &&
-                                            m.winnerTeamId &&
-                                            m.pickTeamId ===
-                                            m.winnerTeamId;
-
-                                        const baseClass =
-                                            idx % 2 === 0
-                                                ? css.semis_rect_down
-                                                : css.semis_rect;
-
-                                        const resultClass = isPlayed
-                                            ? isUserWin
-                                                ? css.match_win
-                                                : css.match_loss
-                                            : "";
-
-                                        const isCurrent =
-                                            currentPlayableMatch &&
-                                            currentPlayableMatch.stage === "sf" &&
-                                            currentPlayableMatch.index === idx;
-
-                                        const isNext =
-                                            nextMatch &&
-                                            nextMatch.stage === "sf" &&
-                                            nextMatch.index === idx;
-
-                                        const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
-                                        const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
-
-                                        const winnerIsLeft =
-                                            isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
-                                        const winnerIsRight =
-                                            isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-
-                                        const canPlay = canOpenMatch("sf", m);
-                                        const isClickable = !isButtonLocked && (canPlay || m.played);
-
-                                        return (
-                                            <div
-                                                key={m.id}
-                                                className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
-                                                style={{
-                                                    pointerEvents:
-                                                        !isClickable || isButtonLocked
-                                                            ? "none"
-                                                            : "auto",
-                                                }}
-                                                onClick={() => handleMatchClick("sf", idx)}
-                                            >
-                                                <div
-                                                    className={
-                                                        css.match_content
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isLeftLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotA ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotA
-                                                                            .color
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            css.vs_cell
-                                                        }
-                                                    >
-                                                        {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                                            <span className={css.vs_text}>VS</span>
-                                                        ) : (
-                                                            <span className={css.score_text}>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsLeft ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreLeft}
-                                                                </span>
-                                                                <span> : </span>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsRight ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreRight}
-                                                                </span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isRightLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotB ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotB
-                                                                            .color
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div className={css.column_container}>
-                                <h4 className={css.column_title}>
-                                    Grand Final
-                                </h4>
-                                <div className={css.columnGrandFinal}>
-                                    {bracket.gf.map((m, idx) => {
-                                        const isPlayed = !!m.played;
-                                        const isUserWin =
-                                            isPlayed &&
-                                            m.pickTeamId &&
-                                            m.winnerTeamId &&
-                                            m.pickTeamId ===
-                                            m.winnerTeamId;
-
-                                        const resultClass = isPlayed
-                                            ? isUserWin
-                                                ? css.match_win
-                                                : css.match_loss
-                                            : "";
-
-                                        const isCurrent =
-                                            currentPlayableMatch &&
-                                            currentPlayableMatch.stage === "gf" &&
-                                            currentPlayableMatch.index === idx;
-
-                                        const isNext =
-                                            nextMatch &&
-                                            nextMatch.stage === "gf" &&
-                                            nextMatch.index === idx;
-
-                                        const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
-                                        const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
-
-                                        const winnerIsLeft =
-                                            isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
-                                        const winnerIsRight =
-                                            isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-
-                                        const canPlay = canOpenMatch("gf", m);
-                                        const isClickable = !isButtonLocked && (canPlay || m.played);
-
-                                        return (
-                                            <div
-                                                key={m.id}
-                                                className={`${css.grandFinal_rect} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
-                                                style={{
-                                                    pointerEvents:
-                                                        !isClickable || isButtonLocked
-                                                            ? "none"
-                                                            : "auto",
-                                                }}
-                                                onClick={() => handleMatchClick("gf", idx)}
-                                            >
-                                                <div
-                                                    className={
-                                                        css.match_content
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isLeftLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotA ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotA
-                                                                            .color
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            css.vs_cell
-                                                        }
-                                                    >
-                                                        {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                                            <span className={css.vs_text}>VS</span>
-                                                        ) : (
-                                                            <span className={css.score_text}>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsLeft ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreLeft}
-                                                                </span>
-                                                                <span> : </span>
-                                                                <span
-                                                                    style={{
-                                                                        color: winnerIsRight ? "#2e7d32" : "red",
-                                                                        fontWeight: 600,
-                                                                    }}
-                                                                >
-                                                                    {m.scoreRight}
-                                                                </span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            css.team_cell
-                                                        }
-                                                        style={{ opacity: isRightLoser ? 0.3 : 1 }}
-                                                    >
-                                                        {m.slotB ? (
-                                                            <div
-                                                                className={
-                                                                    css.team_circle
-                                                                }
-                                                                style={{
-                                                                    background:
-                                                                        m
-                                                                            .slotB
-                                                                            .color
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={
-                                                                    css.placeholder_circle
-                                                                }
-                                                            >
-                                                                ?
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {bracket.thirdPlace && (
-                                <div className={css.thirdPlace_container}>
-                                    <h4 className={css.column_title}>Third Place Decider</h4>
-                                    <div className={css.columnThirdPlace}>
-                                        {bracket.thirdPlace.map((m, idx) => {
-                                            const isPlayed = !!m.played;
-                                            const isUserWin =
-                                                isPlayed &&
-                                                m.pickTeamId &&
-                                                m.winnerTeamId &&
-                                                m.pickTeamId === m.winnerTeamId;
-
-                                            const resultClass = isPlayed
-                                                ? isUserWin
-                                                    ? css.match_win
-                                                    : css.match_loss
-                                                : "";
-
-                                            const isCurrent =
-                                                currentPlayableMatch &&
-                                                currentPlayableMatch.stage === "thirdPlace" &&
-                                                currentPlayableMatch.index === idx;
-
-                                            const isNext =
-                                                nextMatch &&
-                                                nextMatch.stage === "thirdPlace" &&
-                                                nextMatch.index === idx;
-
-                                            const isLeftLoser = isPlayed && m.loserTeamId === m.slotA?.id;
-                                            const isRightLoser = isPlayed && m.loserTeamId === m.slotB?.id;
-
-                                            const winnerIsLeft =
-                                                isPlayed && m.winnerTeamId && m.slotA && m.slotA.id === m.winnerTeamId;
-                                            const winnerIsRight =
-                                                isPlayed && m.winnerTeamId && m.slotB && m.slotB.id === m.winnerTeamId;
-
-                                            const canPlay = canOpenMatch("thirdPlace", m);
-                                            const isClickable = !isButtonLocked && (canPlay || m.played);
-
-                                            return (
-                                                <div
-                                                    key={m.id}
-                                                    className={`${css.thirdPlace_rect} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
-                                                    style={{
-                                                        pointerEvents:
-                                                            !isClickable || isButtonLocked
-                                                                ? "none"
-                                                                : "auto",
-                                                    }}
-                                                    onClick={() => handleMatchClick("thirdPlace", idx)}
-                                                >
-                                                    <div
-                                                        className={
-                                                            css.match_content
-                                                        }
-                                                        style={{ gap: '12px' }}
-                                                    >
-                                                        <div
-                                                            className={
-                                                                css.team_cell
-                                                            }
-                                                            style={{ opacity: isLeftLoser ? 0.3 : 1 }}
-                                                        >
-                                                            {m.slotA ? (
-                                                                <div
-                                                                    className={
-                                                                        css.team_circle
-                                                                    }
-                                                                    style={{
-                                                                        background:
-                                                                            m
-                                                                                .slotA
-                                                                                .color
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <div
-                                                                    className={
-                                                                        css.placeholder_circle
-                                                                    }
-                                                                >
-                                                                    ?
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div
-                                                            className={
-                                                                css.vs_cell
-                                                            }
-                                                        >
-                                                            {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                                                <span className={css.vs_text}>VS</span>
-                                                            ) : (
-                                                                <span className={css.score_text}>
-                                                                    <span
-                                                                        style={{
-                                                                            color: winnerIsLeft ? "#2e7d32" : "red",
-                                                                            fontWeight: 600,
-                                                                        }}
-                                                                    >
-                                                                        {m.scoreLeft}
-                                                                    </span>
-                                                                    <span> : </span>
-                                                                    <span
-                                                                        style={{
-                                                                            color: winnerIsRight ? "#2e7d32" : "red",
-                                                                            fontWeight: 600,
-                                                                        }}
-                                                                    >
-                                                                        {m.scoreRight}
-                                                                    </span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div
-                                                            className={
-                                                                css.team_cell
-                                                            }
-                                                            style={{ opacity: isRightLoser ? 0.3 : 1 }}
-                                                        >
-                                                            {m.slotB ? (
-                                                                <div
-                                                                    className={
-                                                                        css.team_circle
-                                                                    }
-                                                                    style={{
-                                                                        background:
-                                                                            m
-                                                                                .slotB
-                                                                                .color
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <div
-                                                                    className={
-                                                                        css.placeholder_circle
-                                                                    }
-                                                                >
-                                                                    ?
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                            ) : (
+                                <div style={{ gap: '0', top: '76px', left: activePhase === "playoffs" ? '-70px' : '-150px' }} className={css.pickem_buttons}>
+                                    <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                                    <span className={css.points}>
+                                        <CountUp
+                                            start={0}
+                                            duration={1.2}
+                                            end={neededPickemPoints}
+                                            key={neededPickemPoints}
+                                        />
+                                    </span>
                                 </div>
                             )}
+                        </div>
+
+                        <div style={{ marginTop: 64 }}>
+                            <div className={css.stage_title}>
+                                {getStageTitleForView()}
+                            </div>
+
+                            {viewPhase === "playoffs" ? renderPlayoffsBracket() : renderSwissBracket(swissToRender)}
                         </div>
                     </div>
                 )}
 
-                {!showIntro &&
-                    bracket &&
-                    isSeriesActive &&
-                    seriesState.leftTeam &&
-                    seriesState.rightTeam && (
-                        <div className={css.series_container}>
+                {isRestartModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to restart the game?
+                        </p>
+                        <div className={css.restart_buttons}>
                             <button
-                                type="button"
-                                onClick={toggleSecretGuaranteedWin}
-                                className={css.gamble_button}
-                                style={{
-                                    position: "absolute",
-                                    top: "15%",
-                                    left: "43%",
-                                    background: "#f7f7f7ff",
-                                    color: "transparent",
-                                    fontSize: "12px",
-                                    border: "none",
-                                    cursor: "auto",
-                                    opacity: 0.1,
-                                    zIndex: 9999,
-                                }}
+                                className={css.cancel_button}
+                                onClick={() => setIsRestartModalOpen(false)}
                             >
-                                Secret
+                                Cancel
                             </button>
-                            <motion.h2
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.series_stage_title}
+                            <button
+                                className={css.confirm_button}
+                                onClick={confirmRestart}
                             >
-                                {seriesLabel}
-                            </motion.h2>
-                            {!seriesBanner && (
-                                <div className={css.game_info_text}>
-                                    <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className={css.round_text}
-                                    >
-                                        Round{" "}
-                                        <CountUp
-                                            key={roundWins + roundLosses + 1}
-                                            start={Math.max(
-                                                roundWins + roundLosses,
-                                                0
-                                            )}
-                                            end={roundWins + roundLosses + 1}
-                                            duration={1}
-                                        />
-                                    </motion.span>
-                                    <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className={css.round_text}
-                                        style={{ textAlign: "center", fontSize: "16px", marginBottom: "12px" }}
-                                    >
-                                        First to {overtimeTarget}
-                                    </motion.span>
-                                    {isOvertime && (
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            className={css.round_text}
-                                            style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                                        >
-                                            Overtime
-                                            {overtimeBlock === 0
-                                                ? ""
-                                                : ` #${overtimeBlock}`}
-                                            <br />
-                                        </motion.span>
-                                    )}
-                                </div>
-                            )}
-                            <div className={css.scoreboard}>
-                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                                    {isSeriesPointWins ? (
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            style={{
-                                                color: seriesState.leftTeam?.color,
-                                                fontSize: "16px",
-                                                transition: "all 500ms ease-in-out",
-                                                textShadow: seriesState.leftTeam?.shadow,
-                                                marginBottom: "4px",
-                                                marginLeft: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
-                                                marginTop: "-28px"
-                                            }}
-                                        >
-                                            {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
-                                        </motion.span>
-                                    ) : (
-                                        isSetPointWins && (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                style={{
-                                                    color: seriesState.leftTeam?.color,
-                                                    fontSize: "16px",
-                                                    transition: "all 500ms ease-in-out",
-                                                    textShadow: seriesState.leftTeam?.shadow,
-                                                    marginBottom: "4px",
-                                                    marginLeft: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
-                                                    marginTop: "-28px"
-                                                }}
-                                            >
-                                                Set point!
-                                            </motion.span>
-                                        )
-                                    )}
-                                    {setsToWin <= 3 && !seriesBanner ? (
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            style={{
-                                                color: seriesState.leftTeam?.color,
-                                                transition: "all 500ms ease-in-out",
-                                            }} className={css.team_name_left}>
-                                            Team {seriesState.leftTeam?.name}
-                                        </motion.span>
-                                    ) : null}
-
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            flexDirection: "row-reverse",
-                                            alignItems: "center",
-                                            gap: "20px",
-                                            opacity: loserOpacity === "win" ? 0.4 : 1,
-                                            position: 'relative'
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", flexDirection: 'column' }}>
-                                            <span className={css.round_text}>
-                                                <CountUp
-                                                    key={roundWins}
-                                                    start={Math.max(roundWins - 1, 0)}
-                                                    end={roundWins}
-                                                    duration={1}
-                                                    style={{
-                                                        color: seriesState.leftTeam?.color,
-                                                        fontSize: "45px",
-                                                        transition: "all 2000ms ease-in-out",
-                                                        textShadow:
-                                                            roundWins === overtimeTarget
-                                                                ? seriesState.leftTeam?.shadow
-                                                                : "none",
-                                                    }}
-                                                />
-                                            </span>
-                                            <div className={css.lines}>
-                                                {setsToWin === 3 ? (
-                                                    <>
-                                                        {[...Array(3)].map((_, i) => (
-                                                            <div
-                                                                key={i}
-                                                                style={{ width: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                                className={css.line}
-                                                            />
-                                                        ))}
-                                                    </>
-                                                ) : setsToWin === 2 ? (
-                                                    <>
-                                                        {[...Array(2)].map((_, i) => (
-                                                            <div
-                                                                key={i}
-                                                                style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                                className={css.line}
-                                                            />
-                                                        ))}
-                                                    </>
-                                                ) : setsToWin === 1 ? (
-                                                    <div
-                                                        style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                        className={css.line}
-                                                    />
-                                                ) : null}
-                                            </div>
-                                        </div>
-                                        {!seriesBanner && (
-                                            <div className={css.miniSquares}>
-                                                {[...Array(5)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={css.square}
-                                                        style={{
-                                                            backgroundColor:
-                                                                i < miniWins
-                                                                    ? seriesState.leftTeam?.color
-                                                                    : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow:
-                                                                i < miniWins
-                                                                    ? seriesState.leftTeam?.shadow
-                                                                    : 'none',
-                                                        }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className={css.verticalLines}>
-                                            {setsToWin === 5 ? (
-                                                <>
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ height: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                            className={css.verticalLine}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 4 ? (
-                                                <>
-                                                    {[...Array(4)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ height: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                            className={css.verticalLine}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <></>
-                                            )}
-                                        </div>
-                                        {!seriesBanner && setsToWin === 4 || setsToWin === 5 ? (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                style={{
-                                                    color: seriesState.leftTeam?.color,
-                                                    transition: "all 500ms ease-in-out",
-                                                    margin: '0',
-                                                    position: 'absolute',
-                                                    right: '110%',
-                                                    zIndex: 9999,
-                                                    fontSize: '28px',
-                                                }} className={css.team_name_left}>
-                                                Team {seriesState.leftTeam?.name}
-                                            </motion.span>
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                {seriesBanner ? (
-                                    <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className={css.round_text}
-                                    >
-                                        {seriesBanner}
-                                    </motion.span>
-                                ) : (
-                                    <p style={{ marginTop: setsToWin === 4 || setsToWin === 5 ? '0' : '24px' }} className={css.vs}>
-                                        VS
-                                    </p>
-                                )}
-
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "flex-end",
-                                    }}
-                                >
-                                    {isSeriesPointLosses ? (
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            style={{
-                                                color: seriesState.rightTeam?.color,
-                                                fontSize: "16px",
-                                                transition: "all 500ms ease-in-out",
-                                                textShadow: seriesState.rightTeam?.shadow,
-                                                marginBottom: "4px",
-                                                marginRight: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
-                                                marginTop: "-28px"
-                                            }}
-                                        >
-                                            {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
-                                        </motion.span>
-                                    ) : (
-                                        isSetPointLosses && (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                style={{
-                                                    color: seriesState.rightTeam?.color,
-                                                    fontSize: "16px",
-                                                    transition: "all 500ms ease-in-out",
-                                                    textShadow: seriesState.rightTeam?.shadow,
-                                                    marginBottom: "4px",
-                                                    marginRight: setsToWin === 4 || setsToWin === 5 ? '0' : '16px',
-                                                    marginTop: "-28px"
-                                                }}
-                                            >
-                                                Set point!
-                                            </motion.span>
-                                        )
-                                    )}
-                                    {setsToWin <= 3 && !seriesBanner ? (
-                                        <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            style={{
-                                                color: seriesState.rightTeam?.color,
-                                                transition: "all 500ms ease-in-out",
-                                            }} className={css.team_name_right}>
-                                            Team {seriesState.rightTeam?.name}
-                                        </motion.span>
-                                    ) : null}
-
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "20px",
-                                            opacity: loserOpacity === "loss" ? 0.4 : 1,
-                                            position: 'relative'
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                flexDirection: 'column',
-                                            }}
-                                        >
-                                            <span className={css.round_text}>
-                                                <CountUp
-                                                    key={roundLosses}
-                                                    start={Math.max(roundLosses - 1, 0)}
-                                                    end={roundLosses}
-                                                    duration={1}
-                                                    style={{
-                                                        color: seriesState.rightTeam?.color,
-                                                        fontSize: "45px",
-                                                        transition: "all 2000ms ease-in-out",
-                                                        textShadow:
-                                                            roundLosses === overtimeTarget
-                                                                ? seriesState.rightTeam?.shadow
-                                                                : "none",
-                                                    }}
-                                                />
-                                            </span>
-                                            <div className={css.lossLines}>
-                                                {setsToWin === 3 ? (
-                                                    <>
-                                                        {[...Array(3)].map((_, i) => (
-                                                            <div
-                                                                key={i}
-                                                                style={{ width: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                                className={css.line}
-                                                            />
-                                                        ))}
-                                                    </>
-                                                ) : setsToWin === 2 ? (
-                                                    <>
-                                                        {[...Array(2)].map((_, i) => (
-                                                            <div
-                                                                key={i}
-                                                                style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                                className={css.line}
-                                                            />
-                                                        ))}
-                                                    </>
-                                                ) : setsToWin === 1 ? (
-                                                    <div
-                                                        style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                        className={`${css.line} ${playerLostSets >= 1
-                                                            ? css.lineLoss
-                                                            : css.lineDarkLoss
-                                                            }`}
-                                                    />
-                                                ) : null}
-                                            </div>
-                                        </div>
-                                        {!seriesBanner && (
-                                            <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
-                                                {[...Array(5)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={css.lossSquare}
-                                                        style={{
-                                                            backgroundColor:
-                                                                i < miniLosses
-                                                                    ? seriesState.rightTeam?.color
-                                                                    : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow:
-                                                                i < miniLosses
-                                                                    ? seriesState.rightTeam?.shadow
-                                                                    : 'none'
-                                                        }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className={css.verticalLossLines}>
-                                            {setsToWin === 5 ? (
-                                                <>
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ height: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                            className={css.verticalLine}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : setsToWin === 4 ? (
-                                                <>
-                                                    {[...Array(4)].map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{ height: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                            className={css.verticalLine}
-                                                        />
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <></>
-                                            )}
-                                        </div>
-                                        {!seriesBanner && setsToWin === 4 || setsToWin === 5 ? (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                style={{
-                                                    color: seriesState.rightTeam?.color,
-                                                    transition: "all 500ms ease-in-out",
-                                                    margin: '0',
-                                                    position: 'absolute',
-                                                    left: '110%',
-                                                    zIndex: 9999,
-                                                    fontSize: '28px',
-                                                }} className={css.team_name_right}>
-                                                Team {seriesState.rightTeam?.name}
-                                            </motion.span>
-                                        ) : null}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className={css.seriesGambleMessage}>
-                                {seriesState.lastResult && (
-                                    <>
-                                        <p className={css.seriesResultMessage}>
-                                            {seriesState.lastResult}
-                                        </p>
-
-                                        <span
-                                            className={css.seriesMultiplier}
-                                            style={{ color: getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
-                                        >
-                                            {seriesState.lastMultiplier.toFixed(2)}x
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                            {!seriesBanner && (
-                                <div className={css.series_gamble_wrapper}>
-                                    <button
-                                        className={`${css.gamble_button} ${isButtonLocked ? css.locked : ""}`}
-                                        onClick={handleSeriesGamble}
-                                        disabled={isButtonLocked}
-                                    >
-                                        Gamble
-                                    </button>
-                                </div>
-                            )}
+                                Restart
+                            </button>
                         </div>
-                    )}
-            </div>
+                    </div>
+                )}
 
-            {isMatchModalOpen && activeMatchInfo && currentMatch && (
-                <div
-                    className={css.match_modal_overlay}
-                    onMouseDown={(e) => {
-                        if (e.target === e.currentTarget) {
-                            closeMatchModal();
-                        }
-                    }}
-                >
+                {isTerminateModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to terminate the game?
+                        </p>
+                        <div className={css.restart_buttons}>
+                            <button
+                                className={css.cancel_button}
+                                onClick={() => setIsTerminateModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className={css.confirm_button}
+                                onClick={confirmTerminate}
+                            >
+                                Terminate
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isMatchModalOpen && modalContext && currentModalMatch && (
                     <div
-                        className={`
-                ${css.match_modal}
-            `}
+                        className={css.match_modal_overlay}
+                        onMouseDown={(e) => {
+                            if (e.target === e.currentTarget) {
+                                closeMatchModal();
+                            }
+                        }}
                     >
                         <div
-                            className={isPlayed
-                                ? didUserWin
-                                    ? css.match_win
-                                    : css.match_loss
-                                : ""
-                            }
-                            style={{ paddingTop: '12px', paddingBottom: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                            <div className={css.match_modal_header}>
-                                <h3
-                                    style={{
-                                        color: isPlayed
-                                            ? didUserWin
-                                                ? '#fff'
-                                                : '#fff'
-                                            : "",
-                                        margin: '0'
-                                    }}
-                                    className={css.match_modal_title}>
-                                    {stageLabel(activeMatchInfo.stage)}
-                                    {activeMatchInfo.stage === "gf" || activeMatchInfo.stage === "thirdPlace"
-                                        ? ""
-                                        : ` #${activeMatchInfo.index + 1}`}
-                                </h3>
-                                <span
-                                    style={{
-                                        color: isPlayed
-                                            ? didUserWin
-                                                ? '#fff'
-                                                : '#fff'
-                                            : "",
-                                        margin: '0',
-                                        fontSize: '18px',
-                                    }}
-                                    className={css.match_modal_title}
-                                >
-                                    Best of {getBestOfForStage(activeMatchInfo.stage)}
-                                </span>
-
-                                {isPlayed && pickemLabelText && (
-                                    <span
-                                        className={css.match_modal_pickem}
-                                        style={pickemLabelStyle}
-                                    >
-                                        {pickemLabelText}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        <hr className={css.match_modal_divider} style={{ marginTop: '0' }} />
-
-                        {!isPlayed && (
-                            <>
-                                <p className={css.match_modal_prompt}>
-                                    Which team you'd pick?
-                                </p>
-
-                                <div className={css.match_modal_row}>
-                                    <button
-                                        type="button"
-                                        className={`${css.modal_team_btn} ${hasChosen ? css.modal_team_selected : ""
-                                            }`}
-                                        onClick={handleChooseLeft}
-                                    >
-                                        <div
-                                            className={css.modal_team_circle}
-                                            style={{ background: modalLeftTeam?.color }}
-                                        />
-                                        <span className={css.modal_team_label}>
-                                            Team {modalLeftTeam?.name}
-                                        </span>
-                                    </button>
-
-                                    <div className={css.modal_vs}>VS</div>
-
-                                    <button
-                                        type="button"
-                                        className={css.modal_team_btn}
-                                        onClick={handleChooseRight}
-                                    >
-                                        <div
-                                            className={css.modal_team_circle}
-                                            style={{ background: modalRightTeam?.color }}
-                                        />
-                                        <span className={css.modal_team_label}>
-                                            Team {modalRightTeam?.name}
-                                        </span>
-                                    </button>
-                                </div>
-
-                                <hr className={css.match_modal_divider} />
-                                <div className={css.match_modal_footer}>
-                                    <button
-                                        className={`${css.gamble_button} ${!hasChosen ? css.locked : ""
-                                            }`}
-                                        disabled={!hasChosen}
-                                        onClick={handleStartMatch}
-                                    >
-                                        Start Match
-                                    </button>
-                                </div>
-                            </>
-                        )}
-
-                        {isPlayed && (
-                            <>
-                                <div
-                                    className={`
-                ${css.finishedMatchReview} 
-            `}>
-                                    <div className={css.match_modal_row}>
-                                        <div
-                                            className={css.modal_team_btn}
-                                            style={{
-                                                opacity:
-                                                    currentMatch.loserTeamId ===
-                                                        currentMatch.slotA?.id
-                                                        ? 0.2
-                                                        : 1,
-                                                pointerEvents: 'none'
-                                            }}
-                                        >
-                                            <div
-                                                className={css.modal_team_circle}
-                                                style={{
-                                                    backgroundColor:
-                                                        currentMatch.slotA.color,
-                                                }}
-                                            />
-                                            <span className={css.modal_team_label}>Team {currentMatch.slotA.name} <br />
-                                                <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>(Your pick)</span>
-                                            </span>
-                                        </div>
-
-                                        <div className={css.modal_vs}>
-                                            <span
-                                                style={{
-                                                    color:
-                                                        currentMatch.winnerTeamId ===
-                                                            currentMatch.slotA?.id
-                                                            ? "#2e7d32"
-                                                            : "red"
-                                                }}
-                                            >
-                                                {modalDisplayScoreLeft}
-                                            </span>
-                                            <span> : </span>
-                                            <span
-                                                style={{
-                                                    color:
-                                                        currentMatch.winnerTeamId ===
-                                                            currentMatch.slotB?.id
-                                                            ? "#2e7d32"
-                                                            : "red"
-                                                }}
-                                            >
-                                                {modalDisplayScoreRight}
-                                            </span>
-                                        </div>
-
-                                        <div
-                                            className={css.modal_team_btn}
-                                            style={{
-                                                opacity:
-                                                    currentMatch.loserTeamId ===
-                                                        currentMatch.slotB?.id
-                                                        ? 0.2
-                                                        : 1,
-                                                pointerEvents: 'none'
-                                            }}
-                                        >
-                                            <div
-                                                className={css.modal_team_circle}
-                                                style={{
-                                                    backgroundColor:
-                                                        currentMatch.slotB.color,
-                                                }}
-                                            />
-                                            <span className={css.modal_team_label}>Team {currentMatch.slotB.name}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {!isBo1Modal && (
-                                    <>
-                                        <hr className={css.match_modal_divider} />
-
-                                        {currentMatch.setHistory && currentMatch.setHistory.length > 0 ? (
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                className={css.seriesSummary}
-                                            >
-                                                <ul className={css.seriesSummaryList}>
-                                                    {currentMatch.setHistory.map(({ set, wins, losses, won }) => {
-                                                        const bestOf = (() => {
-                                                            if (activeMatchInfo.stage === "gf") return 9;
-                                                            if (activeMatchInfo.stage === "sf") return 7;
-                                                            if (activeMatchInfo.stage === "thirdPlace") return 7;
-                                                            if (activeMatchInfo.stage === "qf") return 5;
-                                                            return 3;
-                                                        })();
-
-                                                        const isDecider = set === bestOf;
-                                                        const label = isDecider ? "Decider" : `Set ${set}`;
-
-                                                        const leftColor = currentMatch.slotA?.color || "#2e7d32";
-                                                        const rightColor = currentMatch.slotB?.color || "red";
-
-                                                        const leftOpacity = won ? 1 : 0.2;
-                                                        const rightOpacity = won ? 0.2 : 1;
-
-                                                        return (
-                                                            <li key={set} style={{ fontSize: "20px" }} className={css.seriesSummaryItem}>
-                                                                <span
-                                                                    className={`${css.multiplier_win} ${label === "Decider" ? css.leftSpecial : css.left}`}
-                                                                    style={{ color: leftColor, fontWeight: 700, opacity: leftOpacity }}
-                                                                >
-                                                                    {wins}
-                                                                </span>
-
-                                                                &nbsp;&nbsp;&nbsp;&nbsp;
-
-                                                                <span className={css.info_text} style={{ fontWeight: 600 }}>
-                                                                    {label}
-                                                                </span>
-
-                                                                &nbsp;&nbsp;&nbsp;&nbsp;
-
-                                                                <span
-                                                                    className={`${css.multiplier_fail} ${label === "Decider" ? css.rightSpecial : css.right}`}
-                                                                    style={{ color: rightColor, fontWeight: 700, opacity: rightOpacity }}
-                                                                >
-                                                                    {losses}
-                                                                </span>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            </motion.div>
-                                        ) : (
-                                            <p className={css.info_text}>No set history stored for this match.</p>
-                                        )}
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {showWinnersScreen && tournamentResults && (
-                <div className={css.winnerScreen}>
-                    {showWinnerText && (
-                        <motion.h2
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6 }}
-                            className={css.winnerHeadline}
-                        >
-                            And the winner of this tournament is
-                        </motion.h2>
-                    )}
-
-                    {showWinnerTeam && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.6 }}
-                            className={css.winnerMain}
+                            className={css.match_modal}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <div
-                                className={css.winnerLogo}
-                                style={{
-                                    backgroundColor: tournamentResults.winner.color,
-                                    boxShadow: tournamentResults.winner.shadow,
-                                }}
-                            />
-                            <div className={css.winnerName}>
-                                🥇Team {tournamentResults.winner.name}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {showPodium && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.6 }}
-                            className={css.podium}
-                        >
-                            <div style={{ marginBottom: '24px' }} className={css.podiumRow}>
-                                <span style={{ fontSize: '22px' }} className={css.placeLabel}>RunnerUp</span>
-                                <div style={{ flexDirection: 'column' }} className={css.placeTeam}>
-                                    <div
-                                        className={css.placeLogo}
-                                        style={{
-                                            backgroundColor: tournamentResults.runnerUp.color,
-                                            boxShadow: tournamentResults.runnerUp.shadow,
-                                            width: '80px',
-                                            height: '80px'
-                                        }}
-                                    />
-                                    <span className={css.runnerUpName}>
-                                        🥈Team {tournamentResults.runnerUp.name}
+                                className={isPlayedModal
+                                    ? didUserWin
+                                        ? css.match_win
+                                        : css.match_loss
+                                    : ""
+                                }
+                                style={{ paddingTop: '12px', paddingBottom: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <div className={css.match_modal_header}>
+                                    <span className={css.match_modal_title} style={{
+                                        fontSize: '16px',
+                                        marginBottom: '-8px',
+                                        color: isPlayedModal
+                                            ? didUserWin
+                                                ? '#fff'
+                                                : '#fff'
+                                            : "",
+                                    }}>
+                                        {modalContext.type !== "playoffs" ? modalStageSmallLabel : null}
                                     </span>
+                                    <h3
+                                        style={{
+                                            color: isPlayedModal
+                                                ? didUserWin
+                                                    ? '#fff'
+                                                    : '#fff'
+                                                : "",
+                                            margin: '0'
+                                        }}
+                                        className={css.match_modal_title}>
+                                        {modalTitle}
+                                    </h3>
+                                    <span
+                                        style={{
+                                            color: isPlayedModal
+                                                ? didUserWin
+                                                    ? '#fff'
+                                                    : '#fff'
+                                                : "",
+                                            margin: '0',
+                                            fontSize: '18px',
+                                        }}
+                                        className={css.match_modal_title}
+                                    >
+                                        Best of {modalBestOf}
+                                    </span>
+
+                                    {isPlayedModal && pickemLabelText && (
+                                        <span
+                                            className={css.match_modal_pickem}
+                                            style={pickemLabelStyle}
+                                        >
+                                            {pickemLabelText}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '24px' }}>
-                                {tournamentResults.thirdPlace && (
-                                    <div style={{ flexDirection: 'column', marginBottom: '48px' }} className={css.podiumRow}>
-                                        <span style={{ fontSize: '18px' }} className={css.placeLabel}>3rd place</span>
-                                        <div
-                                            className={css.placeLogo}
-                                            style={{ background: tournamentResults.thirdPlace.color }}
-                                        />
-                                        <span className={css.podium_name}>
-                                            🥉Team {tournamentResults.thirdPlace.name}
-                                        </span>
+                            <hr style={{ margin: '0' }} className={css.match_modal_divider} />
+
+                            {!isPlayedModal && !modalContext.readOnly && (
+                                <>
+                                    
+                                    <p className={css.match_modal_prompt}>
+                                        Which team you'd pick?
+                                    </p>
+                                    <div className={css.match_modal_row}>
+                                        <button
+                                            type="button"
+                                            className={`${css.modal_team_btn} ${hasChosen ? css.modal_team_selected : ""
+                                                }`}
+                                            onClick={handleChooseLeft}
+                                        >
+                                            <div
+                                                className={css.modal_team_circle}
+                                                style={{ background: modalLeftTeam?.color }}
+                                            />
+                                            <span className={css.modal_team_label}>
+                                                Team {modalLeftTeam?.name}
+                                            </span>
+                                        </button>
+
+                                        <p className={css.modal_vs}>VS</p>
+
+                                        <button
+                                            type="button"
+                                            className={css.modal_team_btn}
+                                            onClick={handleChooseRight}
+                                        >
+                                            <div
+                                                className={css.modal_team_circle}
+                                                style={{ background: modalRightTeam?.color }}
+                                            />
+                                            <span className={css.modal_team_label}>
+                                                Team {modalRightTeam?.name}
+                                            </span>
+                                        </button>
                                     </div>
-                                )}
 
-                                {tournamentResults.fourthPlace && (
-                                    <div className={css.podiumRow}>
-                                        <span className={css.placeLabel}>4th place</span>
-                                        <div
-                                            className={css.placeLogoSmall}
-                                            style={{ background: tournamentResults.fourthPlace.color }}
-                                        />
-                                        <span className={css.podium_name}>
-                                            🏅Team {tournamentResults.fourthPlace.name}
-                                        </span>
+                                    <hr className={css.match_modal_divider} />
+
+                                    <div style={{ textAlign: "center" }}>
+                                        <button
+                                            className={`${css.gamble_button} ${!hasChosen ? css.locked : ""}`}
+                                            disabled={!hasChosen}
+                                            onClick={handleStartMatch}
+                                        >
+                                            Start Match
+                                        </button>
                                     </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
+                                </>
+                            )}
 
-                    {showProceed && (
-                        <motion.button
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className={css.gamble_button}
-                            onClick={handleProceed}
-                        >
-                            Proceed
-                        </motion.button>
-                    )}
-                </div>
-            )}
+                            {isPlayedModal &&
+                                (() => {
+                                    const {
+                                        leftTeam: modalPlayedLeft,
+                                        rightTeam: modalPlayedRight,
+                                        displayLeft: modalDisplayScoreLeft,
+                                        displayRight: modalDisplayScoreRight,
+                                        winnerIsLeft,
+                                        winnerIsRight,
+                                        leftIsLoser,
+                                        rightIsLoser,
+                                        leftIsPick,
+                                        rightIsPick
+                                    } = getPickOrientedModalView(currentModalMatch, isBo1Modal);
 
-            {isRestartModalOpen && (
-                <div className={css.restart_modal}>
-                    <p className={css.restart_text}>
-                        Are you sure you want to restart the game?
-                    </p>
-                    <div className={css.restart_buttons}>
-                        <button
-                            className={css.cancel_button}
-                            onClick={() => setIsRestartModalOpen(false)}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            className={css.confirm_button}
-                            onClick={confirmRestart}
-                        >
-                            Restart
-                        </button>
+                                    return (
+                                        <>
+                                            <div className={css.finishedMatchReview}>
+                                                <div
+                                                    style={{ marginBottom: isBo1Modal ? 0 : "10px" }}
+                                                    className={css.match_modal_row}
+                                                >
+                                                    <div
+                                                        className={css.modal_team_btn}
+                                                        style={{
+                                                            flex: 1,
+                                                            opacity: leftIsLoser ? 0.25 : 1,
+                                                            pointerEvents: "none",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className={css.modal_team_circle}
+                                                            style={{ backgroundColor: modalPlayedLeft?.color }}
+                                                        />
+                                                        <span className={css.modal_team_label}>
+                                                            Team {modalPlayedLeft?.name}
+                                                            {leftIsPick && (
+                                                                <>
+                                                                    <br />
+                                                                    <span style={{ color: "#2e7d32", fontWeight: "bold" }}>
+                                                                        (Your pick)
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className={css.modal_vs}>
+                                                        <span style={{ color: winnerIsLeft ? "#2e7d32" : "red" }}>
+                                                            {modalDisplayScoreLeft}
+                                                        </span>
+                                                        <span> : </span>
+                                                        <span style={{ color: winnerIsRight ? "#2e7d32" : "red" }}>
+                                                            {modalDisplayScoreRight}
+                                                        </span>
+                                                    </div>
+
+                                                    <div
+                                                        className={css.modal_team_btn}
+                                                        style={{
+                                                            flex: 1,
+                                                            opacity: rightIsLoser ? 0.25 : 1,
+                                                            pointerEvents: "none",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className={css.modal_team_circle}
+                                                            style={{ backgroundColor: modalPlayedRight?.color }}
+                                                        />
+                                                        <span className={css.modal_team_label}>
+                                                            Team {modalPlayedRight?.name}
+                                                            {rightIsPick && (
+                                                                <>
+                                                                    <br />
+                                                                    <span style={{ color: "#2e7d32", fontWeight: "bold" }}>
+                                                                        (Your pick)
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {!isBo1Modal && (
+                                                <>
+                                                    <hr className={css.match_modal_divider} />
+
+                                                    {(() => {
+                                                        const historyMatch = currentModalMatch;
+                                                        const history = historyMatch?.setHistory ?? [];
+                                                        if (!history.length) {
+                                                            return <p className={css.info_text}>No set history stored for this match.</p>;
+                                                        }
+                                                        
+                                                        const leftColor = modalPlayedLeft?.color || "#2e7d32";
+                                                        const rightColor = modalPlayedRight?.color || "red";
+                                                        
+                                                        return (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className={css.seriesSummary} style={{ fontSize: 13, opacity: 0.95 }} >
+                                                            <ul className={css.seriesSummaryList}>
+                                                                {history.map(({ set, wins, losses, won }) => {
+                                                                    const isDecider = set === modalBestOf;
+                                                                    const label = isDecider ? "Decider" : `Set ${set}`;
+                                                                    const leftOpacity = won ? 1 : 0.2;
+                                                                    const rightOpacity = won ? 0.2 : 1;
+                                                                    return (
+                                                                        <li key={set} style={{ fontSize: "20px" }} className={css.seriesSummaryItem} >
+                                                                            <span className={`${css.multiplier_win} ${label === "Decider" ? css.leftSpecial : css.left}`}
+                                                                                style={{ color: leftColor, fontWeight: 700, opacity: leftOpacity }} >
+                                                                                {wins}
+                                                                            </span>
+                                                                            &nbsp; &nbsp; &nbsp;
+                                                                            <span className={css.info_text} style={{ fontWeight: 600 }}>
+                                                                                {label}
+                                                                            </span>
+                                                                            &nbsp; &nbsp; &nbsp;
+                                                                            <span className={`${css.multiplier_fail} ${label === "Decider" ? css.rightSpecial : css.right}`}
+                                                                                style={{ color: rightColor, fontWeight: 700, opacity: rightOpacity }} >
+                                                                                {losses}
+                                                                            </span>
+                                                                        </li>
+                                                                    );
+                                                                })}
+                                                            </ul>
+                                                        </motion.div >
+                                                        );
+                                                    })()}
+                                                </>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                        </div>
                     </div>
-                </div>
-            )}
-
-            {isTerminateModalOpen && (
-                <div className={css.restart_modal}>
-                    <p className={css.restart_text}>
-                        Are you sure you want to terminate the game?
-                    </p>
-                    <div className={css.restart_buttons}>
-                        <button
-                            className={css.cancel_button}
-                            onClick={() => setIsTerminateModalOpen(false)}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            className={css.confirm_button}
-                            onClick={confirmTerminate}
-                        >
-                            Terminate
-                        </button>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </>
     );
 }
