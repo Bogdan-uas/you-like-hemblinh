@@ -1,214 +1,172 @@
 import css from './SpecialModeInfoPage.module.css'
 import { Link } from "react-router-dom";
-import bracketImg from "../../../assets/images/image.png";
-import matchModalImg from "../../../assets/images/image-2.png";
-import chosenTeamImg from "../../../assets/images/image-3.png";
-import seriesScreenImg from "../../../assets/images/image-4.png";
-import miniRoundRedImg from "../../../assets/images/image-5.png";
-import miniRoundLimeImg from "../../../assets/images/image-6.png";
-import seriesPointImg from "../../../assets/images/image-7.png";
-import finishedMatchRedImg from "../../../assets/images/image-8.png";
-import finishedMatchModalImg from "../../../assets/images/image-9.png";
-import secondQuarterfinalistImg from "../../../assets/images/image-10.png";
-import winnersScreenImg from "../../../assets/images/image-11.png";
-import resultsScreenImg from "../../../assets/images/image-12.png";
+import introImg from "../../../assets/images/image.png";
+import scoreBoardImg from "../../../assets/images/image-2.png";
+import dashedDividerImg from "../../../assets/images/image-3.png";
+import dashedDividerTwoImg from "../../../assets/images/image-4.png";
+import tournamentIntroScreenImg from "../../../assets/images/image-5.png";
+import swissStageImg from "../../../assets/images/image-6.png";
+import matchModal from "../../../assets/images/image-7.png";
+import chosenTeamModal from "../../../assets/images/image-8.png";
+import seriesScreen from "../../../assets/images/image-9.png";
+import miniRoundWonSand from "../../../assets/images/image-10.png";
+import miniRoundWonMoss from "../../../assets/images/image-11.png";
+import matchPointImg from "../../../assets/images/image-12.png";
+import teamSandGoesTo10Net from "../../../assets/images/image-13.png";
+import finishedMatchModalImg from "../../../assets/images/image-14.png";
+import finishedMatchModalTwoImg from "../../../assets/images/image-15.png";
+import stageTwoQualifiersImg from "../../../assets/images/image-16.png";
+import stageTwoImg from "../../../assets/images/image-17.png";
+import playoffsImg from "../../../assets/images/image-18.png";
+import playoffsQualifiersImg from "../../../assets/images/image-19.png";
+import winnersScreenImg from "../../../assets/images/image-20.png";
+import pickemSummaryImg from "../../../assets/images/image-21.png";
 
-const COLORS = {
-    red: {
-        shadow: "0 0 10px rgba(255, 0, 0, 0.5)",
-        color: "#FF0000",
-        unlitColor: "#2a0000",
-        name: "Red"
-    },
-    orange: {
-        shadow: "0 0 10px rgba(255, 127, 0, 0.5)",
-        color: "#FF7F00",
-        unlitColor: "#4b2a00",
-        name: "Orange"
-    },
-    yellow: {
-        shadow: "0 0 10px rgba(255, 255, 0, 0.5)",
-        color: "#FFFF00",
-        unlitColor: "#4b4b00",
-        name: "Yellow"
-    },
-    lime: {
-        shadow: "0 0 10px rgba(0, 255, 0, 0.5)",
-        color: "#32CD32",
-        unlitColor: "#1a2a00",
-        name: "Lime"
-    },
-    green: {
-        shadow: "0 0 10px rgba(0, 128, 0, 0.5)",
-        color: "#008000",
-        unlitColor: "#002a00",
-        name: "Green"
-    },
-    cyan: {
-        shadow: "0 0 10px rgba(0, 255, 255, 0.5)",
-        color: "#00FFFF",
-        unlitColor: "#004b4b",
-        name: "Cyan"
-    },
-    blue: {
-        shadow: "0 0 10px rgba(0, 0, 255, 0.5)",
-        color: "#0000FF",
-        unlitColor: "#00002a",
-        name: "Blue"
-    },
-    indigo: {
-        shadow: "0 0 10px rgba(54, 0, 93, 0.5)",
-        color: "#4A007F",
-        unlitColor: "#1a002a",
-        name: "Indigo"
-    },
-    violet: {
-        shadow: "0 0 10px rgba(138, 43, 226, 0.5)",
-        color: "#8A2BE2",
-        unlitColor: "#1a002a",
-        name: "Violet"
-    },
-    pink: {
-        shadow: "0 0 10px rgba(255, 20, 147, 0.5)",
-        color: "#FF1493",
-        unlitColor: "#4b002a",
-        name: "Pink"
-    },
-    beige: {
-        shadow: "0 0 10px rgba(255, 192, 203, 0.5)",
-        color: "#FFC0CB",
-        unlitColor: "#4b2a2a",
-        name: "Beige"
-    },
-    black: {
-        shadow: "0 0 10px rgba(0, 0, 0, 0.5)",
-        color: "#000000",
-        unlitColor: "#5d5d5d",
-        name: "Black"
-    },
-    white: {
-        shadow: "0 0 10px rgba(194, 194, 194, 0.5)",
-        color: "#d5d5d5ff",
-        unlitColor: "#656565ff",
-        name: "White"
-    },
-    gray: {
-        shadow: "0 0 10px rgba(128, 128, 128, 0.5)",
-        color: "#808080",
-        unlitColor: "#272727",
-        name: "Gray"
-    },
-    brown: {
-        shadow: "0 0 10px rgba(122, 55, 0, 0.5)",
-        color: "#7F3900",
-        unlitColor: "#201000",
-        name: "Brown"
-    },
-    teal: {
-        shadow: "0 0 10px rgba(0, 109, 111, 0.5)",
-        color: "#006D6F",
-        unlitColor: "#001a1a",
-        name: "Teal"
-    },
-    gold: {
-        shadow: "0 0 10px rgba(212, 175, 55, 0.5)",
-        color: "#D4AF37",
-        unlitColor: "#3a2c08",
-        name: "Gold"
-    },
-    silver: {
-        shadow: "0 0 10px rgba(192, 192, 192, 0.5)",
-        color: "#C0C0C0",
-        unlitColor: "#3a3a3a",
-        name: "Silver"
-    },
-    navy: {
-        shadow: "0 0 10px rgba(0, 0, 90, 0.5)",
-        color: "#00005aff",
-        unlitColor: "#00001a",
-        name: "Navy"
-    },
-    olive: {
-        shadow: "0 0 10px rgba(128, 128, 0, 0.5)",
-        color: "#808000",
-        unlitColor: "#2a2a00",
-        name: "Olive"
-    },
-    coral: {
-        shadow: "0 0 10px rgba(255, 127, 80, 0.5)",
-        color: "#FF7F50",
-        unlitColor: "#4b2819",
-        name: "Coral"
-    },
-    magenta: {
-        shadow: "0 0 10px rgba(255, 0, 255, 0.5)",
-        color: "#FF00FF",
-        unlitColor: "#4b004b",
-        name: "Magenta"
-    },
-    lavender: {
-        shadow: "0 0 10px rgba(181, 126, 220, 0.5)",
-        color: "#B57EDC",
-        unlitColor: "#332144",
-        name: "Lavender"
-    },
-    sky: {
-        shadow: "0 0 10px rgba(135, 206, 235, 0.5)",
-        color: "#87CEEB",
-        unlitColor: "#234252",
-        name: "Sky"
-    },
-    mint: {
-        shadow: "0 0 10px rgba(152, 251, 152, 0.5)",
-        color: "#98FB98",
-        unlitColor: "#284428",
-        name: "Mint"
-    },
-    salmon: {
-        shadow: "0 0 10px rgba(250, 128, 114, 0.5)",
-        color: "#FA8072",
-        unlitColor: "#4b2320",
-        name: "Salmon"
-    },
-    plum: {
-        shadow: "0 0 10px rgba(142, 69, 133, 0.5)",
-        color: "#8E4585",
-        unlitColor: "#2a1327",
-        name: "Plum"
-    },
-    khaki: {
-        shadow: "0 0 10px rgba(195, 176, 145, 0.5)",
-        color: "#C3B091",
-        unlitColor: "#403528",
-        name: "Khaki"
-    },
-    crimson: {
-        shadow: "0 0 10px rgba(220, 20, 60, 0.5)",
-        color: "#DC143C",
-        unlitColor: "#3a020c",
-        name: "Crimson"
-    },
-    turquoise: {
-        shadow: "0 0 10px rgba(64, 224, 208, 0.5)",
-        color: "#40E0D0",
-        unlitColor: "#11423c",
-        name: "Turquoise"
-    },
-    chartreuse: {
-        shadow: "0 0 10px rgba(127, 255, 0, 0.5)",
-        color: "#7FFF00",
-        unlitColor: "#234400",
-        name: "Chartreuse"
-    },
-    steel: {
-        shadow: "0 0 10px rgba(70, 130, 180, 0.5)",
-        color: "#4682B4",
-        unlitColor: "#172637",
-        name: "Steel"
-    }
+const hexToRgb = (hex) => {
+    const clean = hex.replace("#", "");
+    const noAlpha = clean.length === 8 ? clean.slice(0, 6) : clean;
+    const full =
+        noAlpha.length === 3
+            ? noAlpha
+                .split("")
+                .map((c) => c + c)
+                .join("")
+            : noAlpha;
+
+    const num = parseInt(full, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 };
 
+const clamp = (n) => Math.max(0, Math.min(255, n));
+
+const darkenHex = (hex, amount = 0.68) => {
+    const { r, g, b } = hexToRgb(hex);
+    const dr = clamp(Math.round(r * (1 - amount)));
+    const dg = clamp(Math.round(g * (1 - amount)));
+    const db = clamp(Math.round(b * (1 - amount)));
+    return `#${[dr, dg, db]
+        .map((x) => x.toString(16).padStart(2, "0"))
+        .join("")}`;
+};
+
+const makeColor = (
+    hex,
+    name,
+    { shadowAlpha = 0.55, unlitAmount = 0.7, hoverAmount = 0.5 } = {}
+) => {
+    const normalized = hex.toUpperCase();
+
+    if (normalized === "#000000") {
+        return {
+            shadow: `0 0 10px rgba(0, 0, 0, ${shadowAlpha})`,
+            color: "#000000",
+            hoverOn: "#2A2A2A",
+            unlitColor: "#5D5D5D",
+            name,
+        };
+    }
+
+    const { r, g, b } = hexToRgb(hex);
+    return {
+        shadow: `0 0 10px rgba(${r}, ${g}, ${b}, ${shadowAlpha})`,
+        color: hex,
+        hoverOn: darkenHex(hex, hoverAmount),
+        unlitColor: darkenHex(hex, unlitAmount),
+        name,
+    };
+};
+
+const COLORS = {
+    red: makeColor("#FF0000", "Red"),
+    lime: makeColor("#32CD32", "Lime"),
+    yellow: makeColor("#FFFF00", "Yellow"),
+    blue: makeColor("#0000FF", "Blue"),
+    green: makeColor("#008000", "Green"),
+    beige: makeColor("#FFC0CB", "Beige"),
+    orange: makeColor("#FF7F00", "Orange"),
+    brown: makeColor("#7F3900", "Brown"),
+    cyan: makeColor("#00FFFF", "Cyan"),
+    indigo: makeColor("#4A007F", "Indigo"),
+    violet: makeColor("#8A2BE2", "Violet"),
+    pink: makeColor("#FF1493", "Pink"),
+    black: makeColor("#000000", "Black", { unlitAmount: 0.35 }),
+    white: makeColor("#e6e6e6ff", "White", { unlitAmount: 0.85, shadowAlpha: 0.25 }),
+    gray: makeColor("#808080", "Gray"),
+    teal: makeColor("#006D6F", "Teal"),
+
+
+    gold: makeColor("#D4AF37", "Gold"),
+    silver: makeColor("#C0C0C0", "Silver", { shadowAlpha: 0.35 }),
+
+    navy: makeColor("#00005aff", "Navy", { unlitAmount: 0.9 }),
+    olive: makeColor("#808000", "Olive"),
+    coral: makeColor("#FF6F61", "Coral"),
+    magenta: makeColor("#D81BFF", "Magenta"),
+
+    lavender: makeColor("#B388FF", "Lavender"),
+    sky: makeColor("#4FC3F7", "Sky"),
+    mint: makeColor("#69F0AE", "Mint"),
+    salmon: makeColor("#FF8A80", "Salmon"),
+
+    plum: makeColor("#6A1B9A", "Plum"),
+    khaki: makeColor("#C2B280", "Khaki"),
+    crimson: makeColor("#DC143C", "Crimson"),
+    turquoise: makeColor("#00E5FF", "Turquoise"),
+
+    chartreuse: makeColor("#76FF03", "Chartreuse"),
+    steel: makeColor("#607D8B", "Steel"),
+
+
+    emerald: makeColor("#00C853", "Emerald"),
+    ruby: makeColor("#C2185B", "Ruby"),
+
+    sapphire: makeColor("#0D47A1", "Sapphire"),
+    amber: makeColor("#FFB300", "Amber"),
+    bronze: makeColor("#B87333", "Bronze"),
+    copper: makeColor("#C46A1A", "Copper"),
+
+    sand: makeColor("#E6A15A", "Sand"),
+    seafoam: makeColor("#4DD0E1", "Seafoam"),
+    forest: makeColor("#1B5E20", "Forest"),
+    midnight: makeColor("#1A237E", "Midnight"),
+
+    peach: makeColor("#FFCCBC", "Peach", { shadowAlpha: 0.35 }),
+    apricot: makeColor("#FFB48F", "Apricot"),
+    periwinkle: makeColor("#7E8CE0", "Periwinkle"),
+    sunflower: makeColor("#FFD000", "Sunflower"),
+
+    raspberry: makeColor("#D81B60", "Raspberry"),
+    chocolate: makeColor("#4E2A14", "Chocolate"),
+    ivory: makeColor("#FFF6D6", "Ivory", { shadowAlpha: 0.25, unlitAmount: 0.8 }),
+    charcoal: makeColor("#37474F", "Charcoal"),
+
+    denim: makeColor("#1565C0", "Denim"),
+    spring: makeColor("#00E676", "Spring"),
+    ocean: makeColor("#006064", "Ocean"),
+    lilac: makeColor("#CE93D8", "Lilac"),
+
+    rose: makeColor("#FF5CA8", "Rose"),
+    frost: makeColor("#E3F2FD", "Frost", { shadowAlpha: 0.25, unlitAmount: 0.8 }),
+    slate: makeColor("#546E7A", "Slate"),
+    moss: makeColor("#8A9A5B", "Moss"),
+
+    wine: makeColor("#6D1B2D", "Wine"),
+    honey: makeColor("#F4C430", "Honey"),
+    azure: makeColor("#00A3FF", "Azure"),
+    blush: makeColor("#FF8FB1", "Blush", { shadowAlpha: 0.35 }),
+
+    jade: makeColor("#00A86B", "Jade"),
+    royal: makeColor("#5B5BE6", "Royal"),
+};
+
+
+
 const SpecialModeInfoPage = () => {
+    const scrollToDuringMatch = (e) => {
+        e.preventDefault();
+        document.getElementById("during-match")?.scrollIntoView({ behavior: "smooth" });
+    };
+
     return (
         <>
             <div className={css.page_container}>
@@ -226,24 +184,84 @@ const SpecialModeInfoPage = () => {
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Starting off</h3>
                     <div className={css.divider} />
                 </div>
-                <p className={css.info_text}>By starting off (clicking the "Start Game" button), you'll see Single Elimination bracket with <b>32</b> teams:</p>
-                <div className={css.image_container}>
-                    <img src={bracketImg} alt="Single Elimination bracket" className={css.image} style={{ width: '30vw', height: '37vh' }} />
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(The teams' classification is always different)</span>
-                </div>
-                <p className={css.info_text}>There are in total <b>64</b> colors for teams, only <b>32</b> are randomly being taken. <br />
-                    But there are eight exceptions: <br />
-                    <span style={{ color: COLORS.blue.color, fontWeight: '800' }}>Team Blue</span>, {' '}
-                    <span style={{ color: COLORS.yellow.color, fontWeight: '800' }}>Team Yellow</span>, {' '}
-                    <span style={{ color: COLORS.lime.color, fontWeight: '800' }}>Team Lime</span>, {' '}
-                    <span style={{ color: COLORS.red.color, fontWeight: '800' }}>Team Red</span>, {' '}
-                    <span style={{ color: COLORS.green.color, fontWeight: '800' }}>Team Green</span>, {' '}
-                    <span style={{ color: COLORS.brown.color, fontWeight: '800' }}>Team Brown</span>, {' '}
-                    <span style={{ color: COLORS.beige.color, fontWeight: '800' }}>Team Beige</span>, and {' '}
-                    <span style={{ color: COLORS.orange.color, fontWeight: '800' }}>Team Orange</span> <br />
-                    which are in every new tournament.
+                <p className={css.info_text}>
+                    Special Mode is a tournament-style gambling mode where <b>64 color teams</b> compete through
+                    Swiss Stages and Playoffs.
+                    Every team has a <b>rating (points)</b>, and those ratings decide where they start.
                 </p>
-                <p className={css.info_text}>That's why there are only <b>24</b> always random teams out of <b>56</b> (excluding eight exceptional ones).</p>
+                <p className={css.info_text}>
+                    Before you even press <b>Start Game</b>, you can open the <b>Leaderboard</b>.
+                    There you see all 64 teams, their points and placements.
+                </p>
+                <div className={css.image_container}>
+                    <img src={introImg} alt="Intro Page" className={css.image} style={{ width: '34vw', height: '37vh' }} />
+                </div>
+                <p className={css.info_text}>
+                    By clicking that orange-colored button, you'll be redirected there.
+                </p>
+                <div className={css.image_container}>
+                    <img src={scoreBoardImg} alt="Scoreboard" className={css.image} style={{ width: '34vw', height: '37vh' }} />
+                    <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                        (Higher points = higher placement)
+                    </span>
+                </div>
+                <p className={css.info_text}>
+                    You can scroll down and see other teams, with such kind of dividers, like here:
+                </p>
+                <div className={css.image_container}>
+                    <img src={dashedDividerImg} alt="Divider, which show the edge between qualifiers for Stage III and Stage II" className={css.image} style={{ width: '40vw', height: '65vh' }} />
+                </div>
+                <div className={css.image_container}>
+                    <img src={dashedDividerTwoImg} alt="Divider, which show the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '65vh' }} />
+                </div>
+                <p style={{ marginBottom: '24px' }} className={css.info_text}>
+                    As you can see by yourself, there are three stages in swiss format: <b>Stage I</b>, <b>Stage II</b> and <b>Stage III</b>. <br />
+                </p>
+                <p className={css.info_text}>
+                    Placement rules:
+                    <br />• Top 16 → Autoqualify to <b>Stage III</b>
+                    <br />• Top 17–32 → Autoqualify to <b>Stage II</b>
+                    <br />• Top 33–64 → Start in <b>Stage I</b>
+                </p>
+                <p className={css.info_text}>
+                    By clicking on the "Start Game" button, you will start playing the tournament. <br />
+                    But first, you will be redirected to the "Tournament Intro Screen", where you see the overview of the qualifiers for each stage one more time, in case you haven't seen the Leaderboard:
+                </p>
+                <div className={css.image_container}>
+                    <img src={tournamentIntroScreenImg} alt="Tournament Intro Screen" className={css.image} style={{ width: '35vw', height: '37vh' }} />
+                </div>
+                <p className={css.info_text}>
+                    When you click "Proceed", the tournament starts. You'll start from this: <br />
+                </p>
+                <div className={css.image_container}>
+                    <img src={swissStageImg} alt="First look of Stage I" className={css.image} style={{ width: '34vw', height: '50vh' }} />
+                    <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                        (Teams' classification depends on their placement in the top, but very first tournament has always the same qualifiers for every Stage, as well as Stage I. Here it's just pure randomness, which team will have which opponent at opening rounds)
+                    </span>
+                </div>
+                <div style={{ marginTop: '24px' }} className={css.divider_container}>
+                    <h3 style={{ marginTop: '12px' }} className={css.title}>Wot is zis suiss steij iven ebaut?</h3>
+                    <div className={css.divider} />
+                </div>
+                <p className={css.info_text}>
+                    For the team to progress to the next stage, it needs to win at least 3 matches in the current stage. <br />
+                    But if the team loses 3 matches, it flies out of the tournament. <br />
+                    All teams start from <b>0:0 net</b> and play in <b>Best of 1 format</b>. Winners of <b>0:0 matches</b> go to <b>1:0 net</b>, losers go to <b>0:1 net</b>. <br />
+                    Winners of <b>1:0 matches</b> go <b>to 2:0 net</b>, losers go to <b>1:1 net</b>. <br />
+                    Winners of <b>0:1 matches</b> go <b>to 1:1 net</b>, losers go to <b>0:2 net</b>. <br />
+                    Winners of <b>2:0 matches</b> go to <b>3:0 net</b> and qualify to the next stage, losers go to <b>2:1 net</b>. <br />
+                    Winners of <b>1:1 matches</b> go to <b>2:1 net</b>, losers go to <b>1:2 net</b>. <br />
+                    Winners of <b>0:2 matches</b> go to <b>1:2 net</b>, losers go to <b>0:3 net</b> and fly out of the tournament. <br />
+                    Winners of <b>2:1 matches</b> go to <b>3:1 net</b> and qualify to the next stage, losers go to <b>2:2 net</b>. <br />
+                    Winners of <b>1:2 matches</b> go to <b>2:2 net</b>, losers go to <b>1:3 net</b> and fly out of the tournament. <br />
+                    Winners of <b>2:2 matches</b> go to <b>3:2 net</b> and qualify to the next stage, losers go to <b>2:3 net</b> and fly out of the tournament.
+                </p>
+                <p style={{ marginTop: '24px' }} className={css.info_text}>
+                    0:0, 1:0, 0:1 and 1:1 matches are being played in <b>Best of 1 format</b>, 2:0, 2:1, 1:2 and 2:2 matches are either Progression or Elimination matches that's why they are being played in <b>Best of 3 format</b>. <br />
+                </p>
+                <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                    ("Best of n" formats are explained in <a style={{ color: 'Highlight' }} onClick={scrollToDuringMatch} href='#during-match'>"Wat du ai du during ze metch?"</a> section)
+                </span>
                 <div style={{ marginTop: '24px' }} className={css.divider_container}>
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Hau tu start a metch?</h3>
                     <div className={css.divider} />
@@ -268,9 +286,9 @@ const SpecialModeInfoPage = () => {
                                     css.team_circle
                                 }
                                 style={{
-                                    background: COLORS.lime.color
+                                    background: COLORS.moss.color
                                 }}
-                                title={COLORS.lime.name}
+                                title={COLORS.moss.name}
                             />
                         </div>
                 
@@ -291,8 +309,8 @@ const SpecialModeInfoPage = () => {
                                 className={
                                     css.team_circle
                                 }
-                                style={{ background: COLORS.red.color }}
-                                title={COLORS.red.name}
+                                style={{ background: COLORS.sand.color }}
+                                title={COLORS.sand.name}
                             />
                         </div>
                     </div>
@@ -317,9 +335,9 @@ const SpecialModeInfoPage = () => {
                                     css.team_circle
                                 }
                                 style={{
-                                    background: COLORS.olive.color
+                                    background: COLORS.honey.color
                                 }}
-                                title={COLORS.olive.name}
+                                title={COLORS.honey.name}
                             />
                         </div>
                 
@@ -340,8 +358,8 @@ const SpecialModeInfoPage = () => {
                                 className={
                                     css.team_circle
                                 }
-                                style={{ background: COLORS.beige.color }}
-                                title={COLORS.beige.name}
+                                style={{ background: COLORS.ruby.color }}
+                                title={COLORS.ruby.name}
                             />
                         </div>
                     </div>
@@ -349,44 +367,51 @@ const SpecialModeInfoPage = () => {
                 <span style={{ fontStyle: 'italic', color: 'black', marginBottom: '24px' }} className={css.info_text}>(Dashed border shows that it is the next match)</span>
                 <p className={css.info_text}>and click on it. Then, you will get this modal opened:</p>
                 <div className={css.image_container}>
-                    <img src={matchModalImg} alt="Opened match modal" className={css.image} style={{ width: '25vw', height: '32vh' }} />
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(We'll just proceed with this example)</span>
+                    <img src={matchModal} alt="Opened match modal" className={css.image} style={{ width: '25vw', height: '37vh' }} />
                 </div>
-                <p className={css.info_text}>You need to choose here the team, which you think we will win this match and click "Start Match". In my case, it is Team Lime:</p>
+                <p className={css.info_text}>
+                    There is a lot of information on this modal, so let me explain it to you: <br />
+                    At the top, there is a small stage name, name of the match and the "Best of" of this match, in this case it's a BO1. <br />
+                    In the center, there are two teams, that will be playing in this match. Inside of their circles there are shown their current points. Near their names, their placement in the Leaderboard. You need to choose the team you think will win. <br />
+                    At the bottom, there is a big button with "Start Match" text on it. You will be able to click it, once you choose one of the teams: <br />
+                </p>
                 <div className={css.image_container}>
-                    <img src={chosenTeamImg} alt="Chosen team on the match modal" className={css.image} style={{ width: '25vw', height: '32vh' }} />
+                    <img src={chosenTeamModal} alt="Chosen team on the match modal" className={css.image} style={{ width: '25vw', height: '37vh' }} />
                 </div>
                 <div style={{ marginTop: '24px' }} className={css.divider_container}>
-                    <h3 style={{ marginTop: '12px' }} className={css.title}>Wat du ai du during ze metch?</h3>
+                    <h3 id='during-match' style={{ marginTop: '12px' }} className={css.title}>Wat du ai du during ze metch?</h3>
                     <div className={css.divider} />
                 </div>
                 <p className={css.info_text}>After starting the match, you're being redirected to the "series screen":</p>
                 <div className={css.image_container}>
-                    <img src={seriesScreenImg} alt="'Series screen'" className={css.image} style={{ width: '30vw', height: '37vh' }} />
+                    <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '30vw', height: '45vh' }} />
+                    <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                        (Matches in Semifinals, Third Place Decider and Grand Final have a bit different scoreboard)
+                    </span>
                 </div>
-                <p className={css.info_text}>At the very top, there is stage name and number + which teams are now currently playing. <br />
-                    In the center, there is a the scoreboard with scores of both teams. On the left side, there's always your picked team. <br />
+                <p className={css.info_text}>At the very top, there are a small stage name, name of the match and the "Best of" of this match too. <br />
+                    Lower from it, there is the current set info such as which round it is, how many rounds are required to win the set and if overtime, then also "Overtime #n". <br />
+                    In the center, there is a the scoreboard with scores of both teams, where also their names are. On the left side, there's always your picked team. <br />
                     At the bottom, there's gamble button. <br />
-                    In general, all the rules are from Extended Mode, but there's only one difference: <br />
+                    In general, all the rules are from Extended Mode, where in order to win a set, 13 rounds are required to be won. 1 round is won when 5 mini-rounds are won. In order to win a mini-round, some specific multiplier is required. Here is also the difference: <br />
                 </p>
                 <b className={css.info_text}>The range for the multiplier is between <b style={{ color: 'red' }}>-1.5x</b> and <b style={{ color: 'green' }}>1.5x</b>,
                     where the <span style={{ textDecoration: 'underline' }}>win</span> counts when the multiplier is above <b>0x</b> and <span style={{ textDecoration: 'underline' }}>loss</span> counts when the multiplier is below <b>0x</b>.
                 </b>
                 <p className={css.info_text}>And the win <i>here</i> counts for <span style={{ textDecoration: 'underline' }}>your chosen team</span>. A bad multiplier (below 0x) counts then for the team, that is against your chosen team:</p>
                 <div className={css.image_container}>
-                    <img src={miniRoundRedImg} alt="Won mini-round for Team Red" className={css.image} style={{ width: '30vw', height: '40vh' }} />
-                    <img src={miniRoundLimeImg} alt="Won mini-round for Team Lime" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={miniRoundWonSand} alt="Won mini-round for Team Sand" className={css.image} style={{ width: '30vw', height: '60vh' }} />
+                    <img src={miniRoundWonMoss} alt="Won mini-round for Team Moss" className={css.image} style={{ width: '30vw', height: '60vh' }} />
                 </div>
-                <p className={css.info_text}>And as it is a Best-of-3 in Rounds of 16, a team needs two sets to win:</p>
+                <p className={css.info_text}>And as it is a Best-of-1 in 0:0 net of Stage I, a team needs one set to win:</p>
                 <div className={css.image_container}>
-                    <img src={seriesPointImg} alt="SERIES POINT for the Team Lime!" className={css.image} style={{ width: '30vw', height: '40vh' }} />
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>Team Lime lost this somehow :(</span>
+                    <img src={matchPointImg} alt="MATCH POINT!!! for the Team Sand!" className={css.image} style={{ width: '30vw', height: '55vh' }} />
                 </div>
-                <p className={css.info_text}>After one of the both teams wins, this team goes then into Quarterfinals and the loser team flies out of the tournament. The rectangle of the match gets either light-red or light-green, depending if your chosen team won <br />
-                    (in my case, that was a loss for my chosen team):
+                <p className={css.info_text}>
+                    After one of the both teams wins, this team goes then into 1:0 net as explained above and the loser team goes to 0:1 net. They go into such placeholder rectangles, which show who has already won 0:0 match or lost it. Once all matches of 0:0 finish, only then rectangles go and matches in two next nets are built, randomly amongst each net. The rectangle of the match gets either light-red or light-green, depending if your chosen team won and the "VS" is replaced by the final score of the match: <br />
                 </p>
                 <div className={css.image_container}>
-                    <img src={finishedMatchRedImg} alt="Team Lime flies out and Team Red progresses into Quarterfinals" className={css.image} style={{ width: '35vw', height: '30vh' }} />
+                    <img src={teamSandGoesTo10Net} alt="Team Sand goes to 1:0 net and Team Moss goes to 0:1 net" className={css.image} style={{ width: '35vw', height: '50vh' }} />
                 </div>
                 <div style={{ marginTop: '24px' }} className={css.divider_container}>
                     <h3 style={{ marginTop: '12px' }} className={css.title}>Wat tu du nekst?</h3>
@@ -394,40 +419,73 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p className={css.info_text}>Already finished match is finished, but you can click on it and see results of the match in that same modal:</p>
                 <div className={css.image_container}>
-                    <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
-                </div>
-                <p className={css.info_text}>The next match winner fills then second circle:</p>
-                <div className={css.image_container}>
-                    <img src={secondQuarterfinalistImg} alt="Second quarterfinalist" className={css.image} style={{ width: '35vw', height: '35vh' }} />
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(P. s. You still are only able to start the match when all Rounds of 16 are finished)</span>
+                    <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '45vh' }} />
                 </div>
                 <p className={css.info_text}>On the header of the modal, we can see the reminder of whether your chosen team lost or won. <br />
                     And there is also a small label, which tells how many <b>Pick&apos;em points</b> you got. <br />
-                    In the middle, there is general score of the match and in the footer, there is precise summary of all sets, that were played in this match and with which scores did each set end.
+                    In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 3 points from this win and changes its placement to 33rd. Loser team should have lost some points, but it had already 0 points and it can't go beyond 0. I will explain it a bit later...<br />
+                    In the footer, there is in most cases precise summary of all sets, that were played in this match and with which scores did each set end. But here, it was a BO1 match, which means there was only one set played. That's why, the score of this singular set is shown as the main match score.
                 </p>
                 <p style={{ fontWeight: '800', marginTop: '12px' }} className={css.info_text}>Now, lemme explain about Pick'em points system: <br />
                     Since we are able to pick for every match, we need to get a reward, if chosen a winner team. <br />
-                    If your chosen team wins in Round of 16, you get <i>+3 Pick&apos;em points</i> per match, <br />
-                    if in Quarterfinals, you get <i>+5 Pick&apos;em points</i> per match, <br />
-                    if in Semifinals or in Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match, <br />
-                    and if in Grand Final, you get <i>+9 Pick&apos;em points</i>. <br />
+                    • If your chosen team wins any BO1 match, you get <i>+1 Pick&apos;em point</i> per match, <br />
+                    • If your chosen team wins any BO3 match, you get <i>+3 Pick&apos;em points</i> per match, <br />
+                    • if a BO5 Quarterfinal, you get <i>+5 Pick&apos;em points</i> per match, <br />
+                    • if BO7 Semifinals or BO7 Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match, <br />
+                    • and if in BO9 Grand Final, you get <i>+9 Pick&apos;em points</i>. <br />
                     If your chosen team loses in whatever stage, you get twice as many points as many sets your chosen team won but still lost overall.
                 </p>
-                <p className={css.info_text}>That's why also I get here <b>+2 Pick&apos;em points</b>, even though my chosen team lost overall:</p>
+                <p className={css.info_text}>
+                    Also, in the right top corner of the Swiss Stage or Playoffs, there are shown needed Pick&apos;em points in order to win. <br />
+                </p>
+                <p className={css.info_text}>That's why also I get here only <b>+1 Pick&apos;em point</b>:</p>
                 <div className={css.image_container}>
-                    <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '45vh' }} />
                 </div>
-                <p style={{ marginBottom: '24px' }} className={css.info_text}>And of course after building one Quarterfinal match, you proceed with further matches up to Grand Final.</p>
-                <p className={css.info_text}>After Grand Final ends and there is determined a winner of the tournament, we get a winner screen:</p>
+                <p style={{ fontWeight: '800', marginTop: '12px' }} className={css.info_text}>Now, lemme also explain about Leaderboard points system: <br />
+                    I mentioned it already multiple times, but I will explain one more time anyways: <br />
+                    The main goal of this system is to give the possibility for every team to start from any out of the three Stages. In order for them to do that, it is to win matches <br />
+                    Depending on in which place the team is in the colors object, which is in the code of the website, the teams get either 150 points or 100 points or 50 points at the very start. <br />
+                    - Top 16 → Autoqualify to <b>Stage III</b> with 150 points
+                    <br />- Top 17–32 → Autoqualify to <b>Stage II</b> with 100 points
+                    <br />- Top 33–64 → Start in <b>Stage I</b> with 50 points <br />
+                    • If a team wins a BO1 match in Stage I, they get <i>+3 points</i> per match. If a team loses a BO1 match in Stage I, they lose <i>-2 points</i> per match. <br />
+                    • If a team wins a BO3 match in Stage I, they get <i>+5 points</i> per match. If a team loses a BO3 match in Stage I, they lose <i>-3 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-2 points</i> <br />
+                    • If a team wins a BO1 match in Stage II, they get <i>+4 points</i> per match. If a team loses a BO1 match in Stage II, they lose <i>-2 points</i> per match. <br />
+                    • If a team wins a BO3 match in Stage II, they get <i>+8 points</i> per match. If a team loses a BO3 match in Stage II, they lose <i>-4 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-2 points</i> <br />
+                    • If a team wins a BO1 match in Stage III, they get <i>+7 points</i> per match. If a team loses a BO1 match in Stage III, they lose <i>-4 points</i> per match. <br />
+                    • If a team wins a BO3 match in Stage III, they get <i>+10 points</i> per match. If a team loses a BO3 match in Stage III, they lose <i>-7 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-4 points</i> <br />
+                    • If a team wins a BO3 match in Rounds of 16, they get <i>+13 points</i> per match. If a team loses a BO3 match in Rounds of 16, they lose <i>-8 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-6 points</i> <br />
+                    • If a team wins a BO5 match in Quarterfinals, they get <i>+20 points</i> per match. If a team loses a BO5 match in Quarterfinals, they lose <i>-13 points</i> per match. But if a team wins a set, but still loses the match overall, they only lose <i>-10 points</i>, if two sets, but still loses, then they lose only <i>-8 points</i> <br />
+                    • If a team wins a BO7 match in Semifinals, they get <i>+30 points</i> per match. If a team loses a BO7 match in Semifinals, they lose <i>-18 points</i> per match. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
+                    • If a team wins a BO7 match in Third Place Decider, they get <i>+35 points</i> per match. If a team loses a BO7 match in Third Place Decider, they lose <i>-20 points</i> per match. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
+                    • If a team wins a BO9 match in Grand Final, they get <i>+50 points</i> per match. If a team loses a BO9 match in Grand Final, they don't lose anything (that will be already very unfortunate, just to lose in the Grand Final) <br />
+                    The minus points sometimes might not be taken away from the team, if the team has already 0 points and the score of a team can't go beyond 0. <br />
+                </p>
+                <p className={css.info_text}>After that, you proceed with further matches. When all the match-ups in Stage I are finished, only 16 teams are left. They qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
                 <div className={css.image_container}>
-                    <img src={winnersScreenImg} alt="Winner Screen" className={css.image} style={{ width: '30vw', height: '70vh' }} />
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>Third and fourth places are being decided in the Third Place Decider</span>
+                    <img src={stageTwoQualifiersImg} alt="Stage II" className={css.image} style={{ width: '30vw', height: '50vh' }} />
                 </div>
-                <p className={css.info_text}>By clicking "Proceed", you will be redirected to your end screen, where the results of your Pick&apos;ems are being shown:</p>
                 <div className={css.image_container}>
-                    <img src={resultsScreenImg} alt="Results Screen" className={css.image} style={{ width: '45vw', height: '70vh' }} />
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(I increased the chances of multipliers, so I get this screen faster, that's why don't think that it is that easy to get such stats)</span>
+                    <img src={stageTwoImg} alt="Stage II" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                 </div>
+                <p className={css.info_text}>And so you can proceed from Stage II to Stage III and from Stage III to Playoffs:</p>
+                <div className={css.image_container}>
+                    <img src={playoffsQualifiersImg} alt="Stage II" className={css.image} style={{ width: '30vw', height: '50vh' }} />
+                </div>
+                <div className={css.image_container}>
+                    <img src={playoffsImg} alt="Stage II" className={css.image} style={{ width: '35vw', height: '40vh' }} />
+                </div>
+                <p className={css.info_text}>As I mentioned above, Round of 16 is a <b>BO3</b>, Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and Grand Final is <b>BO9</b>.</p>
+                <p className={css.info_text}>Playoffs are single-elimination stage, which means that once a team loses a series, it flies out of the tournament directly. By the time we reach Grand Final, there should be only two teams left. In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner's screen, where we see first 4 places of the tournament:</p>
+                <div className={css.image_container}>
+                    <img src={winnersScreenImg} alt="Team Jade as Winner, Team Orange as Runner-up, Team Green as Third Place, Team Steel as Fourth Place" className={css.image} style={{ width: '35vw', height: '60vh' }} />
+                </div>
+                <p className={css.info_text}>After clicking "Proceed", we are redirected to Pick&apos;em summary, where you can see how many matches overall you've guessed correctly throughout the tournament and your final Pick&apos;em points score and also whether you won or not:</p>
+                <div className={css.image_container}>
+                    <img src={pickemSummaryImg} alt="Pick'em Summary Screen" className={css.image} style={{ width: '43vw', height: '60vh' }} />
+                </div>
+                <p className={css.info_text}>Afterwards you can start a new tournament in Special Mode once again.</p>
                 <div style={{ marginTop: '24px' }} className={css.divider} />
                 <p style={{ fontWeight: '700' }} className={css.info_text}>Hope, it helps those who don't understand how to play without any explanations. 😜</p>
                 <Link

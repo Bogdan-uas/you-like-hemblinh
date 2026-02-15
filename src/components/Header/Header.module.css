@@ -42,3 +42,32 @@
     background-color: red;
     color: #fff;
 }
+
+.gamble_button {
+    border-radius: 8px;
+    width: max-content;
+    padding: 8px 20px;
+    background-color: #747bff;
+    color: #f1f4fd;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    border: none;
+    transition: all 500ms ease-in-out;
+}
+
+.gamble_button:hover {
+    background-color: #0d6aff;
+    color: #fff;
+}
+
+.back_back_back_button {
+    color: #ebebeb;
+    background-color: tomato;
+}
+
+.back_back_back_button:hover {
+    background-color: rgb(255, 38, 0);
+    color: #fff;
+}

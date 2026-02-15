@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CountUp from "react-countup";
 import css from "./SpecialModePage.module.css";
@@ -6,6 +6,8 @@ import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+
+const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
 const STORAGE_KEY = "specialPageState_swiss_v2";
 
@@ -24,13 +26,14 @@ const getRandomNeededPickemPoints = () =>
 
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
+    const noAlpha = clean.length === 8 ? clean.slice(0, 6) : clean;
     const full =
-        clean.length === 3
-            ? clean
+        noAlpha.length === 3
+            ? noAlpha
                 .split("")
                 .map((c) => c + c)
                 .join("")
-            : clean;
+            : noAlpha;
 
     const num = parseInt(full, 16);
     return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
@@ -51,7 +54,7 @@ const darkenHex = (hex, amount = 0.68) => {
 const makeColor = (
     hex,
     name,
-    { shadowAlpha = 0.55, unlitAmount = 0.7, hoverAmount = 0.35 } = {}
+    { shadowAlpha = 0.55, unlitAmount = 0.7, hoverAmount = 0.5 } = {}
 ) => {
     const normalized = hex.toUpperCase();
 
@@ -66,7 +69,6 @@ const makeColor = (
     }
 
     const { r, g, b } = hexToRgb(hex);
-
     return {
         shadow: `0 0 10px rgba(${r}, ${g}, ${b}, ${shadowAlpha})`,
         color: hex,
@@ -78,24 +80,23 @@ const makeColor = (
 
 const COLORS = {
     red: makeColor("#FF0000", "Red"),
-    orange: makeColor("#FF7F00", "Orange"),
-    yellow: makeColor("#FFFF00", "Yellow"),
     lime: makeColor("#32CD32", "Lime"),
-    green: makeColor("#008000", "Green"),
-    cyan: makeColor("#00FFFF", "Cyan"),
+    yellow: makeColor("#FFFF00", "Yellow"),
     blue: makeColor("#0000FF", "Blue"),
+    green: makeColor("#008000", "Green"),
+    beige: makeColor("#FFC0CB", "Beige"),
+    orange: makeColor("#FF7F00", "Orange"),
+    brown: makeColor("#7F3900", "Brown"),
+    cyan: makeColor("#00FFFF", "Cyan"),
     indigo: makeColor("#4A007F", "Indigo"),
     violet: makeColor("#8A2BE2", "Violet"),
     pink: makeColor("#FF1493", "Pink"),
-
-    beige: makeColor("#FFC0CB", "Beige"),
-
     black: makeColor("#000000", "Black", { unlitAmount: 0.35 }),
     white: makeColor("#e6e6e6ff", "White", { unlitAmount: 0.85, shadowAlpha: 0.25 }),
     gray: makeColor("#808080", "Gray"),
-
-    brown: makeColor("#7F3900", "Brown"),
     teal: makeColor("#006D6F", "Teal"),
+
+
     gold: makeColor("#D4AF37", "Gold"),
     silver: makeColor("#C0C0C0", "Silver", { shadowAlpha: 0.35 }),
 
@@ -116,6 +117,8 @@ const COLORS = {
 
     chartreuse: makeColor("#76FF03", "Chartreuse"),
     steel: makeColor("#607D8B", "Steel"),
+
+
     emerald: makeColor("#00C853", "Emerald"),
     ruby: makeColor("#C2185B", "Ruby"),
 
@@ -158,6 +161,200 @@ const COLORS = {
     royal: makeColor("#5B5BE6", "Royal"),
 };
 
+const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";
+const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
+
+const clampMin0 = (n) => Math.max(0, Number.isFinite(n) ? n : 0);
+
+const buildDefaultTeamRatings = (teams) => {
+    const out = {};
+    teams.forEach((t, idx) => {
+        if (idx < 16) out[t.id] = 150;
+        else if (idx < 32) out[t.id] = 100;
+        else out[t.id] = 50;
+    });
+    return out;
+};
+
+const loadTeamRatings = (teams) => {
+    try {
+        const raw = localStorage.getItem(TEAM_RATINGS_LS_KEY);
+        if (!raw) return buildDefaultTeamRatings(teams);
+        const parsed = JSON.parse(raw);
+        const out = buildDefaultTeamRatings(teams);
+        teams.forEach((t) => {
+            const v = parsed?.[t.id];
+            if (typeof v === "number" && Number.isFinite(v)) out[t.id] = clampMin0(v);
+        });
+        return out;
+    } catch {
+        return buildDefaultTeamRatings(teams);
+    }
+};
+
+const saveTeamRatings = (ratings) => {
+    try {
+        localStorage.setItem(TEAM_RATINGS_LS_KEY, JSON.stringify(ratings));
+    } catch {
+        console.error("Couldn't save teams' ratings")
+    }
+};
+
+const saveRatingsSnapshot = (ratings) => {
+    try {
+        localStorage.setItem(TEAM_RATINGS_SNAPSHOT_LS_KEY, JSON.stringify(ratings));
+    } catch { 
+        console.error("Couldn't set teams' snapshot")
+    }
+};
+
+const loadRatingsSnapshot = () => {
+    try {
+        const raw = localStorage.getItem(TEAM_RATINGS_SNAPSHOT_LS_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const clearRatingsSnapshot = () => {
+    try {
+        localStorage.removeItem(TEAM_RATINGS_SNAPSHOT_LS_KEY);
+    } catch {
+        console.error("Couldn't remove teams' snapshot")
+    }
+};
+
+const buildLeaderboard = (teams, ratings) => {
+    const baseIndexById = {};
+    teams.forEach((t, i) => (baseIndexById[t.id] = i));
+
+    const sorted = [...teams].sort((a, b) => {
+        const pa = ratings?.[a.id] ?? 0;
+        const pb = ratings?.[b.id] ?? 0;
+        if (pb !== pa) return pb - pa;
+        return (baseIndexById[a.id] ?? 0) - (baseIndexById[b.id] ?? 0);
+    });
+
+    const rankById = {};
+    sorted.forEach((t, i) => (rankById[t.id] = i + 1));
+
+    return { sorted, rankById, baseIndexById };
+};
+
+const classifyTeamsForStages = (teams, ratings) => {
+    const { sorted } = buildLeaderboard(teams, ratings);
+    return {
+        stage3Seeds: sorted.slice(0, 16).map((t) => ({ ...t })),
+        stage2Seeds: sorted.slice(16, 32).map((t) => ({ ...t })),
+        stage1Seeds: sorted.slice(32).map((t) => ({ ...t })),
+    };
+};
+
+const formatOrdinal = (n) => {
+    const v = n % 100;
+    if (v >= 11 && v <= 13) return `${n}th`;
+    switch (n % 10) {
+        case 1: return `${n}st`;
+        case 2: return `${n}nd`;
+        case 3: return `${n}rd`;
+        default: return `${n}th`;
+    }
+};
+
+const getRatingDeltaForMatch = ({ phase, swissStageKey, playoffsStage, bestOf, loserSetsWon }) => {
+    if (phase === "swiss") {
+        const isBo1 = bestOf === 1;
+        if (swissStageKey === "stage1") {
+            if (isBo1) return { win: 3, lose: 2 };
+            return { win: 5, lose: loserSetsWon >= 1 ? 2 : 3 };
+        }
+        if (swissStageKey === "stage2") {
+            if (isBo1) return { win: 4, lose: 2 };
+            return { win: 8, lose: loserSetsWon >= 1 ? 2 : 4 };
+        }
+        if (swissStageKey === "stage3") {
+            if (isBo1) return { win: 7, lose: 4 };
+            return { win: 10, lose: loserSetsWon >= 1 ? 4 : 7 };
+        }
+    }
+
+    if (phase === "playoffs") {
+        if (playoffsStage === "ro16") {
+            return { win: 13, lose: loserSetsWon >= 1 ? 6 : 8 };
+        }
+        if (playoffsStage === "qf") {
+            const lose = loserSetsWon >= 2 ? 8 : loserSetsWon === 1 ? 10 : 13;
+            return { win: 20, lose };
+        }
+        if (playoffsStage === "sf") {
+            const lose =
+                loserSetsWon >= 3 ? 10 :
+                    loserSetsWon === 2 ? 13 :
+                        loserSetsWon === 1 ? 16 : 18;
+            return { win: 30, lose };
+        }
+        if (playoffsStage === "thirdPlace") {
+            const lose =
+                loserSetsWon >= 3 ? 10 :
+                    loserSetsWon === 2 ? 13 :
+                        loserSetsWon === 1 ? 16 : 20;
+            return { win: 35, lose };
+        }
+        if (playoffsStage === "gf") {
+            return { win: 50, lose: 0 };
+        }
+    }
+
+    return { win: 0, lose: 0 };
+};
+
+const applyRatings = ({ ratings, teams, winnerId, loserId, phase, swissStageKey, swissNet, playoffsStage, bestOf, loserSetsWon }) => {
+    const beforeLb = buildLeaderboard(teams, ratings);
+    const beforeRankW = beforeLb.rankById[winnerId] ?? null;
+    const beforeRankL = beforeLb.rankById[loserId] ?? null;
+
+    const { win, lose } = getRatingDeltaForMatch({ phase, swissStageKey, swissNet, playoffsStage, bestOf, loserSetsWon });
+
+    const next = { ...ratings };
+    const beforePointsW = next[winnerId] ?? 0;
+    const beforePointsL = next[loserId] ?? 0;
+
+    next[winnerId] = clampMin0(beforePointsW + win);
+    next[loserId] = clampMin0(beforePointsL - lose);
+
+    const afterLb = buildLeaderboard(teams, next);
+    const afterRankW = afterLb.rankById[winnerId] ?? null;
+    const afterRankL = afterLb.rankById[loserId] ?? null;
+
+    return {
+        nextRatings: next,
+        meta: {
+            winnerId,
+            loserId,
+            winPoints: win,
+            losePoints: lose,
+            before: {
+                [winnerId]: { points: beforePointsW, rank: beforeRankW },
+                [loserId]: { points: beforePointsL, rank: beforeRankL },
+            },
+            after: {
+                [winnerId]: { points: next[winnerId], rank: afterRankW },
+                [loserId]: { points: next[loserId], rank: afterRankL },
+            },
+        },
+    };
+};
+
+const areRatingsAtDefault = (teams, ratings) => {
+    const def = buildDefaultTeamRatings(teams);
+
+    return teams.every((t) => {
+        const cur = ratings?.[t.id] ?? 0;
+        return cur === def[t.id];
+    });
+};
+
 const getAllTeams64 = () => {
     const entries = Object.entries(COLORS);
     return entries.map(([key, val], idx) => ({
@@ -165,6 +362,7 @@ const getAllTeams64 = () => {
         key,
         name: val.name,
         color: val.color,
+        hoverOn: val.hoverOn,
         unlitColor: val.unlitColor,
         shadow: val.shadow,
     }));
@@ -525,7 +723,7 @@ const defaultSeriesState = {
 
 const round2 = (n) => Number(n.toFixed(2));
 
-const TeamCircle = ({ team, dim, specialStyle = {} }) => {
+const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingValue = 0 }) => {
     if (!team) {
         return (
             <div
@@ -550,7 +748,18 @@ const TeamCircle = ({ team, dim, specialStyle = {} }) => {
                 ...specialStyle,
             }}
             title={`Team ${team.name}`}
-        />
+        >
+            {showRating && (
+                <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_rating}>
+                    <CountUp
+                        start={0}
+                        duration={1.2}
+                        end={ratingValue}
+                        key={ratingValue}
+                    />
+                </span>
+            )}
+        </div>
     );
 };
 
@@ -621,7 +830,7 @@ const MatchRect = ({
             data-idx={dataIdx}
             data-not-started={dataNotStarted}
             style={{
-                pointerEvents: !isClickable || isButtonLocked ? "none" : "auto",
+                pointerEvents: isClickable && !isButtonLocked ? "auto" : "none",
                 marginBottom: 8,
             }}
             onClick={onClick}
@@ -669,6 +878,7 @@ const PlaceholderRect = ({ teams, height = 264 }) => (
     <div
         className={css.placeholder_rect}
         style={{ minHeight: height }}
+        title="To be determined..."
     >
         <div style={{ width: "100%", height: "max-content", display: "flex", flexWrap: "wrap", rowGap: 16.5, columnGap: 4, justifyContent: "center", alignItems: "flex-start" }}>
             {teams.map((t) => (
@@ -745,11 +955,9 @@ export default function SpecialModePage() {
         () => makeColorSequence(buildTournamentColorPool().map(([, v]) => v)),
         []
     );
-    const stage3Seeds = useMemo(() => allTeams.slice(0, 16), [allTeams]);
-    const stage2Seeds = useMemo(() => allTeams.slice(16, 32), [allTeams]);
-    const stage1Seeds = useMemo(() => allTeams.slice(32, 64), [allTeams]);
 
     const [showIntro, setShowIntro] = useState(true);
+    const [showTournamentIntro, setShowTournamentIntro] = useState(false);
 
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
     const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
@@ -805,14 +1013,54 @@ export default function SpecialModePage() {
 
     const [hover, setHover] = useState(false);
 
+    const [teamRatings, setTeamRatings] = useState(() => loadTeamRatings(allTeams));
+    const teamRatingsRef = useRef(teamRatings);
+    
+    useEffect(() => {
+        teamRatingsRef.current = teamRatings;
+    }, [teamRatings]);
+
+    const leaderboard = useMemo(() => buildLeaderboard(allTeams, teamRatings), [allTeams, teamRatings]);
+    const { rankById } = leaderboard;
+
+    const seedsByRating = useMemo(() => classifyTeamsForStages(allTeams, teamRatings), [allTeams, teamRatings]);
+    const { stage3Seeds, stage2Seeds, stage1Seeds } = seedsByRating;
+
+    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
+
+    const [isScoreBoardResetModalOpen, setIsScoreBoardResetModalOpen] = useState(false);
+    const [isScoreBoardResetConfirmModalOpen, setIsScoreBoardResetConfirmModalOpen] = useState(false);
+
+    const [scoreboardResetCode, setScoreboardResetCode] = useState(""); 
+
     const isSeriesActive = seriesState.active;
+
+    const isScoreboardAlreadyDefault = useMemo(() => {
+        return areRatingsAtDefault(allTeams, teamRatings);
+    }, [allTeams, teamRatings]);
 
     const isButtonLocked =
         isCalculating ||
         isRestartModalOpen ||
         isTerminateModalOpen ||
+        isScoreBoardResetModalOpen ||
+        isScoreBoardResetConfirmModalOpen ||
+        showIntro ||
+        showPickemLine2 ||
+        isLocked;
+    
+    const isMatchRectLocked =
+        isCalculating ||
+        isRestartModalOpen ||
+        isTerminateModalOpen ||
+        isScoreBoardResetModalOpen ||
+        isScoreBoardResetConfirmModalOpen ||
         showIntro ||
         isLocked;
+    
+    const isScoreBoardButtonLocked = isTerminateModalOpen || isRestartModalOpen || isScoreBoardResetModalOpen || isScoreBoardResetConfirmModalOpen || isLocked;
+    const isScoreBoardResetButtonLocked = isScoreboardAlreadyDefault || isTerminateModalOpen || isRestartModalOpen || isScoreBoardResetModalOpen || isScoreBoardResetConfirmModalOpen || isLocked;
 
     const isReadOnlyView = viewPhase.startsWith("results_");
 
@@ -921,6 +1169,15 @@ export default function SpecialModePage() {
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
 
+        if (ratingsSnapshotRef.current) {
+            setTeamRatings(ratingsSnapshotRef.current);
+            teamRatingsRef.current = ratingsSnapshotRef.current;
+            saveTeamRatings(ratingsSnapshotRef.current);
+
+            ratingsSnapshotRef.current = null;
+            clearRatingsSnapshot();
+        }
+
         const s1 = buildSwissStage("stage1", stage1Seeds);
         setStage1(s1);
         setStage2(null);
@@ -965,6 +1222,110 @@ export default function SpecialModePage() {
         confirmRestart();
         setIsRestartModalOpen(false);
         setIsTerminateModalOpen(false);
+    };
+
+    const handleCloseScoreboardResetModal = () => {
+        setIsScoreBoardResetModalOpen(false);
+        setScoreboardResetCode("");
+    };
+
+    const handleVerifyScoreboardResetPassword = () => {
+        if (!SCOREBOARD_RESET_CODE) {
+            toast.error("Reset code is not configured.");
+            return;
+        }
+
+        if (scoreboardResetCode !== SCOREBOARD_RESET_CODE) {
+            toast.error("WRONG PASSWORD!");
+            return;
+        }
+
+        toast.success("Password correct!!!");
+        setIsScoreBoardResetModalOpen(false);
+        setScoreboardResetCode("");
+        setIsScoreBoardResetConfirmModalOpen(true);
+    };
+
+    const resetTournamentStateWithSeeds = (seededStage1Seeds) => {
+        localStorage.removeItem(STORAGE_KEY);
+
+        const s1 = buildSwissStage("stage1", seededStage1Seeds);
+        setStage1(s1);
+        setStage2(null);
+        setStage3(null);
+        setPlayoffs(null);
+
+        setActivePhase("stage1");
+        setViewPhase("stage1");
+        setShowIntro(true);
+
+        setSeriesState(defaultSeriesState);
+
+        setNeededPickemPoints(getRandomNeededPickemPoints());
+        setFinalPickemPoints(0);
+        setGuessedCounts({
+            stage1: 0,
+            stage2: 0,
+            stage3: 0,
+            ro16: 0,
+            qf: 0,
+            sf: 0,
+            tpd: 0,
+            gf: 0,
+        });
+
+        setShowPickemSummary(false);
+        setShowPickemLine2(false);
+        setShowPickemResult(false);
+
+        setShowWinnersScreen(false);
+        setTournamentResults(null);
+
+        setIsRestartModalOpen(false);
+        setIsTerminateModalOpen(false);
+    };
+
+    const ensureRatingsSnapshot = () => {
+        if (ratingsSnapshotRef.current) return;
+
+        const snap = { ...teamRatingsRef.current };
+        ratingsSnapshotRef.current = snap;
+        saveRatingsSnapshot(snap);
+    };
+
+    const handleFinalScoreboardReset = () => {
+        const defaults = buildDefaultTeamRatings(allTeams);
+
+        setTeamRatings(defaults);
+        teamRatingsRef.current = defaults;
+        saveTeamRatings(defaults);
+
+        const seeded = classifyTeamsForStages(allTeams, defaults);
+
+        ratingsSnapshotRef.current = null;
+        clearRatingsSnapshot();
+
+        resetTournamentStateWithSeeds(seeded.stage1Seeds);
+
+        setIsScoreBoardResetConfirmModalOpen(false);
+        toast.success("Scoreboard has been reset.");
+    };
+    
+    const handleCancelFinalScoreboardReset = () => {
+        setIsScoreBoardResetConfirmModalOpen(false);
+    };
+
+    useEffect(() => {
+        if (!showIntro) ensureRatingsSnapshot();
+    }, [showIntro]);
+
+    const handleTournamentStart = () => {
+        setShowIntro(false);
+        setShowTournamentIntro(true);
+    }
+
+    const handleCloseTournamentIntro = () => {
+        setShowTournamentIntro(false);
     };
 
     const buildStage2IfNeeded = (s1) => {
@@ -1500,369 +1861,64 @@ export default function SpecialModePage() {
         if (!seriesState.active || seriesState.banner) return;
 
         const mult = round2(multiplierMin + Math.random() * (multiplierMax - multiplierMin));
-
         setIsCalculating(true);
 
         setTimeout(() => {
             setSeriesState((prev) => {
                 if (!prev.active || prev.banner) return prev;
 
-                const playerWonMini = mult > 0;
-                const playerLostMini = mult < 0;
+                const playerWonSet = mult > 0;
+                const playerLostSet = mult < 0;
 
-                let resultText;
-                if (mult > 0) resultText = `Team ${prev.leftTeam.name} wins the mini-round!`;
-                else if (mult < 0) resultText = `Team ${prev.rightTeam.name} wins the mini-round!`;
-                else resultText = "No one wins this mini-round.";
+                // If you want 0.00x to do nothing, keep this:
+                if (!playerWonSet && !playerLostSet) {
+                    setIsCalculating(false);
+                    return {
+                        ...prev,
+                        lastMultiplier: mult,
+                        lastResult: "0.00x — no set result. Roll again.",
+                    };
+                }
 
-                let {
-                    playerWonSets,
-                    playerLostSets,
-                    setNumber,
-                    roundWins,
-                    roundLosses,
-                    roundNumber,
-                    miniWins,
-                    miniLosses,
-                    isOvertime,
-                    overtimeBlock,
-                    otWins,
-                    otLosses,
-                    setsToWin: toWin,
-                } = prev;
+                // We "finish a set instantly" and record a fake round score (so summary works)
+                // Feel free to change the fake values; they are just for display.
+                const fakeRoundWins = playerWonSet ? 13 : 7;
+                const fakeRoundLosses = playerWonSet ? 7 : 13;
+
+                // Store set summary (BO3 needs it)
+                appendSetToCurrentMatchHistory(fakeRoundWins, fakeRoundLosses, playerWonSet);
+
+                let nextWonSets = prev.playerWonSets + (playerWonSet ? 1 : 0);
+                let nextLostSets = prev.playerLostSets + (playerWonSet ? 0 : 1);
+
+                const seriesOver = nextWonSets >= prev.setsToWin || nextLostSets >= prev.setsToWin;
+
+                const resultText =
+                    mult > 0
+                        ? `Good ${mult}x — Team ${prev.leftTeam.name} wins a SET!`
+                        : `Bad ${mult}x — Team ${prev.leftTeam.name} loses a SET!`;
 
                 let banner = prev.banner;
-                if (isOvertime) {
-                    let nextMiniWins = miniWins;
-                    let nextMiniLosses = miniLosses;
 
-                    if (playerWonMini) nextMiniWins += 1;
-                    else if (playerLostMini) nextMiniLosses += 1;
-
-                    if (nextMiniWins < 5 && nextMiniLosses < 5) {
-                        setIsCalculating(false);
-                        return {
-                            ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
-                            miniWins: nextMiniWins,
-                            miniLosses: nextMiniLosses,
-                        };
-                    }
-
-                    const wonOtRound = nextMiniWins >= 5;
-
-                    const updatedOtWins = otWins + (wonOtRound ? 1 : 0);
-                    const updatedOtLosses = otLosses + (wonOtRound ? 0 : 1);
-
-                    const updatedRoundWins = roundWins + (wonOtRound ? 1 : 0);
-                    const updatedRoundLosses = roundLosses + (wonOtRound ? 0 : 1);
-
-                    const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
-
-                    miniWins = 0;
-                    miniLosses = 0;
-
-                    roundNumber = roundNumber + 1;
-
-                    otWins = updatedOtWins;
-                    otLosses = updatedOtLosses;
-                    roundWins = updatedRoundWins;
-                    roundLosses = updatedRoundLosses;
+                if (seriesOver) {
+                    const winner = nextWonSets > nextLostSets ? prev.leftTeam : prev.rightTeam;
+                    banner = `Team ${winner.name} has won this series!`;
 
                     toast(
                         <span>
-                            {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this OT round!
+                            {prev.setsToWin === 1 ? "This match has" : "This series have"} been WON by{" "}
+                            {renderTeamLabel(winner)}!
                         </span>,
-                        { icon: "😜", duration: 2000 }
+                        { icon: "🎉", duration: 2500 }
                     );
-
-                    const otDecided =
-                        updatedOtWins === OT_ROUNDS_TO_WIN || updatedOtLosses === OT_ROUNDS_TO_WIN;
-
-                    if (otDecided) {
-                        const playerWonSet = updatedOtWins > updatedOtLosses;
-
-                        appendSetToCurrentMatchHistory(updatedRoundWins, updatedRoundLosses, playerWonSet);
-
-                        playerWonSets += playerWonSet ? 1 : 0;
-                        playerLostSets += playerWonSet ? 0 : 1;
-
-                        const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
-
-                        if (seriesOver) {
-                            const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
-
-                            toast(
-                                <span>
-                                    {toWin === 1 ? "This match has" : "This series have"} been WON in Overtime{" "}
-                                    {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by {renderTeamLabel(winner)}!
-                                </span>,
-                                { icon: "🎉", duration: 4000 }
-                            );
-
-                            banner = `Team ${winner.name} has won this series!`;
-                        } else {
-                            toast(
-                                <span>
-                                    The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
-                                    {overtimeBlock <= 1 ? "" : `#${overtimeBlock}`} by{" "}
-                                    {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
-                                </span>,
-                                { icon: "🤯", duration: 4000 }
-                            );
-
-                            setIsLocked(true);
-                            setTimeout(() => {
-                                setSeriesState((curr) => {
-                                    if (!curr.active || curr.banner) return curr;
-                                    setIsLocked(false);
-                                    return {
-                                        ...curr,
-                                        roundWins: 0,
-                                        roundLosses: 0,
-                                        roundNumber: 1,
-                                        setNumber: curr.setNumber + 1,
-                                        miniWins: 0,
-                                        miniLosses: 0,
-                                        isOvertime: false,
-                                        overtimeBlock: 0,
-                                        otWins: 0,
-                                        otLosses: 0,
-                                    };
-                                });
-                            }, 4000);
-                        }
-
-                        setIsCalculating(false);
-
-                        return {
-                            ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
-                            playerWonSets,
-                            playerLostSets,
-                            setNumber,
-                            roundWins,
-                            roundLosses,
-                            roundNumber,
-                            miniWins,
-                            miniLosses,
-                            isOvertime,
-                            overtimeBlock,
-                            otWins,
-                            otLosses,
-                            banner,
-                        };
-                    }
-
-                    if (otTiedBlock) {
-                        const msg =
-                            overtimeBlock === 1
-                                ? "Overtime is tied 3-3! Starting new overtime block..."
-                                : overtimeBlock === 2
-                                    ? "Another overtime block tied 3-3! Starting new overtime block..."
-                                    : overtimeBlock === 3
-                                        ? "That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block..."
-                                        : "A tie again! Impressing! Starting new overtime block...";
-
-                        toast(msg, { icon: "🔄", duration: 4000 });
-
-                        setIsLocked(true);
-                        setTimeout(() => {
-                            setSeriesState((curr) => {
-                                if (!curr.active || curr.banner) return curr;
-                                setIsLocked(false);
-                                return {
-                                    ...curr,
-                                    isOvertime: true,
-                                    overtimeBlock: (curr.overtimeBlock || 1) + 1,
-                                    roundNumber: 1,
-                                    otWins: 0,
-                                    otLosses: 0,
-                                    miniWins: 0,
-                                    miniLosses: 0,
-                                };
-                            });
-                        }, 4000);
-
-                        setIsCalculating(false);
-
-                        return {
-                            ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
-                            playerWonSets,
-                            playerLostSets,
-                            setNumber,
-                            roundWins,
-                            roundLosses,
-                            roundNumber,
-                            miniWins,
-                            miniLosses,
-                            isOvertime: true,
-                            overtimeBlock,
-                            otWins,
-                            otLosses,
-                            banner,
-                        };
-                    }
-
-                    setIsCalculating(false);
-
-                    return {
-                        ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
-                        playerWonSets,
-                        playerLostSets,
-                        setNumber,
-                        roundWins,
-                        roundLosses,
-                        roundNumber,
-                        miniWins,
-                        miniLosses,
-                        isOvertime,
-                        overtimeBlock,
-                        otWins,
-                        otLosses,
-                        banner,
-                    };
-                }
-
-                let nextMiniWins = miniWins;
-                let nextMiniLosses = miniLosses;
-
-                if (playerWonMini) nextMiniWins += 1;
-                else if (playerLostMini) nextMiniLosses += 1;
-
-                if (nextMiniWins < 5 && nextMiniLosses < 5) {
-                    setIsCalculating(false);
-                    return {
-                        ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
-                        miniWins: nextMiniWins,
-                        miniLosses: nextMiniLosses,
-                    };
-                }
-
-                const playerWonRound = nextMiniWins >= 5;
-                roundWins += playerWonRound ? 1 : 0;
-                roundLosses += playerWonRound ? 0 : 1;
-                roundNumber += 1;
-
-                miniWins = 0;
-                miniLosses = 0;
-
-                toast(
-                    <span>
-                        {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this round!
-                    </span>,
-                    { icon: "😜", duration: 2000 }
-                );
-
-                if (roundWins === 12 && roundLosses === 12) {
-                    toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
-                        icon: "⚔️",
-                        duration: 4000,
-                    });
-
-                    setIsLocked(true);
-                    setTimeout(() => {
-                        setSeriesState((curr) => {
-                            if (!curr.active || curr.banner) return curr;
-                            setIsLocked(false);
-                            return {
-                                ...curr,
-                                isOvertime: true,
-                                overtimeBlock: curr.overtimeBlock ? curr.overtimeBlock + 1 : 1,
-                                otWins: 0,
-                                otLosses: 0,
-                                roundNumber: 1,
-                                miniWins: 0,
-                                miniLosses: 0,
-                            };
-                        });
-                    }, 4000);
-
-                    setIsCalculating(false);
-
-                    return {
-                        ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
-                        playerWonSets,
-                        playerLostSets,
-                        roundWins,
-                        roundLosses,
-                        roundNumber,
-                        miniWins,
-                        miniLosses,
-                        isOvertime: true,
-                        overtimeBlock,
-                        otWins,
-                        otLosses,
-                        banner,
-                    };
-                }
-
-                const setShouldEnd =
-                    roundWins >= BASE_ROUNDS_TO_WIN ||
-                    roundLosses >= BASE_ROUNDS_TO_WIN ||
-                    roundWins + roundLosses >= BASE_MAX_ROUNDS;
-
-                if (setShouldEnd) {
-                    const playerWonSet = roundWins > roundLosses;
-
-                    appendSetToCurrentMatchHistory(roundWins, roundLosses, playerWonSet);
-
-                    playerWonSets += playerWonSet ? 1 : 0;
-                    playerLostSets += playerWonSet ? 0 : 1;
-
-                    const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
-
-                    if (seriesOver) {
-                        const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
-
-                        toast(
-                            <span>
-                                {toWin === 1 ? "This match has" : "This series have"} been WON by {renderTeamLabel(winner)}!
-                            </span>,
-                            { icon: "🎉", duration: 4000 }
-                        );
-
-                        banner = `Team ${winner.name} has won this series!`;
-                    } else {
-                        toast(
-                            <span>
-                                The set {playerWonSets + playerLostSets} has been won by{" "}
-                                {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
-                            </span>,
-                            { icon: "🤯", duration: 4000 }
-                        );
-
-                        setIsLocked(true);
-                        setTimeout(() => {
-                            setSeriesState((curr) => {
-                                if (!curr.active || curr.banner) return curr;
-                                setIsLocked(false);
-                                return {
-                                    ...curr,
-                                    roundWins: 0,
-                                    roundLosses: 0,
-                                    roundNumber: 1,
-                                    setNumber: curr.setNumber + 1,
-                                    miniWins: 0,
-                                    miniLosses: 0,
-                                    isOvertime: false,
-                                    overtimeBlock: 0,
-                                    otWins: 0,
-                                    otLosses: 0,
-                                };
-                            });
-                        }, 4000);
-                    }
+                } else {
+                    toast(
+                        <span>
+                            Set {nextWonSets + nextLostSets} goes to{" "}
+                            {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
+                        </span>,
+                        { icon: "🤯", duration: 1500 }
+                    );
                 }
 
                 setIsCalculating(false);
@@ -1871,22 +1927,26 @@ export default function SpecialModePage() {
                     ...prev,
                     lastMultiplier: mult,
                     lastResult: resultText,
-                    playerWonSets,
-                    playerLostSets,
-                    setNumber,
-                    roundWins,
-                    roundLosses,
-                    roundNumber,
-                    miniWins,
-                    miniLosses,
-                    isOvertime,
-                    overtimeBlock,
-                    otWins,
-                    otLosses,
+
+                    // set counters update
+                    playerWonSets: nextWonSets,
+                    playerLostSets: nextLostSets,
+
+                    // These become irrelevant for test-mode; keep them clean
+                    roundWins: 0,
+                    roundLosses: 0,
+                    roundNumber: 1,
+                    miniWins: 0,
+                    miniLosses: 0,
+                    isOvertime: false,
+                    overtimeBlock: 0,
+                    otWins: 0,
+                    otLosses: 0,
+
                     banner,
                 };
             });
-        }, 50);
+        }, 60);
     };
 
     useEffect(() => {
@@ -1947,6 +2007,26 @@ export default function SpecialModePage() {
                     m.winnerTeamId = winner.id;
                     m.loserTeamId = loser.id;
 
+                    const loserSetsWon = Math.min(scoreLeft, scoreRight);
+                    const applied = applyRatings({
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                        winnerId: winner.id,
+                        loserId: loser.id,
+                        phase: "playoffs",
+                        swissStageKey: null,
+                        swissNet: null,
+                        playoffsStage,
+                        bestOf,
+                        loserSetsWon,
+                    });
+
+                    m.ratingMeta = applied.meta;
+
+                    setTeamRatings(applied.nextRatings);
+                    teamRatingsRef.current = applied.nextRatings;
+                    saveTeamRatings(applied.nextRatings);
+
                     arr[idx] = m;
                     copy[playoffsStage] = arr;
 
@@ -1995,6 +2075,8 @@ export default function SpecialModePage() {
                             fourthPlace,
                         });
                         setShowWinnersScreen(true);
+                        ratingsSnapshotRef.current = null;
+                        clearRatingsSnapshot();
                     }
 
                     return copy;
@@ -2040,6 +2122,25 @@ export default function SpecialModePage() {
                 match.loserTeamId = loser.id;
 
                 resolveSwissMatchResult(copy, match, winner.id, scoreLeft, scoreRight);
+                const loserSetsWon = Math.min(scoreLeft, scoreRight);
+                const applied = applyRatings({
+                    ratings: teamRatingsRef.current,
+                    teams: allTeams,
+                    winnerId: winner.id,
+                    loserId: loser.id,
+                    phase: "swiss",
+                    swissStageKey,
+                    swissNet,
+                    playoffsStage: null,
+                    bestOf,
+                    loserSetsWon,
+                });
+
+                match.ratingMeta = applied.meta;
+
+                setTeamRatings(applied.nextRatings);
+                teamRatingsRef.current = applied.nextRatings;
+                saveTeamRatings(applied.nextRatings);
 
                 arr[idx] = match;
                 copy.matchesByNet[swissNet] = arr;
@@ -2549,7 +2650,7 @@ export default function SpecialModePage() {
                             <div className={css.net_stack}>
                                 <div className={css.net_base}>
                                     {(unlocked ? matches : buildLockedPlaceholdersForNet(net)).map((m, idx, arr) => {
-                                        const isClickable = unlocked && !isButtonLocked && (m.played || canOpenSwissMatch(stageObj, net, m));
+                                        const isClickable = unlocked && !isMatchRectLocked && (m.played || canOpenSwissMatch(stageObj, net, m));
 
                                         const highlightClass =
                                             unlocked && m.id === currentId ? css.match_current :
@@ -2567,7 +2668,7 @@ export default function SpecialModePage() {
                                                 key={m.id}
                                                 match={m}
                                                 isClickable={isClickable}
-                                                isButtonLocked={!unlocked || isButtonLocked}
+                                                isButtonLocked={!unlocked || isMatchRectLocked}
                                                 onClick={
                                                     unlocked
                                                         ? () => openSwissMatchModal(stageObj.stageKey, net, m.id, isReadOnlyView)
@@ -2701,7 +2802,7 @@ export default function SpecialModePage() {
                 isPlayed && m.loserTeamId && rightTeam && m.loserTeamId === rightTeam.id;
 
             const isClickable =
-                !isButtonLocked &&
+                !isMatchRectLocked &&
                 (isReadOnlyView ? !!m.played : (m.played || canOpenPlayoffsMatch(playoffs, stageKey, idx)));
 
             return (
@@ -2709,7 +2810,7 @@ export default function SpecialModePage() {
                     key={m.id}
                     className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
                     style={{
-                        pointerEvents: !isClickable || isButtonLocked ? "none" : "auto",
+                        pointerEvents: !isClickable || isMatchRectLocked ? "none" : "auto",
                     }}
                     onClick={() => openPlayoffsMatchModal(stageKey, m.id, isReadOnlyView)}
                 >
@@ -3663,12 +3764,20 @@ export default function SpecialModePage() {
             </>
         );
     }
+
     return (
         <>
             <Header
                 setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                 setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
+                setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
+                setIsScoreBoard={() => setIsLeaderboardOpen(true)}
+                isIntroClosed={showIntro}
+                isScoreBoardOpen={isLeaderboardOpen}
                 isButtonLocked={isButtonLocked}
+                isScoreBoardButtonLocked={isScoreBoardButtonLocked}
+                isScoreBoardResetButtonLocked={isScoreBoardResetButtonLocked}
+                setIsScoreBoardResetModalOpen={() => setIsScoreBoardResetModalOpen(true)}
             />
 
             <div className={css.page_container} style={{ position: "relative" }}>
@@ -3730,7 +3839,7 @@ export default function SpecialModePage() {
                         </div>
 
                         <footer className={css.footer_row}>
-                            <button className={css.gamble_button} onClick={() => setShowIntro(false)}>
+                            <button className={css.gamble_button} onClick={handleTournamentStart}>
                                 Start Game
                             </button>
                             <Link className={`${css.gamble_button} ${css.back_button}`} to="/gambling">
@@ -3769,7 +3878,7 @@ export default function SpecialModePage() {
                                         }}
                                         onMouseEnter={() => setHover(true)}
                                         onMouseLeave={() => setHover(false)}
-                                        onClick={() => setShowPickemSummary(true)}
+                                        onClick={() => setShowWinnersScreen(true)}
                                     >
                                         Back to the Winners' screen
                                     </button>
@@ -3856,6 +3965,52 @@ export default function SpecialModePage() {
                                 onClick={confirmTerminate}
                             >
                                 Terminate
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isScoreBoardResetModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="scoreboard-reset-code">
+                                Identification code
+                            </label>
+
+                            <input
+                                id="scoreboard-reset-code"
+                                className={css.reset_input}
+                                type="password"
+                                value={scoreboardResetCode}
+                                onChange={(e) => setScoreboardResetCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCloseScoreboardResetModal}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyScoreboardResetPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isScoreBoardResetConfirmModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            <b>Are you sure?!</b> <br />
+                            By pressing the button "Confirm", you'll reset the WHOLE scoreboard!
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCancelFinalScoreboardReset}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleFinalScoreboardReset}>
+                                Confirm
                             </button>
                         </div>
                     </div>
@@ -3951,8 +4106,18 @@ export default function SpecialModePage() {
                                             <div
                                                 className={css.modal_team_circle}
                                                 style={{ background: modalLeftTeam?.color }}
-                                            />
+                                            >
+                                                <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_rating}>
+                                                    <CountUp
+                                                        start={0}
+                                                        duration={1.2}
+                                                        end={teamRatings[modalLeftTeam?.id] ?? 0}
+                                                        key={teamRatings[modalLeftTeam?.id] ?? 0}
+                                                    />
+                                                </span>
+                                            </div>
                                             <span className={css.modal_team_label}>
+                                                ({formatOrdinal(rankById[modalLeftTeam?.id] || 64)}) <br />
                                                 Team {modalLeftTeam?.name}
                                             </span>
                                         </button>
@@ -3967,8 +4132,18 @@ export default function SpecialModePage() {
                                             <div
                                                 className={css.modal_team_circle}
                                                 style={{ background: modalRightTeam?.color }}
-                                            />
+                                            >
+                                                <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_rating}>
+                                                    <CountUp
+                                                        start={0}
+                                                        duration={1.2}
+                                                        end={teamRatings[modalRightTeam?.id] ?? 0}
+                                                        key={teamRatings[modalRightTeam?.id] ?? 0}
+                                                    />
+                                                </span>
+                                            </div>
                                             <span className={css.modal_team_label}>
+                                                ({formatOrdinal(rankById[modalRightTeam?.id] || 64)}) <br />
                                                 Team {modalRightTeam?.name}
                                             </span>
                                         </button>
@@ -4014,23 +4189,41 @@ export default function SpecialModePage() {
                                                         className={css.modal_team_btn}
                                                         style={{
                                                             flex: 1,
-                                                            opacity: leftIsLoser ? 0.25 : 1,
+                                                            opacity: leftIsLoser ? 0.4 : 1,
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <div
-                                                            className={css.modal_team_circle}
-                                                            style={{ backgroundColor: modalPlayedLeft?.color }}
-                                                        />
+                                                        <TeamCircle team={modalPlayedLeft} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '52px', height: '52px', border: '3px solid #999' }} />
                                                         <span className={css.modal_team_label}>
-                                                            Team {modalPlayedLeft?.name}
-                                                            {leftIsPick && (
-                                                                <>
-                                                                    <br />
-                                                                    <span style={{ color: "#2e7d32", fontWeight: "bold" }}>
-                                                                        (Your pick)
-                                                                    </span>
-                                                                </>
+                                                            {(() => {
+                                                                const meta = currentModalMatch?.ratingMeta;
+                                                                const id = modalPlayedLeft?.id;
+                                                                const afterRank = meta?.after?.[id]?.rank ?? (rankById[id] ?? 64);
+                                                                const beforeRank = meta?.before?.[id]?.rank ?? afterRank;
+                                                                const deltaPlaces = beforeRank - afterRank;
+                                                                const afterPoints = meta?.after?.[id]?.points ?? (teamRatings[id] ?? 0);
+                                                                const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
+                                                                const deltaPoints = afterPoints - beforePoints;
+
+                                                                return (
+                                                                    <>
+                                                                        ({formatOrdinal(afterRank)}
+                                                                        {deltaPlaces !== 0 && (
+                                                                            <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900 }}>
+                                                                                {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
+                                                                            </span>
+                                                                        )}) <br />
+                                                                        {" "}Team {modalPlayedLeft?.name}{" "}
+                                                                        {deltaPoints !== 0 && (
+                                                                            <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900 }}>
+                                                                                {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
+                                                                            </span>
+                                                                        )}
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                            {currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick && (
+                                                                <div style={{ color: "#2e7d32", fontWeight: 'bold' }}>(Your pick)</div>
                                                             )}
                                                         </span>
                                                     </div>
@@ -4053,19 +4246,37 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <div
-                                                            className={css.modal_team_circle}
-                                                            style={{ backgroundColor: modalPlayedRight?.color }}
-                                                        />
+                                                        <TeamCircle team={modalPlayedRight} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '52px', height: '52px' }} />
                                                         <span className={css.modal_team_label}>
-                                                            Team {modalPlayedRight?.name}
-                                                            {rightIsPick && (
-                                                                <>
-                                                                    <br />
-                                                                    <span style={{ color: "#2e7d32", fontWeight: "bold" }}>
-                                                                        (Your pick)
-                                                                    </span>
-                                                                </>
+                                                            {(() => {
+                                                                const meta = currentModalMatch?.ratingMeta;
+                                                                const id = modalPlayedRight?.id;
+                                                                const afterRank = meta?.after?.[id]?.rank ?? (rankById[id] ?? 64);
+                                                                const beforeRank = meta?.before?.[id]?.rank ?? afterRank;
+                                                                const deltaPlaces = beforeRank - afterRank;
+                                                                const afterPoints = meta?.after?.[id]?.points ?? (teamRatings[id] ?? 0);
+                                                                const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
+                                                                const deltaPoints = afterPoints - beforePoints;
+
+                                                                return (
+                                                                    <>
+                                                                        ({formatOrdinal(afterRank)}
+                                                                        {deltaPlaces !== 0 && (
+                                                                            <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900 }}>
+                                                                                {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
+                                                                            </span>
+                                                                        )}) <br />
+                                                                        {" "}Team {modalPlayedRight?.name}{" "}
+                                                                        {deltaPoints !== 0 && (
+                                                                            <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900 }}>
+                                                                                {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
+                                                                            </span>
+                                                                        )}
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                            {currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick && (
+                                                                <div style={{ color: "#2e7d32", fontWeight: 'bold' }}>(Your pick)</div>
                                                             )}
                                                         </span>
                                                     </div>
@@ -4120,6 +4331,202 @@ export default function SpecialModePage() {
                                         </>
                                     );
                                 })()}
+                        </div>
+                    </div>
+                )}
+                {isLeaderboardOpen && (
+                    <div
+                        className={css.page_container}
+                        style={{ position: "fixed", background: "#fff", overflow: "auto", zIndex: 100 }}
+                    >
+                        <div className={css.leaderboard_header}>
+                            <div style={{ fontSize: "40px", textShadow: "0 0 4px #000" }} className={css.game_title}>
+                                Leaderboard
+                            </div>
+                        </div>
+
+                        <div className={css.leaderboard_list}>
+                            {leaderboard.sorted.map((t, i) => {
+                                const rank = i + 1;
+                                const rating = teamRatings[t.id] ?? 0;
+
+                                const rankSticker = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+                                const isTop10 = rank <= 10;
+
+                                const circleClass =
+                                    rank === 1
+                                        ? css.winnerLogo
+                                        : rank <= 3
+                                            ? css.placeLogo
+                                            : rank <= 10
+                                                ? css.placeLogo
+                                                : css.placeLogoSmall;
+
+                                const circleSizeStyle =
+                                    rank === 2 ? { width: "80px", height: "80px" }
+                                        : rank === 3 ? { width: "60px", height: "60px" }
+                                            : {};
+
+                                const nameClass =
+                                    rank === 1
+                                        ? css.winnerName
+                                        : rank <= 3
+                                            ? css.runnerUpName
+                                            : css.podium_name;
+
+                                const rowStyle = isTop10 ? { display: "flex", flexDirection: "column", alignItems: "center" } : undefined;
+
+                                const ratingFontSize =
+                                    rank >= 4 && rank <= 10 ? "10px"
+                                        : rank > 10 ? "8px"
+                                            : "";
+
+                                return (
+                                    <React.Fragment key={t.id}>
+                                        {rank === 17 && (
+                                            <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+                                                <h4
+                                                    className={css.game_title}
+                                                    style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
+                                                >
+                                                    Autoqualifiers to Stage III
+                                                </h4>
+
+                                                <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+
+                                                <h4
+                                                    className={css.game_title}
+                                                    style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
+                                                >
+                                                    Autoqualifiers to Stage II
+                                                </h4>
+                                            </div>
+                                        )}
+
+                                        {rank === 33 && (
+                                            <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+                                                <h4
+                                                    className={css.game_title}
+                                                    style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
+                                                >
+                                                    Autoqualifiers to Stage II
+                                                </h4>
+
+                                                <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+
+                                                <h4
+                                                    className={css.game_title}
+                                                    style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
+                                                >
+                                                    Qualifiers to Stage I
+                                                </h4>
+                                            </div>
+                                        )}
+
+                                        <div key={t.id} className={css.leaderboard_row} style={rowStyle}>
+                                            <div
+                                                className={circleClass}
+                                                style={{
+                                                    ...circleSizeStyle,
+                                                    background: t.color,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    gap: isTop10 ? "0" : "8px",
+                                                    border: "3px solid #999",
+                                                    marginLeft: rank > 10 ? "210px" : "0",
+                                                }}
+                                                title={`Team ${t.name}`}
+                                            >
+                                                <span
+                                                    style={{
+                                                        color: "#ffffff",
+                                                        textShadow: "0 0 4px #000",
+                                                        fontSize: ratingFontSize,
+                                                    }}
+                                                    className={css.modal_team_rating}
+                                                >
+                                                    {rating}p
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <span style={{ fontSize: rank <= 3 ? "32px" : "16px" }} className={css.leaderboard_rank}>
+                                                    {rankSticker ?? formatOrdinal(rank)}
+                                                </span>{" "}
+                                                <span style={{ color: "#2e2f42", fontWeight: 700 }} className={nameClass}>
+                                                    Team {t.name}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+                {showTournamentIntro && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Autoqualifiers for Stage III
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "50%", margin: "0 auto" }}>
+                                    {leaderboard.sorted.slice(0, 16).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay} style={{ marginTop: 22 }}>
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Autoqualifiers for Stage II
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "50%", margin: "0 auto" }}>
+                                    {leaderboard.sorted.slice(16, 32).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ marginTop: 22 }}>
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Qualifiers for Stage I
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "50%", margin: "0 auto" }}>
+                                    {leaderboard.sorted.slice(32, 64).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
