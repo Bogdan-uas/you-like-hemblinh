@@ -3121,7 +3121,7 @@ export default function SpecialModePage() {
                                 <div
                                     className={css.team_circle}
                                     style={{ background: leftTeam.color }}
-                                    title={leftTeam.name}
+                                    title={`Team ${leftTeam.name}`}
                                 />
                             ) : (
                                 <div className={css.placeholder_circle}>?</div>
@@ -3149,7 +3149,7 @@ export default function SpecialModePage() {
                                 <div
                                     className={css.team_circle}
                                     style={{ background: rightTeam.color }}
-                                    title={rightTeam.name}
+                                    title={`Team ${rightTeam.name}`}
                                 />
                             ) : (
                                 <div className={css.placeholder_circle}>?</div>
