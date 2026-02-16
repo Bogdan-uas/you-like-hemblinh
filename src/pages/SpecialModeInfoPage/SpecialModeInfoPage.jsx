@@ -391,7 +391,7 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p className={css.info_text}>At the very top, there are a small stage name, name of the match and the "Best of" of this match too. <br />
                     Lower from it, there is the current set info such as which round it is, how many rounds are required to win the set and if overtime, then also "Overtime #n". <br />
-                    In the center, there is a the scoreboard with scores of both teams, where also their names are. On the left side, there's always your picked team. <br />
+                    In the center, there is the scoreboard with scores of both teams, where are also their names. On the left side, there's always your picked team. <br />
                     At the bottom, there's gamble button. <br />
                     In general, all the rules are from Extended Mode, where in order to win a set, 13 rounds are required to be won. 1 round is won when 5 mini-rounds are won. In order to win a mini-round, some specific multiplier is required. Here is also the difference: <br />
                 </p>
@@ -428,10 +428,10 @@ const SpecialModeInfoPage = () => {
                 </p>
                 <p style={{ fontWeight: '800', marginTop: '12px' }} className={css.info_text}>Now, lemme explain about Pick'em points system: <br />
                     Since we are able to pick for every match, we need to get a reward, if chosen a winner team. <br />
-                    • If your chosen team wins any BO1 match, you get <i>+1 Pick&apos;em point</i> per match, <br />
-                    • If your chosen team wins any BO3 match, you get <i>+3 Pick&apos;em points</i> per match, <br />
-                    • if a BO5 Quarterfinal, you get <i>+5 Pick&apos;em points</i> per match, <br />
-                    • if BO7 Semifinals or BO7 Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match, <br />
+                    • If your chosen team wins any BO1 match, you get <i>+1 Pick&apos;em point</i> per match <br />
+                    • If your chosen team wins any BO3 match, you get <i>+3 Pick&apos;em points</i> per match <br />
+                    • if a BO5 Quarterfinal, you get <i>+5 Pick&apos;em points</i> per match <br />
+                    • if BO7 Semifinals or BO7 Third Place Decider, you get <i>+7 Pick&apos;em points</i> per match <br />
                     • and if in BO9 Grand Final, you get <i>+9 Pick&apos;em points</i>. <br />
                     If your chosen team loses in whatever stage, you get twice as many points as many sets your chosen team won but still lost overall.
                 </p>
@@ -444,7 +444,7 @@ const SpecialModeInfoPage = () => {
                 </div>
                 <p style={{ fontWeight: '800', marginTop: '12px' }} className={css.info_text}>Now, lemme also explain about Leaderboard points system: <br />
                     I mentioned it already multiple times, but I will explain one more time anyways: <br />
-                    The main goal of this system is to give the possibility for every team to start from any out of the three Stages. In order for them to do that, it is to win matches <br />
+                    The main goal of this system is to give the possibility for every team to start from any out of the three Stages. In order for them to do that, it is to win matches. <br />
                     Depending on in which place the team is in the colors object, which is in the code of the website, the teams get either 150 points or 100 points or 50 points at the very start. <br />
                     - Top 16 → Autoqualify to <b>Stage III</b> with 150 points
                     <br />- Top 17–32 → Autoqualify to <b>Stage II</b> with 100 points
@@ -455,11 +455,11 @@ const SpecialModeInfoPage = () => {
                     • If a team wins a BO3 match in Stage II, they get <i>+8 points</i> per match. If a team loses a BO3 match in Stage II, they lose <i>-4 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-2 points</i> <br />
                     • If a team wins a BO1 match in Stage III, they get <i>+7 points</i> per match. If a team loses a BO1 match in Stage III, they lose <i>-4 points</i> per match. <br />
                     • If a team wins a BO3 match in Stage III, they get <i>+10 points</i> per match. If a team loses a BO3 match in Stage III, they lose <i>-7 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-4 points</i> <br />
-                    • If a team wins a BO3 match in Rounds of 16, they get <i>+13 points</i> per match. If a team loses a BO3 match in Rounds of 16, they lose <i>-8 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-6 points</i> <br />
-                    • If a team wins a BO5 match in Quarterfinals, they get <i>+20 points</i> per match. If a team loses a BO5 match in Quarterfinals, they lose <i>-13 points</i> per match. But if a team wins a set, but still loses the match overall, they only lose <i>-10 points</i>, if two sets, but still loses, then they lose only <i>-8 points</i> <br />
-                    • If a team wins a BO7 match in Semifinals, they get <i>+30 points</i> per match. If a team loses a BO7 match in Semifinals, they lose <i>-18 points</i> per match. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
-                    • If a team wins a BO7 match in Third Place Decider, they get <i>+35 points</i> per match. If a team loses a BO7 match in Third Place Decider, they lose <i>-20 points</i> per match. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
-                    • If a team wins a BO9 match in Grand Final, they get <i>+50 points</i> per match. If a team loses a BO9 match in Grand Final, they don't lose anything (that will be already very unfortunate, just to lose in the Grand Final) <br />
+                    • If a team wins a BO3 match in Rounds of 16, they get <i>+13 points</i>. If a team loses a BO3 match in Rounds of 16, they lose <i>-8 points</i>, but if a team wins a set, but still loses the match overall, they only lose <i>-6 points</i> <br />
+                    • If a team wins a BO5 match in Quarterfinals, they get <i>+20 points</i>. If a team loses a BO5 match in Quarterfinals, they lose <i>-13 points</i>. But if a team wins a set, but still loses the match overall, they only lose <i>-10 points</i>, if two sets, but still loses, then they lose only <i>-8 points</i> <br />
+                    • If a team wins a BO7 match in Semifinals, they get <i>+30 points</i>. If a team loses a BO7 match in Semifinals, they lose <i>-18 points</i>. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
+                    • If a team wins a BO7 match in Third Place Decider, they get <i>+35 points</i>. If a team loses a BO7 match in Third Place Decider, they lose <i>-20 points</i>. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
+                    • If a team wins a BO9 match in Grand Final, they get <i>+50 points</i>. If a team loses a BO9 match in Grand Final, they don't lose anything (that will be already very unfortunate, just to lose in the Grand Final) <br />
                     The minus points sometimes might not be taken away from the team, if the team has already 0 points and the score of a team can't go beyond 0. <br />
                 </p>
                 <p className={css.info_text}>After that, you proceed with further matches. When all the match-ups in Stage I are finished, only 16 teams are left. They qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>

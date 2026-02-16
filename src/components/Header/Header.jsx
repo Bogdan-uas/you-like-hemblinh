@@ -48,7 +48,7 @@ const Header = ({
                             disabled={isScoreBoardResetButtonLocked}
                             style={{ pointerEvents: isGameWon ? "none" : "auto" }}
                         >
-                            Reset the scoreboard?
+                            Reset the leaderboard?
                         </button>
                     </div>
                 ) : isIntroClosed ? (
