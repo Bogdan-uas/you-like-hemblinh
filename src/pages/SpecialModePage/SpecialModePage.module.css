@@ -1493,6 +1493,11 @@
     outline: none;
 }
 
+.reset_input::placeholder {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+}
+
 .reset_input:hover,
 .reset_input:focus {
     border: 1px solid black;
@@ -1553,4 +1558,13 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.hidden_scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hidden_scrollbar::-webkit-scrollbar {
+    display: none;
 }

@@ -6,10 +6,14 @@ import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { FaTrophy } from "react-icons/fa";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
 const STORAGE_KEY = "specialPageState_swiss_v2";
+const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";
+const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
+const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 
 const BASE_MAX_ROUNDS = 24;
 const BASE_ROUNDS_TO_WIN = 13;
@@ -160,9 +164,6 @@ const COLORS = {
     jade: makeColor("#00A86B", "Jade"),
     royal: makeColor("#5B5BE6", "Royal"),
 };
-
-const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";
-const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 
 const clampMin0 = (n) => Math.max(0, Number.isFinite(n) ? n : 0);
 
@@ -680,6 +681,50 @@ const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
     return true;
 };
 
+const buildDefaultTeamPlacings = (teams) => {
+    const out = {};
+    teams.forEach((t) => {
+        out[t.id] = { wins: 0, seconds: 0, thirds: 0 };
+    });
+    return out;
+};
+
+const loadTeamPlacings = (teams) => {
+    try {
+        const raw = localStorage.getItem(TEAM_PLACINGS_LS_KEY);
+        const base = buildDefaultTeamPlacings(teams);
+        if (!raw) return base;
+
+        const parsed = JSON.parse(raw);
+        teams.forEach((t) => {
+            const v = parsed?.[t.id];
+            if (!v) return;
+            base[t.id] = {
+                wins: Math.max(0, Number(v.wins) || 0),
+                seconds: Math.max(0, Number(v.seconds) || 0),
+                thirds: Math.max(0, Number(v.thirds) || 0),
+            };
+        });
+        return base;
+    } catch {
+        return buildDefaultTeamPlacings(teams);
+    }
+};
+
+const saveTeamPlacings = (placings) => {
+    try {
+        localStorage.setItem(TEAM_PLACINGS_LS_KEY, JSON.stringify(placings));
+    } catch {
+        console.error("Couldn't save tournament placings");
+    }
+};
+
+const trophyCountToDisplay = (n) => {
+    if (!n) return null;
+    if (n < 6) return { mode: "icons", n };
+    return { mode: "count", n };
+};
+
 const defaultSeriesState = {
     active: false,
 
@@ -1032,7 +1077,57 @@ export default function SpecialModePage() {
     const [isScoreBoardResetModalOpen, setIsScoreBoardResetModalOpen] = useState(false);
     const [isScoreBoardResetConfirmModalOpen, setIsScoreBoardResetConfirmModalOpen] = useState(false);
 
-    const [scoreboardResetCode, setScoreboardResetCode] = useState(""); 
+    const [scoreboardResetCode, setScoreboardResetCode] = useState("");
+
+    const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
+    const teamPlacingsRef = useRef(teamPlacings);
+
+    useEffect(() => {
+        teamPlacingsRef.current = teamPlacings;
+    }, [teamPlacings]);
+
+    const [isAddPlacingsCodeModalOpen, setIsAddPlacingsCodeModalOpen] = useState(false);
+    const [isAddPlacingsModalOpen, setIsAddPlacingsModalOpen] = useState(false);
+    const [isAddPlacingsFinalModalOpen, setIsAddPlacingsFinalModalOpen] = useState(false);
+
+    const [isRemovePlacingsCodeModalOpen, setIsRemovePlacingsCodeModalOpen] = useState(false);
+    const [isRemovePlacingsModalOpen, setIsRemovePlacingsModalOpen] = useState(false);
+    const [isRemovePlacingsFinalModalOpen, setIsRemovePlacingsFinalModalOpen] = useState(false);
+
+    const [placingsAdminCode, setPlacingsAdminCode] = useState("");
+
+    const [selectedPlacingTeamId, setSelectedPlacingTeamId] = useState(null);
+
+    const [placingCategory, setPlacingCategory] = useState("");
+    const [placingAmount, setPlacingAmount] = useState("");
+
+    const hasAnyPlacings = useMemo(() => {
+        const vals = Object.values(teamPlacings ?? {});
+        return vals.some((p) => (p?.wins ?? 0) > 0 || (p?.seconds ?? 0) > 0 || (p?.thirds ?? 0) > 0);
+    }, [teamPlacings]);
+
+    const [arePlacingButtonsArmed, setArePlacingButtonsArmed] = useState(false);
+
+    useEffect(() => {
+        if (!isLeaderboardOpen) setArePlacingButtonsArmed(false);
+    }, [isLeaderboardOpen]);
+
+    const handleAddPlacingsClick = () => {
+        if (!arePlacingButtonsArmed) {
+            setArePlacingButtonsArmed(true);
+            return;
+        }
+        setIsAddPlacingsCodeModalOpen(true);
+    };
+
+    const handleRemovePlacingsClick = () => {
+        if (!hasAnyPlacings) return;
+        if (!arePlacingButtonsArmed) {
+            setArePlacingButtonsArmed(true);
+            return;
+        }
+        setIsRemovePlacingsCodeModalOpen(true);
+    };
 
     const isSeriesActive = seriesState.active;
 
@@ -1046,8 +1141,13 @@ export default function SpecialModePage() {
         isTerminateModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isAddPlacingsCodeModalOpen ||
+        isAddPlacingsModalOpen ||
+        isAddPlacingsFinalModalOpen ||
+        isRemovePlacingsCodeModalOpen ||
+        isRemovePlacingsModalOpen ||
+        isRemovePlacingsFinalModalOpen ||
         showIntro ||
-        showPickemLine2 ||
         isLocked;
     
     const isMatchRectLocked =
@@ -1056,11 +1156,40 @@ export default function SpecialModePage() {
         isTerminateModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isAddPlacingsCodeModalOpen ||
+        isAddPlacingsModalOpen ||
+        isAddPlacingsFinalModalOpen ||
+        isRemovePlacingsCodeModalOpen ||
+        isRemovePlacingsModalOpen ||
+        isRemovePlacingsFinalModalOpen ||
         showIntro ||
         isLocked;
     
-    const isScoreBoardButtonLocked = isTerminateModalOpen || isRestartModalOpen || isScoreBoardResetModalOpen || isScoreBoardResetConfirmModalOpen || isLocked;
-    const isScoreBoardResetButtonLocked = isScoreboardAlreadyDefault || isTerminateModalOpen || isRestartModalOpen || isScoreBoardResetModalOpen || isScoreBoardResetConfirmModalOpen || isLocked;
+    const isScoreBoardButtonLocked =
+        isTerminateModalOpen ||
+        isRestartModalOpen ||
+        isScoreBoardResetModalOpen ||
+        isScoreBoardResetConfirmModalOpen ||
+        isAddPlacingsCodeModalOpen ||
+        isAddPlacingsModalOpen ||
+        isAddPlacingsFinalModalOpen ||
+        isRemovePlacingsCodeModalOpen ||
+        isRemovePlacingsModalOpen ||
+        isRemovePlacingsFinalModalOpen ||
+        isLocked;
+    const isScoreBoardResetButtonLocked =
+        isScoreboardAlreadyDefault ||
+        isTerminateModalOpen ||
+        isRestartModalOpen ||
+        isScoreBoardResetModalOpen ||
+        isScoreBoardResetConfirmModalOpen ||
+        isAddPlacingsCodeModalOpen ||
+        isAddPlacingsModalOpen ||
+        isAddPlacingsFinalModalOpen ||
+        isRemovePlacingsCodeModalOpen ||
+        isRemovePlacingsModalOpen ||
+        isRemovePlacingsFinalModalOpen ||
+        isLocked;
 
     const isReadOnlyView = viewPhase.startsWith("results_");
 
@@ -1318,6 +1447,110 @@ export default function SpecialModePage() {
     useEffect(() => {
         if (!showIntro) ensureRatingsSnapshot();
     }, [showIntro]);
+
+    const clearPlacingsAdminState = () => {
+        setPlacingsAdminCode("");
+        setSelectedPlacingTeamId(null);
+        setPlacingCategory("");
+        setPlacingAmount("");
+    };
+
+    const verifyAdminCodeOrToast = () => {
+        if (!SCOREBOARD_RESET_CODE) {
+            toast.error("Reset code is not configured.");
+            return false;
+        }
+        if (placingsAdminCode !== SCOREBOARD_RESET_CODE) {
+            toast.error("WRONG PASSWORD!");
+            return false;
+        }
+        toast.success("Password correct!!!");
+        return true;
+    };
+
+    const handleVerifyAddPlacingsPassword = () => {
+        if (!verifyAdminCodeOrToast()) return;
+        setIsAddPlacingsCodeModalOpen(false);
+        setPlacingsAdminCode("");
+        setIsAddPlacingsModalOpen(true);
+    };
+
+    const canConfirmPlacings = () => {
+        const n = Number(placingAmount);
+        return (
+            !!selectedPlacingTeamId &&
+            (placingCategory === "wins" || placingCategory === "seconds" || placingCategory === "thirds") &&
+            Number.isFinite(n) &&
+            n > 0
+        );
+    };
+
+    const handleOpenAddPlacingsFinal = () => {
+        if (!canConfirmPlacings()) return;
+        setIsAddPlacingsModalOpen(false);
+        setIsAddPlacingsFinalModalOpen(true);
+    };
+
+    const handleApplyAddPlacings = () => {
+        const n = Math.max(0, Math.floor(Number(placingAmount)));
+        const teamId = selectedPlacingTeamId;
+        const cat = placingCategory;
+
+        setTeamPlacings((prev) => {
+            const next = { ...prev };
+            const cur = next[teamId] ?? { wins: 0, seconds: 0, thirds: 0 };
+            next[teamId] = { ...cur, [cat]: (cur[cat] ?? 0) + n };
+            saveTeamPlacings(next);
+            return next;
+        });
+
+        setIsAddPlacingsFinalModalOpen(false);
+        clearPlacingsAdminState();
+        toast.success("Placings updated.");
+    };
+
+    const handleVerifyRemovePlacingsPassword = () => {
+        if (!verifyAdminCodeOrToast()) return;
+        setIsRemovePlacingsCodeModalOpen(false);
+        setPlacingsAdminCode("");
+        setIsRemovePlacingsModalOpen(true);
+    };
+
+    const getTeamsForRemovePicker = () => {
+        if (!placingCategory) return [];
+        return leaderboard.sorted.filter((t) => {
+            const p = teamPlacings?.[t.id];
+            if (!p) return false;
+            if (placingCategory === "wins") return (p.wins ?? 0) > 0;
+            if (placingCategory === "seconds") return (p.seconds ?? 0) > 0;
+            if (placingCategory === "thirds") return (p.thirds ?? 0) > 0;
+            return false;
+        });
+    };
+
+    const handleOpenRemovePlacingsFinal = () => {
+        if (!canConfirmPlacings()) return;
+        setIsRemovePlacingsModalOpen(false);
+        setIsRemovePlacingsFinalModalOpen(true);
+    };
+
+    const handleApplyRemovePlacings = () => {
+        const n = Math.max(0, Math.floor(Number(placingAmount)));
+        const teamId = selectedPlacingTeamId;
+        const cat = placingCategory;
+
+        setTeamPlacings((prev) => {
+            const next = { ...prev };
+            const cur = next[teamId] ?? { wins: 0, seconds: 0, thirds: 0 };
+            next[teamId] = { ...cur, [cat]: Math.max(0, (cur[cat] ?? 0) - n) };
+            saveTeamPlacings(next);
+            return next;
+        });
+
+        setIsRemovePlacingsFinalModalOpen(false);
+        clearPlacingsAdminState();
+        toast.success("Placings updated.");
+    };
 
     const handleTournamentStart = () => {
         setShowIntro(false);
@@ -2374,6 +2607,22 @@ export default function SpecialModePage() {
                             runnerUp: loser,
                             thirdPlace: thirdPlaceWinner,
                             fourthPlace,
+                        });
+                        setTeamPlacings((prev) => {
+                            const next = { ...prev };
+
+                            const inc = (id, key) => {
+                                if (!id) return;
+                                const cur = next[id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                                next[id] = { ...cur, [key]: (cur[key] ?? 0) + 1 };
+                            };
+
+                            inc(winner?.id, "wins");
+                            inc(loser?.id, "seconds");
+                            inc(thirdPlaceWinner?.id, "thirds");
+
+                            saveTeamPlacings(next);
+                            return next;
                         });
                         setShowWinnersScreen(true);
                         ratingsSnapshotRef.current = null;
@@ -4073,12 +4322,16 @@ export default function SpecialModePage() {
                 setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
                 setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
                 setIsScoreBoard={() => setIsLeaderboardOpen(true)}
-                isIntroClosed={showIntro}
-                isScoreBoardOpen={isLeaderboardOpen}
+                isIntroClosed={showIntro || showPickemLine2}
+                isLeaderboardOpen={isLeaderboardOpen}
                 isButtonLocked={isButtonLocked}
                 isScoreBoardButtonLocked={isScoreBoardButtonLocked}
                 isScoreBoardResetButtonLocked={isScoreBoardResetButtonLocked}
                 setIsScoreBoardResetModalOpen={() => setIsScoreBoardResetModalOpen(true)}
+                setIsAddTournamentPlacingsModalOpen={handleAddPlacingsClick}
+                setIsRemoveTournamentPlacingsModalOpen={handleRemovePlacingsClick}
+                arePlacingButtonsArmed={arePlacingButtonsArmed}
+                hasAnyPlacings={hasAnyPlacings}
             />
 
             <div className={css.page_container} style={{ position: "relative" }}>
@@ -4311,6 +4564,272 @@ export default function SpecialModePage() {
                                 Cancel
                             </button>
                             <button className={css.confirm_button} onClick={handleFinalScoreboardReset}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isAddPlacingsCodeModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="placings-admin-code-add">
+                                Identification code
+                            </label>
+                            <input
+                                id="placings-admin-code-add"
+                                className={css.reset_input}
+                                type="password"
+                                value={placingsAdminCode}
+                                onChange={(e) => setPlacingsAdminCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsAddPlacingsCodeModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyAddPlacingsPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isAddPlacingsModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Add tournament placings
+                        </p>
+
+                        <div
+                            className={css.hidden_scrollbar}
+                            style={{
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                height: "180px",
+                                width: "100%",
+                                border: "1px solid #999",
+                                borderRadius: 8,
+                                padding: 12,
+                            }}
+                        >
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                                {allTeams.map((t) => {
+                                    const isSelected = selectedPlacingTeamId === t.id;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => setSelectedPlacingTeamId(t.id)}
+                                            style={{
+                                                width: 37.2,
+                                                height: 37.2,
+                                                boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                background: t.color,
+                                            }}
+                                            className={css.team_circle_ro32}
+                                            title={`Team ${t.name}`}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 12, width: "50%", marginTop: 14 }}>
+                            <select
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                value={placingCategory}
+                                onChange={(e) => {
+                                    setPlacingCategory(e.target.value);
+                                    setSelectedPlacingTeamId(null);
+                                }}
+                            >
+                                <option value=""></option>
+                                <option value="wins">🏆</option>
+                                <option value="seconds">🥈</option>
+                                <option value="thirds">🥉</option>
+                            </select>
+
+                            <input
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                type="text"
+                                placeholder="Amount"
+                                value={placingAmount}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const onlyDigits = raw.replace(/[^\d]/g, "");
+                                    setPlacingAmount(onlyDigits);
+                                }}
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons} style={{ marginTop: 14 }}>
+                            <button className={css.cancel_button} onClick={() => { setIsAddPlacingsModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={`${css.confirm_button} ${!canConfirmPlacings() ? css.locked : ""}`} disabled={!canConfirmPlacings()} onClick={handleOpenAddPlacingsFinal}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isAddPlacingsFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            <b>Are you sure?!</b> <br />
+                            By pressing "Confirm", you'll apply these placings.
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsAddPlacingsFinalModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleApplyAddPlacings}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isRemovePlacingsCodeModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="placings-admin-code-remove">
+                                Identification code
+                            </label>
+                            <input
+                                id="placings-admin-code-remove"
+                                className={css.reset_input}
+                                type="password"
+                                value={placingsAdminCode}
+                                onChange={(e) => setPlacingsAdminCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsRemovePlacingsCodeModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyRemovePlacingsPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isRemovePlacingsModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Remove tournament placings
+                        </p>
+
+                        <div
+                            className={css.hidden_scrollbar}
+                            style={{
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                height: "180px",
+                                width: "100%",
+                                border: "1px solid #999",
+                                borderRadius: 8,
+                                padding: 12,
+                            }}
+                        >
+                            {!placingCategory ? (
+                                <div style={{ width: "100%", height: "100%" }} />
+                            ) : (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                                    {getTeamsForRemovePicker().map((t) => {
+                                        const isSelected = selectedPlacingTeamId === t.id;
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => setSelectedPlacingTeamId(t.id)}
+                                                style={{
+                                                    width: 37.2,
+                                                    height: 37.2,
+                                                    boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                    border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                    background: t.color,
+                                                }}
+                                                className={css.team_circle_ro32}
+                                                title={`Team ${t.name}`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 12, width: "50%", marginTop: 14 }}>
+                            <select
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                value={placingCategory}
+                                onChange={(e) => {
+                                    setPlacingCategory(e.target.value);
+                                    setSelectedPlacingTeamId(null);
+                                }}
+                            >
+                                <option value=""></option>
+                                <option value="wins">🏆</option>
+                                <option value="seconds">🥈</option>
+                                <option value="thirds">🥉</option>
+                            </select>
+
+                            <input
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                type="text"
+                                placeholder="Amount"
+                                value={placingAmount}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const onlyDigits = raw.replace(/[^\d]/g, "");
+                                    setPlacingAmount(onlyDigits);
+                                }}
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons} style={{ marginTop: 14 }}>
+                            <button className={css.cancel_button} onClick={() => { setIsRemovePlacingsModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button
+                                className={`${css.confirm_button} ${!canConfirmPlacings() ? css.locked : ""}`}
+                                disabled={!canConfirmPlacings()}
+                                onClick={handleOpenRemovePlacingsFinal}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isRemovePlacingsFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            <b>Are you sure?!</b> <br />
+                            By pressing "Confirm", you'll remove these placings.
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsRemovePlacingsFinalModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleApplyRemovePlacings}>
                                 Confirm
                             </button>
                         </div>
@@ -4651,7 +5170,19 @@ export default function SpecialModePage() {
                                 const rank = i + 1;
                                 const rating = teamRatings[t.id] ?? 0;
 
-                                const rankSticker = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+                                const rankSticker = rank === 1 ? (
+                                    <span style={{ fontSize: "32px", color: 'gold' }} className={css.leaderboard_rank}>
+                                        1st
+                                    </span>
+                                ) : rank === 2 ?
+                                    <span style={{ fontSize: "32px", color: 'silver' }} className={css.leaderboard_rank}>
+                                        2nd
+                                    </span>
+                                    : rank === 3 ?
+                                        <span style={{ fontSize: "32px", color: '#cd7f32' }} className={css.leaderboard_rank}>
+                                            3rd
+                                        </span>
+                                        : null;
                                 const isTop10 = rank <= 10;
 
                                 const circleClass =
@@ -4681,6 +5212,12 @@ export default function SpecialModePage() {
                                     rank >= 4 && rank <= 10 ? "10px"
                                         : rank > 10 ? "8px"
                                             : "";
+                                
+                                const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                                const trophyDisplay = trophyCountToDisplay(p.wins);
+
+                                const isCountMode = trophyDisplay?.mode === "count";
+                                const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
                                 return (
                                     <React.Fragment key={t.id}>
@@ -4724,7 +5261,7 @@ export default function SpecialModePage() {
                                             </div>
                                         )}
 
-                                        <div key={t.id} className={css.leaderboard_row} style={rowStyle}>
+                                        <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static' }}>
                                             <div
                                                 className={circleClass}
                                                 style={{
@@ -4751,12 +5288,57 @@ export default function SpecialModePage() {
                                                 </span>
                                             </div>
 
-                                            <div>
-                                                <span style={{ fontSize: rank <= 3 ? "32px" : "16px" }} className={css.leaderboard_rank}>
+                                            <div style={{ position: rank <= 10 ? 'relative' : 'static' }}>
+                                                {trophyDisplay && (
+                                                    <span
+                                                        style={{
+                                                            marginLeft: 10,
+                                                            position: "absolute",
+                                                            top: trophyTop,
+                                                            right: rank > 10 ? '64.5%' : '103%',
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: 6,
+                                                            color: "#2e2f42",
+                                                            fontWeight: 700,
+                                                            fontSize: rank <= 3 ? "32px" : "16px",
+                                                        }}
+                                                    >
+                                                        {trophyDisplay.mode === "icons" ? (
+                                                            Array.from({ length: trophyDisplay.n }).map((_, k) => (
+                                                                <FaTrophy key={k} style={{ verticalAlign: "middle" }} />
+                                                            ))
+                                                        ) : (
+                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                                <FaTrophy />:{trophyDisplay.n}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                )}
+                                                <span style={{ fontSize: rank <= 3 ? "32px" : "16px", marginRight: rank <= 3 ? "4px" : "0px" }} className={css.leaderboard_rank}>
                                                     {rankSticker ?? formatOrdinal(rank)}
                                                 </span>{" "}
                                                 <span style={{ color: "#2e2f42", fontWeight: 700 }} className={nameClass}>
                                                     Team {t.name}
+                                                    <span style={{
+                                                        position: "absolute",
+                                                        top: rank > 10 ? '24%' : '20%',
+                                                        left: rank > 10 ? '70%' : '120%',
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                    }}>
+                                                        {p.seconds > 0 && (
+                                                            <span style={{ marginLeft: '12px' }}>
+                                                                🥈:{p.seconds}
+                                                            </span>
+                                                        )}
+
+                                                        {p.thirds > 0 && (
+                                                            <span>
+                                                                🥉:{p.thirds}
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </span>
                                             </div>
                                         </div>

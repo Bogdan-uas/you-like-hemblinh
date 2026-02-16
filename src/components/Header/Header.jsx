@@ -9,10 +9,20 @@ const Header = ({
     isScoreBoardResetButtonLocked,
     setIsScoreBoardResetModalOpen,
     isIntroClosed = false,
-    isScoreBoardOpen = false,
+    isLeaderboardOpen = false,
     isButtonLocked = false,
     isScoreBoardButtonLocked,
+    setIsAddTournamentPlacingsModalOpen,
+    setIsRemoveTournamentPlacingsModalOpen,
+    arePlacingButtonsArmed = false,
+    hasAnyPlacings = false,
 }) => {
+    const armedStyle = { opacity: 1, pointerEvents: "auto" };
+
+    const unarmedStyle = { opacity: 0, pointerEvents: "auto", cursor: "default" };
+
+    const fullyHidden = { opacity: 0, pointerEvents: "none" };
+
     return (
         <header className={css.header}>
             <div className={css.bottom_buttons}>
@@ -32,7 +42,7 @@ const Header = ({
                 >
                     Terminate the game?
                 </button>
-                {isScoreBoardOpen ? (
+                {isLeaderboardOpen ? (
                     <div className={css.bottom_buttons}>
                         <button
                             className={`${css.gamble_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}
@@ -60,6 +70,37 @@ const Header = ({
                     >
                         Leaderboard
                     </button>
+                ) : null}
+
+                {isLeaderboardOpen ? (
+                    <>
+                        <button
+                            className={`${css.restart_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}
+                            onClick={setIsAddTournamentPlacingsModalOpen}
+                            disabled={isScoreBoardButtonLocked}
+                            style={{
+                                pointerEvents: isGameWon ? "none" : "auto",
+                                marginLeft: "512px",
+                                ...(arePlacingButtonsArmed ? armedStyle : unarmedStyle),
+                            }}
+                        >
+                            Add tournament placings?
+                        </button>
+
+                        <button
+                            className={`${css.restart_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}
+                            onClick={setIsRemoveTournamentPlacingsModalOpen}
+                            disabled={isScoreBoardButtonLocked}
+                            style={{
+                                pointerEvents: isGameWon ? "none" : "auto",
+                                ...(hasAnyPlacings
+                                    ? (arePlacingButtonsArmed ? armedStyle : unarmedStyle)
+                                    : fullyHidden),
+                            }}
+                        >
+                            Remove tournament placings?
+                        </button>
+                    </>
                 ) : null}
             </div>
         </header>
