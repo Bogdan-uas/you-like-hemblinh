@@ -356,6 +356,25 @@ const areRatingsAtDefault = (teams, ratings) => {
     });
 };
 
+const toBaseTeam = (t) => ({
+    id: t.id,
+    key: t.key,
+    name: t.name,
+    color: t.color,
+    hoverOn: t.hoverOn,
+    unlitColor: t.unlitColor,
+    shadow: t.shadow,
+});
+
+const uniqById = (teams) => {
+    const map = new Map();
+    teams.forEach((t) => {
+        const base = toBaseTeam(t);
+        if (!map.has(base.id)) map.set(base.id, base);
+    });
+    return [...map.values()];
+};
+
 const getAllTeams64 = () => {
     const entries = Object.entries(COLORS);
     return entries.map(([key, val], idx) => ({
@@ -1068,9 +1087,6 @@ export default function SpecialModePage() {
     const leaderboard = useMemo(() => buildLeaderboard(allTeams, teamRatings), [allTeams, teamRatings]);
     const { rankById } = leaderboard;
 
-    const seedsByRating = useMemo(() => classifyTeamsForStages(allTeams, teamRatings), [allTeams, teamRatings]);
-    const { stage3Seeds, stage2Seeds, stage1Seeds } = seedsByRating;
-
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
     const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
 
@@ -1081,6 +1097,7 @@ export default function SpecialModePage() {
 
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
     const teamPlacingsRef = useRef(teamPlacings);
+    const tournamentSeedsRef = useRef(null);
 
     useEffect(() => {
         teamPlacingsRef.current = teamPlacings;
@@ -1196,7 +1213,10 @@ export default function SpecialModePage() {
     useEffect(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) {
-            const s1 = buildSwissStage("stage1", stage1Seeds);
+            const seeds = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+            tournamentSeedsRef.current = seeds;
+
+            const s1 = buildSwissStage("stage1", seeds.stage1Seeds.map(toBaseTeam));
             setStage1(s1);
             setStage2(null);
             setStage3(null);
@@ -1209,6 +1229,7 @@ export default function SpecialModePage() {
         try {
             const parsed = JSON.parse(saved);
 
+            tournamentSeedsRef.current = parsed.tournamentSeeds ?? null;
             setShowIntro(parsed.showIntro ?? true);
 
             setActivePhase(parsed.activePhase ?? "stage1");
@@ -1237,7 +1258,8 @@ export default function SpecialModePage() {
             setShowProceed(parsed.showWinnerText ?? false)
         } catch (e) {
             console.error(e);
-            const s1 = buildSwissStage("stage1", stage1Seeds);
+            const seeds = tournamentSeedsRef.current ?? classifyTeamsForStages(allTeams, teamRatingsRef.current);
+            const s1 = buildSwissStage("stage1", seeds.stage1Seeds.map(toBaseTeam));
             setStage1(s1);
             setStage2(null);
             setStage3(null);
@@ -1251,6 +1273,7 @@ export default function SpecialModePage() {
     useEffect(() => {
         const stateToSave = {
             showIntro,
+            showTournamentIntro,
             activePhase,
             viewPhase,
             stage1,
@@ -1270,10 +1293,20 @@ export default function SpecialModePage() {
             showWinnerTeam,
             showPodium,
             showProceed,
+
+            tournamentSeeds: tournamentSeedsRef.current
+                ? {
+                    stage1Seeds: tournamentSeedsRef.current.stage1Seeds.map(toBaseTeam),
+                    stage2Seeds: tournamentSeedsRef.current.stage2Seeds.map(toBaseTeam),
+                    stage3Seeds: tournamentSeedsRef.current.stage3Seeds.map(toBaseTeam),
+                }
+                : null,
         };
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     }, [
         showIntro,
+        showTournamentIntro,
         activePhase,
         viewPhase,
         stage1,
@@ -1298,6 +1331,8 @@ export default function SpecialModePage() {
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
 
+        tournamentSeedsRef.current = null;
+
         if (ratingsSnapshotRef.current) {
             setTeamRatings(ratingsSnapshotRef.current);
             teamRatingsRef.current = ratingsSnapshotRef.current;
@@ -1307,7 +1342,10 @@ export default function SpecialModePage() {
             clearRatingsSnapshot();
         }
 
-        const s1 = buildSwissStage("stage1", stage1Seeds);
+        const seeds = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+        tournamentSeedsRef.current = seeds;
+
+        const s1 = buildSwissStage("stage1", seeds.stage1Seeds.map(toBaseTeam));
         setStage1(s1);
         setStage2(null);
         setStage3(null);
@@ -1321,16 +1359,7 @@ export default function SpecialModePage() {
 
         setNeededPickemPoints(getRandomNeededPickemPoints());
         setFinalPickemPoints(0);
-        setGuessedCounts({
-            stage1: 0,
-            stage2: 0,
-            stage3: 0,
-            ro16: 0,
-            qf: 0,
-            sf: 0,
-            tpd: 0,
-            gf: 0,
-        });
+        setGuessedCounts({ stage1: 0, stage2: 0, stage3: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0 });
 
         setShowPickemSummary(false);
         setShowPickemLine2(false);
@@ -1553,9 +1582,11 @@ export default function SpecialModePage() {
     };
 
     const handleTournamentStart = () => {
+        tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+
         setShowIntro(false);
         setShowTournamentIntro(true);
-    }
+    };
 
     const handleCloseTournamentIntro = () => {
         setShowTournamentIntro(false);
@@ -1563,15 +1594,27 @@ export default function SpecialModePage() {
 
     const buildStage2IfNeeded = (s1) => {
         if (stage2) return stage2;
-        const qualifiers = getSwissQualified(s1);
-        const combined = [...stage2Seeds, ...qualifiers].map((t) => ({ ...t }));
+
+        const frozen = tournamentSeedsRef.current || classifyTeamsForStages(allTeams, teamRatingsRef.current);
+
+        const qualifiers = getSwissQualified(s1).map(toBaseTeam);
+        const seeds = frozen.stage2Seeds.map(toBaseTeam);
+
+        const combined = uniqById([...seeds, ...qualifiers]);
+
         return buildSwissStage("stage2", combined);
     };
 
     const buildStage3IfNeeded = (s2) => {
         if (stage3) return stage3;
-        const qualifiers = getSwissQualified(s2);
-        const combined = [...stage3Seeds, ...qualifiers].map((t) => ({ ...t }));
+
+        const frozen = tournamentSeedsRef.current || classifyTeamsForStages(allTeams, teamRatingsRef.current);
+
+        const qualifiers = getSwissQualified(s2).map(toBaseTeam);
+        const seeds = frozen.stage3Seeds.map(toBaseTeam);
+
+        const combined = uniqById([...seeds, ...qualifiers]);
+
         return buildSwissStage("stage3", combined);
     };
 
