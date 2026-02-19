@@ -3958,12 +3958,12 @@ export default function SpecialModePage() {
                                     display: "flex",
                                     flexDirection: "row-reverse",
                                     alignItems: "center",
-                                    gap: "20px",
+                                    gap: "14px",
                                     opacity: loserOpacity === "win" ? 0.4 : 1,
                                     position: 'relative'
                                 }}
                             >
-                                <div style={{ display: "flex", alignItems: "center", flexDirection: 'column' }}>
+                                <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px' }}>
                                     <span className={css.round_text}>
                                         <CountUp
                                             key={roundWins}
@@ -4154,7 +4154,7 @@ export default function SpecialModePage() {
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: "20px",
+                                    gap: "14px",
                                     opacity: loserOpacity === "loss" ? 0.4 : 1,
                                     position: 'relative'
                                 }}
@@ -4164,6 +4164,7 @@ export default function SpecialModePage() {
                                         display: "flex",
                                         alignItems: "center",
                                         flexDirection: 'column',
+                                        width: '50.1px'
                                     }}
                                 >
                                     <span className={css.round_text}>

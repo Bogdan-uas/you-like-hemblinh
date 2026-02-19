@@ -890,7 +890,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 14px;
     margin-top: 8px;
 }
 
@@ -1286,7 +1286,7 @@
     font-size: 18px;
     font-weight: 700;
     margin-bottom: -20px;
-    margin-left: 16px;
+    margin-left: 8px;
 }
 
 .team_name_right {
@@ -1294,7 +1294,7 @@
     font-size: 18px;
     font-weight: 700;
     margin-bottom: -20px;
-    margin-right: 16px;
+    margin-right: 8px;
 }
 
 .teams_container {
