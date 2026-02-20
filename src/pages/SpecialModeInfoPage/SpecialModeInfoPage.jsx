@@ -442,25 +442,57 @@ const SpecialModeInfoPage = () => {
                 <div className={css.image_container}>
                     <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '45vh' }} />
                 </div>
-                <p style={{ fontWeight: '800', marginTop: '12px' }} className={css.info_text}>Now, lemme also explain about Leaderboard points system: <br />
+                <p style={{ fontWeight: "800", marginTop: "12px" }} className={css.info_text}>
+                    Now, lemme also explain about Leaderboard points system: <br />
                     I mentioned it already multiple times, but I will explain one more time anyways: <br />
-                    The main goal of this system is to give the possibility for every team to start from any out of the three Stages. In order for them to do that, it is to win matches. <br />
-                    Depending on in which place the team is in the colors object, which is in the code of the website, the teams get either 150 points or 100 points or 50 points at the very start. <br />
+                    The main goal of this system is to give the possibility for every team to start from any out of the three Stages. In
+                    order for them to do that, it is to win matches. <br />
+                    Depending on in which place the team is in the colors object, which is in the code of the website, the teams get
+                    either 150 points or 100 points or 50 points at the very start. <br />
                     - Top 16 → Autoqualify to <b>Stage III</b> with 150 points
-                    <br />- Top 17–32 → Autoqualify to <b>Stage II</b> with 100 points
-                    <br />- Top 33–64 → Start in <b>Stage I</b> with 50 points <br />
-                    • If a team wins a BO1 match in Stage I, they get <i>+3 points</i> per match. If a team loses a BO1 match in Stage I, they lose <i>-2 points</i> per match. <br />
-                    • If a team wins a BO3 match in Stage I, they get <i>+5 points</i> per match. If a team loses a BO3 match in Stage I, they lose <i>-3 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-2 points</i> <br />
-                    • If a team wins a BO1 match in Stage II, they get <i>+4 points</i> per match. If a team loses a BO1 match in Stage II, they lose <i>-2 points</i> per match. <br />
-                    • If a team wins a BO3 match in Stage II, they get <i>+8 points</i> per match. If a team loses a BO3 match in Stage II, they lose <i>-4 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-2 points</i> <br />
-                    • If a team wins a BO1 match in Stage III, they get <i>+7 points</i> per match. If a team loses a BO1 match in Stage III, they lose <i>-4 points</i> per match. <br />
-                    • If a team wins a BO3 match in Stage III, they get <i>+10 points</i> per match. If a team loses a BO3 match in Stage III, they lose <i>-7 points</i> per match, but if a team wins a set, but still loses the match overall, they only lose <i>-4 points</i> <br />
-                    • If a team wins a BO3 match in Rounds of 16, they get <i>+13 points</i>. If a team loses a BO3 match in Rounds of 16, they lose <i>-8 points</i>, but if a team wins a set, but still loses the match overall, they only lose <i>-6 points</i> <br />
-                    • If a team wins a BO5 match in Quarterfinals, they get <i>+20 points</i>. If a team loses a BO5 match in Quarterfinals, they lose <i>-13 points</i>. But if a team wins a set, but still loses the match overall, they only lose <i>-10 points</i>, if two sets, but still loses, then they lose only <i>-8 points</i> <br />
-                    • If a team wins a BO7 match in Semifinals, they get <i>+30 points</i>. If a team loses a BO7 match in Semifinals, they lose <i>-18 points</i>. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
-                    • If a team wins a BO7 match in Third Place Decider, they get <i>+35 points</i>. If a team loses a BO7 match in Third Place Decider, they lose <i>-20 points</i>. But if a team wins a set, but still loses the match overall, they only lose <i>-16 points</i>, if two sets, but still lose, then they lose only <i>-13 points</i>, if three sets, but still lose, then they lose only <i>-10 points</i> <br />
-                    • If a team wins a BO9 match in Grand Final, they get <i>+50 points</i>. If a team loses a BO9 match in Grand Final, they don't lose anything (that will be already very unfortunate, just to lose in the Grand Final) <br />
-                    The minus points sometimes might not be taken away from the team, if the team has already 0 points and the score of a team can't go beyond 0. <br />
+                    <br />- Top 17-32 → Autoqualify to <b>Stage II</b> with 100 points
+                    <br />- Top 33-64 → Start in <b>Stage I</b> with 50 points <br />
+                    <br />
+                    <b>The Ranking System</b> <br />
+                    Instead of fixed "+X / -Y" per match, points are calculated dynamically based on: <br />
+                    • <b>Expected result</b> (if you win as an underdog you gain more, if you win as a favorite you gain less). <br />
+                    • <b>Match importance</b> (bigger Stage / playoffs + bigger Best-Of = more points). <br />
+                    • <b>Scoreline margin</b> in series (a cleaner win gives a small bonus in BO3/BO5/BO7/BO9). <br />
+                    • <b>Rating gap dampening</b> (huge rating gaps are dampened, so one match doesn't completely destroy rankings). <br />
+                    • <b>Recency</b> (recent matches matter more; older matches slowly matter less). <br />
+                    <br />
+                    <b>How points are calculated</b> <br />
+                    1) The system calculates the favorite's expected win probability using an Elo-like formula. <br />
+                    2) The system computes an internal "K" for the match using: <br />
+                    • Stage/Playoffs weight × Best-Of weight × Margin multiplier × Recency weight × Rating-gap dampening × Upset factor.{" "}
+                    <br />
+                    3) Winner gets points: <br />
+                    <i>winPoints = round(K × (1 − expectedWinProbabilityOfWinner))</i> (minimum 1, maximum is capped). <br />
+                    4) Loser loses <b>less</b> than the winner gains: <br />
+                    • If the loser was the <b>underdog</b>, they lose about <i>~25%</i> of winPoints. <br />
+                    • If the loser was the <b>favorite</b>, they lose about <i>~50%</i> of winPoints. <br />
+                    <br />
+                    <b>Important notes</b> <br />
+                    • Losers always lose fewer points than winners gain. <br />
+                    • Outsider losses are punished lightly. Favorite losses are punished more, but never "full price". <br />
+                    • Points can't go below 0. If a team already has 0, they cannot lose more. <br />
+                    <br />
+                    <b>Stage / playoffs importance</b> (bigger = more points a winner can get) <br />
+                    • Stage I: 1.00 <br />
+                    • Stage II: 1.25 <br />
+                    • Stage III: 1.50 <br />
+                    • RO16: 1.75 <br />
+                    • Quarterfinal: 2.50 <br />
+                    • Semifinal: 3.00 <br />
+                    • Third Place Decider: 3.25 <br />
+                    • Grand Final: 5.00 <br />
+                    <br />
+                    <b>Best-Of importance</b> (bigger = more points a winner can get) <br />
+                    • BO1: 1.00 <br />
+                    • BO3: 1.25 <br />
+                    • BO5: 1.50 <br />
+                    • BO7: 2.00 <br />
+                    • BO9: 3.00 <br />
                 </p>
                 <p className={css.info_text}>After that, you proceed with further matches. When all the match-ups in Stage I are finished, only 16 teams are left. They qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
                 <div className={css.image_container}>

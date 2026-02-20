@@ -263,66 +263,160 @@ const formatOrdinal = (n) => {
     }
 };
 
-const getRatingDeltaForMatch = ({ phase, swissStageKey, playoffsStage, bestOf, loserSetsWon }) => {
-    if (phase === "swiss") {
-        const isBo1 = bestOf === 1;
-        if (swissStageKey === "stage1") {
-            if (isBo1) return { win: 3, lose: 2 };
-            return { win: 5, lose: loserSetsWon >= 1 ? 2 : 3 };
-        }
-        if (swissStageKey === "stage2") {
-            if (isBo1) return { win: 4, lose: 2 };
-            return { win: 8, lose: loserSetsWon >= 1 ? 2 : 4 };
-        }
-        if (swissStageKey === "stage3") {
-            if (isBo1) return { win: 7, lose: 4 };
-            return { win: 10, lose: loserSetsWon >= 1 ? 4 : 7 };
-        }
-    }
+const BASE_RATING = 1000;
 
-    if (phase === "playoffs") {
-        if (playoffsStage === "ro16") {
-            return { win: 13, lose: loserSetsWon >= 1 ? 6 : 8 };
-        }
-        if (playoffsStage === "qf") {
-            const lose = loserSetsWon >= 2 ? 8 : loserSetsWon === 1 ? 10 : 13;
-            return { win: 20, lose };
-        }
-        if (playoffsStage === "sf") {
-            const lose =
-                loserSetsWon >= 3 ? 10 :
-                    loserSetsWon === 2 ? 13 :
-                        loserSetsWon === 1 ? 16 : 18;
-            return { win: 30, lose };
-        }
-        if (playoffsStage === "thirdPlace") {
-            const lose =
-                loserSetsWon >= 3 ? 10 :
-                    loserSetsWon === 2 ? 13 :
-                        loserSetsWon === 1 ? 16 : 20;
-            return { win: 35, lose };
-        }
-        if (playoffsStage === "gf") {
-            return { win: 50, lose: 0 };
-        }
-    }
-
-    return { win: 0, lose: 0 };
+const areRatingsAtDefault = (teams, ratings) => {
+    const def = buildDefaultTeamRatings(teams);
+    return teams.every((t) => (ratings?.[t.id] ?? 0) === def[t.id]);
 };
 
-const applyRatings = ({ ratings, teams, winnerId, loserId, phase, swissStageKey, swissNet, playoffsStage, bestOf, loserSetsWon }) => {
+const expectedScore = (ratingA, ratingB) => {
+    return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+};
+
+const marginMultiplier = ({ bestOf, loserSetsWon }) => {
+    if (bestOf === 1) return 1.0;
+
+    const setsToWin = Math.ceil(bestOf / 2);
+    const diff = Math.max(0, setsToWin - (loserSetsWon ?? 0));
+    return 1.0 + Math.min(0.10, diff * 0.04);
+};
+
+const upsetMultiplier = (expectedWinner) => {
+    const bonus = 1.0 + Math.max(0, 0.5 - expectedWinner) * 0.8;
+    return Math.min(1.30, bonus);
+};
+
+const ratingGapDamp = (ratingA, ratingB) => {
+    const gap = Math.abs((ratingA ?? 0) - (ratingB ?? 0));
+    return 1 / (1 + gap / 600);
+};
+
+const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSetsWon }) => {
+    const stage =
+        phase === "swiss"
+            ? swissStageWeight(swissStageKey)
+            : playoffsWeight(playoffsStage);
+
+    return stage * boWeight(bestOf) * marginMultiplier({ bestOf, loserSetsWon });
+};
+
+const RECENCY_HALF_LIFE_DAYS = 120;
+const dayMs = 24 * 60 * 60 * 1000;
+
+const recencyWeight = (playedAtMs, nowMs = Date.now()) => {
+    if (!playedAtMs) return 1.0;
+    const ageDays = Math.max(0, (nowMs - playedAtMs) / dayMs);
+    return Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
+};
+
+const swissStageWeight = (swissStageKey) => {
+    if (swissStageKey === "stage1") return 1.0;
+    if (swissStageKey === "stage2") return 1.25;
+    if (swissStageKey === "stage3") return 1.5;
+    return 1.0;
+};
+
+const playoffsWeight = (playoffsStage) => {
+    if (playoffsStage === "ro16") return 1.75;
+    if (playoffsStage === "qf") return 2.5;
+    if (playoffsStage === "sf") return 3.0;
+    if (playoffsStage === "thirdPlace") return 3.25;
+    if (playoffsStage === "gf") return 5.0;
+    return 1.0;
+};
+
+const boWeight = (bestOf) => {
+    if (bestOf <= 1) return 1.0;
+    if (bestOf <= 3) return 1.25;
+    if (bestOf <= 5) return 1.5;
+    if (bestOf <= 7) return 2.0;
+    return 3.0;
+};
+
+const computeRsDeltas = ({
+    ratings,
+    winnerId,
+    loserId,
+    phase,
+    swissStageKey,
+    playoffsStage,
+    bestOf,
+    loserSetsWon,
+    playedAtMs,
+}) => {
+    const rW = ratings?.[winnerId] ?? 0;
+    const rL = ratings?.[loserId] ?? 0;
+
+    const eW = expectedScore(rW, rL);
+
+    const K_BASE = 10;
+
+    const imp = matchImportance({ phase, swissStageKey, playoffsStage, bestOf, loserSetsWon });
+    const rec = recencyWeight(playedAtMs);
+    const upset = upsetMultiplier(eW);
+    const damp = ratingGapDamp(rW, rL);
+
+    const K = K_BASE * imp * rec * upset * damp;
+
+    const rawWinGain = K * (1 - eW);
+    return { rawWinGain, eW, K, imp, upset, damp };
+};
+
+const lossScaleFromExpectedWinner = (eW) => {
+    if (eW >= 0.5) {
+        return 0.56 - 0.16 * eW;
+    }
+    return 0.72 - 0.20 * eW;
+};
+
+const applyRatings = ({
+    ratings,
+    teams,
+    winnerId,
+    loserId,
+    phase,
+    swissStageKey,
+    swissNet,
+    playoffsStage,
+    bestOf,
+    loserSetsWon,
+    playedAtMs,
+}) => {
     const beforeLb = buildLeaderboard(teams, ratings);
     const beforeRankW = beforeLb.rankById[winnerId] ?? null;
     const beforeRankL = beforeLb.rankById[loserId] ?? null;
-
-    const { win, lose } = getRatingDeltaForMatch({ phase, swissStageKey, swissNet, playoffsStage, bestOf, loserSetsWon });
 
     const next = { ...ratings };
     const beforePointsW = next[winnerId] ?? 0;
     const beforePointsL = next[loserId] ?? 0;
 
-    next[winnerId] = clampMin0(beforePointsW + win);
-    next[loserId] = clampMin0(beforePointsL - lose);
+    const { rawWinGain, eW } = computeRsDeltas({
+        ratings: next,
+        winnerId,
+        loserId,
+        phase,
+        swissStageKey,
+        playoffsStage,
+        bestOf,
+        loserSetsWon,
+        playedAtMs,
+    });
+
+    const MAX_WIN_POINTS = 95;
+    const winPoints = Math.max(1, Math.min(MAX_WIN_POINTS, Math.round(rawWinGain)));
+    const lossScale = lossScaleFromExpectedWinner(eW);
+
+    const losePoints = Math.max(
+        1,
+        Math.min(
+            winPoints - 1,
+            Math.round(winPoints * lossScale * 1.1)
+        )
+    );
+
+    next[winnerId] = clampMin0(beforePointsW + winPoints);
+    next[loserId] = clampMin0(beforePointsL - losePoints);
 
     const afterLb = buildLeaderboard(teams, next);
     const afterRankW = afterLb.rankById[winnerId] ?? null;
@@ -333,8 +427,19 @@ const applyRatings = ({ ratings, teams, winnerId, loserId, phase, swissStageKey,
         meta: {
             winnerId,
             loserId,
-            winPoints: win,
-            losePoints: lose,
+            winPoints,
+            losePoints,
+            debug: {
+                phase,
+                swissStageKey,
+                swissNet,
+                playoffsStage,
+                bestOf,
+                loserSetsWon,
+                playedAtMs: playedAtMs ?? null,
+                expectedWinner: eW,
+                lossScale,
+            },
             before: {
                 [winnerId]: { points: beforePointsW, rank: beforeRankW },
                 [loserId]: { points: beforePointsL, rank: beforeRankL },
@@ -345,15 +450,6 @@ const applyRatings = ({ ratings, teams, winnerId, loserId, phase, swissStageKey,
             },
         },
     };
-};
-
-const areRatingsAtDefault = (teams, ratings) => {
-    const def = buildDefaultTeamRatings(teams);
-
-    return teams.every((t) => {
-        const cur = ratings?.[t.id] ?? 0;
-        return cur === def[t.id];
-    });
 };
 
 const toBaseTeam = (t) => ({
@@ -2525,7 +2621,7 @@ export default function SpecialModePage() {
             });
         }, 50);
     };
-
+    
     useEffect(() => {
         if (!seriesState.banner) return;
 
@@ -2549,6 +2645,8 @@ export default function SpecialModePage() {
 
         const seriesLeftSets = playerWonSets;
         const seriesRightSets = playerLostSets;
+
+        const playedAtMs = Date.now();
 
         const t = setTimeout(() => {
             if (phase === "playoffs") {
@@ -2596,6 +2694,7 @@ export default function SpecialModePage() {
                         playoffsStage,
                         bestOf,
                         loserSetsWon,
+                        playedAtMs,
                     });
 
                     m.ratingMeta = applied.meta;
@@ -2727,6 +2826,7 @@ export default function SpecialModePage() {
                     playoffsStage: null,
                     bestOf,
                     loserSetsWon,
+                    playedAtMs,
                 });
 
                 match.ratingMeta = applied.meta;
