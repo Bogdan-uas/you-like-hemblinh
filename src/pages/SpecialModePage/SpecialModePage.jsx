@@ -3982,7 +3982,7 @@ export default function SpecialModePage() {
                             >
                                 First to {overtimeTarget}
                             </motion.span>
-                            {isOvertime && (
+                            {isOvertime ? (
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -3993,6 +3993,17 @@ export default function SpecialModePage() {
                                 >
                                     Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
                                     <br />
+                                </motion.span>
+                            ) : (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className={css.round_text}
+                                    style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                                >
+                                    &nbsp;
                                 </motion.span>
                             )}
                         </div>
