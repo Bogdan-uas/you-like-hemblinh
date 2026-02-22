@@ -407,13 +407,17 @@ const applyRatings = ({
     const winPoints = Math.max(1, Math.min(MAX_WIN_POINTS, Math.round(rawWinGain)));
     const lossScale = lossScaleFromExpectedWinner(eW);
 
-    const losePoints = Math.max(
+    let losePoints = Math.max(
         1,
         Math.min(
             winPoints - 1,
             Math.round(winPoints * lossScale * 1.1)
         )
     );
+
+    if (phase === "playoffs" && playoffsStage === "gf") {
+        losePoints = 0;
+    }
 
     next[winnerId] = clampMin0(beforePointsW + winPoints);
     next[loserId] = clampMin0(beforePointsL - losePoints);
@@ -439,6 +443,7 @@ const applyRatings = ({
                 playedAtMs: playedAtMs ?? null,
                 expectedWinner: eW,
                 lossScale,
+                gfNoLossApplied: phase === "playoffs" && playoffsStage === "gf",
             },
             before: {
                 [winnerId]: { points: beforePointsW, rank: beforeRankW },
