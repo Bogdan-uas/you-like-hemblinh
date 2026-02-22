@@ -4026,7 +4026,7 @@ export default function SpecialModePage() {
                                         transition: "all 500ms ease-in-out",
                                         textShadow: seriesState.leftTeam?.shadow,
                                         marginBottom: "4px",
-                                        marginLeft: setsToWin === 4 || setsToWin === 5 ? '0' : '8px',
+                                        marginLeft: activePhase === "playoffs" ? '0' : '8px',
                                         marginTop: "-28px"
                                     }}
                                 >
@@ -4045,7 +4045,7 @@ export default function SpecialModePage() {
                                             transition: "all 500ms ease-in-out",
                                             textShadow: seriesState.leftTeam?.shadow,
                                             marginBottom: "4px",
-                                            marginLeft: setsToWin === 4 || setsToWin === 5 ? '0' : '8px',
+                                            marginLeft: activePhase === "playoffs" ? '0' : '8px',
                                             marginTop: "-28px"
                                         }}
                                     >
@@ -4053,7 +4053,7 @@ export default function SpecialModePage() {
                                     </motion.span>
                                 )
                             )}
-                            {setsToWin <= 3 && !banner ? (
+                            {activePhase !== "playoffs" && !banner ? (
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -4096,17 +4096,7 @@ export default function SpecialModePage() {
                                         />
                                     </span>
                                     <div className={css.lines}>
-                                        {setsToWin === 3 ? (
-                                            <>
-                                                {[...Array(3)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        style={{ width: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
-                                                        className={css.line}
-                                                    />
-                                                ))}
-                                            </>
-                                        ) : setsToWin === 2 ? (
+                                        {activePhase !== "playoffs" && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -4116,7 +4106,7 @@ export default function SpecialModePage() {
                                                     />
                                                 ))}
                                             </>
-                                        ) : setsToWin === 1 ? (
+                                        ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                             <div
                                                 style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
                                                 className={css.line}
@@ -4145,7 +4135,7 @@ export default function SpecialModePage() {
                                     </div>
                                 )}
                                 <div className={css.verticalLines}>
-                                    {setsToWin === 5 ? (
+                                    {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
                                                 <div
@@ -4155,7 +4145,7 @@ export default function SpecialModePage() {
                                                 />
                                             ))}
                                         </>
-                                    ) : setsToWin === 4 ? (
+                                    ) : activePhase === "playoffs" && setsToWin === 4 ? (
                                         <>
                                             {[...Array(4)].map((_, i) => (
                                                 <div
@@ -4165,11 +4155,34 @@ export default function SpecialModePage() {
                                                 />
                                             ))}
                                         </>
-                                    ) : (
-                                        <></>
-                                    )}
+                                    ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                        <>
+                                            {[...Array(3)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ height: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                        <>
+                                            {[...Array(2)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                        <div
+                                            style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
+                                            className={css.verticalLine}
+                                        />
+                                    ) : null}
                                 </div>
-                                {!banner && setsToWin === 4 || setsToWin === 5 ? (
+                                {!banner && activePhase === "playoffs" ? (
                                     <motion.span
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -4200,7 +4213,7 @@ export default function SpecialModePage() {
                                 {banner}
                             </motion.span>
                         ) : (
-                            <p style={{ marginTop: setsToWin === 4 || setsToWin === 5 ? '0' : '24px' }} className={css.vs}>
+                            <p style={{ marginTop: activePhase === "playoffs" ? '0' : '24px' }} className={css.vs}>
                                 VS
                             </p>
                         )}
@@ -4223,7 +4236,7 @@ export default function SpecialModePage() {
                                         transition: "all 500ms ease-in-out",
                                         textShadow: seriesState.rightTeam?.shadow,
                                         marginBottom: "4px",
-                                        marginRight: setsToWin === 4 || setsToWin === 5 ? '0' : '8px',
+                                        marginRight: activePhase === "playoffs" ? '0' : '8px',
                                         marginTop: "-28px"
                                     }}
                                 >
@@ -4242,7 +4255,7 @@ export default function SpecialModePage() {
                                             transition: "all 500ms ease-in-out",
                                             textShadow: seriesState.rightTeam?.shadow,
                                             marginBottom: "4px",
-                                            marginRight: setsToWin === 4 || setsToWin === 5 ? '0' : '8px',
+                                            marginRight: activePhase === "playoffs" ? '0' : '8px',
                                             marginTop: "-28px"
                                         }}
                                     >
@@ -4250,7 +4263,7 @@ export default function SpecialModePage() {
                                     </motion.span>
                                 )
                             )}
-                            {setsToWin <= 3 && !banner ? (
+                            {activePhase !== "playoffs" && !banner ? (
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -4299,17 +4312,7 @@ export default function SpecialModePage() {
                                         />
                                     </span>
                                     <div className={css.lossLines}>
-                                        {setsToWin === 3 ? (
-                                            <>
-                                                {[...Array(3)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        style={{ width: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
-                                                        className={css.line}
-                                                    />
-                                                ))}
-                                            </>
-                                        ) : setsToWin === 2 ? (
+                                        {activePhase !== "playoffs" && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -4319,7 +4322,7 @@ export default function SpecialModePage() {
                                                     />
                                                 ))}
                                             </>
-                                        ) : setsToWin === 1 ? (
+                                        ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                             <div
                                                 style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
                                                 className={`${css.line} ${playerLostSets >= 1
@@ -4351,7 +4354,7 @@ export default function SpecialModePage() {
                                     </div>
                                 )}
                                 <div className={css.verticalLossLines}>
-                                    {setsToWin === 5 ? (
+                                    {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
                                                 <div
@@ -4361,7 +4364,7 @@ export default function SpecialModePage() {
                                                 />
                                             ))}
                                         </>
-                                    ) : setsToWin === 4 ? (
+                                    ) : activePhase === "playoffs" && setsToWin === 4 ? (
                                         <>
                                             {[...Array(4)].map((_, i) => (
                                                 <div
@@ -4371,11 +4374,34 @@ export default function SpecialModePage() {
                                                 />
                                             ))}
                                         </>
-                                    ) : (
-                                        <></>
-                                    )}
+                                    ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                        <>
+                                            {[...Array(3)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ height: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                        <>
+                                            {[...Array(2)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    className={css.verticalLine}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                        <div
+                                            style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
+                                            className={css.verticalLine}
+                                        />
+                                    ) : null}
                                 </div>
-                                {!banner && setsToWin === 4 || setsToWin === 5 ? (
+                                {!banner && activePhase === "playoffs" ? (
                                     <motion.span
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}

@@ -386,7 +386,7 @@ const SpecialModeInfoPage = () => {
                 <div className={css.image_container}>
                     <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '30vw', height: '45vh' }} />
                     <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                        (Matches in Semifinals, Third Place Decider and Grand Final have a bit different scoreboard)
+                        (Matches in Playoffs have a bit different scoreboard)
                     </span>
                 </div>
                 <p className={css.info_text}>At the very top, there are a small stage name, name of the match and the "Best of" of this match too. <br />
