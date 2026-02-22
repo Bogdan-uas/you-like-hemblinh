@@ -2914,7 +2914,10 @@ export default function SpecialModePage() {
         const t1 = setTimeout(() => setShowPickemLine2(true), 1500);
         const t2 = setTimeout(() => setShowPickemResult(true), 3000);
 
-        if (neededPickemPoints !== 67 && finalPickemPoints === 67) {
+        if (neededPickemPoints !== 67 && finalPickemPoints === 67 ||
+            neededPickemPoints !== 167 && finalPickemPoints === 167 ||
+            neededPickemPoints !== 267 && finalPickemPoints === 267 ||
+            neededPickemPoints !== 367 && finalPickemPoints === 367) {
             setTimeout(() => {
                 toast("67?!...", {
                     duration: 4000,
