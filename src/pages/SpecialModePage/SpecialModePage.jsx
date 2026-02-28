@@ -403,7 +403,7 @@ const applyRatings = ({
         playedAtMs,
     });
 
-    const MAX_WIN_POINTS = 95;
+    const MAX_WIN_POINTS = 165;
     const winPoints = Math.max(1, Math.min(MAX_WIN_POINTS, Math.round(rawWinGain)));
     const lossScale = lossScaleFromExpectedWinner(eW);
 
