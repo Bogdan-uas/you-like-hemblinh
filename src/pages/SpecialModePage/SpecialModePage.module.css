@@ -265,6 +265,10 @@
     background: #b3b3b3;
 }
 
+.next_rect:hover {
+    background: #dadada;
+}
+
 .ro32_rect {
     position: relative;
     display: flex;

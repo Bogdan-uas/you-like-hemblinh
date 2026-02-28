@@ -3456,7 +3456,148 @@ export default function SpecialModePage() {
             );
         }
 
-        const renderMatch = (m, stageKey, idx, baseClass) => {
+        const getTeamById = (id, a, b) => {
+            if (!id) return null;
+            if (a?.id === id) return a;
+            if (b?.id === id) return b;
+            return null;
+        };
+
+        const getWinnerTeam = (m) => {
+            if (!m?.played) return null;
+            return getTeamById(m.winnerTeamId, m.slotA, m.slotB);
+        };
+
+        const getLoserTeam = (m) => {
+            if (!m?.played) return null;
+            return getTeamById(m.loserTeamId, m.slotA, m.slotB);
+        };
+
+        const currentStageKey = currentPlayablePlayoffsMatch?.stage ?? null;
+
+        const nextStageKey =
+            currentStageKey === "ro16" ? "qf"
+                : currentStageKey === "qf" ? "sf"
+                    : currentStageKey === "sf" ? "gf"
+                        : null;
+
+        const isNextStage = (stageKey) => {
+            if (!currentStageKey) return false;
+            if (stageKey === nextStageKey) return true;
+            if (currentStageKey === "sf" && stageKey === "thirdPlace") return true;
+            return false;
+        };
+
+        const contendersForSlot = (stageKey, idx, slotKey) => {
+            if (!playoffs) return [];
+            if (!isNextStage(stageKey)) return [];
+
+            const pickFromMatch = (m, want) => {
+                if (!m) return [];
+                if (m.played) {
+                    const t = want === "winner" ? getWinnerTeam(m) : getLoserTeam(m);
+                    return t ? [t] : [];
+                }
+                return [m.slotA, m.slotB].filter(Boolean);
+            };
+
+            if (stageKey === "qf") {
+                const srcIdx = idx * 2 + (slotKey === "slotA" ? 0 : 1);
+                return pickFromMatch(playoffs.ro16[srcIdx], "winner");
+            }
+
+            if (stageKey === "sf") {
+                const srcIdx = idx * 2 + (slotKey === "slotA" ? 0 : 1);
+                return pickFromMatch(playoffs.qf[srcIdx], "winner");
+            }
+
+            if (stageKey === "gf") {
+                const srcIdx = slotKey === "slotA" ? 0 : 1;
+                return pickFromMatch(playoffs.sf[srcIdx], "winner");
+            }
+
+            if (stageKey === "thirdPlace") {
+                const srcIdx = slotKey === "slotA" ? 0 : 1;
+                return pickFromMatch(playoffs.sf[srcIdx], "loser");
+            }
+
+            return [];
+        };
+
+        const PlaceholderWithContenders = ({ stageKey, idx, slotKey }) => {
+            const contenders = contendersForSlot(stageKey, idx, slotKey);
+
+            if (!contenders.length) {
+                return <div className={css.placeholder_circle}>?</div>;
+            }
+
+            const isThirdPlace = stageKey === "thirdPlace";
+            const prefix = isThirdPlace ? "Loser of" : "Winner of";
+
+            const matchupText = contenders
+                .map((t) => t?.name ? `Team ${t.name}` : null)
+                .filter(Boolean)
+                .join(" VS ");
+
+            return (
+                <div
+                    className={css.placeholder_circle}
+                    style={{
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                    title={`${prefix} '${matchupText}' match-up`}
+                >
+                    {contenders[0] && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 5,
+                                left: 5,
+                                width: 14,
+                                height: 14,
+                                borderRadius: "50%",
+                                background: contenders[0].color,
+                                boxShadow: "0 0 3px rgba(0,0,0,0.4)",
+                                opacity: 0.75,
+                            }}
+                        />
+                    )}
+
+                    {contenders[1] && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: 5,
+                                right: 5,
+                                width: 14,
+                                height: 14,
+                                borderRadius: "50%",
+                                background: contenders[1].color,
+                                boxShadow: "0 0 3px rgba(0,0,0,0.4)",
+                                opacity: 0.75,
+                            }}
+                        />
+                    )}
+
+                    <span
+                        style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            opacity: 0.75,
+                            pointerEvents: "none",
+                            fontStyle: "italic",
+                        }}
+                    >
+                        vs
+                    </span>
+                </div>
+            );
+        };
+
+        const renderMatch = (m, stageKey, idx, baseClass, nextRect) => {
             const isPlayed = !!m.played;
 
             const isUserWin =
@@ -3509,9 +3650,13 @@ export default function SpecialModePage() {
             return (
                 <div
                     key={m.id}
-                    className={`${baseClass} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
+                    className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
                     style={{
-                        pointerEvents: !isClickable || isMatchRectLocked ? "none" : "auto",
+                        pointerEvents:
+                            isMatchRectLocked || (!isClickable && !isNextStage(stageKey))
+                                ? "none"
+                                : "auto",
+                        cursor: isMatchRectLocked || !isNextStage(stageKey) ? "pointer" : "default",
                     }}
                     onClick={() => openPlayoffsMatchModal(stageKey, m.id, isReadOnlyView)}
                 >
@@ -3524,7 +3669,7 @@ export default function SpecialModePage() {
                                     title={`Team ${leftTeam.name}`}
                                 />
                             ) : (
-                                <div className={css.placeholder_circle}>?</div>
+                                <PlaceholderWithContenders stageKey={stageKey} idx={idx} slotKey="slotA" />
                             )}
                         </div>
 
@@ -3552,7 +3697,7 @@ export default function SpecialModePage() {
                                     title={`Team ${rightTeam.name}`}
                                 />
                             ) : (
-                                <div className={css.placeholder_circle}>?</div>
+                                <PlaceholderWithContenders stageKey={stageKey} idx={idx} slotKey="slotB" />
                             )}
                         </div>
                     </div>
@@ -3571,7 +3716,8 @@ export default function SpecialModePage() {
                                     m,
                                     "ro16",
                                     idx,
-                                    idx % 2 === 0 ? css.match_rect_down : css.match_rect
+                                    idx % 2 === 0 ? css.match_rect_down : css.match_rect,
+                                    css.next_rect
                                 )
                             )}
                         </div>
@@ -3585,7 +3731,8 @@ export default function SpecialModePage() {
                                     m,
                                     "qf",
                                     idx,
-                                    idx % 2 === 0 ? css.quarters_rect_down : css.quarters_rect
+                                    idx % 2 === 0 ? css.quarters_rect_down : css.quarters_rect,
+                                    css.next_rect
                                 )
                             )}
                         </div>
@@ -3599,7 +3746,8 @@ export default function SpecialModePage() {
                                     m,
                                     "sf",
                                     idx,
-                                    idx % 2 === 0 ? css.semis_rect_down : css.semis_rect
+                                    idx % 2 === 0 ? css.semis_rect_down : css.semis_rect,
+                                    css.next_rect
                                 )
                             )}
                         </div>
@@ -3609,7 +3757,13 @@ export default function SpecialModePage() {
                         <h4 className={css.column_title}>Grand Final</h4>
                         <div className={css.columnGrandFinal}>
                             {playoffs.gf.map((m, idx) =>
-                                renderMatch(m, "gf", idx, css.grandFinal_rect)
+                                renderMatch(
+                                    m,
+                                    "gf",
+                                    idx,
+                                    css.grandFinal_rect,
+                                    css.next_rect
+                                )
                             )}
                         </div>
                     </div>
@@ -3619,7 +3773,13 @@ export default function SpecialModePage() {
                             <h4 style={{ width: '17ch' }} className={css.column_title}>Third Place Decider</h4>
                             <div className={css.columnThirdPlace}>
                                 {playoffs.thirdPlace.map((m, idx) =>
-                                    renderMatch(m, "thirdPlace", idx, css.thirdPlace_rect)
+                                    renderMatch(
+                                        m,
+                                        "thirdPlace",
+                                        idx,
+                                        css.thirdPlace_rect,
+                                        css.next_rect
+                                    )
                                 )}
                             </div>
                         </div>
