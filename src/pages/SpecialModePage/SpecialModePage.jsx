@@ -938,6 +938,8 @@ const MatchRect = ({
     dataPos,
     dataIdx,
     dataNotStarted,
+    bestOf,
+    shouldBestOfBeShown,
 }) => {
     const isPlayed = !!match.played;
 
@@ -976,6 +978,12 @@ const MatchRect = ({
             ? css.match_win
             : css.match_loss
         : "";
+    
+    const boLabelResultClass = isPlayed
+        ? isUserWin
+            ? css.match_win_label
+            : css.match_loss_label
+        : "";
 
     const winnerIsLeft =
         isPlayed && match.winnerTeamId && leftTeam && match.winnerTeamId === leftTeam.id;
@@ -1000,6 +1008,11 @@ const MatchRect = ({
             }}
             onClick={onClick}
         >
+            {!shouldBestOfBeShown && (
+                <div className={`${css.bo_label} ${boLabelResultClass}`}>
+                    BO{bestOf}
+                </div>
+            )}
             <div className={css.team_cell_ro32} style={{ opacity: isLeftLoser ? 0.3 : 1 }}>
                 <TeamCircle team={leftTeam} />
             </div>
@@ -3368,6 +3381,8 @@ export default function SpecialModePage() {
                                             <MatchRect
                                                 key={m.id}
                                                 match={m}
+                                                bestOf={getBestOfForSwissNet(net)}
+                                                shouldBestOfBeShown={!unlocked && lockedRects}
                                                 isClickable={isClickable}
                                                 isButtonLocked={!unlocked || isMatchRectLocked}
                                                 onClick={
@@ -3490,14 +3505,15 @@ export default function SpecialModePage() {
 
         const contendersForSlot = (stageKey, idx, slotKey) => {
             if (!playoffs) return [];
-            if (!isNextStage(stageKey)) return [];
 
             const pickFromMatch = (m, want) => {
                 if (!m) return [];
+
                 if (m.played) {
                     const t = want === "winner" ? getWinnerTeam(m) : getLoserTeam(m);
                     return t ? [t] : [];
                 }
+
                 return [m.slotA, m.slotB].filter(Boolean);
             };
 
@@ -3534,10 +3550,54 @@ export default function SpecialModePage() {
             const isThirdPlace = stageKey === "thirdPlace";
             const prefix = isThirdPlace ? "Loser of" : "Winner of";
 
-            const matchupText = contenders
-                .map((t) => t?.name ? `Team ${t.name}` : null)
-                .filter(Boolean)
-                .join(" VS ");
+            const nameA = contenders[0]?.name ? `Team ${contenders[0].name}` : "TBD";
+            const nameB = contenders[1]?.name ? `Team ${contenders[1].name}` : "TBD";
+            const matchupText = `${nameA} VS ${nameB}`;
+
+            const Mini = ({ team, pos }) => {
+                const common = {
+                    position: "absolute",
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    boxShadow: "0 0 3px rgba(0,0,0,0.4)",
+                    opacity: 0.75,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 10,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    color: "#fff",
+                    textShadow: "0 0 3px rgba(0,0,0,0.8)",
+                    userSelect: "none",
+                    ...(pos === "tl" ? { top: 5, left: 5 } : { bottom: 5, right: 5 }),
+                };
+
+                if (!team) {
+                    return (
+                        <div
+                            style={{
+                                ...common,
+                                background: "rgba(0,0,0,0.25)",
+                                border: "1px solid rgba(255,255,255,0.35)",
+                                fontStyle: 'italic',
+                            }}
+                        >
+                            ?
+                        </div>
+                    );
+                }
+
+                return (
+                    <div
+                        style={{
+                            ...common,
+                            background: team.color,
+                        }}
+                    />
+                );
+            };
 
             return (
                 <div
@@ -3550,37 +3610,9 @@ export default function SpecialModePage() {
                     }}
                     title={`${prefix} '${matchupText}' match-up`}
                 >
-                    {contenders[0] && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                top: 5,
-                                left: 5,
-                                width: 14,
-                                height: 14,
-                                borderRadius: "50%",
-                                background: contenders[0].color,
-                                boxShadow: "0 0 3px rgba(0,0,0,0.4)",
-                                opacity: 0.75,
-                            }}
-                        />
-                    )}
+                    <Mini team={contenders[0] ?? null} pos="tl" />
 
-                    {contenders[1] && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                bottom: 5,
-                                right: 5,
-                                width: 14,
-                                height: 14,
-                                borderRadius: "50%",
-                                background: contenders[1].color,
-                                boxShadow: "0 0 3px rgba(0,0,0,0.4)",
-                                opacity: 0.75,
-                            }}
-                        />
-                    )}
+                    <Mini team={contenders[1] ?? null} pos="br" />
 
                     <span
                         style={{
@@ -3589,6 +3621,7 @@ export default function SpecialModePage() {
                             opacity: 0.75,
                             pointerEvents: "none",
                             fontStyle: "italic",
+                            userSelect: "none",
                         }}
                     >
                         vs
@@ -3597,7 +3630,40 @@ export default function SpecialModePage() {
             );
         };
 
-        const renderMatch = (m, stageKey, idx, baseClass, nextRect) => {
+        const stageIndex = (k) => {
+            if (k === "ro16") return 0;
+            if (k === "qf") return 1;
+            if (k === "sf") return 2;
+            if (k === "thirdPlace") return 3;
+            if (k === "gf") return 3;
+            return 999;
+        };
+
+        const hasStageStarted = (stageKey) => {
+            if (!currentStageKey) return false;
+            return stageIndex(stageKey) <= stageIndex(currentStageKey);
+        };
+
+        const hasPreviewContenders = (stageKey, idx) => {
+            const getMatch = () => {
+                if (!playoffs) return null;
+                if (stageKey === "ro16") return playoffs.ro16?.[idx] ?? null;
+                if (stageKey === "qf") return playoffs.qf?.[idx] ?? null;
+                if (stageKey === "sf") return playoffs.sf?.[idx] ?? null;
+                if (stageKey === "thirdPlace") return playoffs.thirdPlace?.[idx] ?? null;
+                if (stageKey === "gf") return playoffs.gf?.[idx] ?? null;
+                return null;
+            };
+
+            const m = getMatch();
+            if (m?.slotA || m?.slotB) return true;
+
+            const a = contendersForSlot(stageKey, idx, "slotA");
+            const b = contendersForSlot(stageKey, idx, "slotB");
+            return (a?.length ?? 0) > 0 || (b?.length ?? 0) > 0;
+        };
+
+        const renderMatch = (m, stageKey, idx, baseClass, nextRect, bestOf) => {
             const isPlayed = !!m.played;
 
             const isUserWin =
@@ -3623,6 +3689,12 @@ export default function SpecialModePage() {
             
             const resultClass = isPlayed ? (isUserWin ? css.match_win : css.match_loss) : "";
 
+            const boLabelResultClass = isPlayed
+                ? isUserWin
+                    ? css.match_win_label
+                    : css.match_loss_label
+                : "";
+
             const isCurrent =
                 !!currentPlayablePlayoffsMatch &&
                 currentPlayablePlayoffsMatch.stage === stageKey &&
@@ -3646,20 +3718,39 @@ export default function SpecialModePage() {
             const isClickable =
                 !isMatchRectLocked &&
                 (isReadOnlyView ? !!m.played : (m.played || canOpenPlayoffsMatch(playoffs, stageKey, idx)));
+            
+            const stageStarted = hasStageStarted(stageKey);
+            const previewExists = hasPreviewContenders(stageKey, idx);
+
+            const canClick =
+                !isMatchRectLocked &&
+                (m.played || (stageStarted && isClickable));
+
+            const canHover =
+                !isMatchRectLocked &&
+                (canClick || (!stageStarted && previewExists));
 
             return (
                 <div
                     key={m.id}
-                    className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""}`}
+                    className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""
+                        } ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? nextRect : css.no_hover
+                        }`}
                     style={{
-                        pointerEvents:
-                            isMatchRectLocked || (!isClickable && !isNextStage(stageKey))
-                                ? "none"
-                                : "auto",
-                        cursor: isMatchRectLocked || !isNextStage(stageKey) ? "pointer" : "default",
+                        pointerEvents: canHover ? "auto" : "none",
+                        cursor: canClick || isPlayed ? "pointer" : canHover ? "default" : "default",
                     }}
-                    onClick={() => openPlayoffsMatchModal(stageKey, m.id, isReadOnlyView)}
+                    onClick={() => {
+                        if (!canClick) return;
+                        openPlayoffsMatchModal(stageKey, m.id, isReadOnlyView);
+                    }}
                 >
+                    <div
+                        className={`${stageKey === "thirdPlace" ? css.bo_thirdPlaceDecider_label : css.bo_playoffs_label} ${boLabelResultClass}`}
+                        style={isCurrent ? { outline: '2px solid #ffd700', border: 'none', boxShadow: '0 0 12px rgba(255, 215, 0, 0.9)' } : isNext ? { outline: '2px dashed #888', border: 'none', boxShadow: '0 0 12px rgba(160, 160, 160, 0.43)' } : {}}
+                    >
+                        BO{bestOf}
+                    </div>
                     <div className={css.match_content}>
                         <div className={css.team_cell} style={{ opacity: isLeftLoser ? 0.3 : 1 }}>
                             {leftTeam ? (
@@ -3717,7 +3808,8 @@ export default function SpecialModePage() {
                                     "ro16",
                                     idx,
                                     idx % 2 === 0 ? css.match_rect_down : css.match_rect,
-                                    css.next_rect
+                                    css.next_rect,
+                                    getBestOfForPlayoffs("ro16"),
                                 )
                             )}
                         </div>
@@ -3732,7 +3824,8 @@ export default function SpecialModePage() {
                                     "qf",
                                     idx,
                                     idx % 2 === 0 ? css.quarters_rect_down : css.quarters_rect,
-                                    css.next_rect
+                                    css.next_rect,
+                                    getBestOfForPlayoffs("qf"),
                                 )
                             )}
                         </div>
@@ -3747,7 +3840,8 @@ export default function SpecialModePage() {
                                     "sf",
                                     idx,
                                     idx % 2 === 0 ? css.semis_rect_down : css.semis_rect,
-                                    css.next_rect
+                                    css.next_rect,
+                                    getBestOfForPlayoffs("sf"),
                                 )
                             )}
                         </div>
@@ -3762,7 +3856,8 @@ export default function SpecialModePage() {
                                     "gf",
                                     idx,
                                     css.grandFinal_rect,
-                                    css.next_rect
+                                    css.next_rect,
+                                    getBestOfForPlayoffs("gf"),
                                 )
                             )}
                         </div>
@@ -3778,7 +3873,8 @@ export default function SpecialModePage() {
                                         "thirdPlace",
                                         idx,
                                         css.thirdPlace_rect,
-                                        css.next_rect
+                                        css.next_rect,
+                                        getBestOfForPlayoffs("thirdPlace"),
                                     )
                                 )}
                             </div>
@@ -5197,6 +5293,12 @@ export default function SpecialModePage() {
                         <div
                             className={css.match_modal}
                             onClick={(e) => e.stopPropagation()}
+                            style={isPlayedModal
+                                ? didUserWin
+                                    ? { border: "2px solid #006a32" }
+                                    : { border: "2px solid rgb(188, 108, 108)" }
+                                : { border: "2px solid #999" }
+                            }
                         >
                             <div
                                 className={isPlayedModal

@@ -1219,7 +1219,6 @@
 }
 
 .thirdPlace_rect:hover {
-    transform: translateY(-2px);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
 }
 
@@ -1571,4 +1570,66 @@
 
 .hidden_scrollbar::-webkit-scrollbar {
     display: none;
+}
+
+.bo_label {
+    background-color: #909090;
+    color: #fff;
+    border: 1px solid #4e4e4e;
+    font-size: 6px;
+    font-weight: 700;
+    padding: 1px 2px;
+    border-radius: 4px;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    pointer-events: none;
+}
+
+.bo_playoffs_label {
+    background-color: #909090;
+    color: #fff;
+    border: 1px solid #4e4e4e;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 2px;
+    height: 24px;
+    border-radius: 4px;
+    position: absolute;
+    top: -16px;
+    right: 0px;
+    z-index: -2;
+    pointer-events: none;
+}
+
+.bo_thirdPlaceDecider_label {
+    background-color: #909090;
+    color: #fff;
+    border: 1px solid #4e4e4e;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 2px;
+    height: 24px;
+    border-radius: 4px;
+    position: absolute;
+    top: 40px;
+    right: 18px;
+    z-index: -2;
+    pointer-events: none;
+}
+
+.match_win_label {
+    background-color: #95c7aa !important;
+    border: 1px solid #335141 !important;
+}
+
+.match_loss_label {
+    background-color: #c79595 !important;
+    border: 1px solid rgb(188, 108, 108) !important;
+}
+
+.no_hover:hover {
+    transform: none !important;
+    filter: none !important;
+    box-shadow: none !important;
 }
