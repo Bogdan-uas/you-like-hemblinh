@@ -1009,7 +1009,7 @@ const MatchRect = ({
             onClick={onClick}
         >
             {!shouldBestOfBeShown && (
-                <div className={`${css.bo_label} ${boLabelResultClass}`}>
+                <div className={`${css.bo_label} ${boLabelResultClass} ${className}`}>
                     BO{bestOf}
                 </div>
             )}
@@ -3734,7 +3734,7 @@ export default function SpecialModePage() {
                 <div
                     key={m.id}
                     className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""
-                        } ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? nextRect : css.no_hover
+                        } ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? baseClass : css.no_hover
                         }`}
                     style={{
                         pointerEvents: canHover ? "auto" : "none",
@@ -4100,11 +4100,22 @@ export default function SpecialModePage() {
                             }}
                         />
                         <div className={css.winnerName}>
+                            <span
+                                style={{
+                                    marginRight: 24,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    color: "#2e2f42",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                +<FaTrophy /> |
+                            </span>
                             🥇Team {tournamentResults.winner.name}
                         </div>
                     </motion.div>
                 )}
-
                 {showPodium && (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -4125,6 +4136,18 @@ export default function SpecialModePage() {
                                     }}
                                 />
                                 <span className={css.runnerUpName}>
+                                    <span
+                                        style={{
+                                            marginRight: 24,
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            color: "#2e2f42",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        +🥈 |
+                                    </span>
                                     🥈Team {tournamentResults.runnerUp.name}
                                 </span>
                             </div>
@@ -4139,6 +4162,18 @@ export default function SpecialModePage() {
                                         style={{ background: tournamentResults.thirdPlace.color }}
                                     />
                                     <span className={css.podium_name}>
+                                        <span
+                                            style={{
+                                                marginRight: 24,
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                color: "#2e2f42",
+                                                fontWeight: 700,
+                                            }}
+                                        >
+                                            +🥉 |
+                                        </span>
                                         🥉Team {tournamentResults.thirdPlace.name}
                                     </span>
                                 </div>
@@ -4193,7 +4228,18 @@ export default function SpecialModePage() {
                 <Header
                     setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                     setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
+                    setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
+                    setIsScoreBoard={() => setIsLeaderboardOpen(true)}
+                    isIntroClosed={showIntro || showPickemLine2}
+                    isLeaderboardOpen={isLeaderboardOpen}
                     isButtonLocked={isButtonLocked}
+                    isScoreBoardButtonLocked={isScoreBoardButtonLocked}
+                    isScoreBoardResetButtonLocked={isScoreBoardResetButtonLocked}
+                    setIsScoreBoardResetModalOpen={() => setIsScoreBoardResetModalOpen(true)}
+                    setIsAddTournamentPlacingsModalOpen={handleAddPlacingsClick}
+                    setIsRemoveTournamentPlacingsModalOpen={handleRemovePlacingsClick}
+                    arePlacingButtonsArmed={arePlacingButtonsArmed}
+                    hasAnyPlacings={hasAnyPlacings}
                 />
                 <div className={css.series_container}>
                     <button
@@ -4759,6 +4805,573 @@ export default function SpecialModePage() {
             </>
         );
     }
+
+    if (isLeaderboardOpen) {
+        return (
+            <>
+                <Header
+                    setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
+                    setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
+                    setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
+                    setIsScoreBoard={() => setIsLeaderboardOpen(true)}
+                    isIntroClosed={showIntro || showPickemLine2}
+                    isLeaderboardOpen={isLeaderboardOpen}
+                    isButtonLocked={isButtonLocked}
+                    isScoreBoardButtonLocked={isScoreBoardButtonLocked}
+                    isScoreBoardResetButtonLocked={isScoreBoardResetButtonLocked}
+                    setIsScoreBoardResetModalOpen={() => setIsScoreBoardResetModalOpen(true)}
+                    setIsAddTournamentPlacingsModalOpen={handleAddPlacingsClick}
+                    setIsRemoveTournamentPlacingsModalOpen={handleRemovePlacingsClick}
+                    arePlacingButtonsArmed={arePlacingButtonsArmed}
+                    hasAnyPlacings={hasAnyPlacings}
+                />
+                <div className={css.page_container}>
+                    <div className={css.leaderboard_header}>
+                        <div style={{ fontSize: "40px", textShadow: "0 0 4px #000" }} className={css.game_title}>
+                            Leaderboard
+                        </div>
+                    </div>
+
+                    <div className={css.leaderboard_list}>
+                        {leaderboard.sorted.map((t, i) => {
+                            const rank = i + 1;
+                            const rating = teamRatings[t.id] ?? 0;
+
+                            const rankSticker = rank === 1 ? (
+                                <span style={{ fontSize: "32px", color: 'gold' }} className={css.leaderboard_rank}>
+                                    1st
+                                </span>
+                            ) : rank === 2 ?
+                                <span style={{ fontSize: "32px", color: 'silver' }} className={css.leaderboard_rank}>
+                                    2nd
+                                </span>
+                                : rank === 3 ?
+                                    <span style={{ fontSize: "32px", color: '#cd7f32' }} className={css.leaderboard_rank}>
+                                        3rd
+                                    </span>
+                                    : null;
+                            const isTop10 = rank <= 10;
+
+                            const circleClass =
+                                rank === 1
+                                    ? css.winnerLogo
+                                    : rank <= 3
+                                        ? css.placeLogo
+                                        : rank <= 10
+                                            ? css.placeLogo
+                                            : css.placeLogoSmall;
+
+                            const circleSizeStyle =
+                                rank === 2 ? { width: "80px", height: "80px" }
+                                    : rank === 3 ? { width: "60px", height: "60px" }
+                                        : {};
+
+                            const nameClass =
+                                rank === 1
+                                    ? css.winnerName
+                                    : rank <= 3
+                                        ? css.runnerUpName
+                                        : css.podium_name;
+
+                            const rowStyle = isTop10 ? { display: "flex", flexDirection: "column", alignItems: "center" } : undefined;
+
+                            const ratingFontSize =
+                                rank >= 4 && rank <= 10 ? "10px"
+                                    : rank > 10 ? "8px"
+                                        : "";
+                                
+                            const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                            const trophyDisplay = trophyCountToDisplay(p.wins);
+
+                            const isCountMode = trophyDisplay?.mode === "count";
+                            const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
+
+                            return (
+                                <React.Fragment key={t.id}>
+                                    {rank === 17 && (
+                                        <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
+                                            >
+                                                Autoqualifiers to Stage III
+                                            </h4>
+
+                                            <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
+                                            >
+                                                Autoqualifiers to Stage II
+                                            </h4>
+                                        </div>
+                                    )}
+
+                                    {rank === 33 && (
+                                        <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
+                                            >
+                                                Autoqualifiers to Stage II
+                                            </h4>
+
+                                            <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
+                                            >
+                                                Qualifiers to Stage I
+                                            </h4>
+                                        </div>
+                                    )}
+
+                                    <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static' }}>
+                                        <div
+                                            className={circleClass}
+                                            style={{
+                                                ...circleSizeStyle,
+                                                background: t.color,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                gap: isTop10 ? "0" : "8px",
+                                                border: "3px solid #999",
+                                                marginLeft: rank > 10 ? "210px" : "0",
+                                            }}
+                                            title={`Team ${t.name}`}
+                                        >
+                                            <span
+                                                style={{
+                                                    color: "#ffffff",
+                                                    textShadow: "0 0 4px #000",
+                                                    fontSize: ratingFontSize,
+                                                }}
+                                                className={css.modal_team_rating}
+                                            >
+                                                {rating}p
+                                            </span>
+                                        </div>
+
+                                        <div style={{ position: rank <= 10 ? 'relative' : 'static' }}>
+                                            {trophyDisplay && (
+                                                <span
+                                                    style={{
+                                                        marginLeft: 10,
+                                                        position: "absolute",
+                                                        top: trophyTop,
+                                                        right: rank > 10 ? '64.5%' : '103%',
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 6,
+                                                        color: "#2e2f42",
+                                                        fontWeight: 700,
+                                                        fontSize: rank <= 3 ? "32px" : "16px",
+                                                    }}
+                                                >
+                                                    {trophyDisplay.mode === "icons" ? (
+                                                        Array.from({ length: trophyDisplay.n }).map((_, k) => (
+                                                            <FaTrophy key={k} style={{ verticalAlign: "middle" }} />
+                                                        ))
+                                                    ) : (
+                                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                            <FaTrophy />:{trophyDisplay.n}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            )}
+                                            <span style={{ fontSize: rank <= 3 ? "32px" : "16px", marginRight: rank <= 3 ? "4px" : "0px" }} className={css.leaderboard_rank}>
+                                                {rankSticker ?? formatOrdinal(rank)}
+                                            </span>{" "}
+                                            <span style={{ color: "#2e2f42", fontWeight: 700 }} className={nameClass}>
+                                                Team {t.name}
+                                                <span style={{
+                                                    position: "absolute",
+                                                    top: rank > 10 ? '24%' : '20%',
+                                                    left: rank > 10 ? '70%' : '120%',
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                }}>
+                                                    {p.seconds > 0 && (
+                                                        <span style={{ marginLeft: '12px' }}>
+                                                            🥈:{p.seconds}
+                                                        </span>
+                                                    )}
+
+                                                    {p.thirds > 0 && (
+                                                        <span>
+                                                            🥉:{p.thirds}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                </div>
+                                {isRestartModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to restart the game?
+                        </p>
+                        <div className={css.restart_buttons}>
+                            <button
+                                className={css.cancel_button}
+                                onClick={() => setIsRestartModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className={css.confirm_button}
+                                onClick={confirmRestart}
+                            >
+                                Restart
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isTerminateModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to terminate the game?
+                        </p>
+                        <div className={css.restart_buttons}>
+                            <button
+                                className={css.cancel_button}
+                                onClick={() => setIsTerminateModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className={css.confirm_button}
+                                onClick={confirmTerminate}
+                            >
+                                Terminate
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isScoreBoardResetModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="scoreboard-reset-code">
+                                Identification code
+                            </label>
+
+                            <input
+                                id="scoreboard-reset-code"
+                                className={css.reset_input}
+                                type="password"
+                                value={scoreboardResetCode}
+                                onChange={(e) => setScoreboardResetCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCloseScoreboardResetModal}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyScoreboardResetPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isScoreBoardResetConfirmModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            <b>Are you sure?!</b> <br />
+                            By pressing the button "Confirm", you'll reset the WHOLE scoreboard!
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCancelFinalScoreboardReset}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleFinalScoreboardReset}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isAddPlacingsCodeModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="placings-admin-code-add">
+                                Identification code
+                            </label>
+                            <input
+                                id="placings-admin-code-add"
+                                className={css.reset_input}
+                                type="password"
+                                value={placingsAdminCode}
+                                onChange={(e) => setPlacingsAdminCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsAddPlacingsCodeModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyAddPlacingsPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isAddPlacingsModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Add tournament placings
+                        </p>
+
+                        <div
+                            className={css.hidden_scrollbar}
+                            style={{
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                height: "180px",
+                                width: "100%",
+                                border: "1px solid #999",
+                                borderRadius: 8,
+                                padding: 12,
+                            }}
+                        >
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                                {allTeams.map((t) => {
+                                    const isSelected = selectedPlacingTeamId === t.id;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => setSelectedPlacingTeamId(t.id)}
+                                            style={{
+                                                width: 37.2,
+                                                height: 37.2,
+                                                boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                background: t.color,
+                                            }}
+                                            className={css.team_circle_ro32}
+                                            title={`Team ${t.name}`}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 12, width: "50%", marginTop: 14 }}>
+                            <select
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                value={placingCategory}
+                                onChange={(e) => {
+                                    setPlacingCategory(e.target.value);
+                                    setSelectedPlacingTeamId(null);
+                                }}
+                            >
+                                <option value=""></option>
+                                <option value="wins">🏆</option>
+                                <option value="seconds">🥈</option>
+                                <option value="thirds">🥉</option>
+                            </select>
+
+                            <input
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                type="text"
+                                placeholder="Amount"
+                                value={placingAmount}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const onlyDigits = raw.replace(/[^\d]/g, "");
+                                    setPlacingAmount(onlyDigits);
+                                }}
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons} style={{ marginTop: 14 }}>
+                            <button className={css.cancel_button} onClick={() => { setIsAddPlacingsModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={`${css.confirm_button} ${!canConfirmPlacings() ? css.locked : ""}`} disabled={!canConfirmPlacings()} onClick={handleOpenAddPlacingsFinal}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isAddPlacingsFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            <b>Are you sure?!</b> <br />
+                            By pressing "Confirm", you'll apply these placings.
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsAddPlacingsFinalModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleApplyAddPlacings}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isRemovePlacingsCodeModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="placings-admin-code-remove">
+                                Identification code
+                            </label>
+                            <input
+                                id="placings-admin-code-remove"
+                                className={css.reset_input}
+                                type="password"
+                                value={placingsAdminCode}
+                                onChange={(e) => setPlacingsAdminCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsRemovePlacingsCodeModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyRemovePlacingsPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isRemovePlacingsModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Remove tournament placings
+                        </p>
+
+                        <div
+                            className={css.hidden_scrollbar}
+                            style={{
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                height: "180px",
+                                width: "100%",
+                                border: "1px solid #999",
+                                borderRadius: 8,
+                                padding: 12,
+                            }}
+                        >
+                            {!placingCategory ? (
+                                <div style={{ width: "100%", height: "100%" }} />
+                            ) : (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                                    {getTeamsForRemovePicker().map((t) => {
+                                        const isSelected = selectedPlacingTeamId === t.id;
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => setSelectedPlacingTeamId(t.id)}
+                                                style={{
+                                                    width: 37.2,
+                                                    height: 37.2,
+                                                    boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                    border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                    background: t.color,
+                                                }}
+                                                className={css.team_circle_ro32}
+                                                title={`Team ${t.name}`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 12, width: "50%", marginTop: 14 }}>
+                            <select
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                value={placingCategory}
+                                onChange={(e) => {
+                                    setPlacingCategory(e.target.value);
+                                    setSelectedPlacingTeamId(null);
+                                }}
+                            >
+                                <option value=""></option>
+                                <option value="wins">🏆</option>
+                                <option value="seconds">🥈</option>
+                                <option value="thirds">🥉</option>
+                            </select>
+
+                            <input
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                type="text"
+                                placeholder="Amount"
+                                value={placingAmount}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const onlyDigits = raw.replace(/[^\d]/g, "");
+                                    setPlacingAmount(onlyDigits);
+                                }}
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons} style={{ marginTop: 14 }}>
+                            <button className={css.cancel_button} onClick={() => { setIsRemovePlacingsModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button
+                                className={`${css.confirm_button} ${!canConfirmPlacings() ? css.locked : ""}`}
+                                disabled={!canConfirmPlacings()}
+                                onClick={handleOpenRemovePlacingsFinal}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isRemovePlacingsFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            <b>Are you sure?!</b> <br />
+                            By pressing "Confirm", you'll remove these placings.
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={() => { setIsRemovePlacingsFinalModalOpen(false); clearPlacingsAdminState(); }}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleApplyRemovePlacings}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    };
 
     return (
         <>
@@ -5448,6 +6061,39 @@ export default function SpecialModePage() {
                                         leftIsPick,
                                         rightIsPick
                                     } = getPickOrientedModalView(currentModalMatch, isBo1Modal);
+                                
+                                    const stage = modalContext?.stage;
+                                    const isGrandFinal = stage === "gf";
+                                    const isThirdPlace = stage === "thirdPlace";
+
+                                    const getPlacementBadge = (isWinner, isLoser) => {
+                                        if (isGrandFinal) {
+                                            if (isWinner) {
+                                                return (
+                                                    <span style={{ marginRight: '2px', display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                        <FaTrophy />+
+                                                    </span>
+                                                );
+                                            }
+                                            if (isLoser) {
+                                                return (
+                                                    <span style={{ marginRight: '2px' }}>
+                                                        🥈+
+                                                    </span>
+                                                );
+                                            }
+                                        }
+
+                                        if (isThirdPlace && isWinner) {
+                                            return (
+                                                <span style={{ marginRight: '2px' }}>
+                                                    🥉+
+                                                </span>
+                                            );
+                                        }
+
+                                        return null;
+                                    };
 
                                     return (
                                         <>
@@ -5478,6 +6124,7 @@ export default function SpecialModePage() {
 
                                                                 return (
                                                                     <>
+                                                                        {getPlacementBadge(winnerIsLeft, leftIsLoser)}
                                                                         ({formatOrdinal(afterRank)}
                                                                         {deltaPlaces !== 0 && (
                                                                             <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900 }}>
@@ -5531,6 +6178,7 @@ export default function SpecialModePage() {
 
                                                                 return (
                                                                     <>
+                                                                        {getPlacementBadge(winnerIsRight, rightIsLoser)}
                                                                         ({formatOrdinal(afterRank)}
                                                                         {deltaPlaces !== 0 && (
                                                                             <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900 }}>
@@ -5602,200 +6250,6 @@ export default function SpecialModePage() {
                                         </>
                                     );
                                 })()}
-                        </div>
-                    </div>
-                )}
-                {isLeaderboardOpen && (
-                    <div
-                        className={css.page_container}
-                        style={{ position: "fixed", background: "#fff", overflow: "auto", zIndex: 100 }}
-                    >
-                        <div className={css.leaderboard_header}>
-                            <div style={{ fontSize: "40px", textShadow: "0 0 4px #000" }} className={css.game_title}>
-                                Leaderboard
-                            </div>
-                        </div>
-
-                        <div className={css.leaderboard_list}>
-                            {leaderboard.sorted.map((t, i) => {
-                                const rank = i + 1;
-                                const rating = teamRatings[t.id] ?? 0;
-
-                                const rankSticker = rank === 1 ? (
-                                    <span style={{ fontSize: "32px", color: 'gold' }} className={css.leaderboard_rank}>
-                                        1st
-                                    </span>
-                                ) : rank === 2 ?
-                                    <span style={{ fontSize: "32px", color: 'silver' }} className={css.leaderboard_rank}>
-                                        2nd
-                                    </span>
-                                    : rank === 3 ?
-                                        <span style={{ fontSize: "32px", color: '#cd7f32' }} className={css.leaderboard_rank}>
-                                            3rd
-                                        </span>
-                                        : null;
-                                const isTop10 = rank <= 10;
-
-                                const circleClass =
-                                    rank === 1
-                                        ? css.winnerLogo
-                                        : rank <= 3
-                                            ? css.placeLogo
-                                            : rank <= 10
-                                                ? css.placeLogo
-                                                : css.placeLogoSmall;
-
-                                const circleSizeStyle =
-                                    rank === 2 ? { width: "80px", height: "80px" }
-                                        : rank === 3 ? { width: "60px", height: "60px" }
-                                            : {};
-
-                                const nameClass =
-                                    rank === 1
-                                        ? css.winnerName
-                                        : rank <= 3
-                                            ? css.runnerUpName
-                                            : css.podium_name;
-
-                                const rowStyle = isTop10 ? { display: "flex", flexDirection: "column", alignItems: "center" } : undefined;
-
-                                const ratingFontSize =
-                                    rank >= 4 && rank <= 10 ? "10px"
-                                        : rank > 10 ? "8px"
-                                            : "";
-                                
-                                const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
-                                const trophyDisplay = trophyCountToDisplay(p.wins);
-
-                                const isCountMode = trophyDisplay?.mode === "count";
-                                const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
-
-                                return (
-                                    <React.Fragment key={t.id}>
-                                        {rank === 17 && (
-                                            <div style={{ marginTop: "24px", marginBottom: "24px" }}>
-                                                <h4
-                                                    className={css.game_title}
-                                                    style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
-                                                >
-                                                    Autoqualifiers to Stage III
-                                                </h4>
-
-                                                <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
-
-                                                <h4
-                                                    className={css.game_title}
-                                                    style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
-                                                >
-                                                    Autoqualifiers to Stage II
-                                                </h4>
-                                            </div>
-                                        )}
-
-                                        {rank === 33 && (
-                                            <div style={{ marginTop: "24px", marginBottom: "24px" }}>
-                                                <h4
-                                                    className={css.game_title}
-                                                    style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
-                                                >
-                                                    Autoqualifiers to Stage II
-                                                </h4>
-
-                                                <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
-
-                                                <h4
-                                                    className={css.game_title}
-                                                    style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
-                                                >
-                                                    Qualifiers to Stage I
-                                                </h4>
-                                            </div>
-                                        )}
-
-                                        <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static' }}>
-                                            <div
-                                                className={circleClass}
-                                                style={{
-                                                    ...circleSizeStyle,
-                                                    background: t.color,
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    gap: isTop10 ? "0" : "8px",
-                                                    border: "3px solid #999",
-                                                    marginLeft: rank > 10 ? "210px" : "0",
-                                                }}
-                                                title={`Team ${t.name}`}
-                                            >
-                                                <span
-                                                    style={{
-                                                        color: "#ffffff",
-                                                        textShadow: "0 0 4px #000",
-                                                        fontSize: ratingFontSize,
-                                                    }}
-                                                    className={css.modal_team_rating}
-                                                >
-                                                    {rating}p
-                                                </span>
-                                            </div>
-
-                                            <div style={{ position: rank <= 10 ? 'relative' : 'static' }}>
-                                                {trophyDisplay && (
-                                                    <span
-                                                        style={{
-                                                            marginLeft: 10,
-                                                            position: "absolute",
-                                                            top: trophyTop,
-                                                            right: rank > 10 ? '64.5%' : '103%',
-                                                            display: "inline-flex",
-                                                            alignItems: "center",
-                                                            gap: 6,
-                                                            color: "#2e2f42",
-                                                            fontWeight: 700,
-                                                            fontSize: rank <= 3 ? "32px" : "16px",
-                                                        }}
-                                                    >
-                                                        {trophyDisplay.mode === "icons" ? (
-                                                            Array.from({ length: trophyDisplay.n }).map((_, k) => (
-                                                                <FaTrophy key={k} style={{ verticalAlign: "middle" }} />
-                                                            ))
-                                                        ) : (
-                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                                                <FaTrophy />:{trophyDisplay.n}
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                )}
-                                                <span style={{ fontSize: rank <= 3 ? "32px" : "16px", marginRight: rank <= 3 ? "4px" : "0px" }} className={css.leaderboard_rank}>
-                                                    {rankSticker ?? formatOrdinal(rank)}
-                                                </span>{" "}
-                                                <span style={{ color: "#2e2f42", fontWeight: 700 }} className={nameClass}>
-                                                    Team {t.name}
-                                                    <span style={{
-                                                        position: "absolute",
-                                                        top: rank > 10 ? '24%' : '20%',
-                                                        left: rank > 10 ? '70%' : '120%',
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                    }}>
-                                                        {p.seconds > 0 && (
-                                                            <span style={{ marginLeft: '12px' }}>
-                                                                🥈:{p.seconds}
-                                                            </span>
-                                                        )}
-
-                                                        {p.thirds > 0 && (
-                                                            <span>
-                                                                🥉:{p.thirds}
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </React.Fragment>
-                                );
-                            })}
                         </div>
                     </div>
                 )}
