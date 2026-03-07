@@ -5014,7 +5014,7 @@ export default function SpecialModePage() {
                         })}
                     </div>
                 </div>
-                                {isRestartModalOpen && (
+                {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
                             Are you sure you want to restart the game?
@@ -5895,7 +5895,11 @@ export default function SpecialModePage() {
                 )}
 
                 {isMatchModalOpen && modalContext && currentModalMatch && (
-                    <div
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
                         className={css.match_modal_overlay}
                         onMouseDown={(e) => {
                             if (e.target === e.currentTarget) {
@@ -5903,7 +5907,11 @@ export default function SpecialModePage() {
                             }
                         }}
                     >
-                        <div
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
                             className={css.match_modal}
                             onClick={(e) => e.stopPropagation()}
                             style={isPlayedModal
@@ -6205,7 +6213,6 @@ export default function SpecialModePage() {
                                             {!isBo1Modal && (
                                                 <>
                                                     <hr className={css.match_modal_divider} />
-
                                                     {(() => {
                                                         const historyMatch = currentModalMatch;
                                                         const history = historyMatch?.setHistory ?? [];
@@ -6216,33 +6223,34 @@ export default function SpecialModePage() {
                                                         const leftColor = modalPlayedLeft?.color || "#2e7d32";
                                                         const rightColor = modalPlayedRight?.color || "red";
                                                         
-                                                        return (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className={css.seriesSummary} style={{ fontSize: 13, opacity: 0.95 }} >
-                                                            <ul className={css.seriesSummaryList}>
-                                                                {history.map(({ set, wins, losses, won }) => {
-                                                                    const isDecider = set === modalBestOf;
-                                                                    const label = isDecider ? "Decider" : `Set ${set}`;
-                                                                    const leftOpacity = won ? 1 : 0.2;
-                                                                    const rightOpacity = won ? 0.2 : 1;
-                                                                    return (
-                                                                        <li key={set} style={{ fontSize: "20px" }} className={css.seriesSummaryItem} >
-                                                                            <span className={`${css.multiplier_win} ${label === "Decider" ? css.leftSpecial : css.left}`}
-                                                                                style={{ color: leftColor, fontWeight: 700, opacity: leftOpacity }} >
-                                                                                {wins}
-                                                                            </span>
-                                                                            &nbsp; &nbsp; &nbsp;
-                                                                            <span className={css.info_text} style={{ fontWeight: 600 }}>
-                                                                                {label}
-                                                                            </span>
-                                                                            &nbsp; &nbsp; &nbsp;
-                                                                            <span className={`${css.multiplier_fail} ${label === "Decider" ? css.rightSpecial : css.right}`}
-                                                                                style={{ color: rightColor, fontWeight: 700, opacity: rightOpacity }} >
-                                                                                {losses}
-                                                                            </span>
-                                                                        </li>
-                                                                    );
-                                                                })}
-                                                            </ul>
-                                                        </motion.div >
+                                                        return (
+                                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, opacity: 0.95 }} >
+                                                                <ul className={css.seriesSummaryList}>
+                                                                    {history.map(({ set, wins, losses, won }) => {
+                                                                        const isDecider = set === modalBestOf;
+                                                                        const label = isDecider ? "Decider" : `Set ${set}`;
+                                                                        const leftOpacity = won ? 1 : 0.2;
+                                                                        const rightOpacity = won ? 0.2 : 1;
+                                                                        return (
+                                                                            <li key={set} style={{ fontSize: "20px" }} className={css.seriesSummaryItem} >
+                                                                                <span className={`${css.multiplier_win} ${label === "Decider" ? css.leftSpecial : css.left}`}
+                                                                                    style={{ color: leftColor, fontWeight: 700, opacity: leftOpacity }} >
+                                                                                    {wins}
+                                                                                </span>
+                                                                                &nbsp; &nbsp; &nbsp;
+                                                                                <span className={css.info_text} style={{ fontWeight: 600 }}>
+                                                                                    {label}
+                                                                                </span>
+                                                                                &nbsp; &nbsp; &nbsp;
+                                                                                <span className={`${css.multiplier_fail} ${label === "Decider" ? css.rightSpecial : css.right}`}
+                                                                                    style={{ color: rightColor, fontWeight: 700, opacity: rightOpacity }} >
+                                                                                    {losses}
+                                                                                </span>
+                                                                            </li>
+                                                                        );
+                                                                    })}
+                                                                </ul>
+                                                            </motion.div>
                                                         );
                                                     })()}
                                                 </>
@@ -6250,15 +6258,15 @@ export default function SpecialModePage() {
                                         </>
                                     );
                                 })()}
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
                 )}
                 {showTournamentIntro && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>
                                 <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
-                                    Autoqualifiers for Stage III
+                                    Auto-qualifiers for Stage III
                                 </div>
 
                                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "50%", margin: "0 auto" }}>
@@ -6276,7 +6284,7 @@ export default function SpecialModePage() {
 
                             <div className={css.fade_in_delay} style={{ marginTop: 22 }}>
                                 <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
-                                    Autoqualifiers for Stage II
+                                    Auto-qualifiers for Stage II
                                 </div>
 
                                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "50%", margin: "0 auto" }}>
