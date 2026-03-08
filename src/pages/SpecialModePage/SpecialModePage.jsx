@@ -3905,6 +3905,7 @@ export default function SpecialModePage() {
         if (modalContext.stageKey === "stage3") return "Stage III";
         return "";
     }, [modalContext]);
+
     const seriesLabelNode = useMemo(() => {
         if (!seriesState.active || !seriesState.leftTeam || !seriesState.rightTeam) return null;
 
@@ -3948,7 +3949,7 @@ export default function SpecialModePage() {
                     >
                         Best of {setsToWin * 2 - 1}
                     </span>
-                    {setsToWin !== 1 && !seriesBanner && (
+                    {setsToWin !== 1 && !seriesBanner ? (
                         <motion.span
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -3966,7 +3967,18 @@ export default function SpecialModePage() {
                                     : `Set ${currentSet}`;
                             })()}
                         </motion.span>
-                    )}
+                    ) : setsToWin !== 1 ? (
+                        <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.round_text}
+                            style={{ fontSize: "28px" }}
+                        >
+                            &nbsp;
+                        </motion.span>
+                    ) : null}
                 </span>
             </>
         );
@@ -4262,8 +4274,8 @@ export default function SpecialModePage() {
                         Secret
                     </button>
                     {seriesLabelNode}
-                    {!banner && (
-                        <div className={css.game_info_text}>
+                    <div className={css.game_info_text}>
+                        {!banner ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -4282,6 +4294,19 @@ export default function SpecialModePage() {
                                     duration={1}
                                 />
                             </motion.span>
+                        ) : (
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                            >
+                                &nbsp;
+                            </motion.span>
+                        )}
+                        {!banner ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -4292,32 +4317,43 @@ export default function SpecialModePage() {
                             >
                                 First to {overtimeTarget}
                             </motion.span>
-                            {isOvertime ? (
-                                <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    className={css.round_text}
-                                    style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                                >
-                                    Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
-                                    <br />
-                                </motion.span>
-                            ) : (
-                                <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    className={css.round_text}
-                                    style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                                >
-                                    &nbsp;
-                                </motion.span>
-                            )}
-                        </div>
-                    )}
+                        ) : (
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                            >
+                                &nbsp;
+                            </motion.span>
+                        )}
+                        {!banner && isOvertime ? (
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                            >
+                                Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
+                                <br />
+                            </motion.span>
+                        ) : (
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
+                            >
+                                &nbsp;
+                            </motion.span>
+                        )}
+                    </div>
 
                     <div className={css.scoreboard}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
@@ -4731,7 +4767,7 @@ export default function SpecialModePage() {
                     </div>
 
                     <div className={css.seriesGambleMessage}>
-                        {seriesState.lastResult && (
+                        {!banner && seriesState.lastResult && (
                             <>
                                 <p className={css.seriesResultMessage}>
                                     {seriesState.lastResult}
