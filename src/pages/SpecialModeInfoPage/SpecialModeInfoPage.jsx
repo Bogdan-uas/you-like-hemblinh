@@ -395,7 +395,7 @@ const SpecialModeInfoPage = () => {
                     At the bottom, there's gamble button. <br />
                     In general, all the rules are from Extended Mode, where in order to win a set, 13 rounds are required to be won. 1 round is won when 5 mini-rounds are won. In order to win a mini-round, some specific multiplier is required. Here is also the difference: <br />
                 </p>
-                <b className={css.info_text}>The range for the multiplier is between <b style={{ color: 'red' }}>-1.5x</b> and <b style={{ color: 'green' }}>1.5x</b>,
+                <b className={css.info_text}>The range for the multiplier is between <b style={{ color: 'red' }}>-2.0x</b> and <b style={{ color: 'green' }}>2.0x</b>,
                     where the <span style={{ textDecoration: 'underline' }}>win</span> counts when the multiplier is above <b>0x</b> and <span style={{ textDecoration: 'underline' }}>loss</span> counts when the multiplier is below <b>0x</b>.
                 </b>
                 <p className={css.info_text}>And the win <i>here</i> counts for <span style={{ textDecoration: 'underline' }}>your chosen team</span>. A bad multiplier (below 0x) counts then for the team, that is against your chosen team:</p>
