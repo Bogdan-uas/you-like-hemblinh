@@ -1,3 +1,4 @@
+import React from "react";
 import css from './SpecialModeInfoPage.module.css'
 import { Link } from "react-router-dom";
 import introImg from "../../../assets/images/image.png";
@@ -442,13 +443,92 @@ const SpecialModeInfoPage = () => {
                 <div className={css.image_container}>
                     <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '30vw', height: '45vh' }} />
                 </div>
-                <p style={{ fontWeight: "800", marginTop: "12px" }} className={css.info_text}>
+                <div style={{ fontWeight: "800", marginTop: "12px" }} className={css.info_text}>
                     Now, lemme also explain about Leaderboard points system: <br />
                     I mentioned it already multiple times, but I will explain one more time anyways: <br />
                     The main goal of this system is to give the possibility for every team to start from any out of the three Stages. In
                     order for them to do that, it is to win matches. <br />
-                    Depending on in which place the team is in the colors object, which is in the code of the website, the teams get
-                    either 150 points or 100 points or 50 points at the very start. <br />
+                    Depending on in which place the team is in the colors object:
+                    <div className={css.team_sequence}>
+                        {Object.entries(COLORS).map(([key, team], index) => {
+                            const rank = index + 1;
+
+                            let points;
+
+                            if (rank <= 16) {
+                                points = 150;
+                            } else if (rank <= 32) {
+                                points = 100;
+                            } else {
+                                points = 50;
+                            }
+
+                            return (
+                                <React.Fragment key={key}>
+                                    {rank === 17 && (
+                                        <div style={{ marginTop: "20px", marginBottom: "20px" }}>
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "24px", color: "#999", marginBottom: "10px" }}
+                                            >
+                                                Autoqualifiers to Stage III
+                                            </h4>
+
+                                            <hr style={{ width: "520px", margin: 0 }} className={css.dashed_divider} />
+
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "24px", color: "#999", marginTop: "10px" }}
+                                            >
+                                                Autoqualifiers to Stage II
+                                            </h4>
+                                        </div>
+                                    )}
+
+                                    {rank === 33 && (
+                                        <div style={{ marginTop: "20px", marginBottom: "20px" }}>
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "24px", color: "#999", marginBottom: "10px" }}
+                                            >
+                                                Autoqualifiers to Stage II
+                                            </h4>
+
+                                            <hr style={{ width: "520px", margin: 0 }} className={css.dashed_divider} />
+
+                                            <h4
+                                                className={css.game_title}
+                                                style={{ fontSize: "24px", color: "#999", marginTop: "10px" }}
+                                            >
+                                                Qualifiers to Stage I
+                                            </h4>
+                                        </div>
+                                    )}
+
+                                    <div className={css.team_row}>
+                                        <span className={css.rank}>#{rank}</span>
+
+                                        <span
+                                            className={css.color_circle}
+                                            style={{
+                                                background: team.color,
+                                                boxShadow: team.shadow
+                                            }}
+                                        />
+
+                                        <span className={css.team_name}>
+                                            Team {team.name}
+                                        </span>
+
+                                        <span className={css.team_stage}>
+                                            {points} pts
+                                        </span>
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                    the teams get either 150 points or 100 points or 50 points at the very start. <br />
                     - Top 16 → Autoqualify to <b>Stage III</b> with 150 points
                     <br />- Top 17-32 → Autoqualify to <b>Stage II</b> with 100 points
                     <br />- Top 33-64 → Start in <b>Stage I</b> with 50 points <br />
@@ -474,7 +554,7 @@ const SpecialModeInfoPage = () => {
                     <br />
                     <b>Important notes</b> <br />
                     • Losers always lose fewer points than winners gain. <br />
-                        - BUT, losers in the Grand Final don't lose any points (because it is already very unfortunate to lose in the Grand Final). <br />
+                    - BUT, losers in the Grand Final don't lose any points (because it is already very unfortunate to lose in the Grand Final). <br />
                     • Outsider losses are punished lightly. Favorite losses are punished more, but never "full price". <br />
                     • Points can't go below 0. If a team already has 0, they cannot lose more. <br />
                     <br />
@@ -494,7 +574,7 @@ const SpecialModeInfoPage = () => {
                     • BO5: 1.50 <br />
                     • BO7: 2.00 <br />
                     • BO9: 3.00 <br />
-                </p>
+                </div>
                 <p className={css.info_text}>After that, you proceed with further matches. When all the match-ups in Stage I are finished, only 16 teams are left. They qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
                 <div className={css.image_container}>
                     <img src={stageTwoQualifiersImg} alt="Stage II" className={css.image} style={{ width: '30vw', height: '50vh' }} />

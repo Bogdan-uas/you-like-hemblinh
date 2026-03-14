@@ -119,3 +119,52 @@
 .vs_text {
     font-weight: 700;
 }
+
+.team_sequence {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.team_row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.rank {
+    width: 38px;
+}
+
+.color_circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+}
+
+.team_name {
+    width: max-content;
+}
+
+.team_stage {
+    opacity: 0.7;
+}
+
+.game_title {
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: capitalize;
+    color: #2e2f42;
+}
+
+.dashed_divider {
+    border: none;
+    border-top: 4px dashed #999;
+
+}
