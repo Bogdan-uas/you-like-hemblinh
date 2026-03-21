@@ -2254,233 +2254,35 @@ export default function SpecialModePage() {
 
         setIsCalculating(true);
 
-        setTimeout(() => {
-            setSeriesState((prev) => {
-                if (!prev.active || prev.banner) return prev;
+        setSeriesState((prev) => {
+            if (!prev.active || prev.banner) return prev;
 
-                const playerWonMini = mult > 0;
-                const playerLostMini = mult < 0;
+            const playerWonMini = mult > 0;
+            const playerLostMini = mult < 0;
 
-                let resultText;
-                if (mult > 0) resultText = `Team ${prev.leftTeam.name} wins the mini-round!`;
-                else if (mult < 0) resultText = `Team ${prev.rightTeam.name} wins the mini-round!`;
-                else resultText = "No one wins this mini-round.";
+            let resultText;
+            if (mult > 0) resultText = `Team ${prev.leftTeam.name} wins the mini-round!`;
+            else if (mult < 0) resultText = `Team ${prev.rightTeam.name} wins the mini-round!`;
+            else resultText = "No one wins this mini-round.";
 
-                let {
-                    playerWonSets,
-                    playerLostSets,
-                    setNumber,
-                    roundWins,
-                    roundLosses,
-                    roundNumber,
-                    miniWins,
-                    miniLosses,
-                    isOvertime,
-                    overtimeBlock,
-                    otWins,
-                    otLosses,
-                    setsToWin: toWin,
-                } = prev;
+            let {
+                playerWonSets,
+                playerLostSets,
+                setNumber,
+                roundWins,
+                roundLosses,
+                roundNumber,
+                miniWins,
+                miniLosses,
+                isOvertime,
+                overtimeBlock,
+                otWins,
+                otLosses,
+                setsToWin: toWin,
+            } = prev;
 
-                let banner = prev.banner;
-                if (isOvertime) {
-                    let nextMiniWins = miniWins;
-                    let nextMiniLosses = miniLosses;
-
-                    if (playerWonMini) nextMiniWins += 1;
-                    else if (playerLostMini) nextMiniLosses += 1;
-
-                    if (nextMiniWins < 5 && nextMiniLosses < 5) {
-                        setIsCalculating(false);
-                        return {
-                            ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
-                            miniWins: nextMiniWins,
-                            miniLosses: nextMiniLosses,
-                        };
-                    }
-
-                    const wonOtRound = nextMiniWins >= 5;
-
-                    const updatedOtWins = otWins + (wonOtRound ? 1 : 0);
-                    const updatedOtLosses = otLosses + (wonOtRound ? 0 : 1);
-
-                    const updatedRoundWins = roundWins + (wonOtRound ? 1 : 0);
-                    const updatedRoundLosses = roundLosses + (wonOtRound ? 0 : 1);
-
-                    const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
-
-                    miniWins = 0;
-                    miniLosses = 0;
-
-                    roundNumber = roundNumber + 1;
-
-                    otWins = updatedOtWins;
-                    otLosses = updatedOtLosses;
-                    roundWins = updatedRoundWins;
-                    roundLosses = updatedRoundLosses;
-
-                    toast(
-                        <span>
-                            {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this OT round!
-                        </span>,
-                        { icon: "😜", duration: 2000 }
-                    );
-
-                    const otDecided =
-                        updatedOtWins === OT_ROUNDS_TO_WIN || updatedOtLosses === OT_ROUNDS_TO_WIN;
-
-                    if (otDecided) {
-                        const playerWonSet = updatedOtWins > updatedOtLosses;
-
-                        appendSetToCurrentMatchHistory(updatedRoundWins, updatedRoundLosses, playerWonSet);
-
-                        playerWonSets += playerWonSet ? 1 : 0;
-                        playerLostSets += playerWonSet ? 0 : 1;
-
-                        const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
-
-                        if (seriesOver) {
-                            const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
-
-                            toast(
-                                <span>
-                                    {toWin === 1 ? "This match has" : "This series have"} been WON in Overtime{" "}
-                                    {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by {renderTeamLabel(winner)}!
-                                </span>,
-                                { icon: "🎉", duration: 4000 }
-                            );
-
-                            banner = `Team ${winner.name} has won this series!`;
-                        } else {
-                            toast(
-                                <span>
-                                    The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
-                                    {overtimeBlock <= 1 ? "" : `#${overtimeBlock}`} by{" "}
-                                    {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
-                                </span>,
-                                { icon: "🤯", duration: 4000 }
-                            );
-
-                            setIsLocked(true);
-                            setTimeout(() => {
-                                setSeriesState((curr) => {
-                                    if (!curr.active || curr.banner) return curr;
-                                    setIsLocked(false);
-                                    return {
-                                        ...curr,
-                                        roundWins: 0,
-                                        roundLosses: 0,
-                                        roundNumber: 1,
-                                        setNumber: curr.setNumber + 1,
-                                        miniWins: 0,
-                                        miniLosses: 0,
-                                        isOvertime: false,
-                                        overtimeBlock: 0,
-                                        otWins: 0,
-                                        otLosses: 0,
-                                    };
-                                });
-                            }, 4000);
-                        }
-
-                        setIsCalculating(false);
-
-                        return {
-                            ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
-                            playerWonSets,
-                            playerLostSets,
-                            setNumber,
-                            roundWins,
-                            roundLosses,
-                            roundNumber,
-                            miniWins,
-                            miniLosses,
-                            isOvertime,
-                            overtimeBlock,
-                            otWins,
-                            otLosses,
-                            banner,
-                        };
-                    }
-
-                    if (otTiedBlock) {
-                        const msg =
-                            overtimeBlock === 1
-                                ? "Overtime is tied 3-3! Starting new overtime block..."
-                                : overtimeBlock === 2
-                                    ? "Another overtime block tied 3-3! Starting new overtime block..."
-                                    : overtimeBlock === 3
-                                        ? "That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block..."
-                                        : "A tie again! Impressing! Starting new overtime block...";
-
-                        toast(msg, { icon: "🔄", duration: 4000 });
-
-                        setIsLocked(true);
-                        setTimeout(() => {
-                            setSeriesState((curr) => {
-                                if (!curr.active || curr.banner) return curr;
-                                setIsLocked(false);
-                                return {
-                                    ...curr,
-                                    isOvertime: true,
-                                    overtimeBlock: (curr.overtimeBlock || 1) + 1,
-                                    roundNumber: 1,
-                                    otWins: 0,
-                                    otLosses: 0,
-                                    miniWins: 0,
-                                    miniLosses: 0,
-                                };
-                            });
-                        }, 4000);
-
-                        setIsCalculating(false);
-
-                        return {
-                            ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
-                            playerWonSets,
-                            playerLostSets,
-                            setNumber,
-                            roundWins,
-                            roundLosses,
-                            roundNumber,
-                            miniWins,
-                            miniLosses,
-                            isOvertime: true,
-                            overtimeBlock,
-                            otWins,
-                            otLosses,
-                            banner,
-                        };
-                    }
-
-                    setIsCalculating(false);
-
-                    return {
-                        ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
-                        playerWonSets,
-                        playerLostSets,
-                        setNumber,
-                        roundWins,
-                        roundLosses,
-                        roundNumber,
-                        miniWins,
-                        miniLosses,
-                        isOvertime,
-                        overtimeBlock,
-                        otWins,
-                        otLosses,
-                        banner,
-                    };
-                }
-
+            let banner = prev.banner;
+            if (isOvertime) {
                 let nextMiniWins = miniWins;
                 let nextMiniLosses = miniLosses;
 
@@ -2498,75 +2300,40 @@ export default function SpecialModePage() {
                     };
                 }
 
-                const playerWonRound = nextMiniWins >= 5;
-                roundWins += playerWonRound ? 1 : 0;
-                roundLosses += playerWonRound ? 0 : 1;
-                roundNumber += 1;
+                const wonOtRound = nextMiniWins >= 5;
+
+                const updatedOtWins = otWins + (wonOtRound ? 1 : 0);
+                const updatedOtLosses = otLosses + (wonOtRound ? 0 : 1);
+
+                const updatedRoundWins = roundWins + (wonOtRound ? 1 : 0);
+                const updatedRoundLosses = roundLosses + (wonOtRound ? 0 : 1);
+
+                const otTiedBlock = updatedOtWins === 3 && updatedOtLosses === 3;
 
                 miniWins = 0;
                 miniLosses = 0;
 
+                roundNumber = roundNumber + 1;
+
+                otWins = updatedOtWins;
+                otLosses = updatedOtLosses;
+                roundWins = updatedRoundWins;
+                roundLosses = updatedRoundLosses;
+
                 toast(
                     <span>
-                        {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this round!
+                        {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this OT round!
                     </span>,
                     { icon: "😜", duration: 2000 }
                 );
 
-                if (roundWins === 12 && roundLosses === 12) {
-                    toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
-                        icon: "⚔️",
-                        duration: 4000,
-                    });
+                const otDecided =
+                    updatedOtWins === OT_ROUNDS_TO_WIN || updatedOtLosses === OT_ROUNDS_TO_WIN;
 
-                    setIsLocked(true);
-                    setTimeout(() => {
-                        setSeriesState((curr) => {
-                            if (!curr.active || curr.banner) return curr;
-                            setIsLocked(false);
-                            return {
-                                ...curr,
-                                isOvertime: true,
-                                overtimeBlock: curr.overtimeBlock ? curr.overtimeBlock + 1 : 1,
-                                otWins: 0,
-                                otLosses: 0,
-                                roundNumber: 1,
-                                miniWins: 0,
-                                miniLosses: 0,
-                            };
-                        });
-                    }, 4000);
+                if (otDecided) {
+                    const playerWonSet = updatedOtWins > updatedOtLosses;
 
-                    setIsCalculating(false);
-
-                    return {
-                        ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
-                        playerWonSets,
-                        playerLostSets,
-                        roundWins,
-                        roundLosses,
-                        roundNumber,
-                        miniWins,
-                        miniLosses,
-                        isOvertime: true,
-                        overtimeBlock,
-                        otWins,
-                        otLosses,
-                        banner,
-                    };
-                }
-
-                const setShouldEnd =
-                    roundWins >= BASE_ROUNDS_TO_WIN ||
-                    roundLosses >= BASE_ROUNDS_TO_WIN ||
-                    roundWins + roundLosses >= BASE_MAX_ROUNDS;
-
-                if (setShouldEnd) {
-                    const playerWonSet = roundWins > roundLosses;
-
-                    appendSetToCurrentMatchHistory(roundWins, roundLosses, playerWonSet);
+                    appendSetToCurrentMatchHistory(updatedRoundWins, updatedRoundLosses, playerWonSet);
 
                     playerWonSets += playerWonSet ? 1 : 0;
                     playerLostSets += playerWonSet ? 0 : 1;
@@ -2578,7 +2345,8 @@ export default function SpecialModePage() {
 
                         toast(
                             <span>
-                                {toWin === 1 ? "This match has" : "This series have"} been WON by {renderTeamLabel(winner)}!
+                                {toWin === 1 ? "This match has" : "This series have"} been WON in Overtime{" "}
+                                {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by {renderTeamLabel(winner)}!
                             </span>,
                             { icon: "🎉", duration: 4000 }
                         );
@@ -2587,7 +2355,8 @@ export default function SpecialModePage() {
                     } else {
                         toast(
                             <span>
-                                The set {playerWonSets + playerLostSets} has been won by{" "}
+                                The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
+                                {overtimeBlock <= 1 ? "" : `#${overtimeBlock}`} by{" "}
                                 {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                             </span>,
                             { icon: "🤯", duration: 4000 }
@@ -2614,6 +2383,79 @@ export default function SpecialModePage() {
                             });
                         }, 4000);
                     }
+
+                    setIsCalculating(false);
+
+                    return {
+                        ...prev,
+                        lastMultiplier: mult,
+                        lastResult: resultText,
+                        playerWonSets,
+                        playerLostSets,
+                        setNumber,
+                        roundWins,
+                        roundLosses,
+                        roundNumber,
+                        miniWins,
+                        miniLosses,
+                        isOvertime,
+                        overtimeBlock,
+                        otWins,
+                        otLosses,
+                        banner,
+                    };
+                }
+
+                if (otTiedBlock) {
+                    const msg =
+                        overtimeBlock === 1
+                            ? "Overtime is tied 3-3! Starting new overtime block..."
+                            : overtimeBlock === 2
+                                ? "Another overtime block tied 3-3! Starting new overtime block..."
+                                : overtimeBlock === 3
+                                    ? "That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block..."
+                                    : "A tie again! Impressing! Starting new overtime block...";
+
+                    toast(msg, { icon: "🔄", duration: 4000 });
+
+                    setIsLocked(true);
+                    setTimeout(() => {
+                        setSeriesState((curr) => {
+                            if (!curr.active || curr.banner) return curr;
+                            setIsLocked(false);
+                            return {
+                                ...curr,
+                                isOvertime: true,
+                                overtimeBlock: (curr.overtimeBlock || 1) + 1,
+                                roundNumber: 1,
+                                otWins: 0,
+                                otLosses: 0,
+                                miniWins: 0,
+                                miniLosses: 0,
+                            };
+                        });
+                    }, 4000);
+
+                    setIsCalculating(false);
+
+                    return {
+                        ...prev,
+                        lastMultiplier: mult,
+                        lastResult: resultText,
+                        playerWonSets,
+                        playerLostSets,
+                        setNumber,
+                        roundWins,
+                        roundLosses,
+                        roundNumber,
+                        miniWins,
+                        miniLosses,
+                        isOvertime: true,
+                        overtimeBlock,
+                        otWins,
+                        otLosses,
+                        banner,
+                    };
                 }
 
                 setIsCalculating(false);
@@ -2636,8 +2478,164 @@ export default function SpecialModePage() {
                     otLosses,
                     banner,
                 };
-            });
-        }, 50);
+            }
+
+            let nextMiniWins = miniWins;
+            let nextMiniLosses = miniLosses;
+
+            if (playerWonMini) nextMiniWins += 1;
+            else if (playerLostMini) nextMiniLosses += 1;
+
+            if (nextMiniWins < 5 && nextMiniLosses < 5) {
+                setIsCalculating(false);
+                return {
+                    ...prev,
+                    lastMultiplier: mult,
+                    lastResult: resultText,
+                    miniWins: nextMiniWins,
+                    miniLosses: nextMiniLosses,
+                };
+            }
+
+            const playerWonRound = nextMiniWins >= 5;
+            roundWins += playerWonRound ? 1 : 0;
+            roundLosses += playerWonRound ? 0 : 1;
+            roundNumber += 1;
+
+            miniWins = 0;
+            miniLosses = 0;
+
+            toast(
+                <span>
+                    {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this round!
+                </span>,
+                { icon: "😜", duration: 2000 }
+            );
+
+            if (roundWins === 12 && roundLosses === 12) {
+                toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
+                    icon: "⚔️",
+                    duration: 4000,
+                });
+
+                setIsLocked(true);
+                setTimeout(() => {
+                    setSeriesState((curr) => {
+                        if (!curr.active || curr.banner) return curr;
+                        setIsLocked(false);
+                        return {
+                            ...curr,
+                            isOvertime: true,
+                            overtimeBlock: curr.overtimeBlock ? curr.overtimeBlock + 1 : 1,
+                            otWins: 0,
+                            otLosses: 0,
+                            roundNumber: 1,
+                            miniWins: 0,
+                            miniLosses: 0,
+                        };
+                    });
+                }, 4000);
+
+                setIsCalculating(false);
+
+                return {
+                    ...prev,
+                    lastMultiplier: mult,
+                    lastResult: resultText,
+                    playerWonSets,
+                    playerLostSets,
+                    roundWins,
+                    roundLosses,
+                    roundNumber,
+                    miniWins,
+                    miniLosses,
+                    isOvertime: true,
+                    overtimeBlock,
+                    otWins,
+                    otLosses,
+                    banner,
+                };
+            }
+
+            const setShouldEnd =
+                roundWins >= BASE_ROUNDS_TO_WIN ||
+                roundLosses >= BASE_ROUNDS_TO_WIN ||
+                roundWins + roundLosses >= BASE_MAX_ROUNDS;
+
+            if (setShouldEnd) {
+                const playerWonSet = roundWins > roundLosses;
+
+                appendSetToCurrentMatchHistory(roundWins, roundLosses, playerWonSet);
+
+                playerWonSets += playerWonSet ? 1 : 0;
+                playerLostSets += playerWonSet ? 0 : 1;
+
+                const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
+
+                if (seriesOver) {
+                    const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
+
+                    toast(
+                        <span>
+                            {toWin === 1 ? "This match has" : "This series have"} been WON by {renderTeamLabel(winner)}!
+                        </span>,
+                        { icon: "🎉", duration: 4000 }
+                    );
+
+                    banner = `Team ${winner.name} has won this series!`;
+                } else {
+                    toast(
+                        <span>
+                            The set {playerWonSets + playerLostSets} has been won by{" "}
+                            {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
+                        </span>,
+                        { icon: "🤯", duration: 4000 }
+                    );
+
+                    setIsLocked(true);
+                    setTimeout(() => {
+                        setSeriesState((curr) => {
+                            if (!curr.active || curr.banner) return curr;
+                            setIsLocked(false);
+                            return {
+                                ...curr,
+                                roundWins: 0,
+                                roundLosses: 0,
+                                roundNumber: 1,
+                                setNumber: curr.setNumber + 1,
+                                miniWins: 0,
+                                miniLosses: 0,
+                                isOvertime: false,
+                                overtimeBlock: 0,
+                                otWins: 0,
+                                otLosses: 0,
+                            };
+                        });
+                    }, 4000);
+                }
+            }
+
+            setIsCalculating(false);
+
+            return {
+                ...prev,
+                lastMultiplier: mult,
+                lastResult: resultText,
+                playerWonSets,
+                playerLostSets,
+                setNumber,
+                roundWins,
+                roundLosses,
+                roundNumber,
+                miniWins,
+                miniLosses,
+                isOvertime,
+                overtimeBlock,
+                otWins,
+                otLosses,
+                banner,
+            };
+        });
     };
     
     useEffect(() => {
