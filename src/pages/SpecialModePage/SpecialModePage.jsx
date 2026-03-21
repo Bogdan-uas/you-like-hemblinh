@@ -2249,7 +2249,7 @@ export default function SpecialModePage() {
         );
     };
 
-    const safeToast = (content, options) => {
+    const roundToast = (content, options) => {
         const now = Date.now();
 
         if (now - lastToastTime.current < 300) return;
@@ -2331,7 +2331,7 @@ export default function SpecialModePage() {
                 roundWins = updatedRoundWins;
                 roundLosses = updatedRoundLosses;
 
-                safeToast(
+                roundToast(
                     <span>
                         {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this OT round!
                     </span>,
@@ -2354,7 +2354,7 @@ export default function SpecialModePage() {
                     if (seriesOver) {
                         const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
 
-                        safeToast(
+                        toast(
                             <span>
                                 {toWin === 1 ? "This match has" : "This series have"} been WON in Overtime{" "}
                                 {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by {renderTeamLabel(winner)}!
@@ -2364,7 +2364,7 @@ export default function SpecialModePage() {
 
                         banner = `Team ${winner.name} has won this series!`;
                     } else {
-                        safeToast(
+                        toast(
                             <span>
                                 The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
                                 {overtimeBlock <= 1 ? "" : `#${overtimeBlock}`} by{" "}
@@ -2427,7 +2427,7 @@ export default function SpecialModePage() {
                                     ? "That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block..."
                                     : "A tie again! Impressing! Starting new overtime block...";
 
-                    safeToast(msg, { icon: "🔄", duration: 4000 });
+                    toast(msg, { icon: "🔄", duration: 4000 });
 
                     setIsLocked(true);
                     setTimeout(() => {
@@ -2516,7 +2516,7 @@ export default function SpecialModePage() {
             miniWins = 0;
             miniLosses = 0;
 
-            safeToast(
+            roundToast(
                 <span>
                     {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this round!
                 </span>,
@@ -2524,7 +2524,7 @@ export default function SpecialModePage() {
             );
 
             if (roundWins === 12 && roundLosses === 12) {
-                safeToast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
+                toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
                     icon: "⚔️",
                     duration: 4000,
                 });
@@ -2586,7 +2586,7 @@ export default function SpecialModePage() {
                 if (seriesOver) {
                     const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
 
-                    safeToast(
+                    toast(
                         <span>
                             {toWin === 1 ? "This match has" : "This series have"} been WON by {renderTeamLabel(winner)}!
                         </span>,
@@ -2595,7 +2595,7 @@ export default function SpecialModePage() {
 
                     banner = `Team ${winner.name} has won this series!`;
                 } else {
-                    safeToast(
+                    toast(
                         <span>
                             The set {playerWonSets + playerLostSets} has been won by{" "}
                             {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
