@@ -4253,48 +4253,37 @@ export default function SpecialModePage() {
 
         const margin = Math.abs(roundWins - roundLosses);
 
-        const MAX_MARGIN = 10;
-
-        const dominance = Math.min(margin / MAX_MARGIN, 1);
-
-        const getVisualStrength = (isLeadingSide, isBehindSide) => {
+        const getVisualStrength = (isBehindSide) => {
             if (margin === 0) {
                 return {
                     opacity: 1,
                     brightness: 1,
+                    scale: 1,
                 };
             }
 
-            let opacity = isLeadingSide
-                ? 1
-                : 1 - dominance * 0.6;
-
-            let brightness = isLeadingSide
-                ? 1 + dominance * 0.4
-                : 1 - dominance * 0.5;
+            let opacity = 1;
+            let brightness = 1;
+            let scale = 1;
 
             if (isBehindSide) {
                 brightness += comebackIntensity * 0.8;
-                opacity += comebackIntensity * 0.2;
-            }
-
-            if (isLeadingSide && margin >= 3) {
-                brightness -= comebackIntensity * 0.3;
+                scale += comebackIntensity * 0.12;
+                opacity += comebackIntensity * 0.1;
             }
 
             return {
                 opacity,
                 brightness,
+                scale,
             };
         };
 
         const leftVisual = getVisualStrength(
-            roundWins >= roundLosses,
             leftIsBehind
         );
 
         const rightVisual = getVisualStrength(
-            roundLosses >= roundWins,
             rightIsBehind
         );
 
