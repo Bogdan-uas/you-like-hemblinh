@@ -4500,10 +4500,7 @@ export default function SpecialModePage() {
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
                                                 opacity: leftVisual.opacity,
-                                                filter: `
-                                                            brightness(${leftVisual.brightness})
-                                                            saturate(${1 + comebackIntensity})
-                                                        `,
+                                                filter: `brightness(${leftVisual.brightness})`,
                                                 textShadow:
                                                     roundWins === overtimeTarget
                                                         ?
@@ -4820,10 +4817,7 @@ export default function SpecialModePage() {
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
                                                 opacity: rightVisual.opacity,
-                                                filter: `
-                                                            brightness(${rightVisual.brightness})
-                                                            saturate(${1 + comebackIntensity})
-                                                        `,
+                                                filter: `brightness(${rightVisual.brightness})`,
                                                 textShadow:
                                                     roundLosses === overtimeTarget
                                                         ?
