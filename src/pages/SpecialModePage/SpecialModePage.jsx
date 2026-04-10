@@ -416,7 +416,7 @@ const applyRatings = ({
     );
 
     if (phase === "playoffs" && playoffsStage === "gf") {
-        losePoints = 0;
+        losePoints = Math.round(winPoints * 0.2);
     }
 
     next[winnerId] = clampMin0(beforePointsW + winPoints);
@@ -2356,18 +2356,18 @@ export default function SpecialModePage() {
 
                         toast(
                             <span>
-                                {toWin === 1 ? "This match has" : "This series have"} been WON in Overtime{" "}
-                                {overtimeBlock <= 1 ? "" : ` #${overtimeBlock}`} by {renderTeamLabel(winner)}!
+                                This match has been WON in Overtime{" "}
+                                #{overtimeBlock} by {renderTeamLabel(winner)}!
                             </span>,
                             { icon: "🎉", duration: 4000 }
                         );
 
-                        banner = `Team ${winner.name} has won this series!`;
+                        banner = `Team ${winner.name} has won this match!`;
                     } else {
                         toast(
                             <span>
                                 The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
-                                {overtimeBlock <= 1 ? "" : `#${overtimeBlock}`} by{" "}
+                                #{overtimeBlock} by{" "}
                                 {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                             </span>,
                             { icon: "🤯", duration: 4000 }
@@ -2588,12 +2588,12 @@ export default function SpecialModePage() {
 
                     toast(
                         <span>
-                            {toWin === 1 ? "This match has" : "This series have"} been WON by {renderTeamLabel(winner)}!
+                            This match has been WON by {renderTeamLabel(winner)}!
                         </span>,
                         { icon: "🎉", duration: 4000 }
                     );
 
-                    banner = `Team ${winner.name} has won this series!`;
+                    banner = `Team ${winner.name} has won this match!`;
                 } else {
                     toast(
                         <span>
@@ -4244,6 +4244,67 @@ export default function SpecialModePage() {
             banner,
         } = seriesState;
 
+        const scoreDiff = Math.abs(roundWins - roundLosses);
+
+        const leftIsBehind = roundWins < roundLosses;
+        const rightIsBehind = roundLosses < roundWins;
+
+        const comebackIntensity = Math.min(scoreDiff / 10, 1);
+
+        const margin = Math.abs(roundWins - roundLosses);
+
+        const MAX_MARGIN = 10;
+
+        const dominance = Math.min(margin / MAX_MARGIN, 1);
+
+        const getVisualStrength = (isLeadingSide, isBehindSide) => {
+            if (margin === 0) {
+                return {
+                    opacity: 1,
+                    brightness: 1,
+                    scale: 1,
+                };
+            }
+
+            let opacity = isLeadingSide
+                ? 1
+                : 1 - dominance * 0.6;
+
+            let brightness = isLeadingSide
+                ? 1 + dominance * 0.4
+                : 1 - dominance * 0.5;
+
+            let scale = isLeadingSide
+                ? 1 + dominance * 0.15
+                : 1 - dominance * 0.05;
+
+            if (isBehindSide) {
+                brightness += comebackIntensity * 0.8;
+                scale += comebackIntensity * 0.15;
+                opacity += comebackIntensity * 0.2;
+            }
+
+            if (isLeadingSide && margin >= 3) {
+                brightness -= comebackIntensity * 0.3;
+            }
+
+            return {
+                opacity,
+                brightness,
+                scale,
+            };
+        };
+
+        const leftVisual = getVisualStrength(
+            roundWins >= roundLosses,
+            leftIsBehind
+        );
+
+        const rightVisual = getVisualStrength(
+            roundLosses >= roundWins,
+            rightIsBehind
+        );
+
         return (
             <>
                 <Header
@@ -4376,13 +4437,18 @@ export default function SpecialModePage() {
                                         color: seriesState.leftTeam?.color,
                                         fontSize: "16px",
                                         transition: "all 500ms ease-in-out",
-                                        textShadow: seriesState.leftTeam?.shadow,
+                                        textShadow: `
+                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                        `
+                                        ,
                                         marginBottom: "4px",
                                         marginLeft: activePhase === "playoffs" ? '0' : '8px',
                                         marginTop: "-28px"
                                     }}
                                 >
-                                    {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
+                                    MATCH POINT!!!
                                 </motion.span>
                             ) : (
                                 isSetPointWins && (
@@ -4395,7 +4461,12 @@ export default function SpecialModePage() {
                                             color: seriesState.leftTeam?.color,
                                             fontSize: "16px",
                                             transition: "all 500ms ease-in-out",
-                                            textShadow: seriesState.leftTeam?.shadow,
+                                            textShadow: `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                            ,
                                             marginBottom: "4px",
                                             marginLeft: activePhase === "playoffs" ? '0' : '8px',
                                             marginTop: "-28px"
@@ -4430,7 +4501,13 @@ export default function SpecialModePage() {
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px' }}>
-                                    <span className={css.round_text}>
+                                    <motion.span
+                                        key={roundWins}
+                                        initial={{ scale: 1.1, opacity: 0.6 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ duration: 0.5 }}
+                                        className={css.round_text}
+                                    >
                                         <CountUp
                                             key={roundWins}
                                             start={Math.max(roundWins - 1, 0)}
@@ -4440,27 +4517,59 @@ export default function SpecialModePage() {
                                                 color: seriesState.leftTeam?.color,
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
+                                                opacity: leftVisual.opacity,
+                                                transform: `scale(${leftVisual.scale})`,
+                                                filter: `
+                                                            brightness(${leftVisual.brightness})
+                                                            saturate(${1 + comebackIntensity})
+                                                        `,
                                                 textShadow:
                                                     roundWins === overtimeTarget
-                                                        ? seriesState.leftTeam?.shadow
-                                                        : "none",
+                                                        ?
+                                                        `
+                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                        `
+                                                        :
+                                                        "none",
                                             }}
                                         />
-                                    </span>
+                                    </motion.span>
                                     <div className={css.lines}>
                                         {activePhase !== "playoffs" && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                        style={{
+                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow: playerWonSets >= i + 1 ?
+                                                                `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 2px 6px rgba(0,0,0,0.4)
+                                                                `
+                                                                :
+                                                                ''
+                                                        }}
                                                         className={css.line}
                                                     />
                                                 ))}
                                             </>
                                         ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                             <div
-                                                style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                style={{
+                                                    backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                    boxShadow: playerWonSets >= 1 ?
+                                                        `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                        :
+                                                        ''
+                                                }}
                                                 className={css.line}
                                             />
                                         ) : null}
@@ -4479,8 +4588,14 @@ export default function SpecialModePage() {
                                                             : seriesState.leftTeam?.unlitColor,
                                                     boxShadow:
                                                         i < miniWins
-                                                            ? seriesState.leftTeam?.shadow
-                                                            : 'none',
+                                                            ?
+                                                            `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            'none',
                                                 }}
                                             />
                                         ))}
@@ -4492,7 +4607,18 @@ export default function SpecialModePage() {
                                             {[...Array(5)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ height: "12px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    style={{
+                                                        height: "12px",
+                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                        boxShadow: playerWonSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
@@ -4502,7 +4628,18 @@ export default function SpecialModePage() {
                                             {[...Array(4)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ height: "14px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    style={{
+                                                        height: "14px",
+                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                        boxShadow: playerWonSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
@@ -4512,7 +4649,18 @@ export default function SpecialModePage() {
                                             {[...Array(3)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ height: "16px", backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    style={{
+                                                        height: "16px",
+                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                        boxShadow: playerWonSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
@@ -4522,14 +4670,34 @@ export default function SpecialModePage() {
                                             {[...Array(2)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= i + 1 ? seriesState.leftTeam?.shadow : '' }}
+                                                    style={{
+                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                        boxShadow: playerWonSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 1 ? (
                                         <div
-                                            style={{ backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor, boxShadow: playerWonSets >= 1 ? seriesState.leftTeam?.shadow : '' }}
+                                            style={{
+                                                backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                boxShadow: playerWonSets >= 1 ?
+                                                    `
+                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                        0 2px 6px rgba(0,0,0,0.4)
+                                                    `
+                                                    :
+                                                    ''
+                                            }}
                                             className={css.verticalLine}
                                         />
                                     ) : null}
@@ -4586,13 +4754,17 @@ export default function SpecialModePage() {
                                         color: seriesState.rightTeam?.color,
                                         fontSize: "16px",
                                         transition: "all 500ms ease-in-out",
-                                        textShadow: seriesState.rightTeam?.shadow,
+                                        textShadow: `
+                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                        `,
                                         marginBottom: "4px",
                                         marginRight: activePhase === "playoffs" ? '0' : '8px',
                                         marginTop: "-28px"
                                     }}
                                 >
-                                    {setsToWin === 1 ? "MATCH" : "SERIES"} POINT!!!
+                                    MATCH POINT!!!
                                 </motion.span>
                             ) : (
                                 isSetPointLosses && (
@@ -4605,7 +4777,11 @@ export default function SpecialModePage() {
                                             color: seriesState.rightTeam?.color,
                                             fontSize: "16px",
                                             transition: "all 500ms ease-in-out",
-                                            textShadow: seriesState.rightTeam?.shadow,
+                                            textShadow: `
+                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                        `,
                                             marginBottom: "4px",
                                             marginRight: activePhase === "playoffs" ? '0' : '8px',
                                             marginTop: "-28px"
@@ -4646,7 +4822,13 @@ export default function SpecialModePage() {
                                         width: '50.1px'
                                     }}
                                 >
-                                    <span className={css.round_text}>
+                                    <motion.span
+                                        key={roundLosses}
+                                        initial={{ scale: 1.1, opacity: 0.6 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ duration: 0.5 }}
+                                        className={css.round_text}
+                                    >
                                         <CountUp
                                             key={roundLosses}
                                             start={Math.max(roundLosses - 1, 0)}
@@ -4656,27 +4838,59 @@ export default function SpecialModePage() {
                                                 color: seriesState.rightTeam?.color,
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
+                                                opacity: rightVisual.opacity,
+                                                transform: `scale(${rightVisual.scale})`,
+                                                filter: `
+                                                            brightness(${rightVisual.brightness})
+                                                            saturate(${1 + comebackIntensity})
+                                                        `,
                                                 textShadow:
                                                     roundLosses === overtimeTarget
-                                                        ? seriesState.rightTeam?.shadow
-                                                        : "none",
+                                                        ?
+                                                        `
+                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                        `
+                                                        :
+                                                        "none",
                                             }}
                                         />
-                                    </span>
+                                    </motion.span>
                                     <div className={css.lossLines}>
                                         {activePhase !== "playoffs" && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                        style={{
+                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow: playerLostSets >= i + 1 ?
+                                                                `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 2px 6px rgba(0,0,0,0.4)
+                                                                `
+                                                                :
+                                                                ''
+                                                        }}
                                                         className={css.line}
                                                     />
                                                 ))}
                                             </>
                                         ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                             <div
-                                                style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                style={{
+                                                    backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                    boxShadow: playerLostSets >= 1 ?
+                                                        `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                        :
+                                                        ''
+                                                }}
                                                 className={`${css.line} ${playerLostSets >= 1
                                                     ? css.lineLoss
                                                     : css.lineDarkLoss
@@ -4698,8 +4912,14 @@ export default function SpecialModePage() {
                                                             : seriesState.rightTeam?.unlitColor,
                                                     boxShadow:
                                                         i < miniLosses
-                                                            ? seriesState.rightTeam?.shadow
-                                                            : 'none'
+                                                            ?
+                                                            `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            'none'
                                                 }}
                                             />
                                         ))}
@@ -4711,7 +4931,18 @@ export default function SpecialModePage() {
                                             {[...Array(5)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ height: "12px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    style={{
+                                                        height: "12px",
+                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                        boxShadow: playerLostSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
@@ -4721,7 +4952,18 @@ export default function SpecialModePage() {
                                             {[...Array(4)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ height: "14px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    style={{
+                                                        height: "14px",
+                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                        boxShadow: playerLostSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
@@ -4731,7 +4973,18 @@ export default function SpecialModePage() {
                                             {[...Array(3)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ height: "16px", backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    style={{
+                                                        height: "16px",
+                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                        boxShadow: playerLostSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
@@ -4741,14 +4994,34 @@ export default function SpecialModePage() {
                                             {[...Array(2)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{ backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= i + 1 ? seriesState.rightTeam?.shadow : '' }}
+                                                    style={{
+                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                        boxShadow: playerLostSets >= i + 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
                                                     className={css.verticalLine}
                                                 />
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 1 ? (
                                         <div
-                                            style={{ backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor, boxShadow: playerLostSets >= 1 ? seriesState.rightTeam?.shadow : '' }}
+                                            style={{
+                                                backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                boxShadow: playerLostSets >= 1 ?
+                                                    `
+                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                        0 2px 6px rgba(0,0,0,0.4)
+                                                    `
+                                                    :
+                                                    ''
+                                            }}
                                             className={css.verticalLine}
                                         />
                                     ) : null}
