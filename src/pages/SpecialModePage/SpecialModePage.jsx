@@ -4244,45 +4244,6 @@ export default function SpecialModePage() {
             banner,
         } = seriesState;
 
-        const scoreDiff = Math.abs(roundWins - roundLosses);
-
-        const leftIsBehind = roundWins < roundLosses;
-        const rightIsBehind = roundLosses < roundWins;
-
-        const comebackIntensity = Math.min(scoreDiff / 10, 1);
-
-        const margin = Math.abs(roundWins - roundLosses);
-
-        const getVisualStrength = (isBehindSide) => {
-            if (margin === 0) {
-                return {
-                    opacity: 1,
-                    brightness: 1,
-                };
-            }
-
-            let opacity = 1;
-            let brightness = 1;
-
-            if (isBehindSide) {
-                brightness += comebackIntensity * 1.1;
-                opacity += comebackIntensity * 0.2;
-            }
-
-            return {
-                opacity,
-                brightness,
-            };
-        };
-
-        const leftVisual = getVisualStrength(
-            leftIsBehind
-        );
-
-        const rightVisual = getVisualStrength(
-            rightIsBehind
-        );
-
         return (
             <>
                 <Header
@@ -4495,8 +4456,6 @@ export default function SpecialModePage() {
                                                 color: seriesState.leftTeam?.color,
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
-                                                opacity: leftVisual.opacity,
-                                                filter: `brightness(${leftVisual.brightness})`,
                                                 textShadow:
                                                     roundWins === overtimeTarget
                                                         ?
@@ -4812,8 +4771,6 @@ export default function SpecialModePage() {
                                                 color: seriesState.rightTeam?.color,
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
-                                                opacity: rightVisual.opacity,
-                                                filter: `brightness(${rightVisual.brightness})`,
                                                 textShadow:
                                                     roundLosses === overtimeTarget
                                                         ?
