@@ -4267,9 +4267,9 @@ export default function SpecialModePage() {
             let scale = 1;
 
             if (isBehindSide) {
-                brightness += comebackIntensity * 0.8;
+                brightness += comebackIntensity * 1.1;
                 scale += comebackIntensity * 0.12;
-                opacity += comebackIntensity * 0.1;
+                opacity += comebackIntensity * 0.2;
             }
 
             return {
