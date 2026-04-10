@@ -4262,7 +4262,6 @@ export default function SpecialModePage() {
                 return {
                     opacity: 1,
                     brightness: 1,
-                    scale: 1,
                 };
             }
 
@@ -4274,13 +4273,8 @@ export default function SpecialModePage() {
                 ? 1 + dominance * 0.4
                 : 1 - dominance * 0.5;
 
-            let scale = isLeadingSide
-                ? 1 + dominance * 0.15
-                : 1 - dominance * 0.05;
-
             if (isBehindSide) {
                 brightness += comebackIntensity * 0.8;
-                scale += comebackIntensity * 0.15;
                 opacity += comebackIntensity * 0.2;
             }
 
@@ -4291,7 +4285,6 @@ export default function SpecialModePage() {
             return {
                 opacity,
                 brightness,
-                scale,
             };
         };
 
@@ -4518,7 +4511,6 @@ export default function SpecialModePage() {
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
                                                 opacity: leftVisual.opacity,
-                                                transform: `scale(${leftVisual.scale})`,
                                                 filter: `
                                                             brightness(${leftVisual.brightness})
                                                             saturate(${1 + comebackIntensity})
@@ -4839,7 +4831,6 @@ export default function SpecialModePage() {
                                                 fontSize: "45px",
                                                 transition: "all 2000ms ease-in-out",
                                                 opacity: rightVisual.opacity,
-                                                transform: `scale(${rightVisual.scale})`,
                                                 filter: `
                                                             brightness(${rightVisual.brightness})
                                                             saturate(${1 + comebackIntensity})
