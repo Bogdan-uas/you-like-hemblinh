@@ -4258,24 +4258,20 @@ export default function SpecialModePage() {
                 return {
                     opacity: 1,
                     brightness: 1,
-                    scale: 1,
                 };
             }
 
             let opacity = 1;
             let brightness = 1;
-            let scale = 1;
 
             if (isBehindSide) {
                 brightness += comebackIntensity * 1.1;
-                scale += comebackIntensity * 0.12;
                 opacity += comebackIntensity * 0.2;
             }
 
             return {
                 opacity,
                 brightness,
-                scale,
             };
         };
 
