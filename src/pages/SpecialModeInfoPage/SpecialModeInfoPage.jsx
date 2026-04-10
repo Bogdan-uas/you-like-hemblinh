@@ -554,7 +554,7 @@ const SpecialModeInfoPage = () => {
                     <br />
                     <b>Important notes</b> <br />
                     • Losers always lose fewer points than winners gain. <br />
-                    - BUT, losers in the Grand Final don't lose any points (because it is already very unfortunate to lose in the Grand Final). <br />
+                    - BUT, losers in the Grand Final lose less points than usual (because it is already very unfortunate to lose in the Grand Final). <br />
                     • Outsider losses are punished lightly. Favorite losses are punished more, but never "full price". <br />
                     • Points can't go below 0. If a team already has 0, they cannot lose more. <br />
                     <br />
