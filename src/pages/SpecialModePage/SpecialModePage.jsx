@@ -4379,7 +4379,7 @@ export default function SpecialModePage() {
                                         textShadow: `
                                                             0 0 3px ${seriesState.leftTeam?.color},
                                                             0 0 7px ${seriesState.leftTeam?.color}66,
-                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                            0 1px 3px rgba(0,0,0,0.4)
                                                         `
                                         ,
                                         marginBottom: "4px",
@@ -4403,7 +4403,7 @@ export default function SpecialModePage() {
                                             textShadow: `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                             ,
                                             marginBottom: "4px",
@@ -4462,7 +4462,7 @@ export default function SpecialModePage() {
                                                         `
                                                             0 0 3px ${seriesState.leftTeam?.color},
                                                             0 0 7px ${seriesState.leftTeam?.color}66,
-                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                            0 1px 3px rgba(0,0,0,0.4)
                                                         `
                                                         :
                                                         "none",
@@ -4481,7 +4481,7 @@ export default function SpecialModePage() {
                                                                 `
                                                                     0 0 3px ${seriesState.leftTeam?.color},
                                                                     0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                    0 2px 6px rgba(0,0,0,0.4)
+                                                                    0 1px 3px rgba(0,0,0,0.4)
                                                                 `
                                                                 :
                                                                 ''
@@ -4498,7 +4498,7 @@ export default function SpecialModePage() {
                                                         `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                         :
                                                         ''
@@ -4525,7 +4525,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             'none',
@@ -4547,7 +4547,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4568,7 +4568,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4589,7 +4589,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4609,7 +4609,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4626,7 +4626,7 @@ export default function SpecialModePage() {
                                                     `
                                                         0 0 3px ${seriesState.leftTeam?.color},
                                                         0 0 7px ${seriesState.leftTeam?.color}66,
-                                                        0 2px 6px rgba(0,0,0,0.4)
+                                                        0 1px 3px rgba(0,0,0,0.4)
                                                     `
                                                     :
                                                     ''
@@ -4690,7 +4690,7 @@ export default function SpecialModePage() {
                                         textShadow: `
                                                             0 0 3px ${seriesState.rightTeam?.color},
                                                             0 0 7px ${seriesState.rightTeam?.color}66,
-                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                            0 1px 3px rgba(0,0,0,0.4)
                                                         `,
                                         marginBottom: "4px",
                                         marginRight: activePhase === "playoffs" ? '0' : '8px',
@@ -4713,7 +4713,7 @@ export default function SpecialModePage() {
                                             textShadow: `
                                                             0 0 3px ${seriesState.rightTeam?.color},
                                                             0 0 7px ${seriesState.rightTeam?.color}66,
-                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                            0 1px 3px rgba(0,0,0,0.4)
                                                         `,
                                             marginBottom: "4px",
                                             marginRight: activePhase === "playoffs" ? '0' : '8px',
@@ -4777,7 +4777,7 @@ export default function SpecialModePage() {
                                                         `
                                                             0 0 3px ${seriesState.rightTeam?.color},
                                                             0 0 7px ${seriesState.rightTeam?.color}66,
-                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                            0 1px 3px rgba(0,0,0,0.4)
                                                         `
                                                         :
                                                         "none",
@@ -4796,7 +4796,7 @@ export default function SpecialModePage() {
                                                                 `
                                                                     0 0 3px ${seriesState.rightTeam?.color},
                                                                     0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                    0 2px 6px rgba(0,0,0,0.4)
+                                                                    0 1px 3px rgba(0,0,0,0.4)
                                                                 `
                                                                 :
                                                                 ''
@@ -4813,7 +4813,7 @@ export default function SpecialModePage() {
                                                         `
                                                                 0 0 3px ${seriesState.rightTeam?.color},
                                                                 0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                         :
                                                         ''
@@ -4843,7 +4843,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.rightTeam?.color},
                                                                 0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             'none'
@@ -4865,7 +4865,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.rightTeam?.color},
                                                                 0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4886,7 +4886,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.rightTeam?.color},
                                                                 0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4907,7 +4907,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.rightTeam?.color},
                                                                 0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4927,7 +4927,7 @@ export default function SpecialModePage() {
                                                             `
                                                                 0 0 3px ${seriesState.rightTeam?.color},
                                                                 0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 2px 6px rgba(0,0,0,0.4)
+                                                                0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
                                                             ''
@@ -4944,7 +4944,7 @@ export default function SpecialModePage() {
                                                     `
                                                         0 0 3px ${seriesState.rightTeam?.color},
                                                         0 0 7px ${seriesState.rightTeam?.color}66,
-                                                        0 2px 6px rgba(0,0,0,0.4)
+                                                        0 1px 3px rgba(0,0,0,0.4)
                                                     `
                                                     :
                                                     ''
