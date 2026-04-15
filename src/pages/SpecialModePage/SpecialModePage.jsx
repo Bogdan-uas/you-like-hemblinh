@@ -4442,10 +4442,11 @@ export default function SpecialModePage() {
                                 <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px' }}>
                                     <motion.span
                                         key={roundWins}
-                                        initial={{ scale: 1.1, opacity: 0.6 }}
+                                        initial={{ scale: 1.05, opacity: 0.6 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ duration: 0.5 }}
                                         className={css.round_text}
+                                        style={{ height: '76px' }}
                                     >
                                         <CountUp
                                             key={roundWins}
@@ -4454,7 +4455,7 @@ export default function SpecialModePage() {
                                             duration={1}
                                             style={{
                                                 color: seriesState.leftTeam?.color,
-                                                fontSize: "45px",
+                                                fontSize: "52px",
                                                 transition: "all 2000ms ease-in-out",
                                                 textShadow:
                                                     roundWins === overtimeTarget
@@ -4757,10 +4758,11 @@ export default function SpecialModePage() {
                                 >
                                     <motion.span
                                         key={roundLosses}
-                                        initial={{ scale: 1.1, opacity: 0.6 }}
+                                        initial={{ scale: 1.05, opacity: 0.6 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ duration: 0.5 }}
                                         className={css.round_text}
+                                        style={{ height: '76px' }}
                                     >
                                         <CountUp
                                             key={roundLosses}
@@ -4769,7 +4771,7 @@ export default function SpecialModePage() {
                                             duration={1}
                                             style={{
                                                 color: seriesState.rightTeam?.color,
-                                                fontSize: "45px",
+                                                fontSize: "52px",
                                                 transition: "all 2000ms ease-in-out",
                                                 textShadow:
                                                     roundLosses === overtimeTarget
