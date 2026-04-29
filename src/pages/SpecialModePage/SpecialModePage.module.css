@@ -891,6 +891,11 @@
     color: #2e2f42;
 }
 
+.roundText {
+    font-size: 18px;
+    font-weight: 700;
+}
+
 .scoreboard {
     display: flex;
     align-items: center;

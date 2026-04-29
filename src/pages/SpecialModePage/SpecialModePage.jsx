@@ -5224,7 +5224,7 @@ export default function SpecialModePage() {
                                                         ))
                                                     ) : (
                                                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                                            <FaTrophy />:{trophyDisplay.n}
+                                                            {trophyDisplay.n} <FaTrophy />
                                                         </span>
                                                     )}
                                                 </span>
