@@ -841,7 +841,7 @@ const saveTeamPlacings = (placings) => {
 
 const trophyCountToDisplay = (n) => {
     if (!n) return null;
-    if (n < 6) return { mode: "icons", n };
+    if (n < 11) return { mode: "icons", n };
     return { mode: "count", n };
 };
 
