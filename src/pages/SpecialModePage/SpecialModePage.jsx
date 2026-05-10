@@ -6383,8 +6383,7 @@ export default function SpecialModePage() {
 
                                                                 return (
                                                                     <>
-                                                                        {getPlacementBadge(winnerIsLeft, leftIsLoser)}
-                                                                        <span style={{ top: '-60px', left: '-55px' }} className={css.modal_team_placing}>
+                                                                        <span style={{ top: '-60px' }} className={css.modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
                                                                                     {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
@@ -6394,7 +6393,8 @@ export default function SpecialModePage() {
                                                                                 {formatOrdinal(afterRank)}
                                                                             </span>
                                                                         </span>
-                                                                        <span style={{ width : 'max-content', top: '62%' }} className={css.modal_team_label}>
+                                                                        <span style={{ width: 'max-content', top: '62%' }} className={css.modal_team_label}>
+                                                                            {getPlacementBadge(winnerIsLeft, leftIsLoser)}
                                                                             <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }}>
                                                                                 {modalPlayedLeft?.name}
                                                                             </span>
@@ -6453,7 +6453,8 @@ export default function SpecialModePage() {
                                                                                 {formatOrdinal(afterRank)}
                                                                             </span>
                                                                         </span>
-                                                                        <span style={{ width : 'max-content', top: '62%' }} className={css.modal_team_label}>
+                                                                        <span style={{ width: 'max-content', top: '62%' }} className={css.modal_team_label}>
+                                                                            {getPlacementBadge(winnerIsLeft, leftIsLoser)}
                                                                             <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }}>
                                                                                 {modalPlayedRight?.name}
                                                                             </span>
