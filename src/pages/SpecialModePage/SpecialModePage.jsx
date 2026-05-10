@@ -6325,34 +6325,34 @@ export default function SpecialModePage() {
                                     const isGrandFinal = stage === "gf";
                                     const isThirdPlace = stage === "thirdPlace";
 
-                                    const getPlacementBadge = (isWinner, isLoser) => {
-                                        if (isGrandFinal) {
-                                            if (isWinner) {
-                                                return (
-                                                    <span style={{ marginRight: '2px', display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                                        <FaTrophy />+
-                                                    </span>
-                                                );
-                                            }
-                                            if (isLoser) {
-                                                return (
-                                                    <span style={{ marginRight: '2px' }}>
-                                                        🥈+
-                                                    </span>
-                                                );
-                                            }
-                                        }
-
-                                        if (isThirdPlace && isWinner) {
+                                const getPlacementBadge = (isWinner, isLoser) => {
+                                    if (isGrandFinal) {
+                                        if (isWinner) {
                                             return (
-                                                <span style={{ marginRight: '2px' }}>
-                                                    🥉+
+                                                <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                    <FaTrophy style={{ color: '#2e2f42' }} />+
                                                 </span>
                                             );
                                         }
+                                        if (isLoser) {
+                                            return (
+                                                <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
+                                                    🥈+
+                                                </span>
+                                            );
+                                        }
+                                    }
 
-                                        return null;
-                                    };
+                                    if (isThirdPlace && isWinner) {
+                                        return (
+                                            <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
+                                                🥉+
+                                            </span>
+                                        );
+                                    }
+
+                                    return null;
+                                };
 
                                     return (
                                         <>
