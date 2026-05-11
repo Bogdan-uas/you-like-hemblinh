@@ -1167,6 +1167,8 @@ export default function SpecialModePage() {
     const [neededPickemPoints, setNeededPickemPoints] = useState(() => getRandomNeededPickemPoints());
     const [finalPickemPoints, setFinalPickemPoints] = useState(0);
 
+    const [hoveredTeamId, setHoveredTeamId] = useState(null);
+
     const [guessedCounts, setGuessedCounts] = useState({
         stage1: 0,
         stage2: 0,
@@ -5053,6 +5055,34 @@ export default function SpecialModePage() {
         );
     }
 
+    const rankLeftSticker = rankById[modalLeftTeam?.id] === 1 ? (
+        <span style={{ color: 'gold' }}>
+            1st
+        </span>
+    ) : rankById[modalLeftTeam?.id] === 2 ?
+        <span style={{ color: 'silver' }}>
+            2nd
+        </span>
+        : rankById[modalLeftTeam?.id] === 3 ?
+            <span style={{ color: '#cd7f32' }}>
+                3rd
+            </span>
+            : null;
+
+    const rankRightSticker = rankById[modalRightTeam?.id] === 1 ? (
+        <span style={{ color: 'gold' }}>
+            1st
+        </span>
+    ) : rankById[modalRightTeam?.id] === 2 ?
+        <span style={{ color: 'silver' }}>
+            2nd
+        </span>
+        : rankById[modalRightTeam?.id] === 3 ?
+            <span style={{ color: '#cd7f32' }}>
+                3rd
+            </span>
+            : null;
+
     if (isLeaderboardOpen) {
         return (
             <>
@@ -6236,60 +6266,128 @@ export default function SpecialModePage() {
                                         Which team you'd pick?
                                     </p>
                                     <div className={css.match_modal_row}>
-                                        <button
-                                            type="button"
-                                            className={`${css.modal_team_btn} ${hasChosen ? css.modal_team_selected : ""
-                                                }`}
-                                            onClick={handleChooseLeft}
-                                        >
-                                            <div
-                                                className={css.modal_team_circle}
-                                                style={{ background: modalLeftTeam?.color }}
+                                        <div className={css.modal_team_btn}>
+                                            <button
+                                                type="button"
+                                                onClick={handleChooseLeft}
+                                                onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
+                                                onMouseLeave={() => setHoveredTeamId(null)}
+                                                style={{
+                                                    all: "unset",
+                                                    cursor: "pointer",
+                                                    borderRadius: "50%"
+                                                }}
                                             >
-                                                <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_rating}>
-                                                    <CountUp
-                                                        start={0}
-                                                        duration={1.2}
-                                                        end={teamRatings[modalLeftTeam?.id] ?? 0}
-                                                        key={teamRatings[modalLeftTeam?.id] ?? 0}
-                                                    />
+                                                <TeamCircle
+                                                    team={modalLeftTeam}
+                                                    showRating
+                                                    ratingValue={teamRatings?.[modalLeftTeam?.id] ?? 0}
+                                                    specialStyle={{
+                                                        width: "64px",
+                                                        height: "64px",
+                                                        border:
+                                                            hasChosen
+                                                                ? "3px solid #0d6aff"
+                                                                : "3px solid #999",
+
+                                                        boxShadow:
+                                                            hasChosen
+                                                                ? "0 0 8px 2px #0d6aff"
+                                                                : hoveredTeamId === modalLeftTeam?.id
+                                                                    ? "0 0 4px 1px #0d6aff"
+                                                                    : "none",
+                                                    }}
+                                                />
+                                                <span
+                                                    style={{
+                                                        color: "#fff",
+                                                        textShadow:
+                                                            hasChosen
+                                                                ? "0 0 8px #0d6aff"
+                                                                : hoveredTeamId === modalLeftTeam?.id
+                                                                    ? "0 0 4px #0d6aff"
+                                                                    : "0 0 4px #000",
+                                                    }}
+                                                    className={css.modal_team_placing}
+                                                >
+                                                    {rankLeftSticker ?? formatOrdinal(rankById[modalLeftTeam?.id] || 64)}
                                                 </span>
-                                            </div>
-                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_placing}>
-                                                {formatOrdinal(rankById[modalLeftTeam?.id] || 64)} <br />
-                                            </span>
-                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_label}>
-                                                {modalLeftTeam?.name}
-                                            </span>
-                                        </button>
+
+                                                <span
+                                                    style={{
+                                                        color: "#fff",
+                                                        textShadow:
+                                                            hasChosen
+                                                                ? "0 0 8px #0d6aff"
+                                                                : hoveredTeamId === modalLeftTeam?.id
+                                                                    ? "0 0 4px #0d6aff"
+                                                                    : "0 0 4px #000",
+                                                    }}
+                                                    className={css.modal_team_label}
+                                                >
+                                                    {modalLeftTeam?.name}
+                                                </span>
+                                            </button>
+                                        </div>
 
                                         <p className={css.modal_vs}>VS</p>
 
-                                        <button
-                                            type="button"
-                                            className={css.modal_team_btn}
-                                            onClick={handleChooseRight}
-                                        >
-                                            <div
-                                                className={css.modal_team_circle}
-                                                style={{ background: modalRightTeam?.color }}
+                                        <div className={css.modal_team_btn}>
+                                            <button
+                                                type="button"
+                                                onClick={handleChooseRight}
+                                                onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
+                                                onMouseLeave={() => setHoveredTeamId(null)}
+                                                style={{
+                                                    all: "unset",
+                                                    cursor: "pointer",
+                                                    borderRadius: "50%"
+                                                }}
                                             >
-                                                <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_rating}>
-                                                    <CountUp
-                                                        start={0}
-                                                        duration={1.2}
-                                                        end={teamRatings[modalRightTeam?.id] ?? 0}
-                                                        key={teamRatings[modalRightTeam?.id] ?? 0}
-                                                    />
+                                                <TeamCircle
+                                                    team={modalRightTeam}
+                                                    showRating
+                                                    ratingValue={teamRatings?.[modalRightTeam?.id] ?? 0}
+                                                    specialStyle={{
+                                                        width: "64px",
+                                                        height: "64px",
+                                                        border: "3px solid #999",
+
+                                                        boxShadow:
+                                                            hoveredTeamId === modalRightTeam?.id
+                                                                ? "0 0 4px 1px #0d6aff"
+                                                                : "none"
+                                                    }}
+                                                />
+
+                                                <span
+                                                    className={css.modal_team_placing}
+                                                    style={{
+                                                        color: "#ffffff",
+                                                        textShadow:
+                                                            hoveredTeamId === modalRightTeam?.id
+                                                                    ? "0 0 4px #0d6aff"
+                                                                    : "0 0 4px #000",
+                                                    }}
+                                                >
+                                                    {rankRightSticker ??
+                                                        formatOrdinal(rankById[modalRightTeam?.id] || 64)}
                                                 </span>
-                                            </div>
-                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_placing}>
-                                                {formatOrdinal(rankById[modalRightTeam?.id] || 64)} <br />
-                                            </span>
-                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_label}>
-                                                {modalRightTeam?.name}
-                                            </span>
-                                        </button>
+
+                                                <span
+                                                    className={css.modal_team_label}
+                                                    style={{
+                                                        color: "#ffffff",
+                                                        textShadow:
+                                                            hoveredTeamId === modalRightTeam?.id
+                                                                    ? "0 0 4px #0d6aff"
+                                                                    : "0 0 4px #000",
+                                                    }}
+                                                >
+                                                    {modalRightTeam?.name}
+                                                </span>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <hr className={css.match_modal_divider} />
@@ -6325,34 +6423,34 @@ export default function SpecialModePage() {
                                     const isGrandFinal = stage === "gf";
                                     const isThirdPlace = stage === "thirdPlace";
 
-                                const getPlacementBadge = (isWinner, isLoser) => {
-                                    if (isGrandFinal) {
-                                        if (isWinner) {
-                                            return (
-                                                <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
-                                                    <FaTrophy style={{ color: '#2e2f42' }} />+
-                                                </span>
-                                            );
+                                    const getPlacementBadge = (isWinner, isLoser) => {
+                                        if (isGrandFinal) {
+                                            if (isWinner) {
+                                                return (
+                                                    <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                        <FaTrophy style={{ color: '#2e2f42' }} />+
+                                                    </span>
+                                                );
+                                            }
+                                            if (isLoser) {
+                                                return (
+                                                    <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
+                                                        🥈+
+                                                    </span>
+                                                );
+                                            }
                                         }
-                                        if (isLoser) {
+
+                                        if (isThirdPlace && isWinner) {
                                             return (
                                                 <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                                    🥈+
+                                                    🥉+
                                                 </span>
                                             );
                                         }
-                                    }
 
-                                    if (isThirdPlace && isWinner) {
-                                        return (
-                                            <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                                🥉+
-                                            </span>
-                                        );
-                                    }
-
-                                    return null;
-                                };
+                                        return null;
+                                    };
 
                                     return (
                                         <>
@@ -6369,7 +6467,7 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <TeamCircle team={modalPlayedLeft} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? '0 0 8px 2px #2e7d32' : 'none' }} />
+                                                        <TeamCircle team={modalPlayedLeft} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid #0d6aff' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px #2e507d' : '0 0 8px 2px #2e7d32' : 'none' }} />
                                                         <span className={css.modal_team_label}>
                                                             {(() => {
                                                                 const meta = currentModalMatch?.ratingMeta;
@@ -6381,21 +6479,35 @@ export default function SpecialModePage() {
                                                                 const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
                                                                 const deltaPoints = afterPoints - beforePoints;
 
+                                                                const rankSticker = afterRank === 1 ? (
+                                                                    <span style={{ color: 'gold' }}>
+                                                                        1st
+                                                                    </span>
+                                                                ) : afterRank === 2 ?
+                                                                    <span style={{ color: 'silver' }}>
+                                                                        2nd
+                                                                    </span>
+                                                                    : afterRank === 3 ?
+                                                                        <span style={{ color: '#cd7f32' }}>
+                                                                            3rd
+                                                                        </span>
+                                                                        : null;
+
                                                                 return (
                                                                     <>
-                                                                        <span style={{ top: '-60px' }} className={css.modal_team_placing}>
+                                                                        <span style={{ top: '-60px' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
                                                                                     {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
                                                                                 </span>
                                                                             )}
-                                                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }}>
-                                                                                {formatOrdinal(afterRank)}
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px #0d6aff' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                                {rankSticker ?? formatOrdinal(afterRank)}
                                                                             </span>
                                                                         </span>
-                                                                        <span style={{ width: 'max-content', top: '62%' }} className={css.modal_team_label}>
+                                                                        <span style={{ width: 'max-content', top: '62%' }} className={css.finished_modal_team_label}>
                                                                             {getPlacementBadge(winnerIsLeft, leftIsLoser)}
-                                                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }}>
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px #0d6aff' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {modalPlayedLeft?.name}
                                                                             </span>
                                                                             {deltaPoints !== 0 && (
@@ -6428,7 +6540,7 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <TeamCircle team={modalPlayedRight} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? '0 0 8px 2px #2e7d32' : 'none'}} />
+                                                        <TeamCircle team={modalPlayedRight} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid #0d6aff' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #0d6aff' : '0 0 8px 2px #2e7d32' : 'none' }} />
                                                         <span>
                                                             {(() => {
                                                                 const meta = currentModalMatch?.ratingMeta;
@@ -6440,21 +6552,35 @@ export default function SpecialModePage() {
                                                                 const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
                                                                 const deltaPoints = afterPoints - beforePoints;
 
+                                                                const rankSticker = afterRank === 1 ? (
+                                                                    <span style={{ color: 'gold' }}>
+                                                                        1st
+                                                                    </span>
+                                                                ) : afterRank === 2 ?
+                                                                    <span style={{ color: 'silver' }}>
+                                                                        2nd
+                                                                    </span>
+                                                                    : afterRank === 3 ?
+                                                                        <span style={{ color: '#cd7f32' }}>
+                                                                            3rd
+                                                                        </span>
+                                                                        : null;
+
                                                                 return (
                                                                     <>
-                                                                        <span style={{ top: '12%' }} className={css.modal_team_placing}>
+                                                                        <span style={{ top: '12%' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
                                                                                     {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
                                                                                 </span>
                                                                             )}
-                                                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }}>
-                                                                                {formatOrdinal(afterRank)}
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #0d6aff' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                                {rankSticker ?? formatOrdinal(afterRank)}
                                                                             </span>
                                                                         </span>
-                                                                        <span style={{ width: 'max-content', top: '62%' }} className={css.modal_team_label}>
+                                                                        <span style={{ width: 'max-content', top: '62%' }} className={css.finished_modal_team_label}>
                                                                             {getPlacementBadge(winnerIsRight, rightIsLoser)}
-                                                                            <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }}>
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #0d6aff' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {modalPlayedRight?.name}
                                                                             </span>
                                                                             {deltaPoints !== 0 && (

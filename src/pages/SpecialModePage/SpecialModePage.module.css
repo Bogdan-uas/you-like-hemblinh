@@ -694,24 +694,14 @@
 
 .modal_team_btn {
     position: relative;
-    flex: 1;
     border: none;
     background: transparent;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    cursor: pointer;
     padding: 24px 16px;
     max-width: 128px;
-    border-radius: 10px;
-    transition: box-shadow 200ms ease, transform 200ms ease, background-color 200ms ease;
-}
-
-.modal_team_btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
-    background-color: #f8f9ff;
 }
 
 .modal_team_selected {
@@ -728,6 +718,30 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.finished_modal_team_label {
+    position: absolute;
+    top: 65%;
+    left: 45%;
+    font-family: cursive, sans-serif;
+    font-size: 18px;
+    font-style: italic;
+    font-weight: 900;
+    user-select: none;
+    pointer-events: none;
+}
+
+.finished_modal_team_placing {
+    position: absolute;
+    top: 15%;
+    right: 50%;
+    font-family: cursive, sans-serif;
+    font-size: 16px;
+    font-style: italic;
+    font-weight: 700;
+    user-select: none;
+    pointer-events: none;
 }
 
 .modal_team_label {
