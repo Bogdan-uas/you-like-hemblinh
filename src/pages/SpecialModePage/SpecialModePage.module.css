@@ -702,6 +702,7 @@
     gap: 6px;
     padding: 24px 16px;
     max-width: 128px;
+    cursor: pointer;
 }
 
 .modal_team_selected {

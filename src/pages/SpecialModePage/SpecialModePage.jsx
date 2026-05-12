@@ -6266,12 +6266,14 @@ export default function SpecialModePage() {
                                         Which team you'd pick?
                                     </p>
                                     <div className={css.match_modal_row}>
-                                        <div className={css.modal_team_btn}>
+                                        <div
+                                            onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
+                                            onMouseLeave={() => setHoveredTeamId(null)}
+                                            className={css.modal_team_btn}
+                                        >
                                             <button
                                                 type="button"
                                                 onClick={handleChooseLeft}
-                                                onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
-                                                onMouseLeave={() => setHoveredTeamId(null)}
                                                 style={{
                                                     all: "unset",
                                                     cursor: "pointer",
@@ -6332,12 +6334,14 @@ export default function SpecialModePage() {
 
                                         <p className={css.modal_vs}>VS</p>
 
-                                        <div className={css.modal_team_btn}>
+                                        <div
+                                            onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
+                                            onMouseLeave={() => setHoveredTeamId(null)}
+                                            className={css.modal_team_btn}
+                                        >
                                             <button
                                                 type="button"
                                                 onClick={handleChooseRight}
-                                                onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
-                                                onMouseLeave={() => setHoveredTeamId(null)}
                                                 style={{
                                                     all: "unset",
                                                     cursor: "pointer",
@@ -6366,8 +6370,8 @@ export default function SpecialModePage() {
                                                         color: "#ffffff",
                                                         textShadow:
                                                             hoveredTeamId === modalRightTeam?.id
-                                                                    ? "0 0 4px #0d6aff"
-                                                                    : "0 0 4px #000",
+                                                                ? "0 0 4px #0d6aff"
+                                                                : "0 0 4px #000",
                                                     }}
                                                 >
                                                     {rankRightSticker ??
@@ -6380,8 +6384,8 @@ export default function SpecialModePage() {
                                                         color: "#ffffff",
                                                         textShadow:
                                                             hoveredTeamId === modalRightTeam?.id
-                                                                    ? "0 0 4px #0d6aff"
-                                                                    : "0 0 4px #000",
+                                                                ? "0 0 4px #0d6aff"
+                                                                : "0 0 4px #000",
                                                     }}
                                                 >
                                                     {modalRightTeam?.name}
