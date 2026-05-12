@@ -6269,6 +6269,7 @@ export default function SpecialModePage() {
                                         <div
                                             onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
                                             onMouseLeave={() => setHoveredTeamId(null)}
+                                            style={{ cursor: hasChosen ? "default" : "pointer" }}
                                             className={css.modal_team_btn}
                                         >
                                             <button
@@ -6336,6 +6337,7 @@ export default function SpecialModePage() {
                                         <div
                                             onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
                                             onMouseLeave={() => setHoveredTeamId(null)}
+                                            style={{ cursor: hasChosen ? "default" : "pointer" }}
                                             className={css.modal_team_btn}
                                         >
                                             <button
