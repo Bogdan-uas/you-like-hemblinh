@@ -6276,7 +6276,6 @@ export default function SpecialModePage() {
                                                 onClick={handleChooseLeft}
                                                 style={{
                                                     all: "unset",
-                                                    cursor: "pointer",
                                                     borderRadius: "50%"
                                                 }}
                                             >
@@ -6344,7 +6343,6 @@ export default function SpecialModePage() {
                                                 onClick={handleChooseRight}
                                                 style={{
                                                     all: "unset",
-                                                    cursor: "pointer",
                                                     borderRadius: "50%"
                                                 }}
                                             >
