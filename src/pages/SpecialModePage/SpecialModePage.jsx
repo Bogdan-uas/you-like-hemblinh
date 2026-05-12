@@ -6467,7 +6467,7 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <TeamCircle team={modalPlayedLeft} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid #0d6aff' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px #2e507d' : '0 0 8px 2px #2e7d32' : 'none' }} />
+                                                        <TeamCircle team={modalPlayedLeft} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid red' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : 'none' }} />
                                                         <span className={css.modal_team_label}>
                                                             {(() => {
                                                                 const meta = currentModalMatch?.ratingMeta;
@@ -6501,13 +6501,13 @@ export default function SpecialModePage() {
                                                                                     {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
                                                                                 </span>
                                                                             )}
-                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px #0d6aff' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {rankSticker ?? formatOrdinal(afterRank)}
                                                                             </span>
                                                                         </span>
                                                                         <span style={{ width: 'max-content', top: '62%' }} className={css.finished_modal_team_label}>
                                                                             {getPlacementBadge(winnerIsLeft, leftIsLoser)}
-                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px #0d6aff' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {modalPlayedLeft?.name}
                                                                             </span>
                                                                             {deltaPoints !== 0 && (
@@ -6540,7 +6540,7 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <TeamCircle team={modalPlayedRight} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid #0d6aff' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #0d6aff' : '0 0 8px 2px #2e7d32' : 'none' }} />
+                                                        <TeamCircle team={modalPlayedRight} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid red' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : 'none' }} />
                                                         <span>
                                                             {(() => {
                                                                 const meta = currentModalMatch?.ratingMeta;
@@ -6574,13 +6574,13 @@ export default function SpecialModePage() {
                                                                                     {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
                                                                                 </span>
                                                                             )}
-                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #0d6aff' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {rankSticker ?? formatOrdinal(afterRank)}
                                                                             </span>
                                                                         </span>
                                                                         <span style={{ width: 'max-content', top: '62%' }} className={css.finished_modal_team_label}>
                                                                             {getPlacementBadge(winnerIsRight, rightIsLoser)}
-                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #0d6aff' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                            <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {modalPlayedRight?.name}
                                                                             </span>
                                                                             {deltaPoints !== 0 && (
