@@ -6648,12 +6648,18 @@ export default function SpecialModePage() {
                                                                             display: "flex",
                                                                             flexDirection: "column",
                                                                             alignItems: "center",
-                                                                            gap: "18px",
+                                                                            gap: "28px",
                                                                         }}
                                                                     >
-                                                                        {history.map(({ set }) => {
+                                                                        {history.map(({ set, wins, losses, won }) => {
                                                                             const isDecider = set === modalBestOf;
                                                                             const label = isDecider ? "Decider" : `Set ${set}`;
+
+                                                                            const totalRounds = wins + losses;
+
+                                                                            const winnerCount = won ? wins : losses;
+                                                                            const overtimeCount = (winnerCount - 13) / 3;
+                                                                            const hasOvertime = overtimeCount <= 0;
 
                                                                             return (
                                                                                 <div
@@ -6664,16 +6670,29 @@ export default function SpecialModePage() {
                                                                                 >
                                                                                     <span
                                                                                         className={css.info_text}
-                                                                                        style={{ fontWeight: 600, width: "max-content", position: "absolute", top: '-25%', left: isDecider ? '-30%' : '-5%' }}
+                                                                                        style={{
+                                                                                            fontWeight: 600,
+                                                                                            width: "max-content",
+                                                                                            position: "absolute",
+                                                                                            top: "-50%",
+                                                                                            left:
+                                                                                                isDecider && !hasOvertime
+                                                                                                    ? "32%"
+                                                                                                    : isDecider
+                                                                                                        ? "20%"
+                                                                                                        : !hasOvertime
+                                                                                                            ? "38%"
+                                                                                                            : "30%",
+                                                                                        }}
                                                                                     >
                                                                                         {label}
                                                                                     </span>
 
                                                                                     <p
-                                                                                        style={{ marginTop: '0', fontSize: '24px' }}
+                                                                                        style={{ marginTop: '0', fontSize: '18px' }}
                                                                                         className={css.vs}
                                                                                     >
-                                                                                        VS
+                                                                                        {totalRounds} Rounds <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
                                                                                     </p>
                                                                                 </div>
                                                                             );
