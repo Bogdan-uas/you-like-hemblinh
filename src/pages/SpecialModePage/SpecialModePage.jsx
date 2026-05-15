@@ -6661,6 +6661,14 @@ export default function SpecialModePage() {
                                                                             const overtimeCount = (winnerCount - 13) / 3;
                                                                             const hasOvertime = overtimeCount <= 0;
 
+                                                                            const formatRoundsCount = () => {
+                                                                                const lastDigit = totalRounds % 10;
+
+                                                                                return lastDigit === 1
+                                                                                    ? "Round"
+                                                                                    : "Rounds";
+                                                                            };
+
                                                                             return (
                                                                                 <div
                                                                                     key={`center-${set}`}
@@ -6692,7 +6700,7 @@ export default function SpecialModePage() {
                                                                                         style={{ marginTop: '0', fontSize: '18px' }}
                                                                                         className={css.vs}
                                                                                     >
-                                                                                        {totalRounds} Rounds <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
+                                                                                        {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
                                                                                     </p>
                                                                                 </div>
                                                                             );
