@@ -6205,7 +6205,7 @@ export default function SpecialModePage() {
                                         : css.match_loss_modal
                                     : ""
                                 }
-                                style={{ paddingTop: '12px', paddingBottom: '24px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ paddingTop: '12px', paddingBottom: isPlayedModal ? '24px' : '0', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <div className={css.match_modal_header}>
                                     <span className={css.match_modal_title} style={{
