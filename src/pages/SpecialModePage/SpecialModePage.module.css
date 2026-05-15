@@ -688,7 +688,6 @@
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin-top: 12px;
     margin-bottom: 10px;
 }
 
@@ -1082,6 +1081,14 @@
     background-color: rgb(255, 145, 145) !important;
 }
 
+.match_win_modal {
+    background: linear-gradient(180deg, #beffda 75%, #fff) !important;
+}
+
+.match_loss_modal {
+    background: linear-gradient(180deg, rgb(255, 184, 184) 75%, #fff) !important;
+}
+
 .info_text {
     line-height: 1.5;
     letter-spacing: 0.04em;
@@ -1091,14 +1098,14 @@
 
 .seriesSummaryList {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 48px;
 }
 
 .seriesSummaryItem {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
 }
 

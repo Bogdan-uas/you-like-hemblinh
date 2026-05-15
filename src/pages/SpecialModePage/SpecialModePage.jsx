@@ -6201,11 +6201,11 @@ export default function SpecialModePage() {
                             <div
                                 className={isPlayedModal
                                     ? didUserWin
-                                        ? css.match_win
-                                        : css.match_loss
+                                        ? css.match_win_modal
+                                        : css.match_loss_modal
                                     : ""
                                 }
-                                style={{ paddingTop: '12px', paddingBottom: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ paddingTop: '12px', paddingBottom: '24px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <div className={css.match_modal_header}>
                                     <span className={css.match_modal_title} style={{
@@ -6257,14 +6257,8 @@ export default function SpecialModePage() {
                                 </div>
                             </div>
 
-                            <hr style={{ margin: '0' }} className={css.match_modal_divider} />
-
                             {!isPlayedModal && !modalContext.readOnly && (
                                 <>
-                                    
-                                    <p className={css.match_modal_prompt}>
-                                        Which team you'd pick?
-                                    </p>
                                     <div className={css.match_modal_row}>
                                         <div
                                             onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
@@ -6392,8 +6386,6 @@ export default function SpecialModePage() {
                                             </button>
                                         </div>
                                     </div>
-
-                                    <hr className={css.match_modal_divider} />
 
                                     <div style={{ textAlign: "center" }}>
                                         <button
@@ -6602,7 +6594,6 @@ export default function SpecialModePage() {
 
                                             {!isBo1Modal && (
                                                 <>
-                                                    <hr className={css.match_modal_divider} />
                                                     {(() => {
                                                         const historyMatch = currentModalMatch;
                                                         const history = historyMatch?.setHistory ?? [];
@@ -6614,31 +6605,109 @@ export default function SpecialModePage() {
                                                         const rightColor = modalPlayedRight?.color || "red";
                                                         
                                                         return (
-                                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, opacity: 0.95 }} >
+                                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
                                                                 <ul className={css.seriesSummaryList}>
-                                                                    {history.map(({ set, wins, losses, won }) => {
-                                                                        const isDecider = set === modalBestOf;
-                                                                        const label = isDecider ? "Decider" : `Set ${set}`;
-                                                                        const leftOpacity = won ? 1 : 0.2;
-                                                                        const rightOpacity = won ? 0.2 : 1;
-                                                                        return (
-                                                                            <li key={set} style={{ fontSize: "20px" }} className={css.seriesSummaryItem} >
-                                                                                <span className={`${css.multiplier_win} ${label === "Decider" ? css.leftSpecial : css.left}`}
-                                                                                    style={{ color: leftColor, fontWeight: 700, opacity: leftOpacity }} >
-                                                                                    {wins}
+                                                                    <li className={css.seriesSummaryItem}>
+                                                                        {history.map(({ set, wins, won }) => {
+                                                                            const leftGlow = won;
+
+                                                                            return (
+                                                                                <span
+                                                                                    key={`left-${set}`}
+                                                                                    className={css.round_text}
+                                                                                >
+                                                                                    <CountUp
+                                                                                        key={wins}
+                                                                                        start={Math.max(wins - 1, 0)}
+                                                                                        end={wins}
+                                                                                        duration={1}
+                                                                                        style={{
+                                                                                            color: leftColor,
+                                                                                            fontSize: "36px",
+                                                                                            transition: "all 2000ms ease-in-out",
+                                                                                            textShadow: leftGlow
+                                                                                                ? `
+                                                                                                        0 0 6px ${leftColor},
+                                                                                                        0 0 14px ${leftColor}66,
+                                                                                                        0 2px 6px rgba(0,0,0,0.4)
+                                                                                                    `
+                                                                                                : "none",
+                                                                                        }}
+                                                                                    />
                                                                                 </span>
-                                                                                &nbsp; &nbsp; &nbsp;
-                                                                                <span className={css.info_text} style={{ fontWeight: 600 }}>
-                                                                                    {label}
+                                                                            );
+                                                                        })}
+                                                                    </li>
+
+                                                                    <li
+                                                                        className={css.seriesSummaryItem}
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            flexDirection: "column",
+                                                                            alignItems: "center",
+                                                                            gap: "18px",
+                                                                        }}
+                                                                    >
+                                                                        {history.map(({ set }) => {
+                                                                            const isDecider = set === modalBestOf;
+                                                                            const label = isDecider ? "Decider" : `Set ${set}`;
+
+                                                                            return (
+                                                                                <div
+                                                                                    key={`center-${set}`}
+                                                                                    style={{
+                                                                                        position: "relative",
+                                                                                    }}
+                                                                                >
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{ fontWeight: 600, width: "max-content", position: "absolute", top: '-25%', left: isDecider ? '-30%' : '-5%' }}
+                                                                                    >
+                                                                                        {label}
+                                                                                    </span>
+
+                                                                                    <p
+                                                                                        style={{ marginTop: '0', fontSize: '24px' }}
+                                                                                        className={css.vs}
+                                                                                    >
+                                                                                        VS
+                                                                                    </p>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </li>
+
+                                                                    <li className={css.seriesSummaryItem}>
+                                                                        {history.map(({ set, losses, won }) => {
+                                                                            const rightGlow = !won;
+
+                                                                            return (
+                                                                                <span
+                                                                                    key={`right-${set}`}
+                                                                                    className={css.round_text}
+                                                                                >
+                                                                                    <CountUp
+                                                                                        key={losses}
+                                                                                        start={Math.max(losses - 1, 0)}
+                                                                                        end={losses}
+                                                                                        duration={1}
+                                                                                        style={{
+                                                                                            color: rightColor,
+                                                                                            fontSize: "36px",
+                                                                                            transition: "all 2000ms ease-in-out",
+                                                                                            textShadow: rightGlow
+                                                                                                ? `
+                                                                                                        0 0 6px ${rightColor},
+                                                                                                        0 0 14px ${rightColor}66,
+                                                                                                        0 2px 6px rgba(0,0,0,0.4)
+                                                                                                    `
+                                                                                                : "none",
+                                                                                        }}
+                                                                                    />
                                                                                 </span>
-                                                                                &nbsp; &nbsp; &nbsp;
-                                                                                <span className={`${css.multiplier_fail} ${label === "Decider" ? css.rightSpecial : css.right}`}
-                                                                                    style={{ color: rightColor, fontWeight: 700, opacity: rightOpacity }} >
-                                                                                    {losses}
-                                                                                </span>
-                                                                            </li>
-                                                                        );
-                                                                    })}
+                                                                            );
+                                                                        })}
+                                                                    </li>
                                                                 </ul>
                                                             </motion.div>
                                                         );
