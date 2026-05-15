@@ -1082,11 +1082,27 @@
 }
 
 .match_win_modal {
-    background: linear-gradient(180deg, #beffda 75%, #fff) !important;
+    background: linear-gradient(180deg,
+            #beffda 0%,
+            #ffffff 65%) !important;
 }
 
 .match_loss_modal {
-    background: linear-gradient(180deg, rgb(255, 184, 184) 75%, #fff) !important;
+    background: linear-gradient(180deg,
+            rgb(255, 184, 184) 0%,
+            #ffffff 65%) !important;
+}
+
+.match_win_bo1 {
+    background: linear-gradient(180deg,
+                #beffda 0%,
+                #ffffff 95%) !important;
+}
+
+.match_loss_bo1 {
+    background: linear-gradient(180deg,
+                rgb(255, 184, 184) 0%,
+                #ffffff 95%) !important;
 }
 
 .info_text {

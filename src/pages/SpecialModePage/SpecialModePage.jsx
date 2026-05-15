@@ -6189,7 +6189,15 @@ export default function SpecialModePage() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
-                            className={css.match_modal}
+                            className={`
+                                        ${css.match_modal}
+                                        ${isPlayedModal
+                                    ? didUserWin
+                                        ? (isBo1Modal ? css.match_win_bo1 : css.match_win_modal)
+                                        : (isBo1Modal ? css.match_loss_bo1 : css.match_loss_modal)
+                                    : ""
+                                }
+                            `}
                             onClick={(e) => e.stopPropagation()}
                             style={isPlayedModal
                                 ? didUserWin
@@ -6199,12 +6207,6 @@ export default function SpecialModePage() {
                             }
                         >
                             <div
-                                className={isPlayedModal
-                                    ? didUserWin
-                                        ? css.match_win_modal
-                                        : css.match_loss_modal
-                                    : ""
-                                }
                                 style={{ paddingTop: '12px', paddingBottom: isPlayedModal ? '24px' : '0', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <div className={css.match_modal_header}>
@@ -6531,7 +6533,7 @@ export default function SpecialModePage() {
                                                         className={css.modal_team_btn}
                                                         style={{
                                                             flex: 1,
-                                                            opacity: rightIsLoser ? 0.25 : 1,
+                                                            opacity: rightIsLoser ? 0.4 : 1,
                                                             pointerEvents: "none",
                                                         }}
                                                     >
