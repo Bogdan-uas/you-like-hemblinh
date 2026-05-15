@@ -6611,10 +6611,13 @@ export default function SpecialModePage() {
                                                                         {history.map(({ set, wins, won }) => {
                                                                             const leftGlow = won;
 
+                                                                            const leftOpacity = !won ? 0.4 : 1;
+
                                                                             return (
                                                                                 <span
                                                                                     key={`left-${set}`}
                                                                                     className={css.round_text}
+                                                                                    style={{ opacity: leftOpacity }}
                                                                                 >
                                                                                     <CountUp
                                                                                         key={wins}
@@ -6681,10 +6684,13 @@ export default function SpecialModePage() {
                                                                         {history.map(({ set, losses, won }) => {
                                                                             const rightGlow = !won;
 
+                                                                            const rightOpacity = won ? 0.4 : 1;
+
                                                                             return (
                                                                                 <span
                                                                                     key={`right-${set}`}
                                                                                     className={css.round_text}
+                                                                                    style={{ opacity: rightOpacity }}
                                                                                 >
                                                                                     <CountUp
                                                                                         key={losses}
