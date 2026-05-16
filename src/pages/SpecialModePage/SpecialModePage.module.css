@@ -1066,11 +1066,11 @@
 }
 
 .match_win {
-    background-color: #beffda !important;
+    background-color: #a2ffcb !important;
 }
 
 *.match_win:hover {
-    background-color: #89febc !important;
+    background-color: #68f9a7 !important;
 }
 
 .match_loss {
@@ -1083,7 +1083,7 @@
 
 .match_win_modal {
     background: linear-gradient(180deg,
-            #beffda 0%,
+            #a2ffcb 0%,
             #ffffff 65%) !important;
 }
 
@@ -1095,14 +1095,14 @@
 
 .match_win_bo1 {
     background: linear-gradient(180deg,
-                #beffda 0%,
-                #ffffff 95%) !important;
+                #a2ffcb 0%,
+                #ffffff 100%) !important;
 }
 
 .match_loss_bo1 {
     background: linear-gradient(180deg,
                 rgb(255, 184, 184) 0%,
-                #ffffff 95%) !important;
+                #ffffff 100%) !important;
 }
 
 .info_text {

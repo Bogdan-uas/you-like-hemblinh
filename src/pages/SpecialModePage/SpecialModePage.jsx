@@ -6451,6 +6451,57 @@ export default function SpecialModePage() {
 
                                     return (
                                         <>
+                                            {isBo1Modal && (() => {
+                                                const historyMatch = currentModalMatch;
+                                                const history = historyMatch?.setHistory ?? [];
+                                                if (!history.length) {
+                                                    return <p className={css.info_text}>No set history stored for this match.</p>;
+                                                }
+                                                
+                                                return (
+                                                    <div
+                                                        className={css.seriesSummaryItem}
+                                                        style={{
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            alignItems: "center",
+                                                            gap: "28px",
+                                                        }}
+                                                    >
+                                                        {history.map(({ set, wins, losses, won }) => {
+                                                            const totalRounds = wins + losses;
+
+                                                            const winnerCount = won ? wins : losses;
+                                                            const overtimeCount = (winnerCount - 13) / 3;
+                                                            const hasOvertime = overtimeCount <= 0;
+
+                                                            const formatRoundsCount = () => {
+                                                                const lastDigit = totalRounds % 10;
+
+                                                                return lastDigit === 1
+                                                                    ? "Round"
+                                                                    : "Rounds";
+                                                            };
+
+                                                            return (
+                                                                <div
+                                                                    key={`center-${set}`}
+                                                                    style={{
+                                                                        position: "relative",
+                                                                    }}
+                                                                >
+                                                                    <p
+                                                                        style={{ marginTop: '0', fontSize: '16px', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: hasOvertime ? '-40px' : '-65px' }}
+                                                                        className={css.vs}
+                                                                    >
+                                                                        {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            })()}
                                             <div className={css.finishedMatchReview}>
                                                 <div
                                                     style={{ marginBottom: isBo1Modal ? 0 : "10px" }}
