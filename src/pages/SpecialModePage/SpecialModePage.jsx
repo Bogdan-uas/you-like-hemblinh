@@ -2368,7 +2368,7 @@ export default function SpecialModePage() {
                     } else {
                         toast(
                             <span>
-                                The set {playerWonSets + playerLostSets} has been won in Overtime{" "}
+                                Set {playerWonSets + playerLostSets} has been won in Overtime{" "}
                                 #{overtimeBlock} by{" "}
                                 {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                             </span>,
@@ -2599,7 +2599,7 @@ export default function SpecialModePage() {
                 } else {
                     toast(
                         <span>
-                            The set {playerWonSets + playerLostSets} has been won by{" "}
+                            Set {playerWonSets + playerLostSets} has been won by{" "}
                             {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                         </span>,
                         { icon: "🤯", duration: 4000 }
