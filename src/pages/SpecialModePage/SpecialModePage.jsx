@@ -6727,6 +6727,7 @@ export default function SpecialModePage() {
                                                                                     key={`center-${set}`}
                                                                                     style={{
                                                                                         position: "relative",
+                                                                                        minWidth: "92.04px",
                                                                                     }}
                                                                                 >
                                                                                     <span
@@ -6750,7 +6751,7 @@ export default function SpecialModePage() {
                                                                                     </span>
 
                                                                                     <p
-                                                                                        style={{ marginTop: '0', fontSize: '18px' }}
+                                                                                        style={{ marginTop: '0', fontSize: '18px', textAlign: 'center' }}
                                                                                         className={css.vs}
                                                                                     >
                                                                                         {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
