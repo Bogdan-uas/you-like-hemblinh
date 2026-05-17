@@ -6491,7 +6491,7 @@ export default function SpecialModePage() {
                                                                     }}
                                                                 >
                                                                     <p
-                                                                        style={{ marginTop: '0', fontSize: '16px', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: hasOvertime ? '-40px' : '-65px' }}
+                                                                        style={{ marginTop: '0', fontSize: '16px', textAlign: 'center', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: hasOvertime ? '-40px' : '-65px' }}
                                                                         className={css.vs}
                                                                     >
                                                                         {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
