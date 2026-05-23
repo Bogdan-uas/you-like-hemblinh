@@ -688,7 +688,6 @@
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin-bottom: 10px;
 }
 
 .modal_team_btn {
@@ -1024,8 +1023,11 @@
 .game_info_text {
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-direction: column;
     gap: 4px;
+    padding: 4px 8px;
+    margin-top: -8px;
 }
 
 .seriesGambleMessage {
@@ -1034,7 +1036,6 @@
     align-items: center;
     justify-content: center;
     min-height: 81px;
-    margin-top: 12px;
     animation: fadeInS 0.5s ease;
 }
 
@@ -1376,7 +1377,6 @@
     font-weight: 700;
     color: #2e2f42;
     font-size: 32px;
-    margin-top: 24px;
 }
 
 .net_label {
@@ -1702,4 +1702,30 @@
     transform: none !important;
     filter: none !important;
     box-shadow: none !important;
+}
+
+.match_prediction_wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.match_prediction_bar {
+    width: 240px;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+    transition: all 300ms ease;
+}
+
+.match_prediction_pct {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 4px #000;
+    min-width: 40px;
+    text-align: center;
 }

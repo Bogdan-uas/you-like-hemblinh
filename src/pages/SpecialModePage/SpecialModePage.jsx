@@ -888,7 +888,7 @@ const defaultSeriesState = {
 
 const round2 = (n) => Number(n.toFixed(2));
 
-const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingValue = 0 }) => {
+const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingValue = 0, beforeRatingValue = 0 }) => {
     if (!team) {
         return (
             <div
@@ -917,8 +917,8 @@ const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingVa
             {showRating && (
                 <span style={{ color: '#ffffff', textShadow: `0 0 4px #000` }} className={css.modal_team_rating}>
                     <CountUp
-                        start={0}
-                        duration={1.2}
+                        start={beforeRatingValue ?? 0}
+                        duration={2.5}
                         end={ratingValue}
                         key={ratingValue}
                     />
@@ -3298,6 +3298,7 @@ export default function SpecialModePage() {
     } = seriesState;
 
     const overtimeTarget = BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
+    const overtimeToWin = overtimeBlock === 0 ? 16 : BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
 
     const threshold = overtimeTarget - 1;
 
@@ -4285,87 +4286,6 @@ export default function SpecialModePage() {
                         Secret
                     </button>
                     {seriesLabelNode}
-                    <div className={css.game_info_text}>
-                        {!banner ? (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                            >
-                                Round{" "}
-                                <CountUp
-                                    key={roundWins + roundLosses + 1}
-                                    start={Math.max(
-                                        roundWins + roundLosses,
-                                        0
-                                    )}
-                                    end={roundWins + roundLosses + 1}
-                                    duration={1}
-                                />
-                            </motion.span>
-                        ) : (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                            >
-                                &nbsp;
-                            </motion.span>
-                        )}
-                        {!banner ? (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                                style={{ textAlign: "center", fontSize: "16px", marginBottom: "12px" }}
-                            >
-                                First to {overtimeTarget}
-                            </motion.span>
-                        ) : (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                            >
-                                &nbsp;
-                            </motion.span>
-                        )}
-                        {!banner && isOvertime ? (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                            >
-                                Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
-                                <br />
-                            </motion.span>
-                        ) : (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                                style={{ textAlign: "center", fontSize: "24px", marginTop: '-12px' }}
-                            >
-                                &nbsp;
-                            </motion.span>
-                        )}
-                    </div>
-
                     <div className={css.scoreboard}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                             {isSeriesPointWins ? (
@@ -4444,9 +4364,9 @@ export default function SpecialModePage() {
                                 <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px' }}>
                                     <motion.span
                                         key={roundWins}
-                                        initial={{ scale: 1.05, opacity: 0.6 }}
+                                        initial={{ scale: 1.05, opacity: 0.3 }}
                                         animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ duration: 0.5 }}
+                                        transition={{ duration: 0.7 }}
                                         className={css.round_text}
                                         style={{ height: '76px' }}
                                     >
@@ -4669,9 +4589,30 @@ export default function SpecialModePage() {
                                 {banner}
                             </motion.span>
                         ) : (
-                            <p style={{ marginTop: activePhase === "playoffs" ? '0' : '24px' }} className={css.vs}>
-                                VS
-                            </p>
+                            <div style={{ marginTop: activePhase === "playoffs" ? '0' : '24px', display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <p className={css.vs}>
+                                    VS
+                                </p>
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className={css.round_text}
+                                    style={{ fontSize: "14px", width: '63.8px', textAlign: 'center' }}
+                                >
+                                    Round{" "}
+                                    <CountUp
+                                        key={roundWins + roundLosses + 1}
+                                        start={Math.max(
+                                            roundWins + roundLosses,
+                                            0
+                                        )}
+                                        end={roundWins + roundLosses + 1}
+                                        duration={1}
+                                    />
+                                </motion.span>
+                            </div>
                         )}
                         <div
                             style={{
@@ -4760,9 +4701,9 @@ export default function SpecialModePage() {
                                 >
                                     <motion.span
                                         key={roundLosses}
-                                        initial={{ scale: 1.05, opacity: 0.6 }}
+                                        initial={{ scale: 1.05, opacity: 0.3 }}
                                         animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ duration: 0.5 }}
+                                        transition={{ duration: 0.7 }}
                                         className={css.round_text}
                                         style={{ height: '76px' }}
                                     >
@@ -4978,6 +4919,82 @@ export default function SpecialModePage() {
                             </div>
                         </div>
                     </div>
+
+                    {!banner && isOvertime ? (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.game_info_text}
+                        >
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{
+                                    textAlign: "center",
+                                    fontSize: "14px",
+                                    marginBottom: "12px",
+                                }}
+                            >
+                                First to {overtimeToWin}
+                            </motion.span>
+
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{
+                                    textAlign: "center",
+                                    fontSize: "20px",
+                                    marginTop: "-20px",
+                                }}
+                            >
+                                Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
+                                <br />
+                            </motion.span>
+                        </motion.div>
+                    ) : (
+                        <div className={css.game_info_text}>
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{
+                                    textAlign: "center",
+                                    fontSize: "14px",
+                                    marginBottom: "12px",
+                                    userSelect: "none"
+                                }}
+                            >
+                                &nbsp;
+                            </motion.span>
+
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className={css.round_text}
+                                style={{
+                                    textAlign: "center",
+                                    fontSize: "20px",
+                                    marginTop: "-20px",
+                                    userSelect: "none"
+                                }}
+                            >
+                                &nbsp;
+                                <br />
+                            </motion.span>
+                        </div>
+                    )}
 
                     <div className={css.seriesGambleMessage}>
                         {!banner && seriesState.lastResult && (
@@ -6259,147 +6276,219 @@ export default function SpecialModePage() {
                                 </div>
                             </div>
 
-                            {!isPlayedModal && !modalContext.readOnly && (
-                                <>
-                                    <div className={css.match_modal_row}>
-                                        <div
-                                            onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
-                                            onMouseLeave={() => setHoveredTeamId(null)}
-                                            style={{ cursor: hasChosen ? "default" : "pointer" }}
-                                            onClick={handleChooseLeft}
-                                            className={css.modal_team_btn}
-                                        >
-                                            <button
-                                                type="button"
-                                                style={{
-                                                    all: "unset",
-                                                    borderRadius: "50%"
-                                                }}
-                                            >
-                                                <TeamCircle
-                                                    team={modalLeftTeam}
-                                                    showRating
-                                                    ratingValue={teamRatings?.[modalLeftTeam?.id] ?? 0}
-                                                    specialStyle={{
-                                                        width: "64px",
-                                                        height: "64px",
-                                                        border:
-                                                            hasChosen
-                                                                ? "3px solid #0d6aff"
-                                                                : "3px solid #999",
+                            {!isPlayedModal && !modalContext.readOnly && (() => {
+                                const boSkewFactor = (bestOf) => {
+                                    if (bestOf <= 1) return 0.65;
+                                    if (bestOf <= 3) return 0.8;
+                                    if (bestOf <= 5) return 0.9;
+                                    if (bestOf <= 7) return 1.05;
+                                    return 1.15;
+                                };
 
-                                                        boxShadow:
-                                                            hasChosen
-                                                                ? "0 0 8px 2px #0d6aff"
-                                                                : hoveredTeamId === modalLeftTeam?.id
+                                const leftRating = teamRatings?.[modalLeftTeam?.id] ?? 0;
+                                const rightRating = teamRatings?.[modalRightTeam?.id] ?? 0;
+
+                                const raw = expectedScore(leftRating, rightRating);
+
+                                const boFactor = boSkewFactor(modalBestOf);
+
+                                const adjustedRaw = Math.min(
+                                    1,
+                                    Math.max(0, 0.5 + (raw - 0.5) * boFactor)
+                                );
+
+                                const curve = 1.4;
+
+                                const leftWinProb =
+                                    Math.pow(adjustedRaw, curve) /
+                                    (Math.pow(adjustedRaw, curve) + Math.pow(1 - adjustedRaw, curve));
+
+                                const leftPct = Math.min(100, Math.max(0, leftWinProb * 100));
+                                const rightPct = 100 - leftPct;
+
+                                const blend = 5;
+
+                                const start = Math.max(0, leftPct - blend);
+                                const end = Math.min(100, leftPct + blend);
+
+                                const barStyle = {
+                                    background: `linear-gradient(
+                                        90deg,
+                                        ${modalLeftTeam?.color} 0%,
+                                        ${modalLeftTeam?.color} ${start}%,
+                                        ${modalRightTeam?.color} ${end}%,
+                                        ${modalRightTeam?.color} 100%
+                                    )`
+                                };
+
+                                return (
+                                    <>
+                                        <div className={css.match_modal_row}>
+                                            <div
+                                                onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
+                                                onMouseLeave={() => setHoveredTeamId(null)}
+                                                style={{ cursor: hasChosen ? "default" : "pointer" }}
+                                                onClick={handleChooseLeft}
+                                                className={css.modal_team_btn}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    style={{
+                                                        all: "unset",
+                                                        borderRadius: "50%"
+                                                    }}
+                                                >
+                                                    <TeamCircle
+                                                        team={modalLeftTeam}
+                                                        showRating
+                                                        ratingValue={leftRating}
+                                                        specialStyle={{
+                                                            width: "64px",
+                                                            height: "64px",
+                                                            border:
+                                                                hasChosen
+                                                                    ? "3px solid #0d6aff"
+                                                                    : "3px solid #999",
+
+                                                            boxShadow:
+                                                                hasChosen
+                                                                    ? "0 0 8px 2px #0d6aff"
+                                                                    : hoveredTeamId === modalLeftTeam?.id
+                                                                        ? "0 0 4px 1px #0d6aff"
+                                                                        : "none",
+                                                        }}
+                                                    />
+                                                    <span
+                                                        style={{
+                                                            color: "#fff",
+                                                            textShadow:
+                                                                hasChosen
+                                                                    ? "0 0 8px #0d6aff"
+                                                                    : hoveredTeamId === modalLeftTeam?.id
+                                                                        ? "0 0 4px #0d6aff"
+                                                                        : "0 0 4px #000",
+                                                        }}
+                                                        className={css.modal_team_placing}
+                                                    >
+                                                        {rankLeftSticker ?? formatOrdinal(rankById[modalLeftTeam?.id] || 64)}
+                                                    </span>
+
+                                                    <span
+                                                        style={{
+                                                            color: "#fff",
+                                                            textShadow:
+                                                                hasChosen
+                                                                    ? "0 0 8px #0d6aff"
+                                                                    : hoveredTeamId === modalLeftTeam?.id
+                                                                        ? "0 0 4px #0d6aff"
+                                                                        : "0 0 4px #000",
+                                                        }}
+                                                        className={css.modal_team_label}
+                                                    >
+                                                        {modalLeftTeam?.name}
+                                                    </span>
+                                                </button>
+                                            </div>
+
+                                            <p className={css.modal_vs}>VS</p>
+
+                                            <div
+                                                onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
+                                                onMouseLeave={() => setHoveredTeamId(null)}
+                                                onClick={handleChooseRight}
+                                                className={css.modal_team_btn}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    style={{
+                                                        all: "unset",
+                                                        borderRadius: "50%"
+                                                    }}
+                                                >
+                                                    <TeamCircle
+                                                        team={modalRightTeam}
+                                                        showRating
+                                                        ratingValue={rightRating}
+                                                        specialStyle={{
+                                                            width: "64px",
+                                                            height: "64px",
+                                                            border: "3px solid #999",
+
+                                                            boxShadow:
+                                                                hoveredTeamId === modalRightTeam?.id
                                                                     ? "0 0 4px 1px #0d6aff"
-                                                                    : "none",
-                                                    }}
-                                                />
-                                                <span
-                                                    style={{
-                                                        color: "#fff",
-                                                        textShadow:
-                                                            hasChosen
-                                                                ? "0 0 8px #0d6aff"
-                                                                : hoveredTeamId === modalLeftTeam?.id
-                                                                    ? "0 0 4px #0d6aff"
-                                                                    : "0 0 4px #000",
-                                                    }}
-                                                    className={css.modal_team_placing}
-                                                >
-                                                    {rankLeftSticker ?? formatOrdinal(rankById[modalLeftTeam?.id] || 64)}
-                                                </span>
+                                                                    : "none"
+                                                        }}
+                                                    />
 
-                                                <span
-                                                    style={{
-                                                        color: "#fff",
-                                                        textShadow:
-                                                            hasChosen
-                                                                ? "0 0 8px #0d6aff"
-                                                                : hoveredTeamId === modalLeftTeam?.id
+                                                    <span
+                                                        className={css.modal_team_placing}
+                                                        style={{
+                                                            color: "#ffffff",
+                                                            textShadow:
+                                                                hoveredTeamId === modalRightTeam?.id
                                                                     ? "0 0 4px #0d6aff"
                                                                     : "0 0 4px #000",
-                                                    }}
-                                                    className={css.modal_team_label}
-                                                >
-                                                    {modalLeftTeam?.name}
-                                                </span>
-                                            </button>
+                                                        }}
+                                                    >
+                                                        {rankRightSticker ??
+                                                            formatOrdinal(rankById[modalRightTeam?.id] || 64)}
+                                                    </span>
+
+                                                    <span
+                                                        className={css.modal_team_label}
+                                                        style={{
+                                                            color: "#ffffff",
+                                                            textShadow:
+                                                                hoveredTeamId === modalRightTeam?.id
+                                                                    ? "0 0 4px #0d6aff"
+                                                                    : "0 0 4px #000",
+                                                        }}
+                                                    >
+                                                        {modalRightTeam?.name}
+                                                    </span>
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <p className={css.modal_vs}>VS</p>
+                                        <div className={css.match_prediction_wrapper}>
+                                            <span className={css.match_prediction_pct}>
+                                                <CountUp
+                                                    key={Math.round(leftPct)}
+                                                    start={0}
+                                                    end={Math.round(leftPct)}
+                                                    duration={1.2}
+                                                />
+                                                %
+                                            </span>
 
-                                        <div
-                                            onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
-                                            onMouseLeave={() => setHoveredTeamId(null)}
-                                            onClick={handleChooseRight}
-                                            className={css.modal_team_btn}
-                                        >
+                                            <div
+                                                className={css.match_prediction_bar}
+                                                style={barStyle}
+                                            />
+
+                                            <span className={css.match_prediction_pct}>
+                                                <CountUp
+                                                    key={Math.round(rightPct)}
+                                                    start={0}
+                                                    end={Math.round(rightPct)}
+                                                    duration={1.2}
+                                                />
+                                                %
+                                            </span>
+                                        </div>
+                                        <div style={{ textAlign: "center" }}>
                                             <button
-                                                type="button"
-                                                style={{
-                                                    all: "unset",
-                                                    borderRadius: "50%"
-                                                }}
+                                                className={`${css.gamble_button} ${!hasChosen ? css.locked : ""}`}
+                                                disabled={!hasChosen}
+                                                onClick={handleStartMatch}
                                             >
-                                                <TeamCircle
-                                                    team={modalRightTeam}
-                                                    showRating
-                                                    ratingValue={teamRatings?.[modalRightTeam?.id] ?? 0}
-                                                    specialStyle={{
-                                                        width: "64px",
-                                                        height: "64px",
-                                                        border: "3px solid #999",
-
-                                                        boxShadow:
-                                                            hoveredTeamId === modalRightTeam?.id
-                                                                ? "0 0 4px 1px #0d6aff"
-                                                                : "none"
-                                                    }}
-                                                />
-
-                                                <span
-                                                    className={css.modal_team_placing}
-                                                    style={{
-                                                        color: "#ffffff",
-                                                        textShadow:
-                                                            hoveredTeamId === modalRightTeam?.id
-                                                                ? "0 0 4px #0d6aff"
-                                                                : "0 0 4px #000",
-                                                    }}
-                                                >
-                                                    {rankRightSticker ??
-                                                        formatOrdinal(rankById[modalRightTeam?.id] || 64)}
-                                                </span>
-
-                                                <span
-                                                    className={css.modal_team_label}
-                                                    style={{
-                                                        color: "#ffffff",
-                                                        textShadow:
-                                                            hoveredTeamId === modalRightTeam?.id
-                                                                ? "0 0 4px #0d6aff"
-                                                                : "0 0 4px #000",
-                                                    }}
-                                                >
-                                                    {modalRightTeam?.name}
-                                                </span>
+                                                Start Match
                                             </button>
                                         </div>
-                                    </div>
-
-                                    <div style={{ textAlign: "center" }}>
-                                        <button
-                                            className={`${css.gamble_button} ${!hasChosen ? css.locked : ""}`}
-                                            disabled={!hasChosen}
-                                            onClick={handleStartMatch}
-                                        >
-                                            Start Match
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                                    </>
+                                );
+                            })()}
 
                             {isPlayedModal &&
                                 (() => {
@@ -6515,7 +6604,7 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <TeamCircle team={modalPlayedLeft} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid red' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : 'none' }} />
+                                                        <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid red' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : 'none' }} />
                                                         <span className={css.modal_team_label}>
                                                             {(() => {
                                                                 const meta = currentModalMatch?.ratingMeta;
@@ -6588,7 +6677,7 @@ export default function SpecialModePage() {
                                                             pointerEvents: "none",
                                                         }}
                                                     >
-                                                        <TeamCircle team={modalPlayedRight} showRating ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid red' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : 'none' }} />
+                                                        <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid red' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : 'none' }} />
                                                         <span>
                                                             {(() => {
                                                                 const meta = currentModalMatch?.ratingMeta;
