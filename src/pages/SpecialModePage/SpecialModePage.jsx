@@ -6306,7 +6306,7 @@ export default function SpecialModePage() {
                                 const leftPct = Math.min(100, Math.max(0, leftWinProb * 100));
                                 const rightPct = 100 - leftPct;
 
-                                const blend = 5;
+                                const blend = 20;
 
                                 const start = Math.max(0, leftPct - blend);
                                 const end = Math.min(100, leftPct + blend);
