@@ -2364,7 +2364,7 @@ export default function SpecialModePage() {
                             { icon: "🎉", duration: 4000 }
                         );
 
-                        banner = `GG!`;
+                        banner = `GG`;
                     } else {
                         toast(
                             <span>
@@ -2595,7 +2595,7 @@ export default function SpecialModePage() {
                         { icon: "🎉", duration: 4000 }
                     );
 
-                    banner = `GG!`;
+                    banner = `GG`;
                 } else {
                     toast(
                         <span>
@@ -4578,19 +4578,90 @@ export default function SpecialModePage() {
                                 ) : null}
                             </div>
                         </div>
-                        {banner ? (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.round_text}
-                                style={{ fontSize: "38px" }}
+                        {banner ? (() => {
+                            const cleanBanner = banner;
+                            const chars = cleanBanner.split("");
+
+                            const middle = Math.ceil(chars.length / 2);
+
+                            const topHalf = chars.slice(0, middle);
+                            const bottomHalf = chars.slice(middle);
+
+                            return (
+                                <motion.span
+                                    className={css.round_text}
+                                    style={{
+                                        fontSize: "38px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: "0px",
+                                    }}
+                                >
+                                    {topHalf.map((char, index) => (
+                                        <motion.span
+                                            key={`top-${char}-${index}`}
+                                            initial={{
+                                                opacity: 0,
+                                                y: -40,
+                                            }}
+                                            animate={{
+                                                opacity: 1,
+                                                y: 0,
+                                            }}
+                                            transition={{
+                                                duration: 0.45
+                                            }}
+                                            style={{ display: "inline-block" }}
+                                        >
+                                            {char}
+                                        </motion.span>
+                                    ))}
+
+                                    {bottomHalf.map((char, index) => (
+                                        <motion.span
+                                            key={`bottom-${char}-${index}`}
+                                            initial={{
+                                                opacity: 0,
+                                                y: 40,
+                                            }}
+                                            animate={{
+                                                opacity: 1,
+                                                y: 0,
+                                            }}
+                                            transition={{
+                                                duration: 0.45
+                                            }}
+                                            style={{ display: "inline-block" }}
+                                        >
+                                            {char}
+                                        </motion.span>
+                                    ))}
+
+                                    <motion.span
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{
+                                            duration: 0.45
+                                        }}
+                                        style={{
+                                            display: "inline-block",
+                                            marginLeft: "2px",
+                                        }}
+                                    >
+                                        !
+                                    </motion.span>
+                                </motion.span>
+                            );
+                        })() : (
+                            <div
+                                style={{
+                                    marginTop: activePhase === "playoffs" ? "0" : "24px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                }}
                             >
-                                {banner}
-                            </motion.span>
-                        ) : (
-                            <div style={{ marginTop: activePhase === "playoffs" ? '0' : '24px', display: "flex", flexDirection: "column", alignItems: "center" }}>
                                 <p className={css.vs}>
                                     VS
                                 </p>
@@ -4600,15 +4671,16 @@ export default function SpecialModePage() {
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.4 }}
                                     className={css.round_text}
-                                    style={{ fontSize: "14px", width: '63.8px', textAlign: 'center' }}
+                                    style={{
+                                        fontSize: "14px",
+                                        width: "63.8px",
+                                        textAlign: "center",
+                                    }}
                                 >
                                     Round{" "}
                                     <CountUp
                                         key={roundWins + roundLosses + 1}
-                                        start={Math.max(
-                                            roundWins + roundLosses,
-                                            0
-                                        )}
+                                        start={Math.max(roundWins + roundLosses, 0)}
                                         end={roundWins + roundLosses + 1}
                                         duration={1}
                                     />
