@@ -2371,7 +2371,16 @@ export default function SpecialModePage() {
                             { icon: "🎉", duration: 4000 }
                         );
 
-                        banner = `GG`;
+                        banner = {
+                            text: "GG",
+                            shadow:
+                            `
+                                0 0 3px ${winner.color},
+                                0 0 7px ${winner.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
+                            color: winner.color,
+                        };
                     } else {
                         toast(
                             <span>
@@ -2602,7 +2611,16 @@ export default function SpecialModePage() {
                         { icon: "🎉", duration: 4000 }
                     );
 
-                    banner = `GG`;
+                    banner = {
+                        text: "GG",
+                        shadow:
+                        `
+                            0 0 3px ${winner.color},
+                            0 0 7px ${winner.color}66,
+                            0 1px 3px rgba(0,0,0,0.4)
+                        `,
+                        color: winner.color,
+                    };
                 } else {
                     toast(
                         <span>
@@ -4586,7 +4604,7 @@ export default function SpecialModePage() {
                             </div>
                         </div>
                         {banner ? (() => {
-                            const cleanBanner = banner;
+                            const cleanBanner = banner.text;
                             const chars = cleanBanner.split("");
 
                             const middle = Math.ceil(chars.length / 2);
@@ -4603,7 +4621,9 @@ export default function SpecialModePage() {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         gap: "0px",
-                                        width: '63.8px'
+                                        width: '63.8px',
+                                        textShadow: banner.shadow,
+                                        color: banner.color,
                                     }}
                                 >
                                     {topHalf.map((char, index) => (
