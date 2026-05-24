@@ -2253,7 +2253,7 @@ export default function SpecialModePage() {
         } else {
             return (
                 <span style={{ color: team.color || "#2e2f42", fontWeight: 900 }}>
-                    {team.name}
+                    Team {team.name}
                 </span>
             );
         }
