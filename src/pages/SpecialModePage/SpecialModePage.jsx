@@ -2374,7 +2374,7 @@ export default function SpecialModePage() {
                         banner = {
                             text: "GG",
                             shadow:
-                            `
+                                `
                                 0 0 3px ${winner.color},
                                 0 0 7px ${winner.color}66,
                                 0 1px 3px rgba(0,0,0,0.4)
@@ -2614,7 +2614,7 @@ export default function SpecialModePage() {
                     banner = {
                         text: "GG",
                         shadow:
-                        `
+                            `
                             0 0 3px ${winner.color},
                             0 0 7px ${winner.color}66,
                             0 1px 3px rgba(0,0,0,0.4)
@@ -4685,13 +4685,17 @@ export default function SpecialModePage() {
                             <div
                                 style={{
                                     marginTop: activePhase === "playoffs" ? "0" : "24px",
-                                    marginBottom: activePhase === "playoffs" ? "-12px" : "0",
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
                                 }}
                             >
-                                <p className={css.vs}>
+                                <p
+                                    className={css.vs}
+                                    style={{
+                                        marginBottom: activePhase === "playoffs" ? "-12px" : "0",
+                                    }}
+                                >
                                     VS
                                 </p>
                                 <motion.span
