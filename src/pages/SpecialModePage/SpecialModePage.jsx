@@ -4603,7 +4603,7 @@ export default function SpecialModePage() {
                                             key={`top-${char}-${index}`}
                                             initial={{
                                                 opacity: 0,
-                                                y: -40,
+                                                y: -20,
                                             }}
                                             animate={{
                                                 opacity: 1,
@@ -4623,7 +4623,7 @@ export default function SpecialModePage() {
                                             key={`bottom-${char}-${index}`}
                                             initial={{
                                                 opacity: 0,
-                                                y: 40,
+                                                y: 20,
                                             }}
                                             animate={{
                                                 opacity: 1,
