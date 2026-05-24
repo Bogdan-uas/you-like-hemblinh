@@ -2247,7 +2247,7 @@ export default function SpecialModePage() {
         if (seriesWon) {
             return (
                 <span style={{ color: team.color || "#2e2f42", fontWeight: 900 }}>
-                    GG
+                    GG!
                 </span>
             );
         } else {
@@ -2366,7 +2366,7 @@ export default function SpecialModePage() {
 
                         toast(
                             <span>
-                                {renderTeamLabel(winner, true)}!
+                                {renderTeamLabel(winner, true)}
                             </span>,
                             { icon: "🎉", duration: 4000 }
                         );
@@ -2597,7 +2597,7 @@ export default function SpecialModePage() {
 
                     toast(
                         <span>
-                            {renderTeamLabel(winner, true)}!
+                            {renderTeamLabel(winner, true)}
                         </span>,
                         { icon: "🎉", duration: 4000 }
                     );
