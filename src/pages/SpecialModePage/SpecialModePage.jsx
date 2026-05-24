@@ -4596,6 +4596,7 @@ export default function SpecialModePage() {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         gap: "0px",
+                                        width: '63.8px'
                                     }}
                                 >
                                     {topHalf.map((char, index) => (
