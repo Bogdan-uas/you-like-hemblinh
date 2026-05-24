@@ -4685,6 +4685,7 @@ export default function SpecialModePage() {
                             <div
                                 style={{
                                     marginTop: activePhase === "playoffs" ? "0" : "24px",
+                                    marginBottom: activePhase === "playoffs" ? "-12px" : "0",
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
