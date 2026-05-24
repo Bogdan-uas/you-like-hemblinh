@@ -2245,8 +2245,8 @@ export default function SpecialModePage() {
     const renderTeamLabel = (team) => {
         if (!team) return null;
         return (
-            <span style={{ color: team.color || "#fff", fontWeight: 900 }}>
-                Team {team.name}
+            <span style={{ color: team.color || "#2e2f42", fontWeight: 900 }}>
+                GG
             </span>
         );
     };
@@ -2358,8 +2358,7 @@ export default function SpecialModePage() {
 
                         toast(
                             <span>
-                                This match has been WON in Overtime{" "}
-                                #{overtimeBlock} by {renderTeamLabel(winner)}!
+                                {renderTeamLabel(winner)}!
                             </span>,
                             { icon: "🎉", duration: 4000 }
                         );
@@ -2590,7 +2589,7 @@ export default function SpecialModePage() {
 
                     toast(
                         <span>
-                            This match has been WON by {renderTeamLabel(winner)}!
+                            {renderTeamLabel(winner)}!
                         </span>,
                         { icon: "🎉", duration: 4000 }
                     );
