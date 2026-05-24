@@ -2364,7 +2364,7 @@ export default function SpecialModePage() {
                             { icon: "🎉", duration: 4000 }
                         );
 
-                        banner = `Team ${winner.name} has won this match!`;
+                        banner = `GG!`;
                     } else {
                         toast(
                             <span>
@@ -2595,7 +2595,7 @@ export default function SpecialModePage() {
                         { icon: "🎉", duration: 4000 }
                     );
 
-                    banner = `Team ${winner.name} has won this match!`;
+                    banner = `GG!`;
                 } else {
                     toast(
                         <span>
@@ -4585,6 +4585,7 @@ export default function SpecialModePage() {
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.4 }}
                                 className={css.round_text}
+                                style={{ fontSize: "38px" }}
                             >
                                 {banner}
                             </motion.span>
