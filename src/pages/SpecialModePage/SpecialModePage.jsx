@@ -2242,13 +2242,21 @@ export default function SpecialModePage() {
         return '#757575';
     };
 
-    const renderTeamLabel = (team) => {
+    const renderTeamLabel = (team, seriesWon = false) => {
         if (!team) return null;
-        return (
-            <span style={{ color: team.color || "#2e2f42", fontWeight: 900 }}>
-                GG
-            </span>
-        );
+        if (seriesWon) {
+            return (
+                <span style={{ color: team.color || "#2e2f42", fontWeight: 900 }}>
+                    GG
+                </span>
+            );
+        } else {
+            return (
+                <span style={{ color: team.color || "#2e2f42" }}>
+                    {team.name}
+                </span>
+            );
+        }
     };
 
     const roundToast = (content, options) => {
@@ -2358,7 +2366,7 @@ export default function SpecialModePage() {
 
                         toast(
                             <span>
-                                {renderTeamLabel(winner)}!
+                                {renderTeamLabel(winner, true)}!
                             </span>,
                             { icon: "🎉", duration: 4000 }
                         );
@@ -2589,7 +2597,7 @@ export default function SpecialModePage() {
 
                     toast(
                         <span>
-                            {renderTeamLabel(winner)}!
+                            {renderTeamLabel(winner, true)}!
                         </span>,
                         { icon: "🎉", duration: 4000 }
                     );
