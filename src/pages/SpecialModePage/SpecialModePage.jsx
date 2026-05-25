@@ -6401,7 +6401,7 @@ export default function SpecialModePage() {
 
                                 const placementDiff = rightPlacement - leftPlacement;
 
-                                const placementWeight = 0.5;
+                                const placementWeight = 0.02;
 
                                 const placementBonus = placementDiff * placementWeight;
 
