@@ -5,7 +5,7 @@ import Loader from '../Loader/Loader';
 import Layout from '../Layout/Layout'
 import GetOutPage from "../../pages/GetOutPage/GetOutPage";
 import GamblingPage from '../../pages/GamblingPage/GamblingPage'
-import SpecialModePage from "../../pages/SpecialModePage/SpecialModePage";
+import SpecialModePage from "../../pages/SpecialModePage/SpecialModePage.jsx";
 import SpecialModeInfoPage from '../../pages/SpecialModeInfoPage/SpecialModeInfoPage'
 
 import { Toaster } from "react-hot-toast";

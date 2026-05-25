@@ -1164,6 +1164,12 @@
     z-index: 300;
 }
 
+.winnerPodium {
+    display: flex;
+    align-items: self-end;
+    justify-content: flex-end;
+}
+
 .winnerHeadline {
     line-height: 1.5;
     letter-spacing: 0.04em;
@@ -1180,13 +1186,6 @@
     margin-bottom: 24px;
 }
 
-.winnerLogo {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 3px solid #fff;
-}
-
 .winnerName {
     line-height: 1.5;
     letter-spacing: 0.04em;
@@ -1200,14 +1199,7 @@
     gap: 16px;
 }
 
-.podiumRow {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.runnerUpName {
+.runnerUp_name {
     line-height: 1.5;
     letter-spacing: 0.04em;
     font-weight: 700;
@@ -1236,6 +1228,10 @@
 }
 
 .placeLogo,
+.placeLogoFourth,
+.placeLogoThird,
+.winnerLogo,
+.runnerUpLogo,
 .placeLogoSmall {
     border-radius: 50%;
     border: 2px solid #fff;
@@ -1249,6 +1245,184 @@
 .placeLogoSmall {
     width: 32px;
     height: 32px;
+}
+
+.podiumRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.secondPodium {
+    width: 121px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: 12px;
+    border: 3px solid #d7d7d7;
+    background-color: silver;
+    padding: 20px 8px;
+}
+
+.runnerUpLabel {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #d7d7d7;
+    font-weight: 600;
+    font-size: 20px;
+}
+
+.runnerUpLogo {
+    width: 90px;
+    height: 90px;
+}
+
+.runnerUpMedal {
+    font-size: 46px;
+    position: absolute;
+    top: 65px;
+}
+
+.runnerUpName {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #d7d7d7;
+    font-weight: 600;
+    width: 100%;
+    display: block;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.firstPodium {
+    width: 121px;
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: 12px;
+    border: 3px solid #fff4b5;
+    background-color: gold;
+    padding: 20px 8px;
+}
+
+.firstPlaceLabel {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #fff4b5;
+    font-weight: 600;
+    font-size: 26px;
+}
+
+.winnerLogo {
+    width: 120px;
+    height: 120px;
+}
+
+.winnerMedal {
+    font-size: 56px;
+    position: absolute;
+    top: 85px;
+}
+
+.firstPlaceName {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #fff4b5;
+    font-weight: 600;
+    width: 100%;
+    display: block;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.thirdPodium {
+    width: 121px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: 12px;
+    border: 3px solid #ffac5a;
+    background-color: #cd7f32;
+    padding: 20px 8px;
+}
+
+.thirdPlaceLabel {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #ffac5a;
+    font-weight: 600;
+    font-size: 36px;
+}
+
+.placeLogoThird {
+    width: 68px;
+    height: 68px;
+}
+
+.thirdPlaceMedal {
+    font-size: 36px;
+    position: absolute;
+    top: 45px;
+}
+
+.thirdPlaceName {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #ffac5a;
+    font-weight: 600;
+    width: 100%;
+    display: block;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.fourthPodium {
+    width: 121px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: 12px;
+    border: 3px solid #fff;
+    background-color: #e5e5e5;
+    padding: 10px 8px;
+}
+
+.fourthPlaceLabel {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #fff;
+    font-weight: 600;
+    font-size: 36px;
+}
+
+.placeLogoFourth {
+    width: 50px;
+    height: 50px;
+}
+
+.fourthPlaceMedal {
+    font-size: 24px;
+    position: absolute;
+    top: 35px;
+}
+
+.fourthPlaceName {
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: #fff;
+    font-weight: 600;
+    width: 100%;
+    display: block;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .thirdPlace_container {
@@ -1728,4 +1902,11 @@
     text-shadow: 0 0 4px #000;
     min-width: 40px;
     text-align: center;
+}
+
+.confettiCanvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
 }

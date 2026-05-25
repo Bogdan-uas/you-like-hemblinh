@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CountUp from "react-countup";
 import css from "./SpecialModePage.module.css";
@@ -7,6 +7,7 @@ import Header from "../../components/Header/Header.jsx";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { FaTrophy } from "react-icons/fa";
+import { ReactFitty } from "react-fitty";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
@@ -1125,7 +1126,7 @@ const getEliminatedBy = (stage, key) =>
         .filter((t) => t.eliminated && t.eliminatedVia === key)
         .sort((a, b) => (a.eliminatedAt ?? 1e9) - (b.eliminatedAt ?? 1e9));
 
-export default function SpecialModePage() {
+function SpecialModePage() {
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
     
@@ -1187,9 +1188,9 @@ export default function SpecialModePage() {
     const [showWinnersScreen, setShowWinnersScreen] = useState(false);
     const [tournamentResults, setTournamentResults] = useState(null);
     const [showWinnerText, setShowWinnerText] = useState(false);
-    const [showWinnerTeam, setShowWinnerTeam] = useState(false);
     const [showPodium, setShowPodium] = useState(false);
     const [showProceed, setShowProceed] = useState(false);
+    const [winnersText, setWinnersText] = useState("And the Fourth Place is:");
 
     const [hover, setHover] = useState(false);
 
@@ -1371,9 +1372,9 @@ export default function SpecialModePage() {
             setShowWinnersScreen(parsed.showWinnersScreen ?? false);
             setTournamentResults(parsed.tournamentResults ?? null);
             setShowWinnerText(parsed.showWinnerText ?? false)
-            setShowWinnerTeam(parsed.showWinnerText ?? false)
             setShowPodium(parsed.showWinnerText ?? false)
             setShowProceed(parsed.showWinnerText ?? false)
+            setWinnersText(parsed.winnersText ?? "And the Fourth Place is:");
         } catch (e) {
             console.error(e);
             const seeds = tournamentSeedsRef.current ?? classifyTeamsForStages(allTeams, teamRatingsRef.current);
@@ -1408,9 +1409,9 @@ export default function SpecialModePage() {
             showWinnersScreen,
             tournamentResults,
             showWinnerText,
-            showWinnerTeam,
             showPodium,
             showProceed,
+            winnersText,
 
             tournamentSeeds: tournamentSeedsRef.current
                 ? {
@@ -1441,9 +1442,9 @@ export default function SpecialModePage() {
         showWinnersScreen,
         tournamentResults,
         showWinnerText,
-        showWinnerTeam,
         showPodium,
         showProceed,
+        winnersText,
     ]);
 
     const confirmRestart = () => {
@@ -2930,17 +2931,29 @@ export default function SpecialModePage() {
 
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
-    
-        setShowWinnerText(true);
-    
-        const t1 = setTimeout(() => setShowWinnerTeam(true), 1000);
-        const t2 = setTimeout(() => setShowPodium(true), 2000);
-        const t3 = setTimeout(() => setShowProceed(true), 3000);
-    
+
+        setShowPodium(true);
+        setTimeout(() => setShowWinnerText(true), 500);
+        setTimeout(() => setShowProceed(true), 16000);
+
+        setWinnersText("And the Fourth Place is:");
+
+        const t2 = setTimeout(() => {
+            setWinnersText("The Third Place is:");
+        }, 4000);
+
+        const t3 = setTimeout(() => {
+            setWinnersText("The Runner-Up is:");
+        }, 7000);
+
+        const t4 = setTimeout(() => {
+            setWinnersText("And the WINNER is:");
+        }, 10000);
+
         return () => {
-            clearTimeout(t1);
             clearTimeout(t2);
             clearTimeout(t3);
+            clearTimeout(t4);
         };
     }, [showWinnersScreen, tournamentResults]);
 
@@ -3922,6 +3935,14 @@ export default function SpecialModePage() {
         );
     };
 
+    useLayoutEffect(() => {
+        const id = requestAnimationFrame(() => {
+            window.dispatchEvent(new Event("resize"));
+        });
+
+        return () => cancelAnimationFrame(id);
+    }, [tournamentResults]);
+
     const modalTitle = useMemo(() => {
         if (!modalContext) return "";
         if (modalContext.type === "swiss") {
@@ -4122,140 +4143,125 @@ export default function SpecialModePage() {
 
     if (showWinnersScreen && tournamentResults) {
         return (
-            <div className={css.winnerScreen}>
-                {showWinnerText && (
-                    <motion.h2
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className={css.winnerHeadline}
-                    >
-                        And the winner of this tournament is
-                    </motion.h2>
-                )}
-
-                {showWinnerTeam && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.6 }}
-                        className={css.winnerMain}
-                    >
-                        <div
-                            className={css.winnerLogo}
-                            style={{
-                                backgroundColor: tournamentResults.winner.color,
-                                boxShadow: tournamentResults.winner.shadow,
-                            }}
-                        />
-                        <div className={css.winnerName}>
-                            <span
-                                style={{
-                                    marginRight: 24,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    color: "#2e2f42",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                +<FaTrophy /> |
-                            </span>
-                            🥇Team {tournamentResults.winner.name}
-                        </div>
-                    </motion.div>
-                )}
-                {showPodium && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.6 }}
-                        className={css.podium}
-                    >
-                        <div style={{ marginBottom: '24px' }} className={css.podiumRow}>
-                            <span style={{ fontSize: '22px' }} className={css.placeLabel}>RunnerUp</span>
-                            <div style={{ flexDirection: 'column' }} className={css.placeTeam}>
-                                <div
-                                    className={css.placeLogo}
-                                    style={{
-                                        backgroundColor: tournamentResults.runnerUp.color,
-                                        boxShadow: tournamentResults.runnerUp.shadow,
-                                        width: '80px',
-                                        height: '80px'
-                                    }}
-                                />
-                                <span className={css.runnerUpName}>
-                                    <span
-                                        style={{
-                                            marginRight: 24,
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: 6,
-                                            color: "#2e2f42",
-                                            fontWeight: 700,
-                                        }}
+            <>
+                <div className={css.winnerScreen}>
+                    {showWinnerText && (
+                        <motion.h2
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className={css.winnerHeadline}
+                        >
+                            {winnersText}
+                        </motion.h2>
+                    )}
+                    <div className={css.winnerPodium}>
+                        {showPodium && (
+                            <>
+                                {tournamentResults.runnerUp && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 900 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 3, delay: 5 }}
+                                        className={css.podiumRow}
                                     >
-                                        +🥈 |
-                                    </span>
-                                    🥈Team {tournamentResults.runnerUp.name}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            {tournamentResults.thirdPlace && (
-                                <div style={{ flexDirection: 'column', marginBottom: '48px' }} className={css.podiumRow}>
-                                    <span style={{ fontSize: '18px' }} className={css.placeLabel}>3rd place</span>
-                                    <div
-                                        className={css.placeLogo}
-                                        style={{ background: tournamentResults.thirdPlace.color }}
-                                    />
-                                    <span className={css.podium_name}>
-                                        <span
+                                        <div
+                                            className={css.runnerUpLogo}
                                             style={{
-                                                marginRight: 24,
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: 6,
-                                                color: "#2e2f42",
-                                                fontWeight: 700,
+                                                backgroundColor: tournamentResults.runnerUp.color,
+                                                boxShadow: tournamentResults.runnerUp.shadow
                                             }}
-                                        >
-                                            +🥉 |
-                                        </span>
-                                        🥉Team {tournamentResults.thirdPlace.name}
-                                    </span>
-                                </div>
-                            )}
+                                        />
+                                        <span className={css.runnerUpMedal}>🥈</span>
+                                        <div className={css.secondPodium}>
+                                            <ReactFitty key={tournamentResults.runnerUp?.name} className={css.runnerUpName} maxSize={16} minSize={10}>
+                                                Team <b>{tournamentResults.runnerUp.name}</b>
+                                            </ReactFitty>
+                                            <span className={css.runnerUpLabel}>RunnerUp</span>
+                                        </div>
+                                    </motion.div>
+                                )}
+                                {tournamentResults.winner && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 1100 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 3.666, delay: 8 }}
+                                        className={css.podiumRow}
+                                    >
+                                        <div
+                                            className={css.winnerLogo}
+                                            style={{
+                                                backgroundColor: tournamentResults.winner.color,
+                                                boxShadow: tournamentResults.winner.shadow,
+                                            }}
+                                        />
+                                        <span className={css.winnerMedal}>🥇</span>
+                                        <div className={css.firstPodium}>
+                                            <ReactFitty key={tournamentResults.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
+                                                Team <b>{tournamentResults.winner.name}</b>
+                                            </ReactFitty>
+                                            <span className={css.firstPlaceLabel}>Winner</span>
+                                        </div>
+                                    </motion.div>
+                                )}
+                                {tournamentResults.thirdPlace && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 700 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 2.334, delay: 3 }}
+                                        className={css.podiumRow}
+                                    >
+                                        <div
+                                            className={css.placeLogoThird}
+                                            style={{ background: tournamentResults.thirdPlace.color }}
+                                        />
+                                        <span className={css.thirdPlaceMedal}>🥉</span>
+                                        <div className={css.thirdPodium}>
+                                            <ReactFitty key={tournamentResults.thirdPlace?.name} className={css.thirdPlaceName} maxSize={16} minSize={10}>
+                                                Team <b>{tournamentResults.thirdPlace.name}</b>
+                                            </ReactFitty>
+                                            <span className={css.thirdPlaceLabel}>3rd</span>
+                                        </div>
+                                    </motion.div>
+                                )}
 
-                            {tournamentResults.fourthPlace && (
-                                <div className={css.podiumRow}>
-                                    <span className={css.placeLabel}>4th place</span>
-                                    <div
-                                        className={css.placeLogoSmall}
-                                        style={{ background: tournamentResults.fourthPlace.color }}
-                                    />
-                                    <span className={css.podium_name}>
-                                        🏅Team {tournamentResults.fourthPlace.name}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
+                                {tournamentResults.fourthPlace && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 600 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 2, delay: 0.5 }}
+                                        className={css.podiumRow}
+                                    >
+                                        <div
+                                            className={css.placeLogoFourth}
+                                            style={{ background: tournamentResults.fourthPlace.color }}
+                                        />
+                                        <span className={css.fourthPlaceMedal}>🏅</span>
+                                        <div className={css.fourthPodium}>
+                                            <ReactFitty key={tournamentResults.fourthPlace?.name} className={css.fourthPlaceName} maxSize={16} minSize={10}>
+                                                Team <b>{tournamentResults.fourthPlace.name}</b>
+                                            </ReactFitty>
+                                            <span className={css.fourthPlaceLabel}>4th</span>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </>
+                        )}
+                    </div>
 
-                {showProceed && (
-                    <motion.button
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                        className={css.gamble_button}
-                        onClick={handleProceed}
-                    >
-                        Proceed
-                    </motion.button>
-                )}
-            </div>
+                    {showProceed && (
+                        <motion.button
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.gamble_button}
+                            onClick={handleProceed}
+                        >
+                            Proceed
+                        </motion.button>
+                    )}
+                </div>
+            </>
         );
     }
 
@@ -5270,7 +5276,7 @@ export default function SpecialModePage() {
                                 rank === 1
                                     ? css.winnerName
                                     : rank <= 3
-                                        ? css.runnerUpName
+                                        ? css.runnerUp_name
                                         : css.podium_name;
 
                             const rowStyle = isTop10 ? { display: "flex", flexDirection: "column", alignItems: "center" } : undefined;
@@ -7095,3 +7101,5 @@ export default function SpecialModePage() {
         </>
     );
 }
+
+export default SpecialModePage;
