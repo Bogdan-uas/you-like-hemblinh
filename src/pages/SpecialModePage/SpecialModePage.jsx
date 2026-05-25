@@ -6394,20 +6394,43 @@ export default function SpecialModePage() {
                                 const leftRating = teamRatings?.[modalLeftTeam?.id] ?? 0;
                                 const rightRating = teamRatings?.[modalRightTeam?.id] ?? 0;
 
+                                const leftPlacement = rankById[modalLeftTeam?.id] ?? 64;
+                                const rightPlacement = rankById[modalRightTeam?.id] ?? 64;
+
                                 const raw = expectedScore(leftRating, rightRating);
+
+                                const placementDiff = rightPlacement - leftPlacement;
+
+                                const placementWeight = 0.035;
+
+                                const placementBonus = placementDiff * placementWeight;
+
+                                const combinedRaw = Math.min(
+                                    1,
+                                    Math.max(
+                                        0,
+                                        raw + placementBonus
+                                    )
+                                );
 
                                 const boFactor = boSkewFactor(modalBestOf);
 
                                 const adjustedRaw = Math.min(
                                     1,
-                                    Math.max(0, 0.5 + (raw - 0.5) * boFactor)
+                                    Math.max(
+                                        0,
+                                        0.5 + (combinedRaw - 0.5) * boFactor
+                                    )
                                 );
 
                                 const curve = 1.4;
 
                                 const leftWinProb =
                                     Math.pow(adjustedRaw, curve) /
-                                    (Math.pow(adjustedRaw, curve) + Math.pow(1 - adjustedRaw, curve));
+                                    (
+                                        Math.pow(adjustedRaw, curve) +
+                                        Math.pow(1 - adjustedRaw, curve)
+                                    );
 
                                 const leftPct = Math.min(100, Math.max(0, leftWinProb * 100));
                                 const rightPct = 100 - leftPct;
