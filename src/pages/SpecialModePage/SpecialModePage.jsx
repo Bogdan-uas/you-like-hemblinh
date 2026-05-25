@@ -6407,6 +6407,9 @@ export default function SpecialModePage() {
                                 const adjustedRightRating =
                                     rightRating - placementRatingShift;
 
+                                const expectedScore = (ra, rb) =>
+                                    1 / (1 + Math.pow(10, (rb - ra) / 850));
+
                                 const raw = expectedScore(
                                     adjustedLeftRating,
                                     adjustedRightRating
