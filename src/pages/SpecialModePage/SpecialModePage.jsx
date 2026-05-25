@@ -6384,11 +6384,11 @@ export default function SpecialModePage() {
 
                             {!isPlayedModal && !modalContext.readOnly && (() => {
                                 const boSkewFactor = (bestOf) => {
-                                    if (bestOf <= 1) return 0.65;
-                                    if (bestOf <= 3) return 0.8;
-                                    if (bestOf <= 5) return 0.9;
-                                    if (bestOf <= 7) return 1.05;
-                                    return 1.15;
+                                    if (bestOf <= 1) return 0.7;
+                                    if (bestOf <= 3) return 0.82;
+                                    if (bestOf <= 5) return 0.92;
+                                    if (bestOf <= 7) return 1.02;
+                                    return 1.1;
                                 };
 
                                 const leftRating = teamRatings?.[modalLeftTeam?.id] ?? 0;
@@ -6397,33 +6397,27 @@ export default function SpecialModePage() {
                                 const leftPlacement = rankById[modalLeftTeam?.id] ?? 64;
                                 const rightPlacement = rankById[modalRightTeam?.id] ?? 64;
 
-                                const raw = expectedScore(leftRating, rightRating);
+                                const placementGap = rightPlacement - leftPlacement;
+                                
+                                const placementRatingShift = placementGap * 12;
 
-                                const placementDiff = rightPlacement - leftPlacement;
+                                const adjustedLeftRating =
+                                    leftRating + placementRatingShift;
 
-                                const placementWeight = 0.02;
+                                const adjustedRightRating =
+                                    rightRating - placementRatingShift;
 
-                                const placementBonus = placementDiff * placementWeight;
-
-                                const combinedRaw = Math.min(
-                                    1,
-                                    Math.max(
-                                        0,
-                                        raw + placementBonus
-                                    )
+                                const raw = expectedScore(
+                                    adjustedLeftRating,
+                                    adjustedRightRating
                                 );
 
                                 const boFactor = boSkewFactor(modalBestOf);
 
-                                const adjustedRaw = Math.min(
-                                    1,
-                                    Math.max(
-                                        0,
-                                        0.5 + (combinedRaw - 0.5) * boFactor
-                                    )
-                                );
+                                const adjustedRaw =
+                                    0.5 + (raw - 0.5) * boFactor;
 
-                                const curve = 1.4;
+                                const curve = 1.12;
 
                                 const leftWinProb =
                                     Math.pow(adjustedRaw, curve) /
@@ -6432,7 +6426,11 @@ export default function SpecialModePage() {
                                         Math.pow(1 - adjustedRaw, curve)
                                     );
 
-                                const leftPct = Math.min(100, Math.max(0, leftWinProb * 100));
+                                const leftPct = Math.min(
+                                    100,
+                                    Math.max(0, leftWinProb * 100)
+                                );
+
                                 const rightPct = 100 - leftPct;
 
                                 const blend = 10;
