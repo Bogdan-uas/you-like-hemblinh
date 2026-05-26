@@ -23,8 +23,8 @@ const OT_ROUNDS_TO_WIN = 4;
 const MULTIPLIER_MIN = -2.0;
 const MULTIPLIER_MAX = 2.0;
 
-const MIN_NEEDED_PICKEM = 278;
-const MAX_NEEDED_PICKEM = 428;
+const MIN_NEEDED_PICKEM = 351;
+const MAX_NEEDED_PICKEM = 576;
 const getRandomNeededPickemPoints = () =>
     Math.floor(Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)) +
     MIN_NEEDED_PICKEM;
@@ -507,8 +507,26 @@ const SWISS_COLUMNS = [
     ["2:2"],
 ];
 
-const isBo1Net = (net) => net === "0:0" || net === "1:0" || net === "0:1" || net === "1:1";
-const getBestOfForSwissNet = (net) => (isBo1Net(net) ? 1 : 3);
+const isBo1Net = (net) =>
+    net === "0:0" ||
+    net === "1:0" ||
+    net === "0:1" ||
+    net === "1:1";
+
+const isProgressionOrEliminationNet = (net) =>
+    net === "2:0" ||
+    net === "0:2" ||
+    net === "2:1" ||
+    net === "1:2" ||
+    net === "2:2";
+
+const getBestOfForSwissNet = (net, stageKey) => {
+    if (stageKey === "stage3") {
+        return isProgressionOrEliminationNet(net) ? 5 : 3;
+    }
+
+    return isBo1Net(net) ? 1 : 3;
+};
 
 const calcSetsToWin = (bestOf) => Math.ceil(bestOf / 2);
 
@@ -738,8 +756,7 @@ const getBestOfForPlayoffs = (stage) => {
     if (stage === "gf") return 9;
     if (stage === "sf") return 7;
     if (stage === "thirdPlace") return 7;
-    if (stage === "qf") return 5;
-    return 3;
+    return 5;
 };
 
 const buildPlayoffsBracket = (teams16) => {
@@ -1753,21 +1770,49 @@ function SpecialModePage() {
     const swissMatchPoints = (match) => {
         if (!match.played || !match.pickTeamId) return 0;
 
-        const bestOf = getBestOfForSwissNet(match.net);
+        const bestOf = getBestOfForSwissNet(match.net, match.stageKey);
+
+        const isCorrectPick = match.winnerTeamId === match.pickTeamId;
+
         if (bestOf === 1) {
-            return match.winnerTeamId === match.pickTeamId ? 1 : 0;
+            return isCorrectPick ? 1 : 0;
         }
 
-        if (match.winnerTeamId === match.pickTeamId) return 3;
+        if (bestOf === 3) {
+            if (isCorrectPick) return 3;
 
-        const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
-        const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
-        return pickedSets >= 1 ? 2 : 0;
+            const pickedIsLeft =
+                match.slotA && match.pickTeamId === match.slotA.id;
+
+            const pickedSets = pickedIsLeft
+                ? (match.scoreLeft ?? 0)
+                : (match.scoreRight ?? 0);
+
+            return pickedSets >= 1 ? 2 : 0;
+        }
+
+        if (bestOf === 5) {
+            if (isCorrectPick) return 5;
+
+            const pickedIsLeft =
+                match.slotA && match.pickTeamId === match.slotA.id;
+
+            const pickedSets = pickedIsLeft
+                ? (match.scoreLeft ?? 0)
+                : (match.scoreRight ?? 0);
+
+            if (pickedSets >= 2) return 3;
+            if (pickedSets >= 1) return 1;
+
+            return 0;
+        }
+
+        return 0;
     };
 
     const playoffsMatchPoints = (match) => {
         if (!match.played || !match.pickTeamId) return 0;
-        const baseMap = { ro16: 3, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+        const baseMap = { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
         const base = baseMap[match.stage] ?? 0;
 
         if (match.winnerTeamId === match.pickTeamId) return base;
@@ -1888,7 +1933,7 @@ function SpecialModePage() {
 
         if (modalContext.type === "swiss") {
             const { stageKey, net, matchId } = modalContext;
-            const bestOf = getBestOfForSwissNet(net);
+            const bestOf = getBestOfForSwissNet(net, stageKey);
 
             const stageObj = stageKey === "stage1" ? stage1 : stageKey === "stage2" ? stage2 : stage3;
             const netArr = (stageObj && stageObj.matchesByNet && stageObj.matchesByNet[net]) ? stageObj.matchesByNet[net] : [];
@@ -2853,7 +2898,7 @@ function SpecialModePage() {
                 if (idx < 0) return;
 
                 const match = { ...arr[idx] };
-                const bestOf = getBestOfForSwissNet(swissNet);
+                const bestOf = getBestOfForSwissNet(swissNet, stg.stageKey);
 
                 const aId = match.slotA.id;
                 const bId = match.slotB.id;
@@ -3342,7 +3387,7 @@ function SpecialModePage() {
 
     const modalBestOf = useMemo(() => {
         if (!modalContext) return null;
-        if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net);
+        if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net, modalContext.stageKey);
         return getBestOfForPlayoffs(modalContext.stage);
     }, [modalContext]);
 
@@ -3455,7 +3500,7 @@ function SpecialModePage() {
                                             <MatchRect
                                                 key={m.id}
                                                 match={m}
-                                                bestOf={getBestOfForSwissNet(net)}
+                                                bestOf={getBestOfForSwissNet(net, stageObj.stageKey)}
                                                 shouldBestOfBeShown={!unlocked && lockedRects}
                                                 isClickable={isClickable}
                                                 isButtonLocked={!unlocked || isMatchRectLocked}
@@ -4482,7 +4527,28 @@ function SpecialModePage() {
                                         />
                                     </motion.span>
                                     <div className={css.lines}>
-                                        {activePhase !== "playoffs" && setsToWin === 2 ? (
+                                        {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                            <>
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow: playerWonSets >= i + 1 ?
+                                                                `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                :
+                                                                '',
+                                                            width: "16px",
+                                                        }}
+                                                        className={css.line}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase !== "playoffs" && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -4900,7 +4966,28 @@ function SpecialModePage() {
                                         />
                                     </motion.span>
                                     <div className={css.lossLines}>
-                                        {activePhase !== "playoffs" && setsToWin === 2 ? (
+                                        {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                            <>
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow: playerLostSets >= i + 1 ?
+                                                                `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                :
+                                                                '',
+                                                            width: "16px",
+                                                        }}
+                                                        className={css.line}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase !== "playoffs" && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -6994,7 +7081,7 @@ function SpecialModePage() {
                                                                             const totalRounds = wins + losses;
 
                                                                             const winnerCount = won ? wins : losses;
-                                                                            const overtimeCount = (winnerCount - 13) / 3;
+                                                                            const overtimeCount = ((winnerCount - 13) / 3).toFixed(0);
                                                                             const hasOvertime = overtimeCount <= 0;
 
                                                                             const formatRoundsCount = () => {

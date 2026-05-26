@@ -260,6 +260,9 @@ const SpecialModeInfoPage = () => {
                 <p style={{ marginTop: '24px' }} className={css.info_text}>
                     0:0, 1:0, 0:1 and 1:1 matches are being played in <b>Best of 1 format</b>, 2:0, 2:1, 1:2 and 2:2 matches are either Progression or Elimination matches that's why they are being played in <b>Best of 3 format</b>. <br />
                 </p>
+                <p style={{ marginTop: '24px' }} className={css.info_text}>
+                    - BUT, Stage III is a different from other two. 0:0, 1:0, 0:1 and 1:1 matches are being played in <b>Best of 3 format</b>, 2:0, 2:1, 1:2 and 2:2 matches are either Progression or Elimination matches that's why they are being played in <b>Best of 5 format</b>. <br />
+                </p>
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     ("Best of n" formats are explained in <a style={{ color: 'Highlight' }} onClick={scrollToDuringMatch} href='#during-match'>"Wat du ai du during ze metch?"</a> section)
                 </span>
