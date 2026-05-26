@@ -1491,6 +1491,9 @@ function SpecialModePage() {
         setShowWinnersScreen(false);
         setTournamentResults(null);
 
+        setHasPlayedWinnerAnimation(false);
+        setWinnersText("And the Fourth Place is:");
+
         setIsRestartModalOpen(false);
     };
 
