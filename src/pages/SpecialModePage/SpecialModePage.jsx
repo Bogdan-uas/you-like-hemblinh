@@ -1801,8 +1801,8 @@ function SpecialModePage() {
                 ? (match.scoreLeft ?? 0)
                 : (match.scoreRight ?? 0);
 
-            if (pickedSets >= 2) return 3;
-            if (pickedSets >= 1) return 1;
+            if (pickedSets >= 2) return 4;
+            if (pickedSets >= 1) return 2;
 
             return 0;
         }
