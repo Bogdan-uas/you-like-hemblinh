@@ -1256,15 +1256,16 @@
 
 .secondPodium {
     width: 121px;
-    height: 280px;
+    height: 1500px;
+    margin-bottom: -1200px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: column;
     border-radius: 12px;
     border: 3px solid #d7d7d7;
     background-color: silver;
-    padding: 20px 8px;
+    padding: 26px 8px;
 }
 
 .runnerUpLabel {
@@ -1299,15 +1300,16 @@
 
 .firstPodium {
     width: 121px;
-    height: 350px;
+    height: 1500px;
+    margin-bottom: -1100px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: column;
     border-radius: 12px;
     border: 3px solid #fff4b5;
     background-color: gold;
-    padding: 20px 8px;
+    padding: 30px 8px;
 }
 
 .firstPlaceLabel {
@@ -1329,6 +1331,16 @@
     top: 85px;
 }
 
+.winnerTrophy {
+    font-size: 72px;
+    position: absolute;
+    top: 38px;
+    left: 70px;
+    z-index: -1;
+    rotate: 45deg;
+    color: #2e2f42;
+}
+
 .firstPlaceName {
     line-height: 1.5;
     letter-spacing: 0.04em;
@@ -1342,10 +1354,11 @@
 
 .thirdPodium {
     width: 121px;
-    height: 200px;
+    height: 1500px;
+    margin-bottom: -1300px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: column;
     border-radius: 12px;
     border: 3px solid #ffac5a;
@@ -1385,9 +1398,11 @@
 
 .fourthPodium {
     width: 121px;
+    height: 1500px;
+    margin-bottom: -1400px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: column;
     border-radius: 12px;
     border: 3px solid #fff;

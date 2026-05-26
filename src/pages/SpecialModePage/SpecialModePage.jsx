@@ -1155,6 +1155,7 @@ function SpecialModePage() {
     const [modalLeftTeam, setModalLeftTeam] = useState(null);
     const [modalRightTeam, setModalRightTeam] = useState(null);
     const [hasChosen, setHasChosen] = useState(false);
+    const [hasPlayedWinnerAnimation, setHasPlayedWinnerAnimation] = useState(false);
 
     const [seriesState, setSeriesState] = useState(defaultSeriesState);
     const [isCalculating, setIsCalculating] = useState(false);
@@ -1375,6 +1376,7 @@ function SpecialModePage() {
             setShowPodium(parsed.showWinnerText ?? false)
             setShowProceed(parsed.showWinnerText ?? false)
             setWinnersText(parsed.winnersText ?? "And the Fourth Place is:");
+            setHasPlayedWinnerAnimation(parsed.hasPlayedWinnerAnimation ?? false);
         } catch (e) {
             console.error(e);
             const seeds = tournamentSeedsRef.current ?? classifyTeamsForStages(allTeams, teamRatingsRef.current);
@@ -1412,6 +1414,7 @@ function SpecialModePage() {
             showPodium,
             showProceed,
             winnersText,
+            hasPlayedWinnerAnimation,
 
             tournamentSeeds: tournamentSeedsRef.current
                 ? {
@@ -1445,6 +1448,7 @@ function SpecialModePage() {
         showPodium,
         showProceed,
         winnersText,
+        hasPlayedWinnerAnimation,
     ]);
 
     const confirmRestart = () => {
@@ -2932,30 +2936,47 @@ function SpecialModePage() {
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
 
+        setShowProceed(false);
         setShowPodium(true);
-        setTimeout(() => setShowWinnerText(true), 500);
-        setTimeout(() => setShowProceed(true), 16000);
 
-        setWinnersText("And the Fourth Place is:");
+        if (!hasPlayedWinnerAnimation) {
+            setTimeout(() => setShowWinnerText(true), 500);
 
-        const t2 = setTimeout(() => {
-            setWinnersText("The Third Place is:");
-        }, 4000);
+            setWinnersText("And the Fourth Place is:");
 
-        const t3 = setTimeout(() => {
-            setWinnersText("The Runner-Up is:");
-        }, 7000);
+            const t2 = setTimeout(() => {
+                setWinnersText("The Third Place is:");
+            }, 4000);
 
-        const t4 = setTimeout(() => {
-            setWinnersText("And the WINNER is:");
-        }, 10000);
+            const t3 = setTimeout(() => {
+                setWinnersText("The Runner-Up is:");
+            }, 7000);
 
-        return () => {
-            clearTimeout(t2);
-            clearTimeout(t3);
-            clearTimeout(t4);
-        };
-    }, [showWinnersScreen, tournamentResults]);
+            const t4 = setTimeout(() => {
+                setWinnersText("And the WINNER is:");
+            }, 10000);
+
+            const proceed = setTimeout(() => {
+                setShowProceed(true);
+                setHasPlayedWinnerAnimation(true);
+            }, 15000);
+
+            return () => {
+                clearTimeout(t2);
+                clearTimeout(t3);
+                clearTimeout(t4);
+                clearTimeout(proceed);
+            };
+        }
+
+        setShowWinnerText(true);
+        setShowProceed(true);
+        setWinnersText("And the WINNER is:");
+    }, [
+        showWinnersScreen,
+        tournamentResults,
+        hasPlayedWinnerAnimation
+    ]);
 
     useEffect(() => {
         if (!showPickemSummary) return;
@@ -4160,9 +4181,17 @@ function SpecialModePage() {
                             <>
                                 {tournamentResults.runnerUp && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: 900 }}
+                                        initial={
+                                            hasPlayedWinnerAnimation
+                                                ? false
+                                                : { opacity: 0, y: 900 }
+                                        }
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 3, delay: 5 }}
+                                        transition={
+                                            hasPlayedWinnerAnimation
+                                                ? { duration: 0 }
+                                                : { duration: 3, delay: 5 }
+                                        }
                                         className={css.podiumRow}
                                     >
                                         <div
@@ -4183,9 +4212,17 @@ function SpecialModePage() {
                                 )}
                                 {tournamentResults.winner && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: 1100 }}
+                                        initial={
+                                            hasPlayedWinnerAnimation
+                                                ? false
+                                                : { opacity: 0, y: 1100 }
+                                        }
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 3.666, delay: 8 }}
+                                        transition={
+                                            hasPlayedWinnerAnimation
+                                                ? { duration: 0 }
+                                                : { duration: 3.666, delay: 8 }
+                                        }
                                         className={css.podiumRow}
                                     >
                                         <div
@@ -4196,6 +4233,7 @@ function SpecialModePage() {
                                             }}
                                         />
                                         <span className={css.winnerMedal}>🥇</span>
+                                        <span className={css.winnerTrophy}><FaTrophy /></span>
                                         <div className={css.firstPodium}>
                                             <ReactFitty key={tournamentResults.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
                                                 Team <b>{tournamentResults.winner.name}</b>
@@ -4206,9 +4244,17 @@ function SpecialModePage() {
                                 )}
                                 {tournamentResults.thirdPlace && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: 700 }}
+                                        initial={
+                                            hasPlayedWinnerAnimation
+                                                ? false
+                                                : { opacity: 0, y: 700 }
+                                        }
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 2.334, delay: 3 }}
+                                        transition={
+                                            hasPlayedWinnerAnimation
+                                                ? { duration: 0 }
+                                                : { duration: 2.334, delay: 3 }
+                                        }
                                         className={css.podiumRow}
                                     >
                                         <div
@@ -4227,9 +4273,17 @@ function SpecialModePage() {
 
                                 {tournamentResults.fourthPlace && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: 600 }}
+                                        initial={
+                                            hasPlayedWinnerAnimation
+                                                ? false
+                                                : { opacity: 0, y: 600 }
+                                        }
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 2, delay: 0.5 }}
+                                        transition={
+                                            hasPlayedWinnerAnimation
+                                                ? { duration: 0 }
+                                                : { duration: 2, delay: 0.5 }
+                                        }
                                         className={css.podiumRow}
                                     >
                                         <div
@@ -4256,6 +4310,7 @@ function SpecialModePage() {
                             transition={{ duration: 0.4 }}
                             className={css.gamble_button}
                             onClick={handleProceed}
+                            style={{ zIndex: 10 }}
                         >
                             Proceed
                         </motion.button>
