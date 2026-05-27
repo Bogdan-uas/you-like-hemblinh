@@ -6916,7 +6916,9 @@ function SpecialModePage() {
                                                                         <span style={{ top: '-60px' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
-                                                                                    {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
+                                                                                    {" "}{deltaPlaces > 0
+                                                                                        ? `${deltaPlaces}+`
+                                                                                        : `${Math.abs(deltaPlaces)}-`}
                                                                                 </span>
                                                                             )}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
@@ -6989,7 +6991,9 @@ function SpecialModePage() {
                                                                         <span style={{ top: '12%' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
-                                                                                    {" "}{deltaPlaces > 0 ? `+${deltaPlaces}` : `${deltaPlaces}`}
+                                                                                    {" "}{deltaPlaces > 0
+                                                                                        ? `${deltaPlaces}+`
+                                                                                        : `${Math.abs(deltaPlaces)}-`}
                                                                                 </span>
                                                                             )}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
