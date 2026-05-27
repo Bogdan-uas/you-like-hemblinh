@@ -6913,7 +6913,7 @@ function SpecialModePage() {
 
                                                                 return (
                                                                     <>
-                                                                        <span style={{ top: '-60px' }} className={css.finished_modal_team_placing}>
+                                                                        <span style={{ top: '-60px', width: 'max-content' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
                                                                                     {" "}{deltaPlaces > 0
@@ -6988,7 +6988,7 @@ function SpecialModePage() {
 
                                                                 return (
                                                                     <>
-                                                                        <span style={{ top: '12%' }} className={css.finished_modal_team_placing}>
+                                                                        <span style={{ top: '12%', width: 'max-content' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
                                                                                 <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
                                                                                     {" "}{deltaPlaces > 0
