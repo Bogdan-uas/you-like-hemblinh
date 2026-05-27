@@ -592,7 +592,7 @@ const SpecialModeInfoPage = () => {
                 <div className={css.image_container}>
                     <img src={playoffsImg} alt="Stage II" className={css.image} style={{ width: '35vw', height: '40vh' }} />
                 </div>
-                <p className={css.info_text}>As I mentioned above, Round of 16 is a <b>BO3</b>, Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and Grand Final is <b>BO9</b>.</p>
+                <p className={css.info_text}>As I mentioned above, Round of 16 is a <b>BO5</b>, Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and Grand Final is <b>BO9</b>.</p>
                 <p className={css.info_text}>Playoffs are single-elimination stage, which means that once a team loses a series, it flies out of the tournament directly. By the time we reach Grand Final, there should be only two teams left. In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner's screen, where we see first 4 places of the tournament:</p>
                 <div className={css.image_container}>
                     <img src={winnersScreenImg} alt="Team Jade as Winner, Team Orange as Runner-up, Team Green as Third Place, Team Steel as Fourth Place" className={css.image} style={{ width: '35vw', height: '60vh' }} />
