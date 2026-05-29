@@ -5832,7 +5832,7 @@ function SpecialModePage() {
                                                     }}
                                                     className={css.modal_team_rating}
                                                 >
-                                                    {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                    {getDisplayedValue(t)}{placingCategory === "points" ? "p" : ""}
                                                 </span>
                                             </button>
                                         );
@@ -5982,7 +5982,7 @@ function SpecialModePage() {
                                                         }}
                                                         className={css.modal_team_rating}
                                                     >
-                                                        {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                        {getDisplayedValue(t)}{placingCategory === "points" ? "p" : ""}
                                                     </span>
                                                 </button>
                                             );
@@ -6392,7 +6392,7 @@ function SpecialModePage() {
                                                     }}
                                                     className={css.modal_team_rating}
                                                 >
-                                                    {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                    {getDisplayedValue(t)}{placingCategory === "points" ? "p" : ""}
                                                 </span>
                                             </button>
                                         );
@@ -6542,7 +6542,7 @@ function SpecialModePage() {
                                                         }}
                                                         className={css.modal_team_rating}
                                                     >
-                                                        {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                        {getDisplayedValue(t)}{placingCategory === "points" ? "p" : ""}
                                                     </span>
                                                 </button>
                                             );
