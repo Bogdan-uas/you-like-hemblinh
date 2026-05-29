@@ -1248,7 +1248,7 @@ function SpecialModePage() {
 
     const [placingsAdminCode, setPlacingsAdminCode] = useState("");
 
-    const [selectedPlacingTeamId, setSelectedPlacingTeamId] = useState(null);
+    const [selectedPlacingTeamIds, setSelectedPlacingTeamIds] = useState([]);
 
     const [placingCategory, setPlacingCategory] = useState("");
     const [placingAmount, setPlacingAmount] = useState("");
@@ -1622,7 +1622,7 @@ function SpecialModePage() {
 
     const clearPlacingsAdminState = () => {
         setPlacingsAdminCode("");
-        setSelectedPlacingTeamId(null);
+        setSelectedPlacingTeamIds([]);
         setPlacingCategory("");
         setPlacingAmount("");
     };
@@ -1647,11 +1647,25 @@ function SpecialModePage() {
         setIsAddPlacingsModalOpen(true);
     };
 
+    const toggleTeamSelection = (id) => {
+        setSelectedPlacingTeamIds((prev) =>
+            prev.includes(id)
+                ? prev.filter((x) => x !== id)
+                : [...prev, id]
+        );
+    };
+
     const canConfirmPlacings = () => {
         const n = Number(placingAmount);
+
         return (
-            !!selectedPlacingTeamId &&
-            (placingCategory === "wins" || placingCategory === "seconds" || placingCategory === "thirds") &&
+            !!selectedPlacingTeamIds.length &&
+            (
+                placingCategory === "wins" ||
+                placingCategory === "seconds" ||
+                placingCategory === "thirds" ||
+                placingCategory === "points"
+            ) &&
             Number.isFinite(n) &&
             n > 0
         );
@@ -1665,13 +1679,40 @@ function SpecialModePage() {
 
     const handleApplyAddPlacings = () => {
         const n = Math.max(0, Math.floor(Number(placingAmount)));
-        const teamId = selectedPlacingTeamId;
+        const teamIds = selectedPlacingTeamIds;
         const cat = placingCategory;
+
+        if (cat === "points") {
+            setTeamRatings((prev) => {
+                const next = { ...prev };
+
+                teamIds.forEach((id) => {
+                    next[id] = (next[id] ?? 0) + n;
+                });
+
+                saveTeamRatings(next);
+                teamRatingsRef.current = next;
+                return next;
+            });
+
+            setIsAddPlacingsFinalModalOpen(false);
+            clearPlacingsAdminState();
+            toast.success("Points updated.");
+            return;
+        }
 
         setTeamPlacings((prev) => {
             const next = { ...prev };
-            const cur = next[teamId] ?? { wins: 0, seconds: 0, thirds: 0 };
-            next[teamId] = { ...cur, [cat]: (cur[cat] ?? 0) + n };
+
+            teamIds.forEach((id) => {
+                const cur = next[id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+                next[id] = {
+                    ...cur,
+                    [cat]: (cur[cat] ?? 0) + n,
+                };
+            });
+
             saveTeamPlacings(next);
             return next;
         });
@@ -1690,12 +1731,15 @@ function SpecialModePage() {
 
     const getTeamsForRemovePicker = () => {
         if (!placingCategory) return [];
+
         return leaderboard.sorted.filter((t) => {
             const p = teamPlacings?.[t.id];
-            if (!p) return false;
-            if (placingCategory === "wins") return (p.wins ?? 0) > 0;
-            if (placingCategory === "seconds") return (p.seconds ?? 0) > 0;
-            if (placingCategory === "thirds") return (p.thirds ?? 0) > 0;
+
+            if (placingCategory === "wins") return (p?.wins ?? 0) > 0;
+            if (placingCategory === "seconds") return (p?.seconds ?? 0) > 0;
+            if (placingCategory === "thirds") return (p?.thirds ?? 0) > 0;
+            if (placingCategory === "points") return (teamRatings?.[t.id] ?? 0) > 0;
+
             return false;
         });
     };
@@ -1708,13 +1752,40 @@ function SpecialModePage() {
 
     const handleApplyRemovePlacings = () => {
         const n = Math.max(0, Math.floor(Number(placingAmount)));
-        const teamId = selectedPlacingTeamId;
+        const teamIds = selectedPlacingTeamIds;
         const cat = placingCategory;
+
+        if (cat === "points") {
+            setTeamRatings((prev) => {
+                const next = { ...prev };
+
+                teamIds.forEach((id) => {
+                    next[id] = Math.max(0, (next[id] ?? 0) - n);
+                });
+
+                saveTeamRatings(next);
+                teamRatingsRef.current = next;
+                return next;
+            });
+
+            setIsRemovePlacingsFinalModalOpen(false);
+            clearPlacingsAdminState();
+            toast.success("Points updated.");
+            return;
+        }
 
         setTeamPlacings((prev) => {
             const next = { ...prev };
-            const cur = next[teamId] ?? { wins: 0, seconds: 0, thirds: 0 };
-            next[teamId] = { ...cur, [cat]: Math.max(0, (cur[cat] ?? 0) - n) };
+
+            teamIds.forEach((id) => {
+                const cur = next[id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+                next[id] = {
+                    ...cur,
+                    [cat]: Math.max(0, (cur[cat] ?? 0) - n),
+                };
+            });
+
             saveTeamPlacings(next);
             return next;
         });
@@ -1722,6 +1793,34 @@ function SpecialModePage() {
         setIsRemovePlacingsFinalModalOpen(false);
         clearPlacingsAdminState();
         toast.success("Placings updated.");
+    };
+
+    const getDisplayedValue = (t) => {
+        const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+        if (placingCategory === "wins") return p.wins ?? 0;
+        if (placingCategory === "seconds") return p.seconds ?? 0;
+        if (placingCategory === "thirds") return p.thirds ?? 0;
+        if (placingCategory === "points") return teamRatings?.[t.id] ?? 0;
+
+        return teamRatings?.[t.id] ?? 0;
+    };
+
+    const getSortValue = (t) => {
+        const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+        switch (placingCategory) {
+            case "wins":
+                return p.wins ?? 0;
+            case "seconds":
+                return p.seconds ?? 0;
+            case "thirds":
+                return p.thirds ?? 0;
+            case "points":
+                return teamRatings?.[t.id] ?? 0;
+            default:
+                return teamRatings?.[t.id] ?? 0;
+        }
     };
 
     const handleTournamentStart = () => {
@@ -5701,25 +5800,43 @@ function SpecialModePage() {
                             }}
                         >
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                                {allTeams.map((t) => {
-                                    const isSelected = selectedPlacingTeamId === t.id;
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setSelectedPlacingTeamId(t.id)}
-                                            style={{
-                                                width: 37.2,
-                                                height: 37.2,
-                                                boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
-                                                border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
-                                                background: t.color,
-                                            }}
-                                            className={css.team_circle_ro32}
-                                            title={`Team ${t.name}`}
-                                        />
-                                    );
-                                })}
+                                {[...allTeams]
+                                    .sort((a, b) => getSortValue(b) - getSortValue(a))
+                                    .map((t) => {
+                                        const isSelected = selectedPlacingTeamIds.includes(t.id);
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => toggleTeamSelection(t.id)}
+                                                style={{
+                                                    width: 37.2,
+                                                    height: 37.2,
+                                                    boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                    border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                    background: t.color,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    position: "relative",
+                                                    overflow: "hidden",
+                                                }}
+                                                className={css.team_circle_ro32}
+                                                title={`Team ${t.name} • ${teamRatings?.[t.id] ?? 0}p`}
+                                            >
+                                                <span
+                                                    style={{
+                                                        color: "#ffffff",
+                                                        fontSize: "12px",
+                                                        textShadow: "0 0 4px #000"
+                                                    }}
+                                                    className={css.modal_team_rating}
+                                                >
+                                                    {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                             </div>
                         </div>
 
@@ -5730,13 +5847,13 @@ function SpecialModePage() {
                                 value={placingCategory}
                                 onChange={(e) => {
                                     setPlacingCategory(e.target.value);
-                                    setSelectedPlacingTeamId(null);
                                 }}
                             >
                                 <option value=""></option>
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="points">points</option>
                             </select>
 
                             <input
@@ -5833,25 +5950,43 @@ function SpecialModePage() {
                                 <div style={{ width: "100%", height: "100%" }} />
                             ) : (
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                                    {getTeamsForRemovePicker().map((t) => {
-                                        const isSelected = selectedPlacingTeamId === t.id;
-                                        return (
-                                            <button
-                                                key={t.id}
-                                                type="button"
-                                                onClick={() => setSelectedPlacingTeamId(t.id)}
-                                                style={{
-                                                    width: 37.2,
-                                                    height: 37.2,
-                                                    boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
-                                                    border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
-                                                    background: t.color,
-                                                }}
-                                                className={css.team_circle_ro32}
-                                                title={`Team ${t.name}`}
-                                            />
-                                        );
-                                    })}
+                                    {[...getTeamsForRemovePicker()]
+                                        .sort((a, b) => getSortValue(b) - getSortValue(a))
+                                        .map((t) => {
+                                            const isSelected = selectedPlacingTeamIds.includes(t.id);
+                                            return (
+                                                <button
+                                                    key={t.id}
+                                                    type="button"
+                                                    onClick={() => toggleTeamSelection(t.id)}
+                                                    style={{
+                                                        width: 37.2,
+                                                        height: 37.2,
+                                                        boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                        border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                        background: t.color,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        position: "relative",
+                                                        overflow: "hidden",
+                                                    }}
+                                                    className={css.team_circle_ro32}
+                                                    title={`Team ${t.name} • ${teamRatings?.[t.id] ?? 0}p`}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            color: "#ffffff",
+                                                            fontSize: "12px",
+                                                            textShadow: "0 0 4px #000"
+                                                        }}
+                                                        className={css.modal_team_rating}
+                                                    >
+                                                        {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>
@@ -5863,13 +5998,13 @@ function SpecialModePage() {
                                 value={placingCategory}
                                 onChange={(e) => {
                                     setPlacingCategory(e.target.value);
-                                    setSelectedPlacingTeamId(null);
                                 }}
                             >
                                 <option value=""></option>
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="points">points</option>
                             </select>
 
                             <input
@@ -6225,25 +6360,43 @@ function SpecialModePage() {
                             }}
                         >
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                                {allTeams.map((t) => {
-                                    const isSelected = selectedPlacingTeamId === t.id;
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setSelectedPlacingTeamId(t.id)}
-                                            style={{
-                                                width: 37.2,
-                                                height: 37.2,
-                                                boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
-                                                border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
-                                                background: t.color,
-                                            }}
-                                            className={css.team_circle_ro32}
-                                            title={`Team ${t.name}`}
-                                        />
-                                    );
-                                })}
+                                {[...allTeams]
+                                    .sort((a, b) => getSortValue(b) - getSortValue(a))
+                                    .map((t) => {
+                                        const isSelected = selectedPlacingTeamIds.includes(t.id);
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => toggleTeamSelection(t.id)}
+                                                style={{
+                                                    width: 37.2,
+                                                    height: 37.2,
+                                                    boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                    border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                    background: t.color,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    position: "relative",
+                                                    overflow: "hidden",
+                                                }}
+                                                className={css.team_circle_ro32}
+                                                title={`Team ${t.name} • ${teamRatings?.[t.id] ?? 0}p`}
+                                            >
+                                                <span
+                                                    style={{
+                                                        color: "#ffffff",
+                                                        fontSize: "12px",
+                                                        textShadow: "0 0 4px #000"
+                                                    }}
+                                                    className={css.modal_team_rating}
+                                                >
+                                                    {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                             </div>
                         </div>
 
@@ -6254,13 +6407,13 @@ function SpecialModePage() {
                                 value={placingCategory}
                                 onChange={(e) => {
                                     setPlacingCategory(e.target.value);
-                                    setSelectedPlacingTeamId(null);
                                 }}
                             >
                                 <option value=""></option>
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="points">points</option>
                             </select>
 
                             <input
@@ -6357,25 +6510,43 @@ function SpecialModePage() {
                                 <div style={{ width: "100%", height: "100%" }} />
                             ) : (
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                                    {getTeamsForRemovePicker().map((t) => {
-                                        const isSelected = selectedPlacingTeamId === t.id;
-                                        return (
-                                            <button
-                                                key={t.id}
-                                                type="button"
-                                                onClick={() => setSelectedPlacingTeamId(t.id)}
-                                                style={{
-                                                    width: 37.2,
-                                                    height: 37.2,
-                                                    boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
-                                                    border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
-                                                    background: t.color,
-                                                }}
-                                                className={css.team_circle_ro32}
-                                                title={`Team ${t.name}`}
-                                            />
-                                        );
-                                    })}
+                                    {[...getTeamsForRemovePicker()]
+                                        .sort((a, b) => getSortValue(b) - getSortValue(a))
+                                        .map((t) => {
+                                            const isSelected = selectedPlacingTeamIds.includes(t.id);
+                                            return (
+                                                <button
+                                                    key={t.id}
+                                                    type="button"
+                                                    onClick={() => toggleTeamSelection(t.id)}
+                                                    style={{
+                                                        width: 37.2,
+                                                        height: 37.2,
+                                                        boxShadow: isSelected ? `0 0 12px ${t.unlitColor}` : "none",
+                                                        border: isSelected ? `2px solid ${t.unlitColor}` : "2px solid #999",
+                                                        background: t.color,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        position: "relative",
+                                                        overflow: "hidden",
+                                                    }}
+                                                    className={css.team_circle_ro32}
+                                                    title={`Team ${t.name} • ${teamRatings?.[t.id] ?? 0}p`}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            color: "#ffffff",
+                                                            fontSize: "12px",
+                                                            textShadow: "0 0 4px #000"
+                                                        }}
+                                                        className={css.modal_team_rating}
+                                                    >
+                                                        {getDisplayedValue(t)}{placingCategory === "points" ? "p" : "p"}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>
@@ -6387,13 +6558,13 @@ function SpecialModePage() {
                                 value={placingCategory}
                                 onChange={(e) => {
                                     setPlacingCategory(e.target.value);
-                                    setSelectedPlacingTeamId(null);
                                 }}
                             >
                                 <option value=""></option>
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="points">points</option>
                             </select>
 
                             <input
