@@ -1802,7 +1802,7 @@ function SpecialModePage() {
         if (placingCategory === "seconds") return p.seconds ?? 0;
         if (placingCategory === "thirds") return p.thirds ?? 0;
         if (placingCategory === "points") return teamRatings?.[t.id] ?? 0;
-
+        if (placingCategory === "") return null;
         return teamRatings?.[t.id] ?? 0;
     };
 
