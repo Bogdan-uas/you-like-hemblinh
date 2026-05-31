@@ -7,6 +7,7 @@ import Header from "../../components/Header/Header.jsx";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { FaTrophy } from "react-icons/fa";
+import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import { ReactFitty } from "react-fitty";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
@@ -351,7 +352,7 @@ const computeRsDeltas = ({
 
     const eW = expectedScore(rW, rL);
 
-    const K_BASE = 10;
+    const K_BASE = 20;
 
     const imp = matchImportance({ phase, swissStageKey, playoffsStage, bestOf, loserSetsWon });
     const rec = recencyWeight(playedAtMs);
@@ -1547,6 +1548,13 @@ function SpecialModePage() {
         setIsScoreBoardResetConfirmModalOpen(true);
     };
 
+    const allTeamIds = allTeams.map(t => t.id);
+
+    const allSelected =
+        selectedPlacingTeamIds.length === allTeamIds.length && allTeamIds.length > 0;
+
+    const hasAnySelected = selectedPlacingTeamIds.length > 0;
+
     const resetTournamentStateWithSeeds = (seededStage1Seeds) => {
         localStorage.removeItem(STORAGE_KEY);
 
@@ -1648,9 +1656,9 @@ function SpecialModePage() {
     };
 
     const toggleTeamSelection = (id) => {
-        setSelectedPlacingTeamIds((prev) =>
+        setSelectedPlacingTeamIds(prev =>
             prev.includes(id)
-                ? prev.filter((x) => x !== id)
+                ? prev.filter(tid => tid !== id)
                 : [...prev, id]
         );
     };
@@ -1670,6 +1678,13 @@ function SpecialModePage() {
             n > 0
         );
     };
+
+    const canSelectAllPlacings =
+        placingCategory &&
+        placingCategory === "" &&
+        placingAmount &&
+        selectedPlacingTeamIds.length > 0 &&
+        !allSelected;
 
     const handleOpenAddPlacingsFinal = () => {
         if (!canConfirmPlacings()) return;
@@ -1821,6 +1836,13 @@ function SpecialModePage() {
             default:
                 return teamRatings?.[t.id] ?? 0;
         }
+    };
+
+    const toggleSelectAllTeams = () => {
+        setSelectedPlacingTeamIds(prev => {
+            if (prev.length === allTeamIds.length) return [];
+            return [...allTeamIds];
+        });
     };
 
     const handleTournamentStart = () => {
@@ -5788,11 +5810,32 @@ function SpecialModePage() {
                 )}
 
                 {isAddPlacingsModalOpen && (
-                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                    <div className={css.restart_modal} style={{ width: "520px", top: '20%' }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
                             Add tournament placings
                         </p>
 
+                        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                            <button
+                                type="button"
+                                className={css.gamble_button}
+                                onClick={toggleSelectAllTeams}
+                                disabled={allTeams.length === 0 || canSelectAllPlacings}
+                            >
+                                {allSelected ? "Unselect all" : "Select all"}
+                            </button>
+
+                            {hasAnySelected && (
+                                <button
+                                    type="button"
+                                    className={css.cancel_button}
+                                    onClick={() => setSelectedPlacingTeamIds([])}
+                                    disabled={canSelectAllPlacings}
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
                         <div
                             className={css.hidden_scrollbar}
                             style={{
@@ -5935,11 +5978,32 @@ function SpecialModePage() {
                 )}
 
                 {isRemovePlacingsModalOpen && (
-                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                    <div className={css.restart_modal} style={{ width: "520px", top: '20%' }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
                             Remove tournament placings
                         </p>
 
+                        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                            <button
+                                type="button"
+                                className={css.gamble_button}
+                                onClick={toggleSelectAllTeams}
+                                disabled={allTeams.length === 0 || canSelectAllPlacings}
+                            >
+                                {allSelected ? "Unselect all" : "Select all"}
+                            </button>
+
+                            {hasAnySelected && (
+                                <button
+                                    type="button"
+                                    className={css.cancel_button}
+                                    onClick={() => setSelectedPlacingTeamIds([])}
+                                    disabled={canSelectAllPlacings}
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
                         <div
                             className={css.hidden_scrollbar}
                             style={{
@@ -6348,11 +6412,32 @@ function SpecialModePage() {
                 )}
 
                 {isAddPlacingsModalOpen && (
-                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                    <div className={css.restart_modal} style={{ width: "520px", top: '20%' }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
                             Add tournament placings
                         </p>
 
+                        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                            <button
+                                type="button"
+                                className={css.gamble_button}
+                                onClick={toggleSelectAllTeams}
+                                disabled={allTeams.length === 0 || canSelectAllPlacings}
+                            >
+                                {allSelected ? "Unselect all" : "Select all"}
+                            </button>
+
+                            {hasAnySelected && (
+                                <button
+                                    type="button"
+                                    className={css.cancel_button}
+                                    onClick={() => setSelectedPlacingTeamIds([])}
+                                    disabled={canSelectAllPlacings}
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
                         <div
                             className={css.hidden_scrollbar}
                             style={{
@@ -6495,11 +6580,32 @@ function SpecialModePage() {
                 )}
 
                 {isRemovePlacingsModalOpen && (
-                    <div className={css.restart_modal} style={{ width: "520px", top: '17.5%' }}>
+                    <div className={css.restart_modal} style={{ width: "520px", top: '20%' }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
                             Remove tournament placings
                         </p>
 
+                        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                            <button
+                                type="button"
+                                className={css.gamble_button}
+                                onClick={toggleSelectAllTeams}
+                                disabled={allTeams.length === 0 || canSelectAllPlacings}
+                            >
+                                {allSelected ? "Unselect all" : "Select all"}
+                            </button>
+
+                            {hasAnySelected && (
+                                <button
+                                    type="button"
+                                    className={css.cancel_button}
+                                    onClick={() => setSelectedPlacingTeamIds([])}
+                                    disabled={canSelectAllPlacings}
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
                         <div
                             className={css.hidden_scrollbar}
                             style={{
@@ -6764,6 +6870,50 @@ function SpecialModePage() {
 
                                 const rightPct = 100 - leftPct;
 
+                                const favoriteIsLeft = leftPct > rightPct;
+                                const favoritePct = Math.max(leftPct, rightPct);
+                                const diff = Math.abs(leftPct - rightPct);
+
+                                const favoriteTeam = favoriteIsLeft ? modalLeftTeam?.name : modalRightTeam?.name;
+
+                                const predictionLabel =
+                                    diff <= 5
+                                        ? "Too close to call"
+                                        : diff <= 10
+                                            ? "Barely separated"
+                                            : diff <= 18
+                                                ? `${favoriteTeam} has slight edge`
+                                                : diff <= 25
+                                                    ? `${favoriteTeam} has modest advantage`
+                                                    : diff <= 35
+                                                        ? `${favoriteTeam} has it in control`
+                                                        : diff <= 45
+                                                            ? `${favoriteTeam} has strong position`
+                                                            : diff <= 60
+                                                                ? `${favoriteTeam} has dominant position`
+                                                                : diff <= 75
+                                                                    ? `${favoriteTeam} is overwhelming favorite`
+                                                                    : diff <= 90
+                                                                        ? `${favoriteTeam} is very likely a winner`
+                                                                        : diff <= 99
+                                                                            ? `${favoriteTeam} is near-absolute favorite`
+                                                                            : `${favoriteTeam} is 100% winner!`;
+
+                                const offsetStrength = Math.min(
+                                    35,
+                                    ((favoritePct - 50) / 50) * 35
+                                );
+
+                                let predictionPositionPct = favoriteIsLeft
+                                    ? 50 - offsetStrength
+                                    : 50 + offsetStrength;
+
+                                const padding = predictionLabel.length > 25 ? 29 : 26;
+
+                                predictionPositionPct = Math.max(padding, Math.min(100 - padding, predictionPositionPct));
+
+                                const predictionPosition = `${predictionPositionPct}%`;
+
                                 const blend = 10;
 
                                 const start = Math.max(0, leftPct - blend);
@@ -6779,13 +6929,63 @@ function SpecialModePage() {
                                     )`
                                 };
 
+                                const leftStats = teamPlacings?.[modalLeftTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                                const rightStats = teamPlacings?.[modalRightTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+                                const renderStats = (stats) => {
+                                    const items = [];
+
+                                    if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
+                                    if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
+                                    if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+
+                                    if (items.length === 0) return null;
+
+                                    return (
+                                        <div className={css.team_stats_badge}>
+                                            {items.map((i, idx) => (
+                                                <span key={idx} className={css.stat_item}>
+                                                    {i.icon}: {i.value}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    );
+                                };
+
+                                const boLabel = `BO${modalBestOf}`;
+
+                                let stageLabel = "Start Match";
+
+                                if (modalContext?.type === "playoffs") {
+                                    stageLabel = `Start this ${boLabel} ${modalTitle}`;
+                                } else if (modalContext?.type === "swiss") {
+                                    const net = modalContext?.net;
+
+                                    const regularMatches = ["0:0", "1:0", "0:1", "1:1"];
+
+                                    const progressionMatches = ["2:0", "2:1"];
+                                    const eliminationMatches = ["0:2", "1:2"];
+                                    const deciderMatches = ["2:2"];
+
+                                    if (regularMatches.includes(net)) {
+                                        stageLabel = `Start this ${net} Match`;
+                                    } else if (progressionMatches.includes(net)) {
+                                        stageLabel = `Start this ${net} Progression Match`;
+                                    } else if (eliminationMatches.includes(net)) {
+                                        stageLabel = `Start this ${net} Elimination Match`;
+                                    } else if (deciderMatches.includes(net)) {
+                                        stageLabel = `Start this ${net} Deciding Match`;
+                                    }
+                                }
+
                                 return (
                                     <>
                                         <div className={css.match_modal_row}>
+                                            {renderStats(leftStats)}
                                             <div
                                                 onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
                                                 onMouseLeave={() => setHoveredTeamId(null)}
-                                                style={{ cursor: hasChosen ? "default" : "pointer" }}
+                                                style={{ cursor: hasChosen ? "default" : "pointer", marginLeft: '12px' }}
                                                 onClick={handleChooseLeft}
                                                 className={css.modal_team_btn}
                                             >
@@ -6855,6 +7055,7 @@ function SpecialModePage() {
                                                 onMouseLeave={() => setHoveredTeamId(null)}
                                                 onClick={handleChooseRight}
                                                 className={css.modal_team_btn}
+                                                style={{ marginRight: '12px' }}
                                             >
                                                 <button
                                                     type="button"
@@ -6907,6 +7108,7 @@ function SpecialModePage() {
                                                     </span>
                                                 </button>
                                             </div>
+                                            {renderStats(rightStats)}
                                         </div>
 
                                         <div className={css.match_prediction_wrapper}>
@@ -6935,13 +7137,24 @@ function SpecialModePage() {
                                                 %
                                             </span>
                                         </div>
+                                        <ReactFitty
+                                            maxSize={16}
+                                            minSize={12}
+                                            className={css.prediction_label}
+                                            style={{
+                                                left: predictionPosition,
+                                                transform: "translateX(-50%)",
+                                            }}
+                                        >
+                                            {predictionLabel}
+                                        </ReactFitty>
                                         <div style={{ textAlign: "center" }}>
                                             <button
                                                 className={`${css.gamble_button} ${!hasChosen ? css.locked : ""}`}
                                                 disabled={!hasChosen}
                                                 onClick={handleStartMatch}
                                             >
-                                                Start Match
+                                                {stageLabel}
                                             </button>
                                         </div>
                                     </>
@@ -7021,10 +7234,9 @@ function SpecialModePage() {
                                                             const winnerCount = won ? wins : losses;
                                                             const overtimeCount = (winnerCount - 13) / 3;
                                                             const hasOvertime = overtimeCount <= 0;
+                                                            const lastDigit = totalRounds % 10;
 
                                                             const formatRoundsCount = () => {
-                                                                const lastDigit = totalRounds % 10;
-
                                                                 return lastDigit === 1
                                                                     ? "Round"
                                                                     : "Rounds";
@@ -7038,7 +7250,7 @@ function SpecialModePage() {
                                                                     }}
                                                                 >
                                                                     <p
-                                                                        style={{ marginTop: '0', fontSize: '16px', minWidth: "92.04px", textAlign: 'center', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: hasOvertime ? '-40px' : '-65px' }}
+                                                                        style={{ marginTop: '0', fontSize: '16px', minWidth: "92.04px", textAlign: 'center', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: !hasOvertime ? '-67.5px' : lastDigit === 1 ? '-46px' : '-45px' }}
                                                                         className={css.vs}
                                                                     >
                                                                         {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
@@ -7092,10 +7304,27 @@ function SpecialModePage() {
                                                                     <>
                                                                         <span style={{ top: '-60px', width: 'max-content' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
-                                                                                <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
-                                                                                    {" "}{deltaPlaces > 0
-                                                                                        ? `${deltaPlaces}+`
-                                                                                        : `${Math.abs(deltaPlaces)}-`}
+                                                                                <span
+                                                                                    style={{
+                                                                                        color: deltaPlaces > 0 ? "#2e7d32" : "red",
+                                                                                        fontWeight: 900,
+                                                                                        marginRight: "-2px",
+                                                                                        display: "inline-flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: "2px",
+                                                                                    }}
+                                                                                >
+                                                                                    {deltaPlaces > 0 ? (
+                                                                                        <>
+                                                                                            <span style={{ marginRight: "-4px" }}>{deltaPlaces}</span>
+                                                                                            <MdOutlineKeyboardDoubleArrowUp />
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <span style={{ marginRight: "-4px" }}>{Math.abs(deltaPlaces)}</span>
+                                                                                            <MdOutlineKeyboardDoubleArrowDown />
+                                                                                        </>
+                                                                                    )}
                                                                                 </span>
                                                                             )}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
@@ -7167,10 +7396,27 @@ function SpecialModePage() {
                                                                     <>
                                                                         <span style={{ top: '12%', width: 'max-content' }} className={css.finished_modal_team_placing}>
                                                                             {deltaPlaces !== 0 && (
-                                                                                <span style={{ color: deltaPlaces > 0 ? "#2e7d32" : "red", fontWeight: 900, marginRight: '4px' }}>
-                                                                                    {" "}{deltaPlaces > 0
-                                                                                        ? `${deltaPlaces}+`
-                                                                                        : `${Math.abs(deltaPlaces)}-`}
+                                                                                <span
+                                                                                    style={{
+                                                                                        color: deltaPlaces > 0 ? "#2e7d32" : "red",
+                                                                                        fontWeight: 900,
+                                                                                        marginRight: "-2px",
+                                                                                        display: "inline-flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: "2px",
+                                                                                    }}
+                                                                                >
+                                                                                    {deltaPlaces > 0 ? (
+                                                                                        <>
+                                                                                            <span style={{ marginRight: "-4px" }}>{deltaPlaces}</span>
+                                                                                            <MdOutlineKeyboardDoubleArrowUp />
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <span style={{ marginRight: "-4px" }}>{Math.abs(deltaPlaces)}</span>
+                                                                                            <MdOutlineKeyboardDoubleArrowDown />
+                                                                                        </>
+                                                                                    )}
                                                                                 </span>
                                                                             )}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
