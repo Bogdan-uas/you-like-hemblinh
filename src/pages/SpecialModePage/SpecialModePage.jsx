@@ -3287,6 +3287,12 @@ function SpecialModePage() {
     };
 
     const handleProceed = () => {
+        if (hasPlayedWinnerAnimation) {
+            setShowPickemSummary(false);
+            setShowWinnersScreen(false);
+            return;
+        }
+
         recomputePickemTotals();
         setShowPickemSummary(true);
     };
