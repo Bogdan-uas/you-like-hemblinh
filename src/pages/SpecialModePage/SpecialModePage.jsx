@@ -172,9 +172,9 @@ const clampMin0 = (n) => Math.max(0, Number.isFinite(n) ? n : 0);
 const buildDefaultTeamRatings = (teams) => {
     const out = {};
     teams.forEach((t, idx) => {
-        if (idx < 16) out[t.id] = 150;
-        else if (idx < 32) out[t.id] = 100;
-        else out[t.id] = 50;
+        if (idx < 16) out[t.id] = 1150;
+        else if (idx < 32) out[t.id] = 1000;
+        else out[t.id] = 1050;
     });
     return out;
 };
@@ -1144,6 +1144,79 @@ const getEliminatedBy = (stage, key) =>
         .filter((t) => t.eliminated && t.eliminatedVia === key)
         .sort((a, b) => (a.eliminatedAt ?? 1e9) - (b.eliminatedAt ?? 1e9));
 
+const PODIUM_QUOTES = {
+    winner: [
+        "The best of the best",
+        "Champions keep playing until they get it right",
+        "Legends aren't born in finals, instead they are confirmed there",
+        "They didn't just win the tournament, they rewrote it",
+        "Victory is temporary. Legacy is permanent",
+        "The final needed mini-win didn't end the match, it crowned a story",
+        "No luck, no noise, just pure domination",
+        "They came for the trophy and they left with it",
+        "The summit of the mountain is reserved for those who dare to climb it",
+        "Every round was a statement, not a question",
+        "They turned pressure into precision",
+        "The final scoreboard tells the truth",
+        "Built for the moment, defined by it",
+        "When it mattered most, they were already ready",
+        "No debate left, only recognition",
+        "They didn't chase greatness, they enforced it"
+    ],
+
+    runnerUp: [
+        "Neither the best of the best nor the best of the worst",
+        "So close it hurts, so strong it matters",
+        "They reached the peak… just not the summit",
+        "Second place is just first place without the ending",
+        "One step away... and yet a world apart",
+        "So close to glory, yet so far",
+        "Almost champions",
+        "They fought like winners, finished like survivors",
+        "The gap was small, but history is cruel",
+        "They had the moment, but not the ending",
+        "Silver is still earned, not given",
+        "The final chapter just slipped away",
+        "Defeated, but never outclassed",
+        "They proved they belong, just not at the top",
+        "Next time won't be the same"
+    ],
+
+    thirdPlace: [
+        "The best of the worst",
+        "Not the champion, but still the fire",
+        "Bronze today, gold tomorrow",
+        "Proof that the story didn't end after first defeat",
+        "A podium built on resilience",
+        "Third place, but first in character",
+        "Being defeated doesn't mean being a loser",
+        "Still standing when others fell earlier",
+        "They turned disappointment into position",
+        "A reminder that pride survives defeat",
+        "Not the final goal, but still a finish worth respect",
+        "They stayed sharp when others faded",
+        "Resilience has a rank, and it's here",
+        "They leave with something still shining"
+    ],
+
+    fourthPlace: [
+        "One more place and people might have remembered your name",
+        "So close the echoes still linger",
+        "One match short of memory",
+        "They didn't finish last, they finished fighting",
+        "The bracket remembers them more than the scoreboard does",
+        "Almost there is still somewhere",
+        "To be defeated doesn't mean you didn't fight",
+        "They stood at the edge of recognition",
+        "Close enough to feel it, not enough to hold it",
+        "The effort was real, even if the result wasn't",
+        "They disappear from standings, not from story",
+        "Every great run needs a final witness",
+        "Not forgotten, just unfinished",
+        "They leave with questions still unanswered"
+    ],
+};
+
 function SpecialModePage() {
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
@@ -1954,6 +2027,7 @@ function SpecialModePage() {
             sf: 0,
             tpd: 0,
             gf: 0,
+            correct: 0,
         };
 
         const applySwiss = (stg, countKey) => {
@@ -1963,6 +2037,9 @@ function SpecialModePage() {
                     if (!m.played || !m.pickTeamId) return;
                     total += swissMatchPoints(m);
                     if (m.winnerTeamId === m.pickTeamId) nextCounts[countKey] += 1;
+                    if (m.winnerTeamId === m.pickTeamId) {
+                        nextCounts.correct += swissMatchPoints(m);
+                    }
                 });
             });
         };
@@ -1975,6 +2052,9 @@ function SpecialModePage() {
                     if (!m.played || !m.pickTeamId) return;
                     total += playoffsMatchPoints(m);
                     if (m.winnerTeamId === m.pickTeamId) nextCounts[countKey] += 1;
+                    if (m.winnerTeamId === m.pickTeamId) {
+                        nextCounts.correct += playoffsMatchPoints(m);
+                    }
                 });
             };
 
@@ -3127,13 +3207,17 @@ function SpecialModePage() {
 
             const proceed = setTimeout(() => {
                 setShowProceed(true);
-                setHasPlayedWinnerAnimation(true);
             }, 15000);
+
+            const veryLast = setTimeout(() => {
+                setHasPlayedWinnerAnimation(true);
+            }, 20000);
 
             return () => {
                 clearTimeout(t2);
                 clearTimeout(t3);
                 clearTimeout(t4);
+                clearTimeout(veryLast);
                 clearTimeout(proceed);
             };
         }
@@ -3309,12 +3393,6 @@ function SpecialModePage() {
     };
 
     const handleProceed = () => {
-        if (hasPlayedWinnerAnimation) {
-            setShowPickemSummary(false);
-            setShowWinnersScreen(false);
-            return;
-        }
-
         recomputePickemTotals();
         setShowPickemSummary(true);
     };
@@ -4131,6 +4209,140 @@ function SpecialModePage() {
         );
     };
 
+    const getMatchStakeText = ({
+        modalContext,
+        winnerIsLeft,
+        winnerIsRight,
+    }) => {
+        const playoffsStage = modalContext?.stage;
+        const stage = modalContext?.stageKey;
+        const type = modalContext?.type;
+        const net = modalContext?.net;
+        const index = (playoffs?.[modalContext.stage] || []).findIndex((m) => m.id === modalContext.matchId);
+        const num = index >= 0 ? index + 1 : 1;
+
+        let leftText = null;
+        let rightText = null;
+
+        if (type === "swiss") {
+            const isProgression =
+                net === "2:0" ||
+                net === "2:1" ||
+                net === "2:2";
+
+            const isElimination =
+                net === "0:2" ||
+                net === "1:2" ||
+                net === "2:2";
+
+            if (isProgression) {
+                let progressionText = "";
+
+                if (stage === "stage1") {
+                    progressionText = "qualifies to Stage II";
+                }
+
+                if (stage === "stage2") {
+                    progressionText = "qualifies to Stage III";
+                }
+
+                if (stage === "stage3") {
+                    progressionText = "qualifies to Playoffs: Round of 16";
+                }
+
+                if (winnerIsLeft) leftText = progressionText;
+                if (winnerIsRight) rightText = progressionText;
+            }
+
+            if (isElimination) {
+                const eliminationText =
+                    stage === "stage3"
+                        ? "doesn't make it to Playoffs"
+                        : "flies out of this tournament";
+
+                if (winnerIsLeft) {
+                    rightText = eliminationText;
+                }
+
+                if (winnerIsRight) {
+                    leftText = eliminationText;
+                }
+            }
+        }
+
+        if (type === "playoffs") {
+            switch (playoffsStage) {
+                case "ro16":
+                    if (winnerIsLeft) {
+                        leftText = <>goes to <b>Quarterfinals</b></>;
+                        rightText = "path ends here, for now!";
+                    } else {
+                        rightText = <>goes to <b>Quarterfinals</b></>;
+                        leftText = "path ends here, for now!";
+                    }
+                    break;
+
+                case "qf":
+                    if (winnerIsLeft) {
+                        leftText = <>goes to <b>Semifinals</b></>;
+                        rightText = "path ends here, for now!";
+                    } else {
+                        rightText = <>goes to <b>Semifinals</b></>;
+                        leftText = "path ends here, for now!";
+                    }
+                    break;
+
+                case "sf": {
+                    if (num === 1) {
+                        if (winnerIsLeft) {
+                            leftText = <>is the first <b>Grand Finalist</b>!</>;
+                            rightText = "has still a chance of earning Third Place";
+                        } else {
+                            rightText = <>is the first <b>Grand Finalist</b>!</>;
+                            leftText = "has still a chance of earning Third Place";
+                        }
+                    }
+                    if (num === 2) {
+                        if (winnerIsLeft) {
+                            leftText = <>is the second <b>Grand Finalist</b>!</>;
+                            rightText = "has still a chance of earning Third Place";
+                        } else {
+                            rightText = <>is the second <b>Grand Finalist</b>!</>;
+                            leftText = "has still a chance of earning Third Place";
+                        }
+                    }
+
+                    break;
+                }
+
+                case "thirdPlace":
+                    if (winnerIsLeft) {
+                        leftText = <>earns <b>Third Place Medal</b>!</>;
+                        rightText = "still had a good run!";
+                    } else {
+                        rightText = <>earns <b>Third Place Medal</b>!</>;
+                        leftText = "still had a good run!";
+                    }
+                    break;
+
+                case "gf":
+                    if (winnerIsLeft) {
+                        leftText = <><b>WINS</b> the tournament!</>;
+                        rightText = "Second place is still wonderful!";
+                    } else {
+                        rightText = <><b>WINS</b> the tournament!</>;
+                        leftText = "Second place is still wonderful!";
+                    }
+                    break;
+            }
+        }
+
+        return {
+            leftText,
+            rightText,
+        };
+    };
+
     useLayoutEffect(() => {
         const id = requestAnimationFrame(() => {
             window.dispatchEvent(new Event("resize"));
@@ -4238,18 +4450,18 @@ function SpecialModePage() {
         );
     }, [seriesState]);
 
-    const finalPickemPointsWithoutLosses = guessedCounts.stage1 + guessedCounts.stage2 + guessedCounts.stage3 + guessedCounts.ro16 * 3 + guessedCounts.qf * 5 + guessedCounts.sf * 7 + guessedCounts.tpd * 7 + guessedCounts.gf * 9;
-
+    const lossBasedPoints =
+        (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
     if (showPickemSummary) {
         return (
             <div className={css.page_wrapper}>
                 <div className={css.game_container}>
                     <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '32px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
                         {buildPickemSentence()} <br />
-                        {finalPickemPoints - finalPickemPointsWithoutLosses !== 0 && (
+                        {lossBasedPoints !== 0 && (
                             <span style={{ color: "#d4cebaff", fontWeight: "700" }}>
-                                <span style={{ fontWeight: '800' }}>+{finalPickemPoints - finalPickemPointsWithoutLosses}</span> {' '}
-                                Pick&apos;em point{finalPickemPoints - finalPickemPointsWithoutLosses === 1 ? '' : 's'} from correctly guessed sets in not guessed matches
+                                <span style={{ fontWeight: '800' }}>+{lossBasedPoints}</span> {' '}
+                                Pick&apos;em point{lossBasedPoints === 1 ? '' : 's'} from correctly guessed sets in not guessed matches
                             </span>
                         )}
                     </p>
@@ -4337,6 +4549,10 @@ function SpecialModePage() {
         );
     }
 
+    const pickQuote = (list, seed = 0) => {
+        return list[seed % list.length];
+    };
+
     if (showWinnersScreen && tournamentResults) {
         return (
             <>
@@ -4382,6 +4598,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.runnerUp.name}</b>
                                             </ReactFitty>
                                             <span className={css.runnerUpLabel}>RunnerUp</span>
+                                            <span className={css.runnerUpQuote}>"{pickQuote(PODIUM_QUOTES.runnerUp, tournamentResults.runnerUp?.id ?? 0)}"</span>
                                         </div>
                                     </motion.div>
                                 )}
@@ -4414,6 +4631,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.winner.name}</b>
                                             </ReactFitty>
                                             <span className={css.firstPlaceLabel}>Winner</span>
+                                            <span className={css.firstPlaceQuote}>"{pickQuote(PODIUM_QUOTES.winner, tournamentResults.winner?.id ?? 0)}"</span>
                                         </div>
                                     </motion.div>
                                 )}
@@ -4442,6 +4660,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.thirdPlace.name}</b>
                                             </ReactFitty>
                                             <span className={css.thirdPlaceLabel}>3rd</span>
+                                            <span className={css.thirdPlaceQuote}>"{pickQuote(PODIUM_QUOTES.thirdPlace, tournamentResults.thirdPlace?.id ?? 0)}"</span>
                                         </div>
                                     </motion.div>
                                 )}
@@ -4471,6 +4690,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.fourthPlace.name}</b>
                                             </ReactFitty>
                                             <span className={css.fourthPlaceLabel}>4th</span>
+                                            <span className={css.fourthPlaceQuote}>"{pickQuote(PODIUM_QUOTES.fourthPlace, tournamentResults.fourthPlace?.id ?? 0)}"</span>
                                         </div>
                                     </motion.div>
                                 )}
@@ -4485,7 +4705,7 @@ function SpecialModePage() {
                             transition={{ duration: 0.4 }}
                             className={css.gamble_button}
                             onClick={handleProceed}
-                            style={{ zIndex: 10 }}
+                            style={{ zIndex: 10, marginTop: "124px" }}
                         >
                             Proceed
                         </motion.button>
@@ -6877,27 +7097,29 @@ function SpecialModePage() {
                                 const favoriteTeam = favoriteIsLeft ? modalLeftTeam?.name : modalRightTeam?.name;
 
                                 const predictionLabel =
-                                    diff <= 5
-                                        ? "Too close to call"
-                                        : diff <= 10
-                                            ? "Barely separated"
-                                            : diff <= 18
-                                                ? `${favoriteTeam} has slight edge`
-                                                : diff <= 25
-                                                    ? `${favoriteTeam} has modest advantage`
-                                                    : diff <= 35
-                                                        ? `${favoriteTeam} has it in control`
-                                                        : diff <= 45
-                                                            ? `${favoriteTeam} has strong position`
-                                                            : diff <= 60
-                                                                ? `${favoriteTeam} has dominant position`
-                                                                : diff <= 75
-                                                                    ? `${favoriteTeam} is overwhelming favorite`
-                                                                    : diff <= 90
-                                                                        ? `${favoriteTeam} is very likely a winner`
-                                                                        : diff <= 99
-                                                                            ? `${favoriteTeam} is near-absolute favorite`
-                                                                            : `${favoriteTeam} is 100% winner!`;
+                                    diff <= 0
+                                        ? "Absolute 50/50"
+                                        : diff <= 5
+                                            ? "Too close to call"
+                                            : diff <= 10
+                                                ? "Barely separated"
+                                                : diff <= 18
+                                                    ? `${favoriteTeam} has slight edge`
+                                                    : diff <= 25
+                                                        ? `${favoriteTeam} has modest advantage`
+                                                        : diff <= 35
+                                                            ? `${favoriteTeam} has it in control`
+                                                            : diff <= 45
+                                                                ? `${favoriteTeam} has strong position`
+                                                                : diff <= 60
+                                                                    ? `${favoriteTeam} has dominant position`
+                                                                    : diff <= 75
+                                                                        ? `${favoriteTeam} is overwhelming favorite`
+                                                                        : diff <= 90
+                                                                            ? `${favoriteTeam} is very likely a winner`
+                                                                            : diff <= 99
+                                                                                ? `${favoriteTeam} is near-absolute favorite`
+                                                                                : `${favoriteTeam} is 100% winner!`;
 
                                 const offsetStrength = Math.min(
                                     35,
@@ -6942,7 +7164,15 @@ function SpecialModePage() {
                                     if (items.length === 0) return null;
 
                                     return (
-                                        <div className={css.team_stats_badge}>
+                                        <div
+                                            className={css.team_stats_badge}
+                                            style={{
+                                                position: "absolute",
+                                                top: "25%",
+                                                right: stats === leftStats ? "78%" : "auto",
+                                                left: stats === rightStats ? "84%" : "auto",
+                                            }}
+                                        >
                                             {items.map((i, idx) => (
                                                 <span key={idx} className={css.stat_item}>
                                                     {i.icon}: {i.value}
@@ -7173,8 +7403,20 @@ function SpecialModePage() {
                                         leftIsLoser,
                                         rightIsLoser,
                                         leftIsPick,
-                                        rightIsPick
-                                    } = getPickOrientedModalView(currentModalMatch, isBo1Modal);
+                                        rightIsPick,
+                                    } = getPickOrientedModalView(
+                                        currentModalMatch,
+                                        isBo1Modal
+                                    );
+
+                                    const {
+                                        leftText: leftStakeText,
+                                        rightText: rightStakeText,
+                                    } = getMatchStakeText({
+                                        modalContext,
+                                        winnerIsLeft,
+                                        winnerIsRight
+                                    });
                                 
                                     const stage = modalContext?.stage;
                                     const isGrandFinal = stage === "gf";
@@ -7208,6 +7450,52 @@ function SpecialModePage() {
 
                                         return null;
                                     };
+
+                                const displayedLeftStats =
+                                    teamPlacings?.[modalPlayedLeft?.id] ?? {
+                                        wins: 0,
+                                        seconds: 0,
+                                        thirds: 0,
+                                    };
+
+                                const displayedRightStats =
+                                    teamPlacings?.[modalPlayedRight?.id] ?? {
+                                        wins: 0,
+                                        seconds: 0,
+                                        thirds: 0,
+                                    };
+
+                                const renderStats = (stats, side, isLoser) => {
+                                    const items = [];
+
+                                    if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
+                                    if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
+                                    if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+
+                                    if (!items.length) return null;
+
+                                    return (
+                                        <div
+                                            className={css.team_stats_badge}
+                                            style={{
+                                                position: "absolute",
+                                                top: "25%",
+                                                zIndex: 0,
+                                                opacity: isLoser ? 0.4 : 1,
+                                                transition: "opacity 0.3s ease",
+                                                ...(side === "left"
+                                                    ? { right: "88.5%" }
+                                                    : { left: "90.5%" }),
+                                            }}
+                                        >
+                                            {items.map((i, idx) => (
+                                                <span key={idx} className={css.stat_item}>
+                                                    {i.icon}: {i.value}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    );
+                                };
 
                                     return (
                                         <>
@@ -7266,6 +7554,7 @@ function SpecialModePage() {
                                                     style={{ marginBottom: isBo1Modal ? 0 : "10px" }}
                                                     className={css.match_modal_row}
                                                 >
+                                                    {renderStats(displayedLeftStats, "left", leftIsLoser)}
                                                     <div
                                                         className={css.modal_team_btn}
                                                         style={{
@@ -7335,6 +7624,7 @@ function SpecialModePage() {
                                                                             {getPlacementBadge(winnerIsLeft, leftIsLoser)}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {modalPlayedLeft?.name}
+                                                                                {leftStakeText === "path ends here, for now!" ? "'s" : ""}
                                                                             </span>
                                                                             {deltaPoints !== 0 && (
                                                                                 <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
@@ -7427,6 +7717,7 @@ function SpecialModePage() {
                                                                             {getPlacementBadge(winnerIsRight, rightIsLoser)}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                                 {modalPlayedRight?.name}
+                                                                                {rightStakeText === "path ends here, for now!" ? "'s" : ""}
                                                                             </span>
                                                                             {deltaPoints !== 0 && (
                                                                                 <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
@@ -7439,7 +7730,50 @@ function SpecialModePage() {
                                                             })()}
                                                         </span>
                                                     </div>
+                                                    {renderStats(displayedRightStats, "right", rightIsLoser)}
                                                 </div>
+                                                {leftStakeText && (
+                                                    <div
+                                                        style={{
+                                                            marginTop: "-24px",
+                                                            marginBottom: "8px",
+                                                            marginLeft: "48px",
+                                                            fontSize: "13px",
+                                                            fontWeight: 700,
+                                                            textShadow: `
+                                                                    0 0 3px ${modalPlayedLeft?.color},
+                                                                    0 0 7px ${modalPlayedLeft?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `,
+                                                            color: "#ffffff",
+                                                            width: '216.8px',
+                                                            textAlign: 'center',
+                                                        }}
+                                                    >
+                                                        {leftStakeText}
+                                                    </div>
+                                                )}
+                                                {rightStakeText && (
+                                                    <div
+                                                        style={{
+                                                            marginTop: "-28px",
+                                                            marginBottom: "8px",
+                                                            marginLeft: "260px",
+                                                            fontSize: "13px",
+                                                            fontWeight: 700,
+                                                            textShadow: `
+                                                                    0 0 3px ${modalPlayedRight?.color},
+                                                                    0 0 7px ${modalPlayedRight?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `,
+                                                            color: "#ffffff",
+                                                            width: '216.8px',
+                                                            textAlign: 'center',
+                                                        }}
+                                                    >
+                                                        {rightStakeText}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {!isBo1Modal && (
@@ -7457,7 +7791,7 @@ function SpecialModePage() {
                                                         return (
                                                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
                                                                 <ul className={css.seriesSummaryList}>
-                                                                    <li className={css.seriesSummaryItem}>
+                                                                    <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
                                                                         {history.map(({ set, wins, won }) => {
                                                                             const leftGlow = won;
 
@@ -7558,7 +7892,7 @@ function SpecialModePage() {
                                                                         })}
                                                                     </li>
 
-                                                                    <li className={css.seriesSummaryItem}>
+                                                                    <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
                                                                         {history.map(({ set, losses, won }) => {
                                                                             const rightGlow = !won;
 

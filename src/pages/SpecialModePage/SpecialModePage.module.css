@@ -685,6 +685,7 @@
 }
 
 .match_modal_row {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1264,7 +1265,7 @@
     justify-content: flex-start;
     flex-direction: column;
     border-radius: 12px;
-    border: 3px solid #d7d7d7;
+    border: 3px solid #e7e7e7;
     background-color: silver;
     padding: 26px 8px;
 }
@@ -1272,9 +1273,17 @@
 .runnerUpLabel {
     line-height: 1.5;
     letter-spacing: 0.04em;
-    color: #d7d7d7;
+    color: #e7e7e7;
     font-weight: 600;
     font-size: 20px;
+}
+
+.runnerUpQuote {
+    font-size: 16px;
+    color: #e7e7e7;
+    font-style: italic;
+    font-weight: 600;
+    margin-top: 16px;
 }
 
 .runnerUpLogo {
@@ -1291,7 +1300,7 @@
 .runnerUpName {
     line-height: 1.5;
     letter-spacing: 0.04em;
-    color: #d7d7d7;
+    color: #e7e7e7;
     font-weight: 600;
     width: 100%;
     display: block;
@@ -1319,6 +1328,14 @@
     color: #fff4b5;
     font-weight: 600;
     font-size: 26px;
+}
+
+.firstPlaceQuote {
+    font-size: 16px;
+    color: #fff4b5;
+    font-style: italic;
+    font-weight: 600;
+    margin-top: 16px;
 }
 
 .winnerLogo {
@@ -1375,6 +1392,14 @@
     font-size: 36px;
 }
 
+.thirdPlaceQuote {
+    font-size: 16px;
+    color: #ffac5a;
+    font-style: italic;
+    font-weight: 600;
+    margin-top: 16px;
+}
+
 .placeLogoThird {
     width: 68px;
     height: 68px;
@@ -1417,6 +1442,14 @@
     color: #fff;
     font-weight: 600;
     font-size: 36px;
+}
+
+.fourthPlaceQuote {
+    font-size: 16px;
+    color: #fff;
+    font-style: italic;
+    font-weight: 600;
+    margin-top: 16px;
 }
 
 .placeLogoFourth {
@@ -1932,6 +1965,8 @@
 .team_stats_badge {
     display: flex;
     align-items: center;
+    justify-content: center;
+    height: 62px;
     flex-direction: column;
     gap: 4px;
     font-size: 12px;
