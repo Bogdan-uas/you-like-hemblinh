@@ -4789,7 +4789,7 @@ function SpecialModePage() {
                         className={css.gamble_button}
                         style={{
                             position: "absolute",
-                            top: "-5%",
+                            top: "-10%",
                             left: "42%",
                             background: "#f7f7f7ff",
                             color: "transparent",
