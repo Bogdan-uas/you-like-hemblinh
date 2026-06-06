@@ -806,7 +806,6 @@
     max-width: 960px;
     min-width: 472px;
     height: 418.4px;
-    margin-top: -80px;
     padding: 24px 16px 32px;
     display: flex;
     flex-direction: column;
@@ -1099,14 +1098,14 @@
 
 .match_win_bo1 {
     background: linear-gradient(180deg,
-                #a2ffcb 0%,
-                #ffffff 100%) !important;
+            #a2ffcb 0%,
+            #ffffff 100%) !important;
 }
 
 .match_loss_bo1 {
     background: linear-gradient(180deg,
-                rgb(255, 184, 184) 0%,
-                #ffffff 100%) !important;
+            rgb(255, 184, 184) 0%,
+            #ffffff 100%) !important;
 }
 
 .info_text {
