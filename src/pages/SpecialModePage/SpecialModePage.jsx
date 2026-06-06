@@ -2540,8 +2540,6 @@ function SpecialModePage() {
     };
 
     const getOvertimeShortLabel = (overtimeCount) => {
-        if (overtimeCount <= 1) return "OT";
-
         return `${overtimeCount}x OT`;
     };
 
