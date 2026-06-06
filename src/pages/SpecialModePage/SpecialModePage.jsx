@@ -7576,7 +7576,12 @@ function SpecialModePage() {
                                                                         style={{ marginTop: '0', fontSize: '16px', minWidth: "92.04px", textAlign: 'center', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: !hasOvertime ? '-67.5px' : lastDigit === 1 ? '-46px' : '-45px' }}
                                                                         className={css.vs}
                                                                     >
-                                                                        {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
+                                                                        {totalRounds} {formatRoundsCount()}
+                                                                        <span style={{ fontSize: "14px" }}>
+                                                                            {hasOvertime
+                                                                                ? ""
+                                                                                : ` (${getOvertimeShortLabel(Number(overtimeCount))})`}
+                                                                        </span>
                                                                     </p>
                                                                 </div>
                                                             );
