@@ -7895,7 +7895,7 @@ function SpecialModePage() {
                                                                                     key={`center-${set}`}
                                                                                     style={{
                                                                                         position: "relative",
-                                                                                        minWidth: "92.04px",
+                                                                                        minWidth: "148.06px",
                                                                                     }}
                                                                                 >
                                                                                     <span
