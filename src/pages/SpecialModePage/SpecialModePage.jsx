@@ -7909,10 +7909,10 @@ function SpecialModePage() {
                                                                                                 isDecider && !hasOvertime
                                                                                                     ? "32%"
                                                                                                     : isDecider
-                                                                                                        ? "20%"
+                                                                                                        ? "32.5%"
                                                                                                         : !hasOvertime
                                                                                                             ? "38%"
-                                                                                                            : "30%",
+                                                                                                            : "37.5%",
                                                                                         }}
                                                                                     >
                                                                                         {label}
