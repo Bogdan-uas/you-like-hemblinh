@@ -4437,9 +4437,9 @@ function SpecialModePage() {
             <>
                 <span className={css.series_label}>
                     <span className={css.series_upper_label}>
-                        <span className={css.round_text} style={{ position: "absolute", left: "20%", marginBottom: "-4px", fontSize: "22px" }}>{seriesState.phase !== "playoffs" ? small : null}</span>
-                        <span className={css.round_text} style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "47.5%" }}><FaTrophy /></span>
-                        <div className={css.round_text} style={{ fontSize: "24px", position: "absolute", left: "65%", width: "max-content" }}> Best of {setsToWin * 2 - 1} | {big}</div>
+                        <span className={css.round_text} style={{ position: "absolute", left: "19.5%", marginBottom: "-4px", fontSize: "22px" }}>{seriesState.phase !== "playoffs" ? small : null}</span>
+                        <span className={css.round_text} style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "47%" }}><FaTrophy /></span>
+                        <div className={css.round_text} style={{ fontSize: "24px", position: "absolute", left: "64.5%", width: "max-content" }}> Best of {setsToWin * 2 - 1} | {big}</div>
                     </span>
                     {setsToWin !== 1 && !seriesBanner ? (
                         <motion.span
