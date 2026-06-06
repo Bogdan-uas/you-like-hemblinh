@@ -2522,6 +2522,29 @@ function SpecialModePage() {
         toast(content, options);
     };
 
+    const getOvertimeLabel = (overtimeBlock) => {
+        const names = {
+            1: "Overtime",
+            2: "Double Overtime",
+            3: "Triple Overtime",
+            4: "Quadruple Overtime",
+            5: "Quintuple Overtime",
+            6: "Sextuple Overtime",
+            7: "Septuple Overtime",
+            8: "Octuple Overtime",
+            9: "Nonuple Overtime",
+            10: "Decuple Overtime",
+        };
+
+        return names[overtimeBlock] ?? `${overtimeBlock}x Overtime`;
+    };
+
+    const getOvertimeShortLabel = (overtimeCount) => {
+        if (overtimeCount <= 1) return "OT";
+
+        return `${overtimeCount}OT`;
+    };
+
     const handleSeriesGamble = () => {
         if (!seriesState.active || seriesState.banner) return;
 
@@ -2638,8 +2661,7 @@ function SpecialModePage() {
                     } else {
                         toast(
                             <span>
-                                Set {playerWonSets + playerLostSets} has been won in Overtime{" "}
-                                #{overtimeBlock} by{" "}
+                                Set {playerWonSets + playerLostSets} has been won in {getOvertimeLabel(overtimeBlock)} by{" "}
                                 {renderTeamLabel(playerWonSet ? prev.leftTeam : prev.rightTeam)}!
                             </span>,
                             { icon: "🤯", duration: 4000 }
@@ -2690,14 +2712,29 @@ function SpecialModePage() {
                 }
 
                 if (otTiedBlock) {
+                    const currentOT = getOvertimeLabel(overtimeBlock);
+                    const nextOT = getOvertimeLabel(overtimeBlock + 1);
+
                     const msg =
                         overtimeBlock === 1
-                            ? "Overtime is tied 3-3! Starting new overtime block..."
+                            ? `${currentOT} is tied 3-3! Starting ${nextOT}...`
                             : overtimeBlock === 2
-                                ? "Another overtime block tied 3-3! Starting new overtime block..."
+                                ? `${currentOT} is tied 3-3! Starting ${nextOT}...`
                                 : overtimeBlock === 3
-                                    ? "That's a tough battle we got here! Yet another overtime block tied 3-3! Starting new overtime block..."
-                                    : "A tie again! Impressing! Starting new overtime block...";
+                                    ? `That's a tough battle we got here! ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                    : overtimeBlock === 4
+                                        ? `Neither team is willing to back down! ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                        : overtimeBlock === 5
+                                            ? `This match has entered legendary territory! ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                            : overtimeBlock === 6
+                                                ? `The players refuse to surrender! ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                                : overtimeBlock === 7
+                                                    ? `What are we even witnessing? ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                                    : overtimeBlock === 8
+                                                        ? `History books are being rewritten right now! ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                                        : overtimeBlock === 9
+                                                            ? `This might be the greatest match played on this tournament! ${currentOT} is tied 3-3! Starting ${nextOT}...`
+                                                            : "Another overtime ends in a tie! Somehow, this battle continues...";
 
                     toast(msg, { icon: "🔄", duration: 4000 });
 
@@ -5559,7 +5596,7 @@ function SpecialModePage() {
                                     marginTop: "-20px",
                                 }}
                             >
-                                Overtime #{overtimeBlock === 0 ? 1 : overtimeBlock}
+                                {getOvertimeLabel(overtimeBlock === 0 ? 1 : overtimeBlock)}
                                 <br />
                             </motion.span>
                         </motion.div>
@@ -7885,7 +7922,12 @@ function SpecialModePage() {
                                                                                         style={{ marginTop: '0', fontSize: '18px', textAlign: 'center' }}
                                                                                         className={css.vs}
                                                                                     >
-                                                                                        {totalRounds} {formatRoundsCount()} <span style={{ fontSize: '14px' }}>{hasOvertime ? "" : `(OT #${overtimeCount})`}</span>
+                                                                                        {totalRounds} {formatRoundsCount()}
+                                                                                        <span style={{ fontSize: '14px' }}>
+                                                                                            {hasOvertime
+                                                                                                ? ""
+                                                                                                : `(${getOvertimeShortLabel(Number(overtimeCount))})`}
+                                                                                        </span>
                                                                                     </p>
                                                                                 </div>
                                                                             );
