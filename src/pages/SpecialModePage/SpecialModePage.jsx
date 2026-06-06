@@ -4436,19 +4436,10 @@ function SpecialModePage() {
         return (
             <>
                 <span className={css.series_label}>
-                    <span className={css.series_label} style={{ textAlign: "center", margin: '0' }}>
-                        <span className={css.round_text} style={{ fontSize: "20px" }}>{seriesState.phase !== "playoffs" ? small : null}</span>
-                        <div className={css.round_text} style={{ fontSize: "30px" }}>{big}</div>
-                    </span>
-                    <span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.4 }}
-                        className={css.round_text}
-                        style={{ fontSize: "28px" }}
-                    >
-                        Best of {setsToWin * 2 - 1}
+                    <span className={css.series_upper_label}>
+                        <span className={css.round_text} style={{ position: "absolute", left: "20%", marginBottom: "-4px", fontSize: "22px" }}>{seriesState.phase !== "playoffs" ? small : null}</span>
+                        <span className={css.round_text} style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "47.5%" }}><FaTrophy /></span>
+                        <div className={css.round_text} style={{ fontSize: "24px", position: "absolute", left: "65%", width: "max-content" }}> Best of {setsToWin * 2 - 1} | {big}</div>
                     </span>
                     {setsToWin !== 1 && !seriesBanner ? (
                         <motion.span
@@ -4457,7 +4448,7 @@ function SpecialModePage() {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.4 }}
                             className={css.round_text}
-                            style={{ fontSize: "28px" }}
+                            style={{ fontSize: "24px" }}
                         >
                             {(() => {
                                 const currentSet = setNumber;
@@ -4789,7 +4780,7 @@ function SpecialModePage() {
                         style={{
                             position: "absolute",
                             top: "-30%",
-                            left: "36.5%",
+                            left: "42%",
                             background: "#f7f7f7ff",
                             color: "transparent",
                             fontSize: "12px",
