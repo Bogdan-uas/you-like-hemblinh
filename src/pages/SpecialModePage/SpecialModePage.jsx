@@ -7488,51 +7488,51 @@ function SpecialModePage() {
                                         return null;
                                     };
 
-                                const displayedLeftStats =
-                                    teamPlacings?.[modalPlayedLeft?.id] ?? {
-                                        wins: 0,
-                                        seconds: 0,
-                                        thirds: 0,
+                                    const displayedLeftStats =
+                                        teamPlacings?.[modalPlayedLeft?.id] ?? {
+                                            wins: 0,
+                                            seconds: 0,
+                                            thirds: 0,
+                                        };
+
+                                    const displayedRightStats =
+                                        teamPlacings?.[modalPlayedRight?.id] ?? {
+                                            wins: 0,
+                                            seconds: 0,
+                                            thirds: 0,
+                                        };
+
+                                    const renderStats = (stats, side, isLoser) => {
+                                        const items = [];
+
+                                        if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
+                                        if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
+                                        if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+
+                                        if (!items.length) return null;
+
+                                        return (
+                                            <div
+                                                className={css.team_stats_badge}
+                                                style={{
+                                                    position: "absolute",
+                                                    top: "25%",
+                                                    zIndex: 0,
+                                                    opacity: isLoser ? 0.4 : 1,
+                                                    transition: "opacity 0.3s ease",
+                                                    ...(side === "left"
+                                                        ? { right: "88.5%" }
+                                                        : { left: "90.5%" }),
+                                                }}
+                                            >
+                                                {items.map((i, idx) => (
+                                                    <span key={idx} className={css.stat_item}>
+                                                        {i.icon}: {i.value}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        );
                                     };
-
-                                const displayedRightStats =
-                                    teamPlacings?.[modalPlayedRight?.id] ?? {
-                                        wins: 0,
-                                        seconds: 0,
-                                        thirds: 0,
-                                    };
-
-                                const renderStats = (stats, side, isLoser) => {
-                                    const items = [];
-
-                                    if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
-                                    if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
-                                    if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
-
-                                    if (!items.length) return null;
-
-                                    return (
-                                        <div
-                                            className={css.team_stats_badge}
-                                            style={{
-                                                position: "absolute",
-                                                top: "25%",
-                                                zIndex: 0,
-                                                opacity: isLoser ? 0.4 : 1,
-                                                transition: "opacity 0.3s ease",
-                                                ...(side === "left"
-                                                    ? { right: "88.5%" }
-                                                    : { left: "90.5%" }),
-                                            }}
-                                        >
-                                            {items.map((i, idx) => (
-                                                <span key={idx} className={css.stat_item}>
-                                                    {i.icon}: {i.value}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    );
-                                };
 
                                     return (
                                         <>
@@ -7869,69 +7869,93 @@ function SpecialModePage() {
                                                                             display: "flex",
                                                                             flexDirection: "column",
                                                                             alignItems: "center",
-                                                                            gap: "28px",
+                                                                            gap: "8px",
+                                                                            position: "relative",
                                                                         }}
                                                                     >
-                                                                        {history.map(({ set, wins, losses, won }) => {
-                                                                            const isDecider = set === modalBestOf;
-                                                                            const label = isDecider ? "Decider" : `Set ${set}`;
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                justifyContent: "center",
+                                                                                alignItems: "center",
+                                                                                flexDirection: "column",
+                                                                                gap: "35px",
+                                                                                position: "absolute",
+                                                                                top: "-12px",
+                                                                            }}
+                                                                        >
+                                                                            {history.map(({ set }) => {
+                                                                                const isDecider = set === modalBestOf;
+                                                                                const label = isDecider ? "Decider" : `Set ${set}`;
 
-                                                                            const totalRounds = wins + losses;
-
-                                                                            const winnerCount = won ? wins : losses;
-                                                                            const overtimeCount = ((winnerCount - 13) / 3).toFixed(0);
-                                                                            const hasOvertime = overtimeCount <= 0;
-
-                                                                            const formatRoundsCount = () => {
-                                                                                const lastDigit = totalRounds % 10;
-
-                                                                                return lastDigit === 1
-                                                                                    ? "Round"
-                                                                                    : "Rounds";
-                                                                            };
-
-                                                                            return (
-                                                                                <div
-                                                                                    key={`center-${set}`}
-                                                                                    style={{
-                                                                                        position: "relative",
-                                                                                        minWidth: "148.06px",
-                                                                                    }}
-                                                                                >
-                                                                                    <span
-                                                                                        className={css.info_text}
+                                                                                return (
+                                                                                    <div
+                                                                                        key={`label-${set}`}
                                                                                         style={{
-                                                                                            fontWeight: 600,
-                                                                                            width: "max-content",
-                                                                                            position: "absolute",
-                                                                                            top: "-50%",
-                                                                                            left:
-                                                                                                isDecider && !hasOvertime
-                                                                                                    ? "32%"
-                                                                                                    : isDecider
-                                                                                                        ? "32.5%"
-                                                                                                        : !hasOvertime
-                                                                                                            ? "38%"
-                                                                                                            : "37.5%",
+                                                                                            minWidth: "148.06px",
+                                                                                            textAlign: "center",
                                                                                         }}
                                                                                     >
-                                                                                        {label}
-                                                                                    </span>
-
-                                                                                    <p
-                                                                                        style={{ marginTop: '0', fontSize: '18px', textAlign: 'center' }}
-                                                                                        className={css.vs}
-                                                                                    >
-                                                                                        {totalRounds} {formatRoundsCount()}
-                                                                                        <span style={{ fontSize: '14px' }}>
-                                                                                            {hasOvertime
-                                                                                                ? ""
-                                                                                                : `(${getOvertimeShortLabel(Number(overtimeCount))})`}
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontWeight: 600,
+                                                                                            }}
+                                                                                        >
+                                                                                            {label}
                                                                                         </span>
-                                                                                    </p>
-                                                                                </div>
-                                                                            );
-                                                                        })}
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                justifyContent: "center",
+                                                                                flexDirection: "column",
+                                                                                gap: "28px",
+                                                                            }}
+                                                                        >
+                                                                            {history.map(({ set, wins, losses, won }) => {
+                                                                                const totalRounds = wins + losses;
+
+                                                                                const winnerCount = won ? wins : losses;
+                                                                                const overtimeCount = ((winnerCount - 13) / 3).toFixed(0);
+                                                                                const hasOvertime = overtimeCount <= 0;
+
+                                                                                const formatRoundsCount = () => {
+                                                                                    const lastDigit = totalRounds % 10;
+
+                                                                                    return lastDigit === 1 ? "Round" : "Rounds";
+                                                                                };
+
+                                                                                return (
+                                                                                    <div
+                                                                                        key={`center-${set}`}
+                                                                                        style={{
+                                                                                            minWidth: "148.06px",
+                                                                                            textAlign: "center",
+                                                                                        }}
+                                                                                    >
+                                                                                        <p
+                                                                                            style={{
+                                                                                                marginTop: 0,
+                                                                                                fontSize: "18px",
+                                                                                                textAlign: "center",
+                                                                                            }}
+                                                                                            className={css.vs}
+                                                                                        >
+                                                                                            {totalRounds} {formatRoundsCount()}
+                                                                                            <span style={{ fontSize: "14px" }}>
+                                                                                                {hasOvertime
+                                                                                                    ? ""
+                                                                                                    : ` (${getOvertimeShortLabel(Number(overtimeCount))})`}
+                                                                                            </span>
+                                                                                        </p>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
                                                                     </li>
 
                                                                     <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
