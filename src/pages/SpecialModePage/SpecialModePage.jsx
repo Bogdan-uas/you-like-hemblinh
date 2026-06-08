@@ -5712,33 +5712,37 @@ function SpecialModePage() {
         );
     }
 
-    const rankLeftSticker = rankById[modalLeftTeam?.id] === 1 ? (
-        <span style={{ color: 'gold' }}>
-            1st
-        </span>
-    ) : rankById[modalLeftTeam?.id] === 2 ?
-        <span style={{ color: 'silver' }}>
-            2nd
-        </span>
-        : rankById[modalLeftTeam?.id] === 3 ?
-            <span style={{ color: '#cd7f32' }}>
-                3rd
-            </span>
-            : null;
+    const placementColors = {
+        1: "gold",
+        2: "silver",
+        3: "#cd7f32",
 
-    const rankRightSticker = rankById[modalRightTeam?.id] === 1 ? (
-        <span style={{ color: 'gold' }}>
-            1st
-        </span>
-    ) : rankById[modalRightTeam?.id] === 2 ?
-        <span style={{ color: 'silver' }}>
-            2nd
-        </span>
-        : rankById[modalRightTeam?.id] === 3 ?
-            <span style={{ color: '#cd7f32' }}>
-                3rd
+        4: "#4fc3f7",
+        5: "#40e0d0",
+        6: "#ba68c8",
+        7: "#ff8a65",
+        8: "#81c784",
+        9: "#ffd54f",
+        10: "#b0bec5",
+    };
+
+    const placementColor = placementColors[rankById[modalLeftTeam?.id]] || "#ffffff";
+
+    const rankLeftSticker = () => {
+        return (
+            <span style={{ color: placementColor }}>
+                {formatOrdinal(rankById[modalLeftTeam?.id] || 64)}
             </span>
-            : null;
+        );
+    };
+
+    const rankRightSticker = () => {
+        return (
+            <span style={{ color: placementColor }}>
+                {formatOrdinal(rankById[modalRightTeam?.id] || 64)}
+            </span>
+        );
+    };
 
     if (isLeaderboardOpen) {
         return (
@@ -5771,19 +5775,15 @@ function SpecialModePage() {
                             const rank = i + 1;
                             const rating = teamRatings[t.id] ?? 0;
 
-                            const rankSticker = rank === 1 ? (
-                                <span style={{ fontSize: "32px", color: 'gold' }} className={css.leaderboard_rank}>
-                                    1st
-                                </span>
-                            ) : rank === 2 ?
-                                <span style={{ fontSize: "32px", color: 'silver' }} className={css.leaderboard_rank}>
-                                    2nd
-                                </span>
-                                : rank === 3 ?
-                                    <span style={{ fontSize: "32px", color: '#cd7f32' }} className={css.leaderboard_rank}>
-                                        3rd
+                            const placementColor = placementColors[rank] || "#ffffff";
+
+                            const rankSticker = () => {
+                                return (
+                                    <span style={{ fontSize: "32px", color: placementColor }} className={css.leaderboard_rank}>
+                                        {formatOrdinal(rank)}
                                     </span>
-                                    : null;
+                                );
+                            };
                             const isTop10 = rank <= 10;
 
                             const circleClass =
@@ -5917,7 +5917,7 @@ function SpecialModePage() {
                                                 </span>
                                             )}
                                             <span style={{ fontSize: rank <= 3 ? "32px" : "16px", marginRight: rank <= 3 ? "4px" : "0px" }} className={css.leaderboard_rank}>
-                                                {rankSticker ?? formatOrdinal(rank)}
+                                                {rankSticker()}
                                             </span>{" "}
                                             <span style={{ color: "#2e2f42", fontWeight: 700 }} className={nameClass}>
                                                 Team {t.name}
@@ -7294,7 +7294,7 @@ function SpecialModePage() {
                                                         }}
                                                         className={css.modal_team_placing}
                                                     >
-                                                        {rankLeftSticker ?? formatOrdinal(rankById[modalLeftTeam?.id] || 64)}
+                                                        {rankLeftSticker()}
                                                     </span>
 
                                                     <span
@@ -7356,8 +7356,7 @@ function SpecialModePage() {
                                                                     : "0 0 4px #000",
                                                         }}
                                                     >
-                                                        {rankRightSticker ??
-                                                            formatOrdinal(rankById[modalRightTeam?.id] || 64)}
+                                                        {rankRightSticker()}
                                                     </span>
 
                                                     <span
@@ -7616,19 +7615,15 @@ function SpecialModePage() {
                                                                 const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
                                                                 const deltaPoints = afterPoints - beforePoints;
 
-                                                                const rankSticker = afterRank === 1 ? (
-                                                                    <span style={{ color: 'gold' }}>
-                                                                        1st
-                                                                    </span>
-                                                                ) : afterRank === 2 ?
-                                                                    <span style={{ color: 'silver' }}>
-                                                                        2nd
-                                                                    </span>
-                                                                    : afterRank === 3 ?
-                                                                        <span style={{ color: '#cd7f32' }}>
-                                                                            3rd
+                                                                const placementColor = placementColors[afterRank] || "#ffffff";
+
+                                                                const rankSticker = () => {
+                                                                    return (
+                                                                        <span style={{ color: placementColor }}>
+                                                                            {formatOrdinal(afterRank)}
                                                                         </span>
-                                                                        : null;
+                                                                    );
+                                                                };
 
                                                                 return (
                                                                     <>
@@ -7658,7 +7653,7 @@ function SpecialModePage() {
                                                                                 </span>
                                                                             )}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
-                                                                                {rankSticker ?? formatOrdinal(afterRank)}
+                                                                                {rankSticker()}
                                                                             </span>
                                                                         </span>
                                                                         <span style={{ width: 'max-content', top: '62%' }} className={css.finished_modal_team_label}>
@@ -7709,19 +7704,15 @@ function SpecialModePage() {
                                                                 const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
                                                                 const deltaPoints = afterPoints - beforePoints;
 
-                                                                const rankSticker = afterRank === 1 ? (
-                                                                    <span style={{ color: 'gold' }}>
-                                                                        1st
-                                                                    </span>
-                                                                ) : afterRank === 2 ?
-                                                                    <span style={{ color: 'silver' }}>
-                                                                        2nd
-                                                                    </span>
-                                                                    : afterRank === 3 ?
-                                                                        <span style={{ color: '#cd7f32' }}>
-                                                                            3rd
+                                                                const placementColor = placementColors[afterRank] || "#ffffff";
+
+                                                                const rankSticker = () => {
+                                                                    return (
+                                                                        <span style={{ color: placementColor }}>
+                                                                            {formatOrdinal(afterRank)}
                                                                         </span>
-                                                                        : null;
+                                                                    );
+                                                                };
 
                                                                 return (
                                                                     <>
@@ -7751,7 +7742,7 @@ function SpecialModePage() {
                                                                                 </span>
                                                                             )}
                                                                             <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
-                                                                                {rankSticker ?? formatOrdinal(afterRank)}
+                                                                                {rankSticker()}
                                                                             </span>
                                                                         </span>
                                                                         <span style={{ width: 'max-content', top: '62%' }} className={css.finished_modal_team_label}>
