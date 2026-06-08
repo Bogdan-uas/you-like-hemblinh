@@ -5720,7 +5720,7 @@ function SpecialModePage() {
         4: "#4fc3f7",
         5: "#40e0d0",
         6: "#ba68c8",
-        7: "#ff8a65",
+        7: "#ff470f",
         8: "#81c784",
         9: "#ffd54f",
         10: "#b0bec5",
