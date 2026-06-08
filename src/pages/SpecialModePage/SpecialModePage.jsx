@@ -5779,7 +5779,7 @@ function SpecialModePage() {
 
                             const rankSticker = () => {
                                 return (
-                                    <span style={{ fontSize: "32px", color: placementColor }} className={css.leaderboard_rank}>
+                                    <span style={{ color: placementColor }} className={css.leaderboard_rank}>
                                         {formatOrdinal(rank)}
                                     </span>
                                 );
