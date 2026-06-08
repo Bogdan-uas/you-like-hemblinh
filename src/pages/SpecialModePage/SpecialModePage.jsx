@@ -5726,11 +5726,12 @@ function SpecialModePage() {
         10: "#b0bec5",
     };
 
-    const placementColor = placementColors[rankById[modalLeftTeam?.id]] || "#ffffff";
+    const placementColorLeft = placementColors[rankById[modalLeftTeam?.id]] || "#ffffff";
+    const placementColorRight = placementColors[rankById[modalRightTeam?.id]] || "#ffffff";
 
     const rankLeftSticker = () => {
         return (
-            <span style={{ color: placementColor }}>
+            <span style={{ color: placementColorLeft }}>
                 {formatOrdinal(rankById[modalLeftTeam?.id] || 64)}
             </span>
         );
@@ -5738,7 +5739,7 @@ function SpecialModePage() {
 
     const rankRightSticker = () => {
         return (
-            <span style={{ color: placementColor }}>
+            <span style={{ color: placementColorRight }}>
                 {formatOrdinal(rankById[modalRightTeam?.id] || 64)}
             </span>
         );
