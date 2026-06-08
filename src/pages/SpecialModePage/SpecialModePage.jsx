@@ -883,6 +883,8 @@ const defaultSeriesState = {
     playerWonSets: 0,
     playerLostSets: 0,
     setNumber: 1,
+    firstHalfLeft: null,
+    firstHalfRight: null,
 
     lastMultiplier: null,
     lastResult: "",
@@ -2675,6 +2677,8 @@ function SpecialModePage() {
                                     roundWins: 0,
                                     roundLosses: 0,
                                     roundNumber: 1,
+                                    firstHalfLeft: null,
+                                    firstHalfRight: null,
                                     setNumber: curr.setNumber + 1,
                                     miniWins: 0,
                                     miniLosses: 0,
@@ -2699,6 +2703,8 @@ function SpecialModePage() {
                         roundWins,
                         roundLosses,
                         roundNumber,
+                        firstHalfLeft,
+                        firstHalfRight,
                         miniWins,
                         miniLosses,
                         isOvertime,
@@ -2820,6 +2826,20 @@ function SpecialModePage() {
             roundLosses += playerWonRound ? 0 : 1;
             roundNumber += 1;
 
+            let firstHalfLeft = prev.firstHalfLeft;
+            let firstHalfRight = prev.firstHalfRight;
+
+            const totalRoundsPlayed = roundWins + roundLosses;
+
+            if (
+                totalRoundsPlayed === 12 &&
+                firstHalfLeft == null &&
+                firstHalfRight == null
+            ) {
+                firstHalfLeft = roundWins;
+                firstHalfRight = roundLosses;
+            }
+
             miniWins = 0;
             miniLosses = 0;
 
@@ -2883,7 +2903,13 @@ function SpecialModePage() {
             if (setShouldEnd) {
                 const playerWonSet = roundWins > roundLosses;
 
-                appendSetToCurrentMatchHistory(roundWins, roundLosses, playerWonSet);
+                appendSetToCurrentMatchHistory(
+                    roundWins,
+                    roundLosses,
+                    playerWonSet,
+                    firstHalfLeft,
+                    firstHalfRight
+                );
 
                 playerWonSets += playerWonSet ? 1 : 0;
                 playerLostSets += playerWonSet ? 0 : 1;
@@ -2930,6 +2956,8 @@ function SpecialModePage() {
                                 roundLosses: 0,
                                 roundNumber: 1,
                                 setNumber: curr.setNumber + 1,
+                                firstHalfLeft: null,
+                                firstHalfRight: null,
                                 miniWins: 0,
                                 miniLosses: 0,
                                 isOvertime: false,
@@ -2954,6 +2982,8 @@ function SpecialModePage() {
                 roundWins,
                 roundLosses,
                 roundNumber,
+                firstHalfLeft,
+                firstHalfRight,
                 miniWins,
                 miniLosses,
                 isOvertime,
@@ -4420,7 +4450,7 @@ function SpecialModePage() {
         let big = "";
 
         if (seriesState.phase === "playoffs") {
-            small = "";
+            small = "Playoffs";
             big = `${stageLabelPlayoffs(seriesState.playoffsStage)} ${seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace" ? `#${seriesState.playoffsMatchNumber || 1}` : ""}`;
         } else if (seriesState.phase === "stage1") {
             small = "Stage I";
@@ -7832,39 +7862,130 @@ function SpecialModePage() {
                                                         return (
                                                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
                                                                 <ul className={css.seriesSummaryList}>
-                                                                    <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
-                                                                        {history.map(({ set, wins, won }) => {
-                                                                            const leftGlow = won;
+                                                                    <li style={{ minWidth: "60px" }} className={css.seriesSummaryItem}>
+                                                                        {history.map(
+                                                                            ({
+                                                                                set,
+                                                                                wins,
+                                                                                won,
+                                                                                firstHalfLeft,
+                                                                                firstHalfRight,
+                                                                                losses,
+                                                                            }) => {
+                                                                                const leftGlow = won;
+                                                                                const leftOpacity = !won ? 0.4 : 1;
 
-                                                                            const leftOpacity = !won ? 0.4 : 1;
+                                                                                const secondHalfLeft = 12 - firstHalfLeft;
+                                                                                const secondHalfRight = 12 - firstHalfRight;
 
-                                                                            return (
-                                                                                <span
-                                                                                    key={`left-${set}`}
-                                                                                    className={css.round_text}
-                                                                                    style={{ opacity: leftOpacity }}
-                                                                                >
-                                                                                    <CountUp
-                                                                                        key={wins}
-                                                                                        start={Math.max(wins - 1, 0)}
-                                                                                        end={wins}
-                                                                                        duration={1}
+                                                                                const winnerCount = won ? wins : losses;
+                                                                                const overtimeCount = Math.max(
+                                                                                    0,
+                                                                                    Math.floor((winnerCount - 13) / 3)
+                                                                                );
+
+                                                                                const hasOvertime = overtimeCount > 0;
+
+                                                                                const otLeft = hasOvertime
+                                                                                    ? Math.max(0, wins - 12)
+                                                                                    : null;
+
+                                                                                const otRight = hasOvertime
+                                                                                    ? Math.max(0, losses - 12)
+                                                                                    : null;
+
+                                                                                const getMiniGlow = (a, b) => {
+                                                                                    if (a === b) {
+                                                                                        return `
+                                                                                                0 0 3px ${leftColor},
+                                                                                                0 0 6px ${leftColor}55
+                                                                                            `;
+                                                                                    }
+
+                                                                                    return a > b
+                                                                                        ? `
+                                                                                            0 0 3px ${leftColor},
+                                                                                            0 0 6px ${leftColor}55
+                                                                                        `
+                                                                                        : "none";
+                                                                                };
+
+                                                                                return (
+                                                                                    <div
+                                                                                        key={`left-${set}`}
                                                                                         style={{
-                                                                                            color: leftColor,
-                                                                                            fontSize: "36px",
-                                                                                            transition: "all 2000ms ease-in-out",
-                                                                                            textShadow: leftGlow
-                                                                                                ? `
-                                                                                                        0 0 6px ${leftColor},
-                                                                                                        0 0 14px ${leftColor}66,
-                                                                                                        0 2px 6px rgba(0,0,0,0.4)
-                                                                                                    `
-                                                                                                : "none",
+                                                                                            display: "flex",
+                                                                                            flexDirection: "column",
+                                                                                            alignItems: "center",
                                                                                         }}
-                                                                                    />
-                                                                                </span>
-                                                                            );
-                                                                        })}
+                                                                                    >
+                                                                                        <span
+                                                                                            className={css.round_text}
+                                                                                            style={{ opacity: leftOpacity }}
+                                                                                        >
+                                                                                            <CountUp
+                                                                                                key={wins}
+                                                                                                start={Math.max(wins - 1, 0)}
+                                                                                                end={wins}
+                                                                                                duration={1}
+                                                                                                style={{
+                                                                                                    color: leftColor,
+                                                                                                    fontSize: "36px",
+                                                                                                    textShadow: leftGlow
+                                                                                                        ? `
+                                                                                                            0 0 6px ${leftColor},
+                                                                                                            0 0 14px ${leftColor}66,
+                                                                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                                                                        `
+                                                                                                        : "none",
+                                                                                                }}
+                                                                                            />
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "28px",
+                                                                                                color: leftColor,
+                                                                                                textShadow: getMiniGlow(
+                                                                                                    firstHalfLeft,
+                                                                                                    firstHalfRight
+                                                                                                ),
+                                                                                            }}
+                                                                                        >
+                                                                                            {firstHalfLeft}
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "28px",
+                                                                                                color: leftColor,
+                                                                                                textShadow: getMiniGlow(
+                                                                                                    secondHalfLeft,
+                                                                                                    secondHalfRight
+                                                                                                ),
+                                                                                            }}
+                                                                                        >
+                                                                                            {secondHalfLeft}
+                                                                                        </span>
+
+                                                                                        {hasOvertime && (
+                                                                                            <span
+                                                                                                className={css.info_text}
+                                                                                                style={{
+                                                                                                    fontSize: "28px",
+                                                                                                    color: leftColor,
+                                                                                                    textShadow: getMiniGlow(otLeft, otRight),
+                                                                                                }}
+                                                                                            >
+                                                                                                {otLeft}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                        )}
                                                                     </li>
 
                                                                     <li
@@ -7873,128 +7994,182 @@ function SpecialModePage() {
                                                                             display: "flex",
                                                                             flexDirection: "column",
                                                                             alignItems: "center",
-                                                                            gap: "8px",
-                                                                            position: "relative",
+                                                                            gap: "28px",
                                                                         }}
                                                                     >
-                                                                        <div
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                justifyContent: "center",
-                                                                                alignItems: "center",
-                                                                                flexDirection: "column",
-                                                                                gap: "35px",
-                                                                                position: "absolute",
-                                                                                top: "-12px",
-                                                                            }}
-                                                                        >
-                                                                            {history.map(({ set }) => {
-                                                                                const isDecider = set === modalBestOf;
-                                                                                const label = isDecider ? "Decider" : `Set ${set}`;
+                                                                        {history.map(({ set, wins, losses, won }) => {
+                                                                            const isDecider = set === modalBestOf;
+                                                                            const label = isDecider ? "Decider" : `Set ${set}`;
 
-                                                                                return (
-                                                                                    <div
-                                                                                        key={`label-${set}`}
-                                                                                        style={{
-                                                                                            minWidth: "148.06px",
-                                                                                            textAlign: "center",
-                                                                                        }}
+                                                                            const winnerCount = won ? wins : losses;
+
+                                                                            const overtimeCount = Math.max(
+                                                                                0,
+                                                                                Math.floor((winnerCount - 13) / 3)
+                                                                            );
+
+                                                                            const hasOvertime = overtimeCount > 0;
+
+                                                                            return (
+                                                                                <div
+                                                                                    key={`center-${set}`}
+                                                                                    style={{
+                                                                                        minWidth: "148px",
+                                                                                        textAlign: "center",
+                                                                                        display: "flex",
+                                                                                        flexDirection: "column",
+                                                                                        gap: "4px",
+                                                                                    }}
+                                                                                >
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{ fontWeight: 600 }}
                                                                                     >
-                                                                                        <span
-                                                                                            className={css.info_text}
-                                                                                            style={{
-                                                                                                fontWeight: 600,
-                                                                                            }}
-                                                                                        >
-                                                                                            {label}
+                                                                                        {label}
+                                                                                    </span>
+
+                                                                                    <span className={css.info_text}>
+                                                                                        1st Half
+                                                                                    </span>
+
+                                                                                    <span className={css.info_text}>
+                                                                                        2nd Half
+                                                                                    </span>
+
+                                                                                    {hasOvertime && (
+                                                                                        <span className={css.info_text}>
+                                                                                            OT
                                                                                         </span>
-                                                                                    </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </li>
+
+                                                                    <li style={{ minWidth: "60px" }} className={css.seriesSummaryItem}>
+                                                                        {history.map(
+                                                                            ({
+                                                                                set,
+                                                                                wins,
+                                                                                won,
+                                                                                firstHalfLeft,
+                                                                                firstHalfRight,
+                                                                                losses,
+                                                                            }) => {
+                                                                                const rightGlow = !won;
+                                                                                const rightOpacity = won ? 0.4 : 1;
+
+                                                                                const secondHalfLeft = 12 - firstHalfLeft;
+                                                                                const secondHalfRight = 12 - firstHalfRight;
+
+                                                                                const winnerCount = !won ? losses : wins;
+                                                                                const overtimeCount = Math.max(
+                                                                                    0,
+                                                                                    Math.floor((winnerCount - 13) / 3)
                                                                                 );
-                                                                            })}
-                                                                        </div>
-                                                                        <div
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                justifyContent: "center",
-                                                                                flexDirection: "column",
-                                                                                gap: "28px",
-                                                                            }}
-                                                                        >
-                                                                            {history.map(({ set, wins, losses, won }) => {
-                                                                                const totalRounds = wins + losses;
 
-                                                                                const winnerCount = won ? wins : losses;
-                                                                                const overtimeCount = ((winnerCount - 13) / 3).toFixed(0);
-                                                                                const hasOvertime = overtimeCount <= 0;
+                                                                                const hasOvertime = overtimeCount > 0;
 
-                                                                                const formatRoundsCount = () => {
-                                                                                    const lastDigit = totalRounds % 10;
+                                                                                const otLeft = hasOvertime
+                                                                                    ? Math.max(0, losses - 12)
+                                                                                    : null;
 
-                                                                                    return lastDigit === 1 ? "Round" : "Rounds";
+                                                                                const otRight = hasOvertime
+                                                                                    ? Math.max(0, wins - 12)
+                                                                                    : null;
+
+                                                                                const getMiniGlow = (a, b) => {
+                                                                                    if (a === b) {
+                                                                                        return `
+                                                                                                0 0 3px ${rightColor},
+                                                                                                0 0 6px ${rightColor}55
+                                                                                            `;
+                                                                                    }
+
+                                                                                    return a > b
+                                                                                        ? `
+                                                                                            0 0 3px ${rightColor},
+                                                                                            0 0 6px ${rightColor}55
+                                                                                        `
+                                                                                        : "none";
                                                                                 };
 
                                                                                 return (
                                                                                     <div
-                                                                                        key={`center-${set}`}
+                                                                                        key={`right-${set}`}
                                                                                         style={{
-                                                                                            minWidth: "148.06px",
-                                                                                            textAlign: "center",
+                                                                                            display: "flex",
+                                                                                            flexDirection: "column",
+                                                                                            alignItems: "center",
                                                                                         }}
                                                                                     >
-                                                                                        <p
-                                                                                            style={{
-                                                                                                marginTop: 0,
-                                                                                                fontSize: "18px",
-                                                                                                textAlign: "center",
-                                                                                            }}
-                                                                                            className={css.vs}
+                                                                                        <span
+                                                                                            className={css.round_text}
+                                                                                            style={{ opacity: rightOpacity }}
                                                                                         >
-                                                                                            {totalRounds} {formatRoundsCount()}
-                                                                                            <span style={{ fontSize: "14px" }}>
-                                                                                                {hasOvertime
-                                                                                                    ? ""
-                                                                                                    : ` (${getOvertimeShortLabel(Number(overtimeCount))})`}
+                                                                                            <CountUp
+                                                                                                key={losses}
+                                                                                                start={Math.max(losses - 1, 0)}
+                                                                                                end={losses}
+                                                                                                duration={1}
+                                                                                                style={{
+                                                                                                    color: rightColor,
+                                                                                                    fontSize: "36px",
+                                                                                                    textShadow: rightGlow
+                                                                                                        ? `
+                                                                                                            0 0 6px ${rightColor},
+                                                                                                            0 0 14px ${rightColor}66,
+                                                                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                                                                        `
+                                                                                                        : "none",
+                                                                                                }}
+                                                                                            />
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "28px",
+                                                                                                color: rightColor,
+                                                                                                textShadow: getMiniGlow(
+                                                                                                    firstHalfRight,
+                                                                                                    firstHalfLeft
+                                                                                                ),
+                                                                                            }}
+                                                                                        >
+                                                                                            {firstHalfRight}
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "28px",
+                                                                                                color: rightColor,
+                                                                                                textShadow: getMiniGlow(
+                                                                                                    secondHalfRight,
+                                                                                                    secondHalfLeft
+                                                                                                ),
+                                                                                            }}
+                                                                                        >
+                                                                                            {secondHalfRight}
+                                                                                        </span>
+
+                                                                                        {hasOvertime && (
+                                                                                            <span
+                                                                                                className={css.info_text}
+                                                                                                style={{
+                                                                                                    fontSize: "28px",
+                                                                                                    color: rightColor,
+                                                                                                    textShadow: getMiniGlow(otRight, otLeft),
+                                                                                                }}
+                                                                                            >
+                                                                                                {otRight}
                                                                                             </span>
-                                                                                        </p>
+                                                                                        )}
                                                                                     </div>
                                                                                 );
-                                                                            })}
-                                                                        </div>
-                                                                    </li>
-
-                                                                    <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
-                                                                        {history.map(({ set, losses, won }) => {
-                                                                            const rightGlow = !won;
-
-                                                                            const rightOpacity = won ? 0.4 : 1;
-
-                                                                            return (
-                                                                                <span
-                                                                                    key={`right-${set}`}
-                                                                                    className={css.round_text}
-                                                                                    style={{ opacity: rightOpacity }}
-                                                                                >
-                                                                                    <CountUp
-                                                                                        key={losses}
-                                                                                        start={Math.max(losses - 1, 0)}
-                                                                                        end={losses}
-                                                                                        duration={1}
-                                                                                        style={{
-                                                                                            color: rightColor,
-                                                                                            fontSize: "36px",
-                                                                                            transition: "all 2000ms ease-in-out",
-                                                                                            textShadow: rightGlow
-                                                                                                ? `
-                                                                                                        0 0 6px ${rightColor},
-                                                                                                        0 0 14px ${rightColor}66,
-                                                                                                        0 2px 6px rgba(0,0,0,0.4)
-                                                                                                    `
-                                                                                                : "none",
-                                                                                        }}
-                                                                                    />
-                                                                                </span>
-                                                                            );
-                                                                        })}
+                                                                            }
+                                                                        )}
                                                                     </li>
                                                                 </ul>
                                                             </motion.div>
