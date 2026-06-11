@@ -5776,7 +5776,7 @@ function SpecialModePage() {
                             const rank = i + 1;
                             const rating = teamRatings[t.id] ?? 0;
 
-                            const placementColor = placementColors[rank] || "#ffffff";
+                            const placementColor = placementColors[rank] || "#2e2f42";
 
                             const rankSticker = () => {
                                 return (
