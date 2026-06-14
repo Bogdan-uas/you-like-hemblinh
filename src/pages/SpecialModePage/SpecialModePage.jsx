@@ -2028,16 +2028,6 @@ function SpecialModePage() {
         loser.losses += 1;
         loser.netEntryOrder = netEntryCounterRef.current++;
 
-        console.log(
-            `${winner.name} entered ${winner.wins}:${winner.losses}`,
-            winner.netEntryOrder
-        );
-
-        console.log(
-            `${loser.name} entered ${loser.wins}:${loser.losses}`,
-            loser.netEntryOrder
-        );
-
         match.played = true;
         match.scoreLeft = scoreLeft;
         match.scoreRight = scoreRight;
