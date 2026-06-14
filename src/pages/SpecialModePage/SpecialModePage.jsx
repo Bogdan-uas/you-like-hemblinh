@@ -4602,7 +4602,8 @@ function SpecialModePage() {
                                             className={css.round_text}
                                             style={{
                                                 fontSize: "12px",
-                                                boxShadow: leftScore > rightScore ? seriesState.leftTeam.shadow : seriesState.rightTeam.shadow,
+                                                textShadow: leftScore > rightScore ? seriesState.leftTeam.shadow : seriesState.rightTeam.shadow,
+                                                color: leftScore > rightScore ? seriesState.leftTeam.color : seriesState.rightTeam.color,
                                             }}
                                         >
                                             Set {set}
