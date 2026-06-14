@@ -2681,7 +2681,7 @@ function SpecialModePage() {
                     <span>
                         {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}OT round!
                     </span>,
-                    { icon: "😜", duration: 2000 }
+                    { icon: miniWinsToWinRound === 10 ? "🔥" : "😜", duration: 2000 }
                 );
 
                 const otDecided =
@@ -2949,7 +2949,7 @@ function SpecialModePage() {
                 <span>
                     {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}round!
                 </span>,
-                { icon: "😜", duration: 2000 }
+                { icon: miniWinsToWinRound === 10 ? "🔥" : "😜", duration: 2000 }
             );
 
             if (roundWins === 12 && roundLosses === 12) {
