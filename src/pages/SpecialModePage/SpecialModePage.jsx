@@ -216,7 +216,7 @@ const saveTeamRatings = (ratings) => {
 const saveRatingsSnapshot = (ratings) => {
     try {
         localStorage.setItem(TEAM_RATINGS_SNAPSHOT_LS_KEY, JSON.stringify(ratings));
-    } catch { 
+    } catch {
         console.error("Couldn't set teams' snapshot")
     }
 };
@@ -573,7 +573,7 @@ const makeSwissTeam = (t) => ({
     qualifiedAt: null,
     qualifiedVia: null,
     eliminatedAt: null,
-    eliminatedVia: null,  
+    eliminatedVia: null,
 });
 
 const buildNetMatches = (teams, stageKey, net) => {
@@ -980,7 +980,7 @@ const MatchRect = ({
             ? css.match_win
             : css.match_loss
         : "";
-    
+
     const boLabelResultClass = isPlayed
         ? isUserWin
             ? css.match_win_label
@@ -1220,7 +1220,7 @@ const PODIUM_QUOTES = {
 function SpecialModePage() {
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
-    
+
     const colorSeq = useMemo(
         () => makeColorSequence(buildTournamentColorPool().map(([, v]) => v)),
         []
@@ -1288,7 +1288,7 @@ function SpecialModePage() {
 
     const [teamRatings, setTeamRatings] = useState(() => loadTeamRatings(allTeams));
     const teamRatingsRef = useRef(teamRatings);
-    
+
     useEffect(() => {
         teamRatingsRef.current = teamRatings;
     }, [teamRatings]);
@@ -1378,7 +1378,7 @@ function SpecialModePage() {
         isRemovePlacingsFinalModalOpen ||
         showIntro ||
         isLocked;
-    
+
     const isMatchRectLocked =
         isCalculating ||
         isRestartModalOpen ||
@@ -1393,7 +1393,7 @@ function SpecialModePage() {
         isRemovePlacingsFinalModalOpen ||
         showIntro ||
         isLocked;
-    
+
     const isScoreBoardButtonLocked =
         isTerminateModalOpen ||
         isRestartModalOpen ||
@@ -1693,7 +1693,7 @@ function SpecialModePage() {
         setIsScoreBoardResetConfirmModalOpen(false);
         toast.success("Scoreboard has been reset.");
     };
-    
+
     const handleCancelFinalScoreboardReset = () => {
         setIsScoreBoardResetConfirmModalOpen(false);
     };
@@ -3058,7 +3058,7 @@ function SpecialModePage() {
             };
         });
     };
-    
+
     useEffect(() => {
         if (!seriesState.banner) return;
 
@@ -3802,7 +3802,7 @@ function SpecialModePage() {
 
                     const lockedRects =
                         !unlocked && placeholderTeams.length !== 0;
-                    
+
                     const { currentId, nextId } =
                         unlocked && !isReadOnlyView
                             ? getSwissNetHighlights(stageObj, net)
@@ -3823,10 +3823,10 @@ function SpecialModePage() {
                                             unlocked && m.id === currentId ? css.match_current :
                                                 unlocked && m.id === nextId ? css.match_next :
                                                     "";
-                                        
+
                                         const isFirst = idx === 0;
                                         const isLast = idx === arr.length - 1;
-                                        
+
                                         const isUnfilled = !m.slotA || !m.slotB;
                                         const notStartedEdge = isUnfilled && !m.played && (isFirst || isLast);
 
@@ -3865,7 +3865,7 @@ function SpecialModePage() {
             </div>
         );
     };
-    
+
     const renderSwissBracket = (stageObj) => {
         if (!stageObj) {
             return (
@@ -4124,7 +4124,7 @@ function SpecialModePage() {
                 m.pickTeamId &&
                 m.winnerTeamId &&
                 m.pickTeamId === m.winnerTeamId;
-            
+
             const shouldSwap =
                 !!m.pickTeamId &&
                 m.slotA &&
@@ -4139,7 +4139,7 @@ function SpecialModePage() {
 
             const displayScoreLeft = shouldSwap ? rawRightScore : rawLeftScore;
             const displayScoreRight = shouldSwap ? rawLeftScore : rawRightScore;
-            
+
             const resultClass = isPlayed ? (isUserWin ? css.match_win : css.match_loss) : "";
 
             const boLabelResultClass = isPlayed
@@ -4171,7 +4171,7 @@ function SpecialModePage() {
             const isClickable =
                 !isMatchRectLocked &&
                 (isReadOnlyView ? !!m.played : (m.played || canOpenPlayoffsMatch(playoffs, stageKey, idx)));
-            
+
             const stageStarted = hasStageStarted(stageKey);
             const previewExists = hasPreviewContenders(stageKey, idx);
 
@@ -4585,8 +4585,7 @@ function SpecialModePage() {
                                 flexWrap: "wrap",
                                 justifyContent: "center",
                                 gap: "12px",
-                                maxWidth: "320px",
-                                marginTop: "-2px",
+                                maxWidth: "320px"
                             }}
                         >
                             {seriesState.finishedSets.map(
@@ -5839,7 +5838,7 @@ function SpecialModePage() {
                                 <p className={css.seriesResultMessage}>
                                     {seriesState.lastResult}
                                 </p>
-                
+
                                 <span
                                     className={css.seriesMultiplier}
                                     style={{ color: getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
@@ -6011,7 +6010,7 @@ function SpecialModePage() {
                                 rank >= 4 && rank <= 10 ? "10px"
                                     : rank > 10 ? "8px"
                                         : "";
-                                
+
                             const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
                             const trophyDisplay = trophyCountToDisplay(p.wins);
 
@@ -6637,7 +6636,7 @@ function SpecialModePage() {
                                         </div>
                                     ))}
                                 </div>
-                        
+
                                 <div
                                     className={css.marquee_group}
                                     aria-hidden
@@ -7286,7 +7285,7 @@ function SpecialModePage() {
                                 const rightPlacement = rankById[modalRightTeam?.id] ?? 64;
 
                                 const placementGap = rightPlacement - leftPlacement;
-                                
+
                                 const placementRatingShift = placementGap * 12;
 
                                 const adjustedLeftRating =
@@ -7650,7 +7649,7 @@ function SpecialModePage() {
                                         winnerIsLeft,
                                         winnerIsRight
                                     });
-                                
+
                                     const stage = modalContext?.stage;
                                     const isGrandFinal = stage === "gf";
                                     const isThirdPlace = stage === "thirdPlace";
@@ -7958,10 +7957,10 @@ function SpecialModePage() {
                                                     if (!history.length) {
                                                         return <p className={css.info_text}>No set history stored for this match.</p>;
                                                     }
-                                                        
+
                                                     const leftColor = modalPlayedLeft?.color || "#2e7d32";
                                                     const rightColor = modalPlayedRight?.color || "red";
-                                                        
+
                                                     return (
                                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
                                                             <ul
@@ -7998,7 +7997,7 @@ function SpecialModePage() {
                                                                         );
 
                                                                         const hasOvertime = overtimeCount > 0;
-                                                                            
+
                                                                         const formatRoundsCount = () => {
                                                                             const lastDigit = totalRounds % 10;
 
