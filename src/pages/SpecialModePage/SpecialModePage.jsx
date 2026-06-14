@@ -74,6 +74,16 @@ const makeColor = (
         };
     }
 
+    if (normalized === "#E6E6E6" || normalized === "#E6E6E6FF") {
+        return {
+            shadow: `0 0 10px rgba(150,150,150,0.35)`,
+            color: "#E6E6E6",
+            hoverOn: "#C8C8C8",
+            unlitColor: "#5D5D5D",
+            name,
+        };
+    }
+
     const { r, g, b } = hexToRgb(hex);
     return {
         shadow: `0 0 10px rgba(${r}, ${g}, ${b}, ${shadowAlpha})`,
@@ -98,7 +108,7 @@ const COLORS = {
     violet: makeColor("#8A2BE2", "Violet"),
     pink: makeColor("#FF1493", "Pink"),
     black: makeColor("#000000", "Black", { unlitAmount: 0.35 }),
-    white: makeColor("#e6e6e6ff", "White", { unlitAmount: 0.85, shadowAlpha: 0.25 }),
+    white: makeColor("#e6e6e6ff", "White", { unlitAmount: 0.35 }),
     gray: makeColor("#808080", "Gray"),
     teal: makeColor("#006D6F", "Teal"),
 
@@ -106,7 +116,7 @@ const COLORS = {
     gold: makeColor("#D4AF37", "Gold"),
     silver: makeColor("#C0C0C0", "Silver", { shadowAlpha: 0.35 }),
 
-    navy: makeColor("#00005aff", "Navy", { unlitAmount: 0.9 }),
+    navy: makeColor("#3A4DFF", "Navy"),
     olive: makeColor("#808000", "Olive"),
     coral: makeColor("#FF6F61", "Coral"),
     magenta: makeColor("#D81BFF", "Magenta"),
@@ -643,36 +653,6 @@ const tryBuildUnlockedNets = (stage) => {
     });
 };
 
-const resolveSwissMatchResult = (stage, match, winnerTeamId, scoreLeft, scoreRight) => {
-    if (!match?.slotA || !match?.slotB) return;
-
-    const winner = winnerTeamId === match.slotA.id ? match.slotA : match.slotB;
-    const loser = winnerTeamId === match.slotA.id ? match.slotB : match.slotA;
-
-    winner.wins += 1;
-    loser.losses += 1;
-
-    match.played = true;
-    match.scoreLeft = scoreLeft;
-    match.scoreRight = scoreRight;
-    match.winnerTeamId = winner.id;
-    match.loserTeamId = loser.id;
-
-    if (typeof stage.resultCounter !== "number") stage.resultCounter = 0;
-
-    if (!winner.qualified && winner.wins >= 3) {
-        winner.qualified = true;
-        winner.qualifiedVia = `3:${winner.losses}`;
-        winner.qualifiedAt = ++stage.resultCounter;
-    }
-
-    if (!loser.eliminated && loser.losses >= 3) {
-        loser.eliminated = true;
-        loser.eliminatedVia = `${loser.wins}:3`;
-        loser.eliminatedAt = ++stage.resultCounter;
-    }
-};
-
 const isSwissStageFinished = (stage) =>
     stage.teams.every((t) => t.qualified || t.eliminated);
 
@@ -883,6 +863,9 @@ const defaultSeriesState = {
     playerWonSets: 0,
     playerLostSets: 0,
     setNumber: 1,
+    firstHalfLeft: null,
+    firstHalfRight: null,
+    finishedSets: [],
 
     lastMultiplier: null,
     lastResult: "",
@@ -1071,28 +1054,45 @@ const MatchRect = ({
     );
 };
 
-const PlaceholderRect = ({ teams, height = 264 }) => (
-    <div
-        className={css.placeholder_rect}
-        style={{ minHeight: height }}
-        title="To be determined..."
-    >
-        <div style={{ width: "100%", height: "max-content", display: "flex", flexWrap: "wrap", rowGap: 16.5, columnGap: 4, justifyContent: "center", alignItems: "flex-start" }}>
-            {teams.map((t) => (
-                <div
-                    key={t.id}
-                    style={{
-                        width: "calc(50% - 6px)",
-                        display: "flex",
-                        justifyContent: "center",
-                    }}
-                >
-                    <TeamCircle team={t} />
-                </div>
-            ))}
+const PlaceholderRect = ({ teams, height = 264 }) => {
+    const sortedTeams = [...teams].sort(
+        (a, b) => a.netEntryOrder - b.netEntryOrder
+    );
+
+    return (
+        <div
+            className={css.placeholder_rect}
+            style={{ minHeight: height }}
+            title="To be determined..."
+        >
+            <div
+                style={{
+                    width: "100%",
+                    height: "max-content",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    rowGap: 16.5,
+                    columnGap: 4,
+                    justifyContent: "center",
+                    alignItems: "flex-start",
+                }}
+            >
+                {sortedTeams.map((t) => (
+                    <div
+                        key={t.id}
+                        style={{
+                            width: "calc(50% - 6px)",
+                            display: "flex",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <TeamCircle team={t} />
+                    </div>
+                ))}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const BoxPlaceholderCircle = ({ tone = "green" }) => {
     const bg = tone === "green" ? "#005e00" : "#4a0000";
@@ -1307,6 +1307,7 @@ function SpecialModePage() {
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
     const teamPlacingsRef = useRef(teamPlacings);
     const tournamentSeedsRef = useRef(null);
+    const netEntryCounterRef = useRef(1);
 
     useEffect(() => {
         teamPlacingsRef.current = teamPlacings;
@@ -2016,6 +2017,48 @@ function SpecialModePage() {
         return (pickedSets || 0) * 2;
     };
 
+    const resolveSwissMatchResult = (stage, match, winnerTeamId, scoreLeft, scoreRight) => {
+        if (!match?.slotA || !match?.slotB) return;
+
+        const winner = winnerTeamId === match.slotA.id ? match.slotA : match.slotB;
+        const loser = winnerTeamId === match.slotA.id ? match.slotB : match.slotA;
+
+        winner.wins += 1;
+        winner.netEntryOrder = netEntryCounterRef.current++;
+        loser.losses += 1;
+        loser.netEntryOrder = netEntryCounterRef.current++;
+
+        console.log(
+            `${winner.name} entered ${winner.wins}:${winner.losses}`,
+            winner.netEntryOrder
+        );
+
+        console.log(
+            `${loser.name} entered ${loser.wins}:${loser.losses}`,
+            loser.netEntryOrder
+        );
+
+        match.played = true;
+        match.scoreLeft = scoreLeft;
+        match.scoreRight = scoreRight;
+        match.winnerTeamId = winner.id;
+        match.loserTeamId = loser.id;
+
+        if (typeof stage.resultCounter !== "number") stage.resultCounter = 0;
+
+        if (!winner.qualified && winner.wins >= 3) {
+            winner.qualified = true;
+            winner.qualifiedVia = `3:${winner.losses}`;
+            winner.qualifiedAt = ++stage.resultCounter;
+        }
+
+        if (!loser.eliminated && loser.losses >= 3) {
+            loser.eliminated = true;
+            loser.eliminatedVia = `${loser.wins}:3`;
+            loser.eliminatedAt = ++stage.resultCounter;
+        }
+    };
+
     const recomputePickemTotals = () => {
         let total = 0;
         const nextCounts = {
@@ -2216,10 +2259,23 @@ function SpecialModePage() {
         }
     };
 
-    const appendSetToCurrentMatchHistory = (wins, losses, won) => {
+    const appendSetToCurrentMatchHistory = (
+        wins,
+        losses,
+        won,
+        firstHalfLeft,
+        firstHalfRight
+    ) => {
         const setEntry = (history) => [
             ...(history || []),
-            { set: (history?.length || 0) + 1, wins, losses, won },
+            {
+                set: (history?.length || 0) + 1,
+                wins,
+                losses,
+                won,
+                firstHalfLeft,
+                firstHalfRight,
+            },
         ];
         if (seriesState.phase === "playoffs" && playoffs && seriesState.playoffsStage && seriesState.playoffsMatchId) {
             const stageKey = seriesState.playoffsStage;
@@ -2629,7 +2685,13 @@ function SpecialModePage() {
                 if (otDecided) {
                     const playerWonSet = updatedOtWins > updatedOtLosses;
 
-                    appendSetToCurrentMatchHistory(updatedRoundWins, updatedRoundLosses, playerWonSet);
+                    appendSetToCurrentMatchHistory(
+                        updatedRoundWins,
+                        updatedRoundLosses,
+                        playerWonSet,
+                        prev.firstHalfLeft,
+                        prev.firstHalfRight
+                    );
 
                     playerWonSets += playerWonSet ? 1 : 0;
                     playerLostSets += playerWonSet ? 0 : 1;
@@ -2672,10 +2734,20 @@ function SpecialModePage() {
                                 setIsLocked(false);
                                 return {
                                     ...curr,
+                                    roundNumber: 1,
+                                    firstHalfLeft: null,
+                                    firstHalfRight: null,
+                                    finishedSets: [
+                                        ...(curr.finishedSets || []),
+                                        {
+                                            set: setNumber,
+                                            leftScore: updatedRoundWins,
+                                            rightScore: updatedRoundLosses,
+                                        },
+                                    ],
+                                    setNumber: curr.setNumber + 1,
                                     roundWins: 0,
                                     roundLosses: 0,
-                                    roundNumber: 1,
-                                    setNumber: curr.setNumber + 1,
                                     miniWins: 0,
                                     miniLosses: 0,
                                     isOvertime: false,
@@ -2820,6 +2892,20 @@ function SpecialModePage() {
             roundLosses += playerWonRound ? 0 : 1;
             roundNumber += 1;
 
+            let firstHalfLeft = prev.firstHalfLeft;
+            let firstHalfRight = prev.firstHalfRight;
+
+            const totalRoundsPlayed = roundWins + roundLosses;
+
+            if (
+                totalRoundsPlayed === 12 &&
+                firstHalfLeft == null &&
+                firstHalfRight == null
+            ) {
+                firstHalfLeft = roundWins;
+                firstHalfRight = roundLosses;
+            }
+
             miniWins = 0;
             miniLosses = 0;
 
@@ -2883,7 +2969,13 @@ function SpecialModePage() {
             if (setShouldEnd) {
                 const playerWonSet = roundWins > roundLosses;
 
-                appendSetToCurrentMatchHistory(roundWins, roundLosses, playerWonSet);
+                appendSetToCurrentMatchHistory(
+                    roundWins,
+                    roundLosses,
+                    playerWonSet,
+                    firstHalfLeft,
+                    firstHalfRight
+                );
 
                 playerWonSets += playerWonSet ? 1 : 0;
                 playerLostSets += playerWonSet ? 0 : 1;
@@ -2926,6 +3018,16 @@ function SpecialModePage() {
                             setIsLocked(false);
                             return {
                                 ...curr,
+                                firstHalfLeft: null,
+                                firstHalfRight: null,
+                                finishedSets: [
+                                    ...(curr.finishedSets || []),
+                                    {
+                                        set: setNumber,
+                                        leftScore: roundWins,
+                                        rightScore: roundLosses,
+                                    },
+                                ],
                                 roundWins: 0,
                                 roundLosses: 0,
                                 roundNumber: 1,
@@ -2954,6 +3056,8 @@ function SpecialModePage() {
                 roundWins,
                 roundLosses,
                 roundNumber,
+                firstHalfLeft,
+                firstHalfRight,
                 miniWins,
                 miniLosses,
                 isOvertime,
@@ -3211,7 +3315,7 @@ function SpecialModePage() {
 
             setSeriesState(defaultSeriesState);
             recomputePickemTotals();
-        }, 2500);
+        }, 3500);
 
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4481,6 +4585,87 @@ function SpecialModePage() {
                             &nbsp;
                         </motion.span>
                     ) : null}
+                    {seriesState.finishedSets?.length > 0 && !seriesBanner ? (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                justifyContent: "center",
+                                gap: "12px",
+                                maxWidth: "320px",
+                                marginTop: "-2px",
+                            }}
+                        >
+                            {seriesState.finishedSets.map(
+                                ({ set, leftScore, rightScore }) => (
+                                    <div
+                                        key={set}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "4px",
+                                        }}
+                                    >
+                                        <span
+                                            className={css.round_text}
+                                            style={{
+                                                fontSize: "12px",
+                                            }}
+                                        >
+                                            Set {set}
+                                        </span>
+
+                                        <span
+                                            style={{
+                                                color:
+                                                    leftScore > rightScore
+                                                        ? "#4caf50"
+                                                        : "#f44336",
+                                                fontSize: "12px",
+                                            }}
+                                        >
+                                            {leftScore}
+                                        </span>
+
+                                        <span
+                                            className={css.round_text}
+                                            style={{
+                                                fontSize: "12px",
+                                            }}
+                                        >
+                                            -
+                                        </span>
+
+                                        <span
+                                            style={{
+                                                color:
+                                                    rightScore > leftScore
+                                                        ? "#4caf50"
+                                                        : "#f44336",
+                                                fontSize: "12px",
+                                            }}
+                                        >
+                                            {rightScore}
+                                        </span>
+                                    </div>
+                                )
+                            )}
+                        </motion.div>
+                    ) : setsToWin !== 1 ? (
+                        <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.round_text}
+                            style={{ fontSize: "12px" }}
+                        >
+                            &nbsp;
+                        </motion.span>
+                    ) : null}
                 </span>
             </>
         );
@@ -4751,6 +4936,28 @@ function SpecialModePage() {
         );
     }
 
+    const getPointLabel = () => {
+        const pointNet = ["2:0", "2:1", "2:2"];
+
+        if (!pointNet.includes(seriesState.swissNet)) {
+            return "MATCH POINT!!!";
+        }
+
+        switch (seriesState.phase) {
+            case "stage1":
+                return "STAGE II POINT!!!";
+
+            case "stage2":
+                return "STAGE III POINT!!!";
+
+            case "stage3":
+                return "PLAYOFFS POINT!!!";
+
+            default:
+                return "MATCH POINT!!!";
+        }
+    };
+
     if (isSeriesActive) {
         const {
             playerWonSets,
@@ -4826,7 +5033,7 @@ function SpecialModePage() {
                                         marginTop: "-28px"
                                     }}
                                 >
-                                    MATCH POINT!!!
+                                    {getPointLabel()}
                                 </motion.span>
                             ) : (
                                 isSetPointWins && (
@@ -5260,7 +5467,7 @@ function SpecialModePage() {
                                         marginTop: "-28px"
                                     }}
                                 >
-                                    MATCH POINT!!!
+                                    {getPointLabel()}
                                 </motion.span>
                             ) : (
                                 isSetPointLosses && (
@@ -7021,7 +7228,7 @@ function SpecialModePage() {
                             }
                         >
                             <div
-                                style={{ paddingTop: '12px', paddingBottom: isPlayedModal ? '24px' : '0', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ paddingTop: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <div className={css.match_modal_header}>
                                     <span className={css.match_modal_title} style={{
@@ -7535,61 +7742,6 @@ function SpecialModePage() {
 
                                     return (
                                         <>
-                                            {isBo1Modal && (() => {
-                                                const historyMatch = currentModalMatch;
-                                                const history = historyMatch?.setHistory ?? [];
-                                                if (!history.length) {
-                                                    return <p className={css.info_text}>No set history stored for this match.</p>;
-                                                }
-                                                
-                                                return (
-                                                    <div
-                                                        className={css.seriesSummaryItem}
-                                                        style={{
-                                                            display: "flex",
-                                                            flexDirection: "column",
-                                                            alignItems: "center",
-                                                            gap: "28px",
-                                                        }}
-                                                    >
-                                                        {history.map(({ set, wins, losses, won }) => {
-                                                            const totalRounds = wins + losses;
-
-                                                            const winnerCount = won ? wins : losses;
-                                                            const overtimeCount = (winnerCount - 13) / 3;
-                                                            const hasOvertime = overtimeCount <= 0;
-                                                            const lastDigit = totalRounds % 10;
-
-                                                            const formatRoundsCount = () => {
-                                                                return lastDigit === 1
-                                                                    ? "Round"
-                                                                    : "Rounds";
-                                                            };
-
-                                                            return (
-                                                                <div
-                                                                    key={`center-${set}`}
-                                                                    style={{
-                                                                        position: "relative",
-                                                                    }}
-                                                                >
-                                                                    <p
-                                                                        style={{ marginTop: '0', fontSize: '16px', minWidth: "92.04px", textAlign: 'center', color: '#fff', width: 'max-content', position: 'absolute', top: '-10px', left: !hasOvertime ? '-67.5px' : lastDigit === 1 ? '-46px' : '-45px' }}
-                                                                        className={css.vs}
-                                                                    >
-                                                                        {totalRounds} {formatRoundsCount()}
-                                                                        <span style={{ fontSize: "14px" }}>
-                                                                            {hasOvertime
-                                                                                ? ""
-                                                                                : ` (${getOvertimeShortLabel(Number(overtimeCount))})`}
-                                                                        </span>
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                            })()}
                                             <div className={css.finishedMatchReview}>
                                                 <div
                                                     style={{ marginBottom: isBo1Modal ? 0 : "10px" }}
@@ -7809,191 +7961,361 @@ function SpecialModePage() {
                                                 )}
                                             </div>
 
-                                            {!isBo1Modal && (
-                                                <>
-                                                    {(() => {
-                                                        const historyMatch = currentModalMatch;
-                                                        const history = historyMatch?.setHistory ?? [];
-                                                        if (!history.length) {
-                                                            return <p className={css.info_text}>No set history stored for this match.</p>;
-                                                        }
+                                            <>
+                                                {(() => {
+                                                    const historyMatch = currentModalMatch;
+                                                    const history = historyMatch?.setHistory ?? [];
+                                                    if (!history.length) {
+                                                        return <p className={css.info_text}>No set history stored for this match.</p>;
+                                                    }
                                                         
-                                                        const leftColor = modalPlayedLeft?.color || "#2e7d32";
-                                                        const rightColor = modalPlayedRight?.color || "red";
+                                                    const leftColor = modalPlayedLeft?.color || "#2e7d32";
+                                                    const rightColor = modalPlayedRight?.color || "red";
                                                         
-                                                        return (
-                                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
-                                                                <ul className={css.seriesSummaryList}>
-                                                                    <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
-                                                                        {history.map(({ set, wins, won }) => {
-                                                                            const leftGlow = won;
+                                                    return (
+                                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
+                                                            <ul
+                                                                className={css.seriesSummaryList}
+                                                                style={{
+                                                                    display: "flex",
+                                                                    flexDirection: "column",
+                                                                    gap: "12px",
+                                                                }}
+                                                            >
+                                                                {history.map(
+                                                                    ({
+                                                                        set,
+                                                                        wins,
+                                                                        losses,
+                                                                        won,
+                                                                        firstHalfLeft,
+                                                                        firstHalfRight,
+                                                                    }) => {
+                                                                        const isDecider = set === modalBestOf;
+                                                                        const label = isDecider ? "Decider" : `Set ${set}`;
 
-                                                                            const leftOpacity = !won ? 0.4 : 1;
+                                                                        const leftGlow = won;
+                                                                        const rightGlow = !won;
 
-                                                                            return (
-                                                                                <span
-                                                                                    key={`left-${set}`}
-                                                                                    className={css.round_text}
-                                                                                    style={{ opacity: leftOpacity }}
+                                                                        const leftOpacity = won ? 1 : 0.4;
+                                                                        const rightOpacity = won ? 0.4 : 1;
+
+                                                                        const winnerCount = won ? wins : losses;
+
+                                                                        const overtimeCount = Math.max(
+                                                                            0,
+                                                                            Math.floor((winnerCount - 13) / 3)
+                                                                        );
+
+                                                                        const hasOvertime = overtimeCount > 0;
+                                                                            
+                                                                        const formatRoundsCount = () => {
+                                                                            const lastDigit = totalRounds % 10;
+
+                                                                            return lastDigit === 1 ? "Round" : "Rounds";
+                                                                        };
+
+                                                                        const otLeft = hasOvertime
+                                                                            ? Math.max(0, wins - 12)
+                                                                            : null;
+
+                                                                        const otRight = hasOvertime
+                                                                            ? Math.max(0, losses - 12)
+                                                                            : null;
+
+                                                                        const secondHalfLeft =
+                                                                            (hasOvertime ? wins - otLeft : wins) -
+                                                                            firstHalfLeft;
+
+                                                                        const secondHalfRight =
+                                                                            (hasOvertime ? losses - otRight : losses) -
+                                                                            firstHalfRight;
+
+                                                                        const totalRounds = wins + losses;
+
+                                                                        const getHalfStyleLeft = (leftScore, rightScore) => {
+                                                                            if (leftScore === rightScore) {
+                                                                                return {
+                                                                                    opacity: 1,
+                                                                                    textShadow: `
+                                                                                                0 0 3px ${leftColor},
+                                                                                                0 0 6px ${leftColor}55
+                                                                                        `,
+                                                                                };
+                                                                            }
+
+                                                                            return {
+                                                                                opacity: leftScore > rightScore ? 1 : 0.6,
+                                                                                textShadow:
+                                                                                    leftScore > rightScore
+                                                                                        ? `
+                                                                                                0 0 3px ${leftColor},
+                                                                                                0 0 6px ${leftColor}55
+                                                                                            `
+                                                                                        : "none",
+                                                                            };
+                                                                        };
+
+                                                                        const getHalfStyleRight = (rightScore, leftScore) => {
+                                                                            if (rightScore === leftScore) {
+                                                                                return {
+                                                                                    opacity: 1,
+                                                                                    textShadow: `
+                                                                                                0 0 3px ${rightColor},
+                                                                                                0 0 6px ${rightColor}55
+                                                                                        `,
+                                                                                };
+                                                                            }
+
+                                                                            return {
+                                                                                opacity: rightScore > leftScore ? 1 : 0.6,
+                                                                                textShadow:
+                                                                                    rightScore > leftScore
+                                                                                        ? `
+                                                                                                0 0 3px ${rightColor},
+                                                                                                0 0 6px ${rightColor}55
+                                                                                            `
+                                                                                        : "none",
+                                                                            };
+                                                                        };
+
+                                                                        const firstHalfLeftStyle = getHalfStyleLeft(
+                                                                            firstHalfLeft,
+                                                                            firstHalfRight
+                                                                        );
+
+                                                                        const firstHalfRightStyle = getHalfStyleRight(
+                                                                            firstHalfRight,
+                                                                            firstHalfLeft
+                                                                        );
+
+                                                                        const secondHalfLeftStyle = getHalfStyleLeft(
+                                                                            secondHalfLeft,
+                                                                            secondHalfRight
+                                                                        );
+
+                                                                        const secondHalfRightStyle = getHalfStyleRight(
+                                                                            secondHalfRight,
+                                                                            secondHalfLeft
+                                                                        );
+
+                                                                        const otLeftStyle = hasOvertime
+                                                                            ? getHalfStyleLeft(otLeft, otRight)
+                                                                            : null;
+
+                                                                        const otRightStyle = hasOvertime
+                                                                            ? getHalfStyleRight(otRight, otLeft)
+                                                                            : null;
+
+                                                                        return (
+                                                                            <li
+                                                                                key={set}
+                                                                                className={css.seriesSummaryItem}
+                                                                                style={{
+                                                                                    display: "flex",
+                                                                                    flexDirection: "row",
+                                                                                    justifyContent: "center",
+                                                                                    alignItems: "flex-start",
+                                                                                    gap: "36px",
+                                                                                }}
+                                                                            >
+                                                                                <div
+                                                                                    style={{
+                                                                                        display: "flex",
+                                                                                        flexDirection: "column",
+                                                                                        alignItems: "center",
+                                                                                        minWidth: "60px",
+                                                                                    }}
                                                                                 >
-                                                                                    <CountUp
-                                                                                        key={wins}
-                                                                                        start={Math.max(wins - 1, 0)}
-                                                                                        end={wins}
-                                                                                        duration={1}
-                                                                                        style={{
-                                                                                            color: leftColor,
-                                                                                            fontSize: "36px",
-                                                                                            transition: "all 2000ms ease-in-out",
-                                                                                            textShadow: leftGlow
-                                                                                                ? `
-                                                                                                        0 0 6px ${leftColor},
-                                                                                                        0 0 14px ${leftColor}66,
-                                                                                                        0 2px 6px rgba(0,0,0,0.4)
-                                                                                                    `
-                                                                                                : "none",
-                                                                                        }}
-                                                                                    />
-                                                                                </span>
-                                                                            );
-                                                                        })}
-                                                                    </li>
+                                                                                    {!isBo1Modal && (
+                                                                                        <span
+                                                                                            className={css.round_text}
+                                                                                            style={{ opacity: leftOpacity, height: "46px" }}
+                                                                                        >
+                                                                                            <CountUp
+                                                                                                start={Math.max(wins - 1, 0)}
+                                                                                                end={wins}
+                                                                                                duration={1}
+                                                                                                style={{
+                                                                                                    color: leftColor,
+                                                                                                    fontSize: "36px",
+                                                                                                    textShadow: leftGlow
+                                                                                                        ? `
+                                                                                                            0 0 6px ${leftColor},
+                                                                                                            0 0 14px ${leftColor}66,
+                                                                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                                                                        `
+                                                                                                        : "none",
+                                                                                                }}
+                                                                                            />
+                                                                                        </span>
+                                                                                    )}
 
-                                                                    <li
-                                                                        className={css.seriesSummaryItem}
-                                                                        style={{
-                                                                            display: "flex",
-                                                                            flexDirection: "column",
-                                                                            alignItems: "center",
-                                                                            gap: "8px",
-                                                                            position: "relative",
-                                                                        }}
-                                                                    >
-                                                                        <div
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                justifyContent: "center",
-                                                                                alignItems: "center",
-                                                                                flexDirection: "column",
-                                                                                gap: "35px",
-                                                                                position: "absolute",
-                                                                                top: "-12px",
-                                                                            }}
-                                                                        >
-                                                                            {history.map(({ set }) => {
-                                                                                const isDecider = set === modalBestOf;
-                                                                                const label = isDecider ? "Decider" : `Set ${set}`;
-
-                                                                                return (
-                                                                                    <div
-                                                                                        key={`label-${set}`}
-                                                                                        style={{
-                                                                                            minWidth: "148.06px",
-                                                                                            textAlign: "center",
-                                                                                        }}
-                                                                                    >
+                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
                                                                                         <span
                                                                                             className={css.info_text}
                                                                                             style={{
-                                                                                                fontWeight: 600,
+                                                                                                fontSize: "16px",
+                                                                                                color: leftColor,
+                                                                                                opacity: firstHalfLeftStyle.opacity,
+                                                                                                textShadow: firstHalfLeftStyle.textShadow,
+                                                                                                height: "20px"
                                                                                             }}
+                                                                                        >
+                                                                                            {firstHalfLeft}
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "16px",
+                                                                                                color: leftColor,
+                                                                                                opacity: secondHalfLeftStyle.opacity,
+                                                                                                textShadow: secondHalfLeftStyle.textShadow,
+                                                                                                height: "20px"
+                                                                                            }}
+                                                                                        >
+                                                                                            {secondHalfLeft}
+                                                                                        </span>
+
+                                                                                        {hasOvertime && (
+                                                                                            <span
+                                                                                                className={css.info_text}
+                                                                                                style={{
+                                                                                                    fontSize: "16px",
+                                                                                                    color: leftColor,
+                                                                                                    opacity: otLeftStyle.opacity,
+                                                                                                    textShadow: otLeftStyle.textShadow,
+                                                                                                    height: "20px"
+                                                                                                }}
+                                                                                            >
+                                                                                                {otLeft}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div
+                                                                                    style={{
+                                                                                        display: "flex",
+                                                                                        flexDirection: "column",
+                                                                                        alignItems: "center",
+                                                                                        minWidth: "160px",
+                                                                                    }}
+                                                                                >
+                                                                                    {!isBo1Modal && (
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{ fontWeight: 600 }}
                                                                                         >
                                                                                             {label}
                                                                                         </span>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                        <div
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                justifyContent: "center",
-                                                                                flexDirection: "column",
-                                                                                gap: "28px",
-                                                                            }}
-                                                                        >
-                                                                            {history.map(({ set, wins, losses, won }) => {
-                                                                                const totalRounds = wins + losses;
+                                                                                    )}
 
-                                                                                const winnerCount = won ? wins : losses;
-                                                                                const overtimeCount = ((winnerCount - 13) / 3).toFixed(0);
-                                                                                const hasOvertime = overtimeCount <= 0;
+                                                                                    <span style={{ fontSize: "18px", textAlign: "center", marginTop: "-4px" }} className={css.vs}>
+                                                                                        {totalRounds} {formatRoundsCount()}
+                                                                                    </span>
 
-                                                                                const formatRoundsCount = () => {
-                                                                                    const lastDigit = totalRounds % 10;
+                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", marginTop: "4px" }}>
+                                                                                        <span className={css.info_text}>
+                                                                                            1st Half
+                                                                                        </span>
 
-                                                                                    return lastDigit === 1 ? "Round" : "Rounds";
-                                                                                };
+                                                                                        <span className={css.info_text}>
+                                                                                            2nd Half
+                                                                                        </span>
 
-                                                                                return (
-                                                                                    <div
-                                                                                        key={`center-${set}`}
-                                                                                        style={{
-                                                                                            minWidth: "148.06px",
-                                                                                            textAlign: "center",
-                                                                                        }}
-                                                                                    >
-                                                                                        <p
-                                                                                            style={{
-                                                                                                marginTop: 0,
-                                                                                                fontSize: "18px",
-                                                                                                textAlign: "center",
-                                                                                            }}
-                                                                                            className={css.vs}
-                                                                                        >
-                                                                                            {totalRounds} {formatRoundsCount()}
-                                                                                            <span style={{ fontSize: "14px" }}>
-                                                                                                {hasOvertime
-                                                                                                    ? ""
-                                                                                                    : ` (${getOvertimeShortLabel(Number(overtimeCount))})`}
+                                                                                        {hasOvertime && (
+                                                                                            <span className={css.info_text}>
+                                                                                                {getOvertimeShortLabel(overtimeCount)}
                                                                                             </span>
-                                                                                        </p>
+                                                                                        )}
                                                                                     </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </li>
-
-                                                                    <li style={{ minWidth: '40.05px' }} className={css.seriesSummaryItem}>
-                                                                        {history.map(({ set, losses, won }) => {
-                                                                            const rightGlow = !won;
-
-                                                                            const rightOpacity = won ? 0.4 : 1;
-
-                                                                            return (
-                                                                                <span
-                                                                                    key={`right-${set}`}
-                                                                                    className={css.round_text}
-                                                                                    style={{ opacity: rightOpacity }}
+                                                                                </div>
+                                                                                <div
+                                                                                    style={{
+                                                                                        display: "flex",
+                                                                                        flexDirection: "column",
+                                                                                        alignItems: "center",
+                                                                                        minWidth: "60px",
+                                                                                    }}
                                                                                 >
-                                                                                    <CountUp
-                                                                                        key={losses}
-                                                                                        start={Math.max(losses - 1, 0)}
-                                                                                        end={losses}
-                                                                                        duration={1}
-                                                                                        style={{
-                                                                                            color: rightColor,
-                                                                                            fontSize: "36px",
-                                                                                            transition: "all 2000ms ease-in-out",
-                                                                                            textShadow: rightGlow
-                                                                                                ? `
-                                                                                                        0 0 6px ${rightColor},
-                                                                                                        0 0 14px ${rightColor}66,
-                                                                                                        0 2px 6px rgba(0,0,0,0.4)
-                                                                                                    `
-                                                                                                : "none",
-                                                                                        }}
-                                                                                    />
-                                                                                </span>
-                                                                            );
-                                                                        })}
-                                                                    </li>
-                                                                </ul>
-                                                            </motion.div>
-                                                        );
-                                                    })()}
-                                                </>
-                                            )}
+                                                                                    {!isBo1Modal && (
+                                                                                        <span
+                                                                                            className={css.round_text}
+                                                                                            style={{ opacity: rightOpacity, height: "46px" }}
+                                                                                        >
+                                                                                            <CountUp
+                                                                                                start={Math.max(losses - 1, 0)}
+                                                                                                end={losses}
+                                                                                                duration={1}
+                                                                                                style={{
+                                                                                                    color: rightColor,
+                                                                                                    fontSize: "36px",
+                                                                                                    textShadow: rightGlow
+                                                                                                        ? `
+                                                                                                            0 0 6px ${rightColor},
+                                                                                                            0 0 14px ${rightColor}66,
+                                                                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                                                                        `
+                                                                                                        : "none",
+                                                                                                }}
+                                                                                            />
+                                                                                        </span>
+                                                                                    )}
+
+                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "16px",
+                                                                                                color: rightColor,
+                                                                                                opacity: firstHalfRightStyle.opacity,
+                                                                                                textShadow: firstHalfRightStyle.textShadow,
+                                                                                                height: "20px"
+                                                                                            }}
+                                                                                        >
+                                                                                            {firstHalfRight}
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            className={css.info_text}
+                                                                                            style={{
+                                                                                                fontSize: "16px",
+                                                                                                color: rightColor,
+                                                                                                opacity: secondHalfRightStyle.opacity,
+                                                                                                textShadow: secondHalfRightStyle.textShadow,
+                                                                                                height: "20px"
+                                                                                            }}
+                                                                                        >
+                                                                                            {secondHalfRight}
+                                                                                        </span>
+
+                                                                                        {hasOvertime && (
+                                                                                            <span
+                                                                                                className={css.info_text}
+                                                                                                style={{
+                                                                                                    fontSize: "16px",
+                                                                                                    color: rightColor,
+                                                                                                    opacity: otRightStyle.opacity,
+                                                                                                    textShadow: otRightStyle.textShadow,
+                                                                                                    height: "20px"
+                                                                                                }}
+                                                                                            >
+                                                                                                {otRight}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </li>
+                                                                        );
+                                                                    }
+                                                                )}
+                                                            </ul>
+                                                        </motion.div>
+                                                    );
+                                                })()}
+                                            </>
                                         </>
                                     );
                                 })()}
