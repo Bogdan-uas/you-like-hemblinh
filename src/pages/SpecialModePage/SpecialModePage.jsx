@@ -2163,6 +2163,11 @@ function SpecialModePage() {
         if (!hasChosen || !modalContext || !modalLeftTeam || !modalRightTeam) return;
         if (modalContext.readOnly) return;
 
+        toast("First Half is beginning", {
+            icon: "🏁",
+            duration: 3000,
+        });
+
         const pickedTeamId = modalLeftTeam.id;
 
         if (modalContext.type === "swiss") {
@@ -2623,6 +2628,13 @@ function SpecialModePage() {
                 setsToWin: toWin,
             } = prev;
 
+            const miniWinsToWinRound =
+                roundNumber <= 1 ||
+                    roundNumber === 13 ||
+                    (isOvertime && roundNumber === 1)
+                    ? 10
+                    : 5;
+
             let banner = prev.banner;
             if (isOvertime) {
                 let nextMiniWins = miniWins;
@@ -2631,7 +2643,10 @@ function SpecialModePage() {
                 if (playerWonMini) nextMiniWins += 1;
                 else if (playerLostMini) nextMiniLosses += 1;
 
-                if (nextMiniWins < 5 && nextMiniLosses < 5) {
+                if (
+                    nextMiniWins < miniWinsToWinRound &&
+                    nextMiniLosses < miniWinsToWinRound
+                ) {
                     setIsCalculating(false);
                     return {
                         ...prev,
@@ -2642,7 +2657,7 @@ function SpecialModePage() {
                     };
                 }
 
-                const wonOtRound = nextMiniWins >= 5;
+                const wonOtRound = nextMiniWins >= miniWinsToWinRound;
 
                 const updatedOtWins = otWins + (wonOtRound ? 1 : 0);
                 const updatedOtLosses = otLosses + (wonOtRound ? 0 : 1);
@@ -2722,6 +2737,10 @@ function SpecialModePage() {
                             setSeriesState((curr) => {
                                 if (!curr.active || curr.banner) return curr;
                                 setIsLocked(false);
+                                toast("First Half is beginning", {
+                                    icon: "🏁",
+                                    duration: 3000,
+                                });
                                 return {
                                     ...curr,
                                     roundNumber: 1,
@@ -2866,7 +2885,10 @@ function SpecialModePage() {
             if (playerWonMini) nextMiniWins += 1;
             else if (playerLostMini) nextMiniLosses += 1;
 
-            if (nextMiniWins < 5 && nextMiniLosses < 5) {
+            if (
+                nextMiniWins < miniWinsToWinRound &&
+                nextMiniLosses < miniWinsToWinRound
+            ) {
                 setIsCalculating(false);
                 return {
                     ...prev,
@@ -2877,10 +2899,34 @@ function SpecialModePage() {
                 };
             }
 
-            const playerWonRound = nextMiniWins >= 5;
+            const playerWonRound = nextMiniWins >= miniWinsToWinRound;
             roundWins += playerWonRound ? 1 : 0;
             roundLosses += playerWonRound ? 0 : 1;
             roundNumber += 1;
+
+            if (roundNumber === 1) {
+                toast.dismiss();
+                toast("First Half is beginning", {
+                    icon: "🏁",
+                    duration: 3000,
+                });
+            }
+
+            if (roundNumber === 12) {
+                toast.dismiss();
+                toast("Last Round of the First Half", {
+                    icon: "❗",
+                    duration: 3000,
+                });
+            }
+
+            if (roundNumber === 13) {
+                toast.dismiss();
+                toast("Second Half is beginning", {
+                    icon: "🔄",
+                    duration: 3000,
+                });
+            }
 
             let firstHalfLeft = prev.firstHalfLeft;
             let firstHalfRight = prev.firstHalfRight;
@@ -3006,6 +3052,10 @@ function SpecialModePage() {
                         setSeriesState((curr) => {
                             if (!curr.active || curr.banner) return curr;
                             setIsLocked(false);
+                            toast("First Half is beginning", {
+                                icon: "🏁",
+                                duration: 3000,
+                            });
                             return {
                                 ...curr,
                                 firstHalfLeft: null,
@@ -4501,6 +4551,13 @@ function SpecialModePage() {
         return "";
     }, [modalContext]);
 
+    const displayedMiniSquares =
+        seriesState.roundNumber === 1 ||
+            seriesState.roundNumber === 13 ||
+            (seriesState.isOvertime && seriesState.roundNumber === 1)
+            ? 10
+            : 5;
+
     const seriesLabelNode = useMemo(() => {
         if (!seriesState.active || !seriesState.leftTeam || !seriesState.rightTeam) return null;
 
@@ -4540,9 +4597,10 @@ function SpecialModePage() {
                             className={css.round_text}
                             style={{
                                 position: "absolute",
-                                left: "15.5%",
+                                left: displayedMiniSquares === 10 ? "25.6%" : "15.5%",
                                 marginBottom: "-2px",
                                 fontSize: "26px",
+                                transition: 'none'
                             }}
                         >
                             {small}
@@ -4553,7 +4611,7 @@ function SpecialModePage() {
                             exit={{ opacity: 0, y: -40 }}
                             transition={{ duration: 0.3 }}
                             className={css.round_text}
-                            style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "47%" }}
+                            style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: displayedMiniSquares === 10 ? "47.8%" : "47%", transition: 'none' }}
                         >
                             <FaTrophy />
                         </motion.span>
@@ -4567,8 +4625,9 @@ function SpecialModePage() {
                             style={{
                                 fontSize: "24px",
                                 position: "absolute",
-                                left: "64.5%",
+                                left: displayedMiniSquares === 10 ? "60.1%" : "64.5%",
                                 width: "max-content",
+                                transition: 'none'
                             }}
                         >
                             {big}
@@ -4699,7 +4758,7 @@ function SpecialModePage() {
                 </span>
             </>
         );
-    }, [seriesState]);
+    }, [displayedMiniSquares, seriesState]);
 
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
@@ -5208,7 +5267,7 @@ function SpecialModePage() {
                                 </div>
                                 {!banner && (
                                     <div className={css.miniSquares}>
-                                        {[...Array(5)].map((_, i) => (
+                                        {[...Array(displayedMiniSquares)].map((_, i) => (
                                             <div
                                                 key={i}
                                                 className={css.square}
@@ -5650,7 +5709,7 @@ function SpecialModePage() {
                                 </div>
                                 {!banner && (
                                     <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
-                                        {[...Array(5)].map((_, i) => (
+                                        {[...Array(displayedMiniSquares)].map((_, i) => (
                                             <div
                                                 key={i}
                                                 className={css.lossSquare}
