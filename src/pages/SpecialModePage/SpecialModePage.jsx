@@ -4541,7 +4541,7 @@ function SpecialModePage() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4 }}
                         className={css.round_text}
-                        style={{ fontSize: "24px", marginBottom: "-4px", marginLeft: "-4px" }}
+                        style={{ fontSize: "24px", marginBottom: "-4px", marginLeft: "-2px" }}
                     >
                         Best of {setsToWin * 2 - 1}
                     </motion.span>
