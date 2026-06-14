@@ -2679,7 +2679,7 @@ function SpecialModePage() {
 
                 roundToast(
                     <span>
-                        {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this OT round!
+                        {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}OT round!
                     </span>,
                     { icon: "😜", duration: 2000 }
                 );
@@ -2947,7 +2947,7 @@ function SpecialModePage() {
 
             roundToast(
                 <span>
-                    {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this round!
+                    {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}round!
                 </span>,
                 { icon: "😜", duration: 2000 }
             );
