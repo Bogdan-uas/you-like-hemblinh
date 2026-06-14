@@ -4531,9 +4531,48 @@ function SpecialModePage() {
             <>
                 <span className={css.series_label}>
                     <span className={css.series_upper_label}>
-                        <span className={css.round_text} style={{ position: "absolute", left: "15.5%", marginBottom: "-2px", fontSize: "26px" }}>{small}</span>
-                        <span className={css.round_text} style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "47%" }}><FaTrophy /></span>
-                        <div className={css.round_text} style={{ fontSize: "24px", position: "absolute", left: "64.5%", width: "max-content" }}>{big}</div>
+                        <motion.span
+                            key={small}
+                            initial={{ opacity: 0, x: 40 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 40 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.round_text}
+                            style={{
+                                position: "absolute",
+                                left: "15.5%",
+                                marginBottom: "-2px",
+                                fontSize: "26px",
+                            }}
+                        >
+                            {small}
+                        </motion.span>
+                        <motion.span
+                            initial={{ opacity: 0, y: -40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -40 }}
+                            transition={{ duration: 0.3 }}
+                            className={css.round_text}
+                            style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "47%" }}
+                        >
+                            <FaTrophy />
+                        </motion.span>
+                        <motion.div
+                            key={big}
+                            initial={{ opacity: 0, x: -40 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -40 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.round_text}
+                            style={{
+                                fontSize: "24px",
+                                position: "absolute",
+                                left: "64.5%",
+                                width: "max-content",
+                            }}
+                        >
+                            {big}
+                        </motion.div>
                     </span>
                     <motion.span
                         initial={{ opacity: 0 }}
