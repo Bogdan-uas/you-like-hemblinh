@@ -2163,7 +2163,7 @@ function SpecialModePage() {
         if (!hasChosen || !modalContext || !modalLeftTeam || !modalRightTeam) return;
         if (modalContext.readOnly) return;
 
-        toast("First Half is beginning", {
+        toast("First Half begins", {
             icon: "🏁",
             duration: 3000,
         });
@@ -2737,7 +2737,7 @@ function SpecialModePage() {
                             setSeriesState((curr) => {
                                 if (!curr.active || curr.banner) return curr;
                                 setIsLocked(false);
-                                toast("First Half is beginning", {
+                                toast("First Half begins", {
                                     icon: "🏁",
                                     duration: 3000,
                                 });
@@ -2906,7 +2906,7 @@ function SpecialModePage() {
 
             if (roundNumber === 1) {
                 toast.dismiss();
-                toast("First Half is beginning", {
+                toast("First Half begins", {
                     icon: "🏁",
                     duration: 3000,
                 });
@@ -2922,7 +2922,7 @@ function SpecialModePage() {
 
             if (roundNumber === 13) {
                 toast.dismiss();
-                toast("Second Half is beginning", {
+                toast("Second Half begins", {
                     icon: "🔄",
                     duration: 3000,
                 });
