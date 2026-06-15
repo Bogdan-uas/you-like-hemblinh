@@ -6019,7 +6019,7 @@ function SpecialModePage() {
         6: "#ba68c8",
         7: "#ff9574",
         8: "#81c784",
-        9: "#ffd54f",
+        9: "#f9e4a1",
         10: "#b0bec5",
     };
 
