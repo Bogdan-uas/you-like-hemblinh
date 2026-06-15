@@ -17,6 +17,8 @@ const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";
 const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 
+const ROUND12_TOAST_ID = "round12-warning";
+
 const BASE_MAX_ROUNDS = 24;
 const BASE_ROUNDS_TO_WIN = 13;
 const OT_ROUNDS_TO_WIN = 4;
@@ -2905,7 +2907,6 @@ function SpecialModePage() {
             roundNumber += 1;
 
             if (roundNumber === 1) {
-                toast.dismiss();
                 toast("First Half begins", {
                     icon: "🏁",
                     duration: 3000,
@@ -2913,15 +2914,15 @@ function SpecialModePage() {
             }
 
             if (roundNumber === 12) {
-                toast.dismiss();
                 toast("Last Round of the First Half", {
+                    id: ROUND12_TOAST_ID,
                     icon: "❗",
-                    duration: 3000,
+                    duration: Infinity,
                 });
             }
 
             if (roundNumber === 13) {
-                toast.dismiss();
+                toast.dismiss(ROUND12_TOAST_ID);
                 toast("Second Half begins", {
                     icon: "🔄",
                     duration: 3000,
