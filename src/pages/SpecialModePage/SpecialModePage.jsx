@@ -4683,7 +4683,8 @@ function SpecialModePage() {
                                 display: "flex",
                                 flexWrap: "wrap",
                                 justifyContent: "center",
-                                gap: "12px",
+                                columnGap: "12px",
+                                rowGap: '4px',
                                 maxWidth: "320px"
                             }}
                         >
