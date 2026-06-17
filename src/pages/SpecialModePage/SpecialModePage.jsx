@@ -4682,10 +4682,12 @@ function SpecialModePage() {
                             style={{
                                 display: "flex",
                                 flexWrap: "wrap",
+                                alignItems: "start",
                                 justifyContent: "center",
                                 columnGap: "12px",
                                 rowGap: '4px',
-                                maxWidth: "320px"
+                                maxWidth: "380px",
+                                height: "40px",
                             }}
                         >
                             {seriesState.finishedSets.map(
