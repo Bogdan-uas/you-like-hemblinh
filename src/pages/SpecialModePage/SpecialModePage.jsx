@@ -4754,7 +4754,10 @@ function SpecialModePage() {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.4 }}
                             className={css.round_text}
-                            style={{ fontSize: "12px" }}
+                            style={{
+                                fontSize: "12px",
+                                height: "40px",
+                            }}
                         >
                             &nbsp;
                         </motion.span>
