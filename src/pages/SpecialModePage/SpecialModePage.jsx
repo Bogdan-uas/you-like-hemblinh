@@ -8075,7 +8075,7 @@ function SpecialModePage() {
                                                                 style={{
                                                                     display: "flex",
                                                                     flexDirection: "column",
-                                                                    gap: "12px",
+                                                                    gap: "6px",
                                                                 }}
                                                             >
                                                                 {history.map(
@@ -8212,7 +8212,7 @@ function SpecialModePage() {
                                                                                     flexDirection: "row",
                                                                                     justifyContent: "center",
                                                                                     alignItems: "flex-start",
-                                                                                    gap: "36px",
+                                                                                    gap: "36px"
                                                                                 }}
                                                                             >
                                                                                 <div
@@ -8226,7 +8226,7 @@ function SpecialModePage() {
                                                                                     {!isBo1Modal && (
                                                                                         <span
                                                                                             className={css.round_text}
-                                                                                            style={{ opacity: leftOpacity, height: "46px" }}
+                                                                                            style={{ opacity: leftOpacity, height: "42px" }}
                                                                                         >
                                                                                             <CountUp
                                                                                                 start={Math.max(wins - 1, 0)}
@@ -8247,15 +8247,15 @@ function SpecialModePage() {
                                                                                         </span>
                                                                                     )}
 
-                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
+                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "22px" : "0px" }}>
                                                                                         <span
                                                                                             className={css.info_text}
                                                                                             style={{
-                                                                                                fontSize: "16px",
+                                                                                                fontSize: isBo1Modal ? "14px" : "12px",
                                                                                                 color: leftColor,
                                                                                                 opacity: firstHalfLeftStyle.opacity,
                                                                                                 textShadow: firstHalfLeftStyle.textShadow,
-                                                                                                height: "20px"
+                                                                                                height: isBo1Modal ? "17px" : "16px"
                                                                                             }}
                                                                                         >
                                                                                             {firstHalfLeft}
@@ -8264,11 +8264,11 @@ function SpecialModePage() {
                                                                                         <span
                                                                                             className={css.info_text}
                                                                                             style={{
-                                                                                                fontSize: "16px",
+                                                                                                fontSize: isBo1Modal ? "14px" : "12px",
                                                                                                 color: leftColor,
                                                                                                 opacity: secondHalfLeftStyle.opacity,
                                                                                                 textShadow: secondHalfLeftStyle.textShadow,
-                                                                                                height: "20px"
+                                                                                                height: isBo1Modal ? "17px" : "16px"
                                                                                             }}
                                                                                         >
                                                                                             {secondHalfLeft}
@@ -8278,11 +8278,11 @@ function SpecialModePage() {
                                                                                             <span
                                                                                                 className={css.info_text}
                                                                                                 style={{
-                                                                                                    fontSize: "16px",
+                                                                                                    fontSize: isBo1Modal ? "14px" : "12px",
                                                                                                     color: leftColor,
                                                                                                     opacity: otLeftStyle.opacity,
                                                                                                     textShadow: otLeftStyle.textShadow,
-                                                                                                    height: "20px"
+                                                                                                    height: isBo1Modal ? "17px" : "16px"
                                                                                                 }}
                                                                                             >
                                                                                                 {otLeft}
@@ -8312,7 +8312,7 @@ function SpecialModePage() {
                                                                                         {totalRounds} {formatRoundsCount()}
                                                                                     </span>
 
-                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", marginTop: "4px" }}>
+                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "0px", fontSize: isBo1Modal ? "12px" : "11px" }}>
                                                                                         <span className={css.info_text}>
                                                                                             1st Half
                                                                                         </span>
@@ -8339,7 +8339,7 @@ function SpecialModePage() {
                                                                                     {!isBo1Modal && (
                                                                                         <span
                                                                                             className={css.round_text}
-                                                                                            style={{ opacity: rightOpacity, height: "46px" }}
+                                                                                            style={{ opacity: rightOpacity, height: "42px" }}
                                                                                         >
                                                                                             <CountUp
                                                                                                 start={Math.max(losses - 1, 0)}
@@ -8360,15 +8360,15 @@ function SpecialModePage() {
                                                                                         </span>
                                                                                     )}
 
-                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
+                                                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "22px" : "0px" }}>
                                                                                         <span
                                                                                             className={css.info_text}
                                                                                             style={{
-                                                                                                fontSize: "16px",
+                                                                                                fontSize: isBo1Modal ? "14px" : "12px",
                                                                                                 color: rightColor,
                                                                                                 opacity: firstHalfRightStyle.opacity,
                                                                                                 textShadow: firstHalfRightStyle.textShadow,
-                                                                                                height: "20px"
+                                                                                                height: isBo1Modal ? "17px" : "16px"
                                                                                             }}
                                                                                         >
                                                                                             {firstHalfRight}
@@ -8377,11 +8377,11 @@ function SpecialModePage() {
                                                                                         <span
                                                                                             className={css.info_text}
                                                                                             style={{
-                                                                                                fontSize: "16px",
+                                                                                                fontSize: isBo1Modal ? "14px" : "12px",
                                                                                                 color: rightColor,
                                                                                                 opacity: secondHalfRightStyle.opacity,
                                                                                                 textShadow: secondHalfRightStyle.textShadow,
-                                                                                                height: "20px"
+                                                                                                height: isBo1Modal ? "17px" : "16px"
                                                                                             }}
                                                                                         >
                                                                                             {secondHalfRight}
@@ -8391,11 +8391,11 @@ function SpecialModePage() {
                                                                                             <span
                                                                                                 className={css.info_text}
                                                                                                 style={{
-                                                                                                    fontSize: "16px",
+                                                                                                    fontSize: isBo1Modal ? "14px" : "12px",
                                                                                                     color: rightColor,
                                                                                                     opacity: otRightStyle.opacity,
                                                                                                     textShadow: otRightStyle.textShadow,
-                                                                                                    height: "20px"
+                                                                                                    height: isBo1Modal ? "17px" : "16px"
                                                                                                 }}
                                                                                             >
                                                                                                 {otRight}
