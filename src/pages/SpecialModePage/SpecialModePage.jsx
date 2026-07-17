@@ -1156,7 +1156,7 @@ const MatchRect = ({
                                 fontSize: "18px",
                                 textAlign: "left",
                                 marginBottom: -4,
-                                marginRight: displayScoreRight < 10 ? 2 : 0,
+                                marginRight: displayScoreRight < 10 ? 4 : 0,
                                 opacity: isLeftLoser ? 0.55 : 1
                             }}
                             className={winnerIsLeft ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
