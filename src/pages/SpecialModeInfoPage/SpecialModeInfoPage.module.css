@@ -117,7 +117,34 @@
 }
 
 .vs_text {
-    font-weight: 700;
+    font-weight: 800;
+    color: #5a5a5a;
+    background-color: #ccc;
+    font-style: italic;
+    transform: skewX(-12deg);
+    transform: scaleX(1.08);
+    padding: 0 6px;
+    letter-spacing: 0.5px;
+    
+    text-shadow:
+        1px 0 #d8d8d8,
+        -1px 0 #d8d8d8,
+        0 1px #d8d8d8,
+        0 -1px #d8d8d8,
+        1px 1px #d8d8d8,
+        1px -1px #d8d8d8,
+        -1px 1px #d8d8d8,
+        -1px -1px #d8d8d8,
+        2px 0 #5a5a5a,
+        -2px 0 #5a5a5a,
+        0 2px #5a5a5a,
+        0 -2px #5a5a5a,
+        2px 2px #5a5a5a,
+        2px -2px #5a5a5a,
+        -2px 2px #5a5a5a,
+        -2px -2px #5a5a5a,
+        2px 0 #5a5a5a,
+        -2px 0 #5a5a5a;
 }
 
 .team_sequence {
@@ -166,5 +193,73 @@
 .dashed_divider {
     border: none;
     border-top: 4px dashed #999;
+}
 
+.infoNavigation {
+    position: fixed;
+
+    top: 48px;
+    left: 48px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    padding: 20px;
+
+    border-radius: 16px;
+
+    backdrop-filter: blur(10px);
+
+    z-index: 500;
+}
+
+.resultsNavigationButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.11;
+    text-transform: capitalize;
+    text-align: center;
+    width: max-content;
+
+    color: #2e2f42;
+
+    position: relative;
+    padding-bottom: 4px;
+
+    transition:
+        color .15s ease-in-out,
+        transform .15s ease-in-out;
+}
+
+.resultsNavigationButton:hover {
+    color: #000;
+    transform: translateX(3px);
+}
+
+.resultsNavigationButtonActive {
+    color: #000;
+    pointer-events: none;
+}
+
+.resultsNavigationIndicator {
+    position: absolute;
+    right: -12px;
+
+    width: 3px;
+    border-radius: 999px;
+
+    background: #000;
+}
+
+section {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
 }
