@@ -1145,7 +1145,7 @@ const MatchRect = ({
                         VS
                     </span>
                 ) : (
-                    <>
+                    <div style={{ display: "flex", alignItems: "center" }}>
                         <span
                             style={{
                                 color: winnerIsLeft ? "#2e7d32" : "red",
@@ -1156,6 +1156,7 @@ const MatchRect = ({
                                 fontSize: "18px",
                                 textAlign: "left",
                                 marginBottom: -4,
+                                marginRight: 2,
                                 opacity: isLeftLoser ? 0.55 : 1
                             }}
                             className={winnerIsLeft ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
@@ -1185,13 +1186,14 @@ const MatchRect = ({
                                 fontSize: "18px",
                                 textAlign: "right",
                                 marginBottom: -4,
+                                marginLeft: displayScoreRight < 10 ? 2 : 0,
                                 opacity: isRightLoser ? 0.55 : 1
                             }}
                             className={winnerIsRight ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
                         >
                             {displayScoreRight}
                         </span>
-                    </>
+                    </div>
                 )}
             </div>
 
