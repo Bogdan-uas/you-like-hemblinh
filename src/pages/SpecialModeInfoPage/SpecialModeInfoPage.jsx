@@ -441,14 +441,14 @@ const SpecialModeInfoPage = () => {
                         You will see it here later by yourself.
                     </p>
                     <p style={{ marginBottom: '12px' }} className={css.info_text}>
-                        If you want to know now, why these teams are in such order, go to
+                        If you want to know now, why these teams are in such order, go to{" "}
                         <a
                             style={{ color: 'Highlight', fontStyle: 'italic' }}
                             onClick={scrollToLeaderboardExplained}
                             href='#leaderboard-explained'
                         >
                             "Leaderboard format and points system"
-                        </a>
+                        </a>{" "}
                         section.
                     </p>
                     <p className={css.info_text}>
