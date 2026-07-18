@@ -511,9 +511,10 @@ const SpecialModeInfoPage = () => {
                         In Buchholz method, each team has its Buchholz score, which is that or that big, based on all the team's opponents' final records.
                         So for example, a team had an opponent, which finished 3:0 and then an opponent, which is in Round 4 with the record 2:1, then the Buchholz score is 3 + 2 = 5.
                         In the nets, the teams are sorted by two factors in two lists: by the placements and Buchholz scores.
-                        Then the teams are match-upped as always but if a rematch between two teams is happening, the Buchholz scores are playing a role. Two teams, which had the chance of a rematch, get separated and put into match-ups with those teams, which have another Buchholz scores than themselves.
+                        Then the teams are match-upped as always but if a rematch between two teams is happening, the Buchholz scores are playing a role. Two teams, which had the chance of a rematch, get separated and put into match-ups with those teams, which have another Buchholz scores than themselves. <br />
+                        <i>Still, there is no guaranteeing that a rematch between two teams can't happen in different Swiss Stages!</i>
                     </p>
-                    <p style={{ marginTop: '8px', fontStyle: "italic" }} className={css.info_text}>
+                    <p style={{ marginTop: '8px', fontStyle: "italic", fontWeight: 800 }} className={css.info_text}>
                         This is a bit complicated, so you don't have to understand it in order to play freely. I just had to explain it for those who need this.
                     </p>
                 </section>
