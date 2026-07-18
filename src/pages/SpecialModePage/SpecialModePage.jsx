@@ -1145,7 +1145,7 @@ const MatchRect = ({
                         VS
                     </span>
                 ) : (
-                    <div style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                         <span
                             style={{
                                 color: winnerIsLeft ? "#2e7d32" : "red",
@@ -1153,10 +1153,10 @@ const MatchRect = ({
                                 fontStyle: "italic",
                                 position: "relative",
                                 zIndex: 0,
-                                fontSize: "18px",
+                                fontSize: "12px",
                                 textAlign: "left",
-                                marginBottom: -4,
-                                marginRight: 2,
+                                marginBottom: -2,
+                                marginRight: 1,
                                 opacity: isLeftLoser ? 0.55 : 1
                             }}
                             className={winnerIsLeft ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
@@ -1170,7 +1170,6 @@ const MatchRect = ({
                                 justifyContent: "center",
                                 alignItems: "center",
                                 gap: 2,
-                                marginTop: 2
                             }}
                         >
                             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
@@ -1183,10 +1182,9 @@ const MatchRect = ({
                                 fontStyle: "italic",
                                 position: "relative",
                                 zIndex: 0,
-                                fontSize: "18px",
+                                fontSize: "12px",
                                 textAlign: "left",
-                                marginBottom: -4,
-                                marginLeft: displayScoreRight === 0 ? 2 : 0,
+                                marginBottom: -2,
                                 opacity: isRightLoser ? 0.55 : 1
                             }}
                             className={winnerIsRight ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
