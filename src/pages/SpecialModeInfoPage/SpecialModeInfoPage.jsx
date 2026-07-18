@@ -13,10 +13,10 @@ import matchModal from "../../../assets/images/image-7.png";
 import chosenLeftTeamModal from "../../../assets/images/image-8.png";
 import chosenRightTeamModal from "../../../assets/images/image-8.5.png";
 import seriesScreen from "../../../assets/images/image-9.png";
-import miniRoundWonPeriwinkle from "../../../assets/images/image-10.png";
-import miniRoundWonSpring from "../../../assets/images/image-11.png";
+import miniRoundWonAmber from "../../../assets/images/image-10.png";
+import miniRoundWonAzure from "../../../assets/images/image-11.png";
 import matchPointImg from "../../../assets/images/image-12.png";
-import teamSpringGoesTo10Net from "../../../assets/images/image-13.png";
+import teamAmberGoesTo10Net from "../../../assets/images/image-13.png";
 import finishedMatchModalImg from "../../../assets/images/image-14.png";
 import finishedMatchModalTwoImg from "../../../assets/images/image-14.1.png";
 import finishedMatchModalThreeImg from "../../../assets/images/image-15.png";
@@ -468,7 +468,7 @@ const SpecialModeInfoPage = () => {
                         When you click "Continue", the tournament starts. You'll start from this: <br />
                     </p>
                     <div className={css.image_container}>
-                        <img src={swissStageImg} alt="First look of Stage I" className={css.image} style={{ width: '41vw', height: '50vh' }} />
+                        <img src={swissStageImg} alt="First look of Stage I" className={css.image} style={{ width: '37vw', height: '50vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                             (Teams' distribution here depends on their placement in the top, but very first tournament has always the same qualifiers for every Stage, as well as Stage I. Exactly how the distribution system works, it all will be explained in the chapter <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToDistributionExplained} href='#distribution-explained'>"Distribution system in Swiss Stages"</a>)
                         </span>
@@ -508,7 +508,7 @@ const SpecialModeInfoPage = () => {
                         But now, it depends on the placements. All the 32 teams in the poll are being sorted by their placements in descending order. Then, highest ranked team in the pool is being put with the lowest ranked team in the pool. Second match-up is then second highest ranked team vs second lowest ranked team and so on... The match-ups are being shuffled then, so their order is random.
                         This works in 0:0 net, 1:0 net and in 0:1 net.
                         But then in Round 3 (in 2:0, 1:1, 0:2) and afterwards in Round 4 (2:1 and 1:2) and Round 5 (2:2), there are possible rematches between some teams. To avoid these, there is a so called Buchholz method. <br />
-                        In Buchholz method, each team has its Buchholz score, which is that or that big, based on all the team's opponents final records.
+                        In Buchholz method, each team has its Buchholz score, which is that or that big, based on all the team's opponents' final records.
                         So for example, a team had an opponent, which finished 3:0 and then an opponent, which is in Round 4 with the record 2:1, then the Buchholz score is 3 + 2 = 5.
                         In the nets, the teams are sorted by two factors in two lists: by the placements and Buchholz scores.
                         Then the teams are match-upped as always but if a rematch between two teams is happening, the Buchholz scores are playing a role. Two teams, which had the chance of a rematch, get separated and put into match-ups with those teams, which have another Buchholz scores than themselves.
@@ -542,9 +542,9 @@ const SpecialModeInfoPage = () => {
                                         css.team_circle
                                     }
                                     style={{
-                                        background: COLORS.periwinkle.color
+                                        background: COLORS.amber.color
                                     }}
-                                    title={COLORS.periwinkle.name}
+                                    title={COLORS.amber.name}
                                 />
                             </div>
                 
@@ -565,8 +565,8 @@ const SpecialModeInfoPage = () => {
                                     className={
                                         css.team_circle
                                     }
-                                    style={{ background: COLORS.spring.color }}
-                                    title={COLORS.spring.name}
+                                    style={{ background: COLORS.azure.color }}
+                                    title={COLORS.azure.name}
                                 />
                             </div>
                         </div>
@@ -596,9 +596,9 @@ const SpecialModeInfoPage = () => {
                                         css.team_circle
                                     }
                                     style={{
-                                        background: COLORS.copper.color
+                                        background: COLORS.chocolate.color
                                     }}
-                                    title={COLORS.copper.name}
+                                    title={COLORS.chocolate.name}
                                 />
                             </div>
                 
@@ -619,8 +619,8 @@ const SpecialModeInfoPage = () => {
                                     className={
                                         css.team_circle
                                     }
-                                    style={{ background: COLORS.wine.color }}
-                                    title={COLORS.wine.name}
+                                    style={{ background: COLORS.ivory.color }}
+                                    title={COLORS.ivory.name}
                                 />
                             </div>
                         </div>
@@ -650,7 +650,7 @@ const SpecialModeInfoPage = () => {
                         </span>
                     </div>
                     <div className={css.image_container}>
-                        <img src={chosenRightTeamModal} alt="Chosen right team on the match modal" className={css.image} style={{ width: '25vw', height: '35vh' }} />
+                        <img src={chosenRightTeamModal} alt="Chosen right team on the match modal" className={css.image} style={{ width: '25vw', height: '36vh' }} />
                     </div>
                 </section>
                 <section>
@@ -660,7 +660,7 @@ const SpecialModeInfoPage = () => {
                     </div>
                     <p className={css.info_text}>After starting the match, you're being redirected to the "series screen":</p>
                     <div className={css.image_container}>
-                        <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '40vw', height: '42vh' }} />
+                        <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '32vw', height: '36vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                             (Matches in Playoffs have a bit different scoreboard)
                         </span>
@@ -671,7 +671,7 @@ const SpecialModeInfoPage = () => {
                         In the center, there is the scoreboard. In the middle, there is a big "VS" and round count. On the left and on the right, there are these big numbers, which tell who how much rounds has already taken and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
                         Below the scoreboard, there is "First to n" and "nx Overtime". These show up, once it's Overtime and the Overtime can go to multiple ones.
                         At the bottom, there's gamble button. <br />
-                        In general, all the rules are from Extended Mode, but in order to win a set here, 16 rounds (and not 13) are required to be won. Maximum of a normal regulation is 30 rounds, so if it is a tie 15-15 after 30 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 18-18, so each team won 3 OT rounds, we go onto Double Overtime and it can go on endlessly until one team gets 4 rounds in a single OT. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 16th Round and each first round of every Overtime require 10 mini-wins to win a round.</i> <br /> In order to win a mini-round, some specific multiplier is required. Here is one more difference: <br />
+                        In general, all the rules are from Extended Mode. In order to win a set here, 13 rounds are required to be won. Maximum of a normal regulation is 24 rounds, so if it is a tie 12-12 after 24 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 15-15, so each team won 3 OT rounds, we go onto Double Overtime and it can go on endlessly until one team gets 4 rounds in a single OT. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 13th Round and each first round of every Overtime require 10 mini-wins to win a round.</i> <br /> In order to win a mini-round, some specific multiplier is required. Here is one more difference: <br />
                     </p>
                     <p className={css.info_text}>
                         <b>
@@ -681,12 +681,12 @@ const SpecialModeInfoPage = () => {
                     </p>
                     <p className={css.info_text}>And the win <i>here</i> counts for <span style={{ textDecoration: 'underline' }}>your chosen team</span>. A bad multiplier (below 0x) counts then for the team, that is against your chosen team:</p>
                     <div className={css.image_container}>
-                        <img src={miniRoundWonPeriwinkle} alt="Won mini-round for Team Periwinkle" className={css.image} style={{ width: '32vw', height: '36vh' }} />
-                        <img src={miniRoundWonSpring} alt="Won mini-round for Team Spring" className={css.image} style={{ width: '32vw', height: '38vh' }} />
+                        <img src={miniRoundWonAmber} alt="Won mini-round for Team Amber" className={css.image} style={{ width: '32vw', height: '36vh' }} />
+                        <img src={miniRoundWonAzure} alt="Won mini-round for Team Azure" className={css.image} style={{ width: '32vw', height: '36vh' }} />
                     </div>
                     <p className={css.info_text}>And as it is a Best of 1 in 0:0 net of Stage I, a team needs one set to win:</p>
                     <div className={css.image_container}>
-                        <img src={matchPointImg} alt="MATCH POINT!!! for the Team Spring!" className={css.image} style={{ width: '28vw', height: '40vh' }} />
+                        <img src={matchPointImg} alt="MATCH POINT!!! for the Team Amber!" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                             (Once a team is one round away from taking a set, they have above their names a "Set Point!". But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". "MATCH POINT!!!" differs itself in some specific matches like Progression and Elimination matches, but I'll leave it already to you to find "some other specific cases" out)
                         </span>
@@ -698,7 +698,7 @@ const SpecialModeInfoPage = () => {
                         The winner side is light-green and the loser side is light-red on the rectangle. Depending if your chosen team won, a green check icon appears and a red cross appears, if lost. The "VS" is replaced by the final score of the match: <br />
                     </p>
                     <div className={css.image_container}>
-                        <img src={teamSpringGoesTo10Net} alt="Team Spring goes to 1:0 net and Team Periwinkle goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                        <img src={teamAmberGoesTo10Net} alt="Team Amber goes to 1:0 net and Team Azure goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                     </div>
                 </section>
                 <section>
@@ -714,9 +714,9 @@ const SpecialModeInfoPage = () => {
                         <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '24vw', height: '35vh' }} />
                     </div>
                     <p className={css.info_text}>
-                        On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the cross icon again (it can also be a check icon but if the match would have been won). <br />
+                        On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the check icon again (it can also be a cross icon but if the match would have been lost). <br />
                         And there is also a small label, which tells how many <b>Pick&apos;em points</b> you got. <br />
-                        In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 52nd place to 33rd place. Loser team loses 5 points and moves from 45th place to 64th place.<br />
+                        In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 36th place to 33rd place. Loser team loses 5 points and moves from 61st place to 64th place.<br />
                         In the footer, there is a precise series summary. Here, you can see total played rounds, the score after 1st Half, the score after 2nd Half and in some case, like here as well, the score after all OTs (here, it was only 1x OT).
                     </p>
                     <p className={css.info_text}>
@@ -755,7 +755,7 @@ const SpecialModeInfoPage = () => {
                     </p>
                     <p className={css.info_text}>That's why also I get here only <b>+1 Pick&apos;em point</b>:</p>
                     <div className={css.image_container}>
-                        <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '24vw', height: '35vh' }} />
+                        <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '24vw', height: '35vh' }} />
                     </div>
                 </section>
                 <section>
@@ -928,7 +928,7 @@ const SpecialModeInfoPage = () => {
                     <div className={css.image_container}>
                         <img src={pickemSummaryImg} alt="Pick'em Summary Screen" className={css.image} style={{ width: '35vw', height: '60vh' }} />
                     </div>
-                    <p className={css.info_text}>Afterwards you can start a new tournament in Special Mode once again or click on "To the bracket" button to see the full results of the playoffs.</p>
+                    <p className={css.info_text}>Afterwards you can start a new tournament in Special Mode once again or click on "To the bracket" button to see the full results of the tournament.</p>
                 </section>
                 <div style={{ marginTop: '24px' }} className={css.divider} />
                 <p style={{ fontWeight: '700' }} className={css.info_text}>Hope, it helps those who don't understand how to play without any explanations. 😜</p>

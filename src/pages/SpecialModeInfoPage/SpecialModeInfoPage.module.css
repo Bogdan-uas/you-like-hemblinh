@@ -70,6 +70,8 @@
 .image {
     width: 30vw;
     height: 45vh;
+    border-radius: 8px;
+    border: 1px dashed #ccc;
 }
 
 .match_rect {
@@ -224,7 +226,6 @@
     font-weight: 700;
     font-size: 16px;
     line-height: 1.11;
-    text-transform: capitalize;
     text-align: center;
     width: max-content;
 

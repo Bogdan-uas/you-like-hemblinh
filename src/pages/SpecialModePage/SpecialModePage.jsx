@@ -20,8 +20,8 @@ const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 
 const ROUND12_TOAST_ID = "round12-warning";
 
-const BASE_MAX_ROUNDS = 30;
-const BASE_ROUNDS_TO_WIN = 16;
+const BASE_MAX_ROUNDS = 24;
+const BASE_ROUNDS_TO_WIN = 13;
 const OT_ROUNDS_TO_WIN = 4;
 
 const MULTIPLIER_MIN = -2.0;
@@ -2858,7 +2858,7 @@ function SpecialModePage() {
 
             const miniWinsToWinRound =
                 roundNumber <= 1 ||
-                    roundNumber === 16 ||
+                    roundNumber === 13 ||
                     (isOvertime && roundNumber === 1)
                     ? 10
                     : 5;
@@ -3162,7 +3162,7 @@ function SpecialModePage() {
                     });
                 } else if (roundNumber === 1) {
                     extendedRounds.firstHalf = winner;
-                } else if (roundNumber === 16) {
+                } else if (roundNumber === 13) {
                     extendedRounds.secondHalf = winner;
                 }
             }
@@ -3177,7 +3177,7 @@ function SpecialModePage() {
                 });
             }
 
-            if (roundNumber === 15) {
+            if (roundNumber === 12) {
                 toast("Last Round of the First Half", {
                     id: ROUND12_TOAST_ID,
                     icon: "❗",
@@ -3185,7 +3185,7 @@ function SpecialModePage() {
                 });
             }
 
-            if (roundNumber === 16) {
+            if (roundNumber === 13) {
                 toast.dismiss(ROUND12_TOAST_ID);
                 toast("Second Half begins", {
                     icon: "🔄",
@@ -3199,7 +3199,7 @@ function SpecialModePage() {
             const totalRoundsPlayed = roundWins + roundLosses;
 
             if (
-                totalRoundsPlayed === 15 &&
+                totalRoundsPlayed === 12 &&
                 firstHalfLeft == null &&
                 firstHalfRight == null
             ) {
@@ -3217,7 +3217,7 @@ function SpecialModePage() {
                 { icon: miniWinsToWinRound === 10 ? "🔥" : "😜", duration: 2000 }
             );
 
-            if (roundWins === 15 && roundLosses === 15) {
+            if (roundWins === 12 && roundLosses === 12) {
                 toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
                     icon: "⚔️",
                     duration: 4000,
@@ -4100,7 +4100,7 @@ function SpecialModePage() {
     } = seriesState;
 
     const overtimeTarget = BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
-    const overtimeToWin = overtimeBlock === 0 ? 19 : BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
+    const overtimeToWin = overtimeBlock === 0 ? 16 : BASE_ROUNDS_TO_WIN + overtimeBlock * 3;
 
     const threshold = overtimeTarget - 1;
 
@@ -4963,7 +4963,7 @@ function SpecialModePage() {
 
     const displayedMiniSquares =
         seriesState.roundNumber === 1 ||
-            seriesState.roundNumber === 16 ||
+            seriesState.roundNumber === 13 ||
             (seriesState.isOvertime && seriesState.roundNumber === 1)
             ? 10
             : 5;
@@ -8730,7 +8730,7 @@ function SpecialModePage() {
 
                                                                             const overtimeCount = Math.max(
                                                                                 0,
-                                                                                Math.floor((winnerCount - 16) / 3)
+                                                                                Math.floor((winnerCount - 13) / 3)
                                                                             );
 
                                                                             const hasOvertime = overtimeCount > 0;
@@ -8778,11 +8778,11 @@ function SpecialModePage() {
                                                                             };
 
                                                                             const otLeft = hasOvertime
-                                                                                ? Math.max(0, wins - 15)
+                                                                                ? Math.max(0, wins - 12)
                                                                                 : null;
 
                                                                             const otRight = hasOvertime
-                                                                                ? Math.max(0, losses - 15)
+                                                                                ? Math.max(0, losses - 12)
                                                                                 : null;
 
                                                                             const secondHalfLeft =
