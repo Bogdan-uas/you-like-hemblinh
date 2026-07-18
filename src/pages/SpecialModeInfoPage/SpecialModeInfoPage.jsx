@@ -426,9 +426,9 @@ const SpecialModeInfoPage = () => {
                         <img src={dashedDividerTwoImg} alt="Divider, which show the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '73vh' }} />
                     </div>
                     <p style={{ marginBottom: '24px' }} className={css.info_text}>
-                        As you can read it, these should be dividers to show which Stages which teams autoqualify to. But wait, what are Stages?
+                        As you can read it, these should be dividers to show which Stages which teams autoqualify to. But wait, what are Stages meant here?
                         There are three stages throughout the whole tournament, which are being played in Swiss Format: <b>Stage I</b>, <b>Stage II</b> and <b>Stage III</b>. <br />
-                        After Stage III, there will stay only 16 teams remaining, which will play in Playoffs (or Knockout Stage), starting from Round of 16.
+                        After Stage III, there will stay only 16 teams remaining, which will play in Playoffs (or another name for it, Knockout Stage), starting from Round of 16.
                     </p>
                     <p className={css.info_text}>
                         Qualification rules:
