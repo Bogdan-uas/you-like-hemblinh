@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { FaTrophy } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
-import { FaCircleCheck, FaCircleInfo, FaCheck, FaXmark, FaCircle} from "react-icons/fa6";
+import { FaCircleCheck, FaCircleInfo, FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
@@ -1082,7 +1082,7 @@ const MatchRect = ({
             ? css.match_win_label
             : css.match_loss_label
         : "";
-    
+
     const noLabelResultClass = isPlayed
         ? isUserWin
             ? css.match_win_no_label
@@ -1141,7 +1141,7 @@ const MatchRect = ({
 
             <div className={css.vs_cell_ro32} style={{ textAlign: "center" }}>
                 {!isPlayed || !hasScores ? (
-                    <span style={{ fontSize: "12px", fontWeight: 600, top: "8px", left: "39px", backgroundColor: "transparent",  }} className={css.vs_text}>
+                    <span style={{ fontSize: "12px", fontWeight: 600, top: "8px", left: "39px", backgroundColor: "transparent", }} className={css.vs_text}>
                         VS
                     </span>
                 ) : (
@@ -1186,7 +1186,7 @@ const MatchRect = ({
                                 fontSize: "18px",
                                 textAlign: "left",
                                 marginBottom: -4,
-                                marginLeft: displayScoreRight < 0 ? 2 : 0,
+                                marginLeft: displayScoreRight === 0 ? 2 : 0,
                                 opacity: isRightLoser ? 0.55 : 1
                             }}
                             className={winnerIsRight ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
@@ -1509,7 +1509,7 @@ function SpecialModePage() {
             top: rect.top - parentRect.top,
             height: rect.height,
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viewPhase]);
 
     useEffect(() => {
@@ -3928,7 +3928,7 @@ function SpecialModePage() {
                 {unlocked.map((phase) => {
                     const viewingCurrent =
                         viewPhase === phase.id;
-                    
+
                     const viewingResults =
                         phase.results &&
                         viewPhase === phase.results;
@@ -4509,7 +4509,7 @@ function SpecialModePage() {
                     ? css.playoffs_match_win_label
                     : css.playoffs_match_loss_label
                 : "";
-            
+
             const noLabelResultClass = isPlayed
                 ? isUserWin
                     ? css.playoffs_match_win_no_label
