@@ -1170,6 +1170,7 @@ const MatchRect = ({
                                 justifyContent: "center",
                                 alignItems: "center",
                                 gap: 2,
+                                marginTop: 1
                             }}
                         >
                             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
