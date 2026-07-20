@@ -759,11 +759,11 @@
 .vs_text .quarters_rect:hover,
 .vs_text .semis_rect:hover,
 .vs_text .grandFinal_rect:hover {
-    background: #b3b3b3;
+    background-color: #b3b3b3 !important;
 }
 
 .grandFinal_rect:hover .vs_text {
-    background-color: #b3b3b3;
+    background-color: #b3b3b3 !important;
 }
 
 .next_rect:hover .vs_text {
