@@ -2278,6 +2278,7 @@
 .bo_playoffs_label *.match_current:hover,
 .bo_thirdPlaceDecider_label *.match_current:hover {
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+    border: none;
 }
 
 .no_label *.match_current:hover,
