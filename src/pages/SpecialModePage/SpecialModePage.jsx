@@ -2175,7 +2175,6 @@ function SpecialModePage() {
                 },
                 0
             );
-            console.log(team.buchholz);
         });
     };
 
