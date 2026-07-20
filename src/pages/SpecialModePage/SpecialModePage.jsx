@@ -5845,9 +5845,6 @@ function SpecialModePage() {
                                             color: seriesState.leftTeam?.color,
                                             transition: "all 500ms ease-in-out",
                                             margin: '0',
-                                            position: 'absolute',
-                                            right: '110%',
-                                            zIndex: 9999,
                                             fontSize: '28px',
                                         }} className={css.team_name_left}>
                                         Team {seriesState.leftTeam?.name}
@@ -6287,9 +6284,6 @@ function SpecialModePage() {
                                             color: seriesState.rightTeam?.color,
                                             transition: "all 500ms ease-in-out",
                                             margin: '0',
-                                            position: 'absolute',
-                                            left: '110%',
-                                            zIndex: 9999,
                                             fontSize: '28px',
                                         }} className={css.team_name_right}>
                                         Team {seriesState.rightTeam?.name}
