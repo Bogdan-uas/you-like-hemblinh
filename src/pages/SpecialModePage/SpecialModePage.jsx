@@ -5153,6 +5153,7 @@ function SpecialModePage() {
                                             className={css.round_text}
                                             style={{
                                                 fontSize: "12px",
+                                                marginTop: '-2px'
                                             }}
                                         >
                                             -
