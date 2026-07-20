@@ -755,29 +755,6 @@
         -2px 0 #5a5a5a;
 }
 
-.match_rect .vs_text {
-    text-shadow:
-        1px 0 #d8d8d8,
-        -1px 0 #d8d8d8,
-        0 1px #d8d8d8,
-        0 -1px #d8d8d8,
-        1px 1px #d8d8d8,
-        1px -1px #d8d8d8,
-        -1px 1px #d8d8d8,
-        -1px -1px #d8d8d8,
-
-        3px 0 #5a5a5a,
-        -3px 0 #5a5a5a,
-        0 3px #5a5a5a,
-        0 -3px #5a5a5a,
-        3px 3px #5a5a5a,
-        3px -3px #5a5a5a,
-        -3px 3px #5a5a5a,
-        -3px -3px #5a5a5a,
-        3px 0 #5a5a5a,
-        -3px 0 #5a5a5a;
-}
-
 .vs_text .match_rect:hover,
 .vs_text .quarters_rect:hover,
 .vs_text .semis_rect:hover,
