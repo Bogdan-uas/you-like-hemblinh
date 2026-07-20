@@ -5153,7 +5153,7 @@ function SpecialModePage() {
                                             className={css.round_text}
                                             style={{
                                                 fontSize: "12px",
-                                                marginTop: '-2px'
+                                                marginTop: '-1px'
                                             }}
                                         >
                                             -
@@ -8643,7 +8643,7 @@ function SpecialModePage() {
                                                         const InfoIcon = ({ labels }) => {
                                                             const [hover, setHover] =
                                                                 useState(false);
-                                                            
+
                                                             const labelRows = [];
 
                                                             for (let i = 0; i < labels.length; i += 5) {
