@@ -824,14 +824,6 @@ const bracketOrder = [
 ];
 
 const buildPlayoffsBracket = (teams16) => {
-    console.table(
-        teams16.map(team => ({
-            team: team.name,
-            qualifiedVia: team.qualifiedVia,
-            buchholz: team.buchholz,
-            seed: team.seed,
-        }))
-    );
     const seeded = buildPlayoffSeeds(teams16);
 
     const ro16 = bracketOrder.map(([a, b], i) => ({
