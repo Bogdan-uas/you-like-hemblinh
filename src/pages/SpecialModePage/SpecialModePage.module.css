@@ -1294,6 +1294,14 @@
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
 }
 
+.match_rect.match_current,
+.quarters_rect.match_current,
+.semis_rect.match_current,
+.grandFinal_rect.match_current,
+.thirdPlace_rect.match_current {
+    border: none;
+}
+
 .match_next {
     border: none;
     outline: 2px dashed #888;
@@ -2278,7 +2286,6 @@
 .bo_playoffs_label *.match_current:hover,
 .bo_thirdPlaceDecider_label *.match_current:hover {
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
-    border: none;
 }
 
 .no_label *.match_current:hover,
