@@ -801,6 +801,8 @@ const buildPlayoffSeeds = (qualifiedTeams) => {
             return aRecord.losses - bRecord.losses;
         }
 
+        console.log(`${a.buchholz} - ${b.buchholz}`);
+
         if (b.buchholz !== a.buchholz) {
             return b.buchholz - a.buchholz;
         }
