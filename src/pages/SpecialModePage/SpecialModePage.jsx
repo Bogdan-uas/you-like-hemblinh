@@ -8642,6 +8642,12 @@ function SpecialModePage() {
                                                         const InfoIcon = ({ labels }) => {
                                                             const [hover, setHover] =
                                                                 useState(false);
+                                                            
+                                                            const labelRows = [];
+
+                                                            for (let i = 0; i < labels.length; i += 5) {
+                                                                labelRows.push(labels.slice(i, i + 5));
+                                                            }
 
                                                             return (
                                                                 <div
@@ -8680,12 +8686,34 @@ function SpecialModePage() {
                                                                                 fontSize: 12
                                                                             }}
                                                                         >
-                                                                            Extended OT Round
-                                                                            {labels.length === 1
-                                                                                ? ""
-                                                                                : "s"}{" "}
-                                                                            taken in{" "}
-                                                                            <b>{labels.join(", ")}</b>
+                                                                            <span>
+                                                                                Extended OT Round{labels.length === 1 ? "" : "s"} taken in{" "}
+                                                                            </span>
+
+                                                                            {labelRows.map((row, rowIndex) => (
+                                                                                <React.Fragment key={rowIndex}>
+                                                                                    {rowIndex > 0 && <br />}
+                                                                                    {row.map((label, index) => {
+                                                                                        const isLastRow = rowIndex === labelRows.length - 1;
+                                                                                        const isLast = isLastRow && index === row.length - 1;
+                                                                                        const isSecondLast = isLastRow && index === row.length - 2;
+
+                                                                                        return (
+                                                                                            <React.Fragment key={index}>
+                                                                                                {index > 0 && !isLast && ", "}
+
+                                                                                                <span style={{ fontWeight: 600 }}>
+                                                                                                    {label}
+                                                                                                </span>
+
+                                                                                                {isSecondLast && (
+                                                                                                    <span style={{ fontWeight: 500 }}> and </span>
+                                                                                                )}
+                                                                                            </React.Fragment>
+                                                                                        );
+                                                                                    })}
+                                                                                </React.Fragment>
+                                                                            ))}
                                                                         </motion.div>
                                                                     )}
                                                                 </div>
