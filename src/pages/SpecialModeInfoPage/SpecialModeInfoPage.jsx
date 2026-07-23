@@ -17,6 +17,17 @@ import miniRoundWonAmber from "../../../assets/images/image-10.png";
 import miniRoundWonAzure from "../../../assets/images/image-11.png";
 import matchPointImg from "../../../assets/images/image-12.png";
 import teamAmberGoesTo10Net from "../../../assets/images/image-13.png";
+import extRoundsScreenOne from "../../../assets/images/image-13.1.png";
+import extRoundsScreenTwo from "../../../assets/images/image-13.2.png";
+import extRoundsScreenThree from "../../../assets/images/image-13.3.png";
+import pensScreen from "../../../assets/images/image-13.4.png";
+import successfulAttemptForLeft from "../../../assets/images/image-13.5.png";
+import unSuccessfulAttemptForRight from "../../../assets/images/image-13.6.png";
+import neutralAttemptForLeft from "../../../assets/images/image-13.7.png";
+import leftWinsPens from "../../../assets/images/image-13.8.png";
+import matchRectPens from "../../../assets/images/image-13.9.png";
+import matchModalExtRoundsAndPens from "../../../assets/images/image-13.91.png";
+import matchModalExtRoundsAndPensHovered from "../../../assets/images/image-13.92.png";
 import finishedMatchModalImg from "../../../assets/images/image-14.png";
 import finishedMatchModalTwoImg from "../../../assets/images/image-14.1.png";
 import finishedMatchModalThreeImg from "../../../assets/images/image-15.png";
@@ -192,6 +203,10 @@ const SECTIONS = [
         label: "— Can I watch the results of this first match? — Of course!",
     },
     {
+        id: "tiebreaker-system",
+        label: "Tiebreaker system after Quadruple Overtime",
+    },
+    {
         id: "pickem-system",
         label: "Pick'em system",
     },
@@ -329,6 +344,10 @@ const SpecialModeInfoPage = () => {
         document.getElementById("leaderboard-explained")?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const scrollToTiebreakingExplained = (e) => {
+        e.preventDefault();
+        document.getElementById("tiebreaker-system")?.scrollIntoView({ behavior: "smooth" });
+    };
 
     const renderInfoNavigation = () => {
         return (
@@ -672,7 +691,7 @@ const SpecialModeInfoPage = () => {
                         In the center, there is the scoreboard. In the middle, there is a big "VS" and round count. On the left and on the right, there are these big numbers, which tell who how much rounds has already taken and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
                         Below the scoreboard, there is "First to n" and "nx Overtime". These show up, once it's Overtime and the Overtime can go to multiple ones.
                         At the bottom, there's gamble button. <br />
-                        In general, all the rules are from Extended Mode. In order to win a set here, 13 rounds are required to be won. Maximum of a normal regulation is 24 rounds, so if it is a tie 12-12 after 24 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 15-15, so each team won 3 OT rounds, we go onto Double Overtime and it can go on endlessly until one team gets 4 rounds in a single OT. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 13th Round and each first round of every Overtime require 10 mini-wins to win a round.</i> <br /> In order to win a mini-round, some specific multiplier is required. Here is one more difference: <br />
+                        In general, all the rules are from Extended Mode. In order to win a set here, 13 rounds are required to be won. Maximum of a normal regulation is 24 rounds, so if it is a tie 12-12 after 24 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 15-15, so each team won 3 OT rounds, we go onto Double Overtime and it can go up to 4 Overtimes. If after 4 Overtimes, there's still a tie, then there will be taken another tiebreaker system. This tiebreaker system is explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToTiebreakingExplained} href='#tiebreaker-system'>here</a>. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 13th Round and each first round of every Overtime require 10 mini-wins to win a round.</i> <br /> In order to win a mini-round, some specific multiplier is required. Here is one more difference: <br />
                     </p>
                     <p className={css.info_text}>
                         <b>
@@ -689,7 +708,7 @@ const SpecialModeInfoPage = () => {
                     <div className={css.image_container}>
                         <img src={matchPointImg} alt="MATCH POINT!!! for the Team Amber!" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                            (Once a team is one round away from taking a set, they have above their names a "Set Point!". But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". "MATCH POINT!!!" differs itself in some specific matches like Progression and Elimination matches, but I'll leave it already to you to find "some other specific cases" out)
+                            (Once a team is one round away from taking a set, they have a "Set Point!" above their names. But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". "MATCH POINT!!!" differs itself in some specific matches like Progression and Elimination matches, but I'll leave it already to you to find "some other specific cases" out)
                         </span>
                     </div>
                     <p className={css.info_text}>
@@ -727,7 +746,7 @@ const SpecialModeInfoPage = () => {
                     <div className={css.image_container}>
                         <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '24vw', height: '35vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                            (This 5x OT was like the full game regulation, LOL)
+                            (This 4x OT was like the full game regulation, LOL)
                         </span>
                     </div>
                     <p className={css.info_text}>
@@ -735,6 +754,72 @@ const SpecialModeInfoPage = () => {
                     </p>
                     <div className={css.image_container}>
                         <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '24vw', height: '35vh' }} />
+                    </div>
+                </section>
+                <section>
+                    <div id="tiebreaker-system" style={{ marginTop: '24px' }} className={css.divider_container}>
+                        <h3 style={{ marginTop: '12px', width: "max-content", textAlign: "start" }} className={css.title}>
+                            Tiebreaker system after Quadruple Overtime
+                        </h3>
+                        <div className={css.divider} />
+                    </div>
+                    <p className={css.info_text}>There has been a simple tiebreaker system for a long time: Overtimes could go up to infinity, until a team gets 4 OT Rounds in a single Overtime. Now, the system has changed and the previous system only works up to Quadruple(4x) Overtime. If it's tied again in 4x Overtime, another way to separate teams is being implemented.</p>
+                    <p className={css.info_text}>After 24-24 tie, this screen will show up. We see here the scores and the set lines below. Below that, we'll see the explanation text of what will happen now and then you will see messages showing up in a list and the scores being updated. Here, we are seeing a chronological order of all 6 possible Extended Rounds to be won. That team, which won more Extended Rounds throughout the whole set, that team also wins the set (4 Extended Rounds are already enough):</p>
+                    <div className={css.image_container}>
+                        <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '38vh' }} />
+                    </div>
+                    <div className={css.image_container}>
+                        <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '36vh' }} />
+                    </div>
+                    <p className={css.info_text}>If the Extended Rounds score is tied 3-3, penalty series will start, which will decide everything:</p>
+                    <div className={css.image_container}>
+                        <img src={extRoundsScreenThree} alt="Extended Rounds score tied 3-3" className={css.image} style={{ width: '30vw', height: '55vh' }} />
+                    </div>
+                    <div className={css.image_container}>
+                        <img src={pensScreen} alt="Penalty series screen" className={css.image} style={{ width: '30vw', height: '37vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn't been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. The rules are now different as from normal series.
+                        A point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The left team, your chosen team, always starts first and requires a positive multiplier to get a successful attempt:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={successfulAttemptForLeft} alt="Successful attempt for the left team" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        If the multiplier is negative on left team's turn, then it's unsuccessful. After the left team takes the first attempt and no matter the result, it's right team's turn. For right team to get a successful attempt, they need a negative multiplier and for unsuccessful, a positive one:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={unSuccessfulAttemptForRight} alt="Unsuccessful attempt for the right team" className={css.image} style={{ width: '30vw', height: '43vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        If the multiplier is 0.00x, no matter the team, the same team needs to retake the same attempt:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={neutralAttemptForLeft} alt="Neutral attempt for the left team" className={css.image} style={{ width: '30vw', height: '41vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        The rules on how many successful attempts are needed to win, are explained in that same Wikipedia page. But, whoever wins the penalty series that one also wins the whole set:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={leftWinsPens} alt="Left team win the penalty series" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        Match rectangle of such a match looks like this then:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={matchRectPens} alt="Match rectangle with penalty score" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                        <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                            (Instead of "Pens", it could be also "ERs", which stands for "Extended Rounds". "ERs" is there if this match was finished already by Extended Rounds score. Also, this label underneath is only in BO1s.)
+                        </span>
+                    </div>
+                    <p className={css.info_text}>
+                        And the match modal looks like this:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={matchModalExtRoundsAndPens} alt="Match modal with Extended Rounds score and penalty score" className={css.image} style={{ width: '28vw', height: '43vh' }} />
+                    </div>
+                    <div className={css.image_container}>
+                        <img src={matchModalExtRoundsAndPensHovered} alt="Hovered onto the info icon near 'Penalties' text, where we see a pop-up with full penalties breakdown" className={css.image} style={{ width: '28vw', height: '44vh' }} />
                     </div>
                 </section>
                 <section>

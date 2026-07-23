@@ -720,6 +720,27 @@
         -1.5px -1.5px #d32f2f;
 }
 
+.swissTieScoreShadow {
+    text-shadow:
+        0.5px 0 #fff,
+        -0.5px 0 #fff,
+        0 0.5px #fff,
+        0 -0.5px #fff,
+        0.5px 0.5px #fff,
+        0.5px -0.5px #fff,
+        -0.5px 0.5px #fff,
+        -0.5px -0.5px #fff,
+
+        1.5px 0 #5a5a5a,
+        -1.5px 0 #5a5a5a,
+        0 1.5px #5a5a5a,
+        0 -1.5px #5a5a5a,
+        1.5px 1.5px #5a5a5a,
+        1.5px -1.5px #5a5a5a,
+        -1.5px 1.5px #5a5a5a,
+        -1.5px -1.5px #5a5a5a;
+}
+
 .vs_text {
     position: absolute;
     font-weight: 800;
@@ -743,16 +764,16 @@
         1px -1px #d8d8d8,
         -1px 1px #d8d8d8,
         -1px -1px #d8d8d8,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a,
-        0 2px #5a5a5a,
-        0 -2px #5a5a5a,
-        2px 2px #5a5a5a,
-        2px -2px #5a5a5a,
-        -2px 2px #5a5a5a,
-        -2px -2px #5a5a5a,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a;
+        1.5px 0 #5a5a5a,
+        -1.5px 0 #5a5a5a,
+        0 1.5px #5a5a5a,
+        0 -1.5px #5a5a5a,
+        1.5px 1.5px #5a5a5a,
+        1.5px -1.5px #5a5a5a,
+        -1.5px 1.5px #5a5a5a,
+        -1.5px -1.5px #5a5a5a,
+        1.5px 0 #5a5a5a,
+        -1.5px 0 #5a5a5a;
 }
 
 .vs_text .match_rect:hover,
@@ -1032,7 +1053,7 @@
 
 .series_container {
     width: 100%;
-    margin-top: 0px;
+    margin-top: -80px;
     max-width: 960px;
     min-width: 472px;
     height: 418.4px;
@@ -1901,10 +1922,12 @@
 }
 
 .series_upper_label {
+    position: relative;
     display: flex;
     align-items: center;
     width: max-content;
     margin-bottom: 8px;
+    width: 256px;
 }
 
 .team_name_left {
@@ -2454,8 +2477,8 @@
 
 .divider {
     position: relative;
-    min-height: 2px;
-    max-height: 2px;
+    min-height: 1px;
+    max-height: 1px;
     border-radius: 256px;
     background-color: #2e2f42;
     margin-top: 8px;

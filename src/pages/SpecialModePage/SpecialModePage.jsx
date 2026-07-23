@@ -10,6 +10,8 @@ import { FaTrophy } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import { FaCircleCheck, FaCircleInfo, FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
+import "odometer/themes/odometer-theme-default.css";
+import Odometer from 'react-odometerjs';
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
@@ -23,6 +25,162 @@ const ROUND12_TOAST_ID = "round12-warning";
 const BASE_MAX_ROUNDS = 24;
 const BASE_ROUNDS_TO_WIN = 13;
 const OT_ROUNDS_TO_WIN = 4;
+
+const OT_MAX_BLOCK = 4;
+const EXT_ROUND_LABELS = [
+    "1st Half",
+    "2nd Half",
+    "OT",
+    "Double OT",
+    "Triple OT",
+    "Quadruple OT",
+];
+
+const EXT_ROUND_REVEAL_MS = 3000;
+const EXT_ROUND_COMMENTARY_DELAY_MS = 3000;
+const EXT_ROUND_FINAL_COMPARE_MS = 3000;
+const PENALTY_DISPLAY_CIRCLES = 6;
+
+const AnimatedCheckIcon = (props) => (
+    <svg
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ color: "white" }}
+        {...props}
+    >
+        <path
+            d="M20 6L9 17l-5-5"
+            style={{
+                strokeDasharray: 24,
+                strokeDashoffset: 24,
+                animation: "penaltyCheckmark 0.5s ease forwards",
+            }}
+        />
+        <style>{`@keyframes penaltyCheckmark { to { stroke-dashoffset: 0; } }`}</style>
+    </svg>
+);
+
+const AnimatedCrossIcon = (props) => (
+    <svg
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ color: "white" }}
+        {...props}
+    >
+        <line
+            x1="18" y1="6" x2="6" y2="18"
+            style={{
+                strokeDasharray: 24,
+                strokeDashoffset: 24,
+                animation: "penaltyCrossmark 0.5s ease forwards",
+            }}
+        />
+        <line
+            x1="6" y1="6" x2="18" y2="18"
+            style={{
+                strokeDasharray: 24,
+                strokeDashoffset: 24,
+                animation: "penaltyCrossmark 0.4s ease forwards",
+                animationDelay: "0.2s",
+            }}
+        />
+        <style>{`@keyframes penaltyCrossmark { to { stroke-dashoffset: 0; } }`}</style>
+    </svg>
+);
+
+const PenaltyCircles = ({
+    results,
+    team,
+    attemptsToDisplay,
+    resolved,
+    compact = false,
+}) => {
+    const total = attemptsToDisplay;
+
+    const circleSize = compact ? 11 : 22;
+    const iconSize = compact ? 7 : 14;
+    const gap = compact ? 3 : 6;
+    const suddenGap = compact ? 12 : 24;
+    const borderWidth = compact ? 1 : 2;
+    const marginTop = compact ? 0 : 6;
+
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: team === "left" ? "row-reverse" : "row",
+                gap,
+                marginTop: marginTop,
+            }}
+        >
+            {Array.from({ length: total }).map((_, i) => {
+                const r = results[i];
+                const isSuddenDeath = i === 5;
+                const filled = r === "success";
+                const missed = r === "fail";
+                const shouldHide =
+                    resolved &&
+                    i >= results.length &&
+                    i >= PENALTY_DISPLAY_CIRCLES;
+
+                if (shouldHide) {
+                    return null;
+                }
+                return (
+                    <div
+                        key={i}
+                        style={{
+                            marginLeft: isSuddenDeath && team === "left" ? 0 : isSuddenDeath ? suddenGap : 0,
+                            marginRight: isSuddenDeath && team === "left" ? suddenGap : 0,
+                            width: circleSize,
+                            height: circleSize,
+                            borderRadius: "50%",
+                            border:
+                                r
+                                    ? "none"
+                                    : `${borderWidth}px dashed #828282`,
+                            background: filled
+                                ? "rgb(84, 204, 84)"
+                                : missed
+                                    ? "rgb(152, 51, 51)"
+                                    : "transparent",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "background 0.25s ease",
+                        }}
+                    >
+                        {filled &&
+                            <AnimatedCheckIcon
+                                width={iconSize}
+                                height={iconSize}
+                            />
+                        }
+                        {missed &&
+                            <AnimatedCrossIcon
+                                width={iconSize}
+                                height={iconSize}
+                            />
+                        }
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
 
 const MULTIPLIER_MIN = -2.0;
 const MULTIPLIER_MAX = 2.0;
@@ -978,6 +1136,20 @@ const defaultSeriesState = {
 
     banner: "",
 
+    tiebreakerPhase: "idle",
+    extRoundLeftScore: 0,
+    extRoundRightScore: 0,
+    extRoundRevealIndex: 0,
+    extRoundCommentaryShown: false,
+    penaltyLeftResults: [],
+    penaltyRightResults: [],
+    penaltyLeftScore: 0,
+    penaltyRightScore: 0,
+    penaltyTurn: "left",
+    penaltyPreScore: null,
+    penaltyResolved: false,
+    tiebreakerBigSymbol: null,
+
     swissMatchNumber: 1,
     playoffsMatchNumber: 1,
 };
@@ -1025,6 +1197,19 @@ const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingVa
     );
 };
 
+const buildExtendedRoundWinnerList = (extendedRounds) => {
+        const overtimes = extendedRounds?.overtimes ?? [];
+        const findOt = (n) => overtimes.find((o) => o.overtime === n)?.winner ?? null;
+        return [
+            { label: "1st Half", winner: extendedRounds?.firstHalf ?? null },
+            { label: "2nd Half", winner: extendedRounds?.secondHalf ?? null },
+            { label: "OT", winner: findOt(1) },
+            { label: "Double OT", winner: findOt(2) },
+            { label: "Triple OT", winner: findOt(3) },
+            { label: "Quadruple OT", winner: findOt(4) },
+        ];
+    };
+
 const MatchRect = ({
     match,
     isClickable,
@@ -1053,11 +1238,60 @@ const MatchRect = ({
     const leftTeam = shouldSwap ? slotB : slotA;
     const rightTeam = shouldSwap ? slotA : slotB;
 
-    const rawLeftScore = match.scoreLeft;
-    const rawRightScore = match.scoreRight;
+    const bo1History =
+        bestOf === 1 && match.setHistory?.length
+            ? match.setHistory[0]
+            : null;
 
-    const displayScoreLeft = shouldSwap ? rawRightScore : rawLeftScore;
-    const displayScoreRight = shouldSwap ? rawLeftScore : rawRightScore;
+    const bo1MainScore = bo1History
+        ? {
+            left: bo1History.wins,
+            right: bo1History.losses,
+        }
+        : null;
+
+    const rawLeftScore =
+        bo1MainScore?.left ?? match.scoreLeft;
+
+    const rawRightScore =
+        bo1MainScore?.right ?? match.scoreRight;
+
+    const displayScoreLeft =
+        shouldSwap ? rawRightScore : rawLeftScore;
+
+    const displayScoreRight =
+        shouldSwap ? rawLeftScore : rawRightScore;
+
+    const bo1Tiebreak = (() => {
+        if (!bo1History?.extendedRounds) return null;
+        if (displayScoreLeft !== displayScoreRight) return null;
+
+        if (bo1History.extendedRounds.penalties) {
+            return {
+                type: "Pens",
+                left: bo1History.extendedRounds.penalties.leftScore,
+                right: bo1History.extendedRounds.penalties.rightScore,
+            };
+        }
+
+        const winners = buildExtendedRoundWinnerList(bo1History.extendedRounds);
+
+        let left = 0;
+        let right = 0;
+
+        for (const round of winners) {
+            if (round.winner === "left") left++;
+            else if (round.winner === "right") right++;
+        }
+
+        return left || right
+            ? {
+                type: "ERs",
+                left,
+                right,
+            }
+            : null;
+    })();
 
     const hasScores =
         displayScoreLeft !== null &&
@@ -1098,6 +1332,8 @@ const MatchRect = ({
         isPlayed && match.loserTeamId && leftTeam && match.loserTeamId === leftTeam.id;
     const isRightLoser =
         isPlayed && match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
+    
+    const isATie = displayScoreLeft === displayScoreRight;
 
     return (
         <div
@@ -1145,53 +1381,95 @@ const MatchRect = ({
                         VS
                     </span>
                 ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span
-                            style={{
-                                color: winnerIsLeft ? "#2e7d32" : "red",
-                                fontWeight: 800,
-                                fontStyle: "italic",
-                                position: "relative",
-                                zIndex: 0,
-                                fontSize: "12px",
-                                textAlign: "left",
-                                marginBottom: -2,
-                                marginRight: 1,
-                                opacity: isLeftLoser ? 0.55 : 1
-                            }}
-                            className={winnerIsLeft ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
-                        >
-                            {displayScoreLeft}
-                        </span>
-                        <div
-                            style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 2,
-                                marginTop: 1
-                            }}
-                        >
-                            <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
-                            <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                    <div style={{ display: "flex", alignItems: "center", flexDirection: "column", gap: "4px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            <span
+                                style={{
+                                    color: isATie
+                                        ? "#5a5a5a"
+                                        : winnerIsLeft
+                                            ? "#2e7d32"
+                                            : "red",
+                                    fontWeight: 800,
+                                    fontStyle: "italic",
+                                    position: "relative",
+                                    zIndex: 0,
+                                    fontSize: "12px",
+                                    textAlign: "left",
+                                    marginBottom: -2,
+                                    marginRight: 1,
+                                    opacity: isATie ? 0.9 : isLeftLoser ? 0.55 : 1
+                                }}
+                                className={
+                                    isATie
+                                        ? css.swissTieScoreShadow
+                                        : winnerIsLeft
+                                            ? css.swissWinnerScoreShadow
+                                            : css.swissLoserScoreShadow
+                                }
+                            >
+                                {displayScoreLeft}
+                            </span>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    gap: 2,
+                                    marginTop: 1
+                                }}
+                            >
+                                <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                            </div>
+                            <span
+                                style={{
+                                    color: isATie
+                                        ? "#5a5a5a"
+                                        : winnerIsRight
+                                            ? "#2e7d32"
+                                            : "red",
+                                    fontWeight: 800,
+                                    fontStyle: "italic",
+                                    position: "relative",
+                                    zIndex: 0,
+                                    fontSize: "12px",
+                                    textAlign: "left",
+                                    marginBottom: -2,
+                                    opacity: isATie ? 0.9 : isRightLoser ? 0.55 : 1
+                                }}
+                                className={
+                                    isATie
+                                        ? css.swissTieScoreShadow
+                                        : winnerIsRight
+                                            ? css.swissWinnerScoreShadow
+                                            : css.swissLoserScoreShadow
+                                }
+                            >
+                                {displayScoreRight}
+                            </span>
                         </div>
-                        <span
-                            style={{
-                                color: winnerIsRight ? "#2e7d32" : "red",
-                                fontWeight: 800,
-                                fontStyle: "italic",
-                                position: "relative",
-                                zIndex: 0,
-                                fontSize: "12px",
-                                textAlign: "left",
-                                marginBottom: -2,
-                                opacity: isRightLoser ? 0.55 : 1
-                            }}
-                            className={winnerIsRight ? css.swissWinnerScoreShadow : css.swissLoserScoreShadow}
-                        >
-                            {displayScoreRight}
-                        </span>
+                        {bo1Tiebreak && (
+                            <div
+                                style={{
+                                    fontSize: "8px",
+                                    marginTop: 2,
+                                    color: "#2e2f42",
+                                    textAlign: "center",
+                                    fontWeight: 700,
+                                    display: 'flex',
+                                    gap: "2px",
+                                    width: 'max-content',
+                                    position: "absolute",
+                                    top: '67.5%'
+                                }}
+                            >
+                                <span style={{ color: winnerIsLeft ? "#2e7d32" : "red", opacity: isLeftLoser ? 0.55 : 1 }}>{bo1Tiebreak.left}</span>
+                                {bo1Tiebreak.type}
+                                <span style={{ color: winnerIsRight ? "#2e7d32" : "red", opacity: isRightLoser ? 0.55 : 1 }}>{bo1Tiebreak.right}</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -2584,10 +2862,46 @@ function SpecialModePage() {
         const leftTeam = shouldSwap ? slotB : slotA;
         const rightTeam = shouldSwap ? slotA : slotB;
 
-        const bo1MapScore =
-            isBo1 && match.setHistory && match.setHistory.length > 0
-                ? { left: match.setHistory[0].wins, right: match.setHistory[0].losses }
+        const bo1History =
+            isBo1 && match.setHistory?.length
+                ? match.setHistory[0]
                 : null;
+
+        const bo1MapScore = bo1History
+            ? {
+                left: bo1History.wins,
+                right: bo1History.losses,
+            }
+            : null;
+
+        const bo1Tiebreak =
+            bo1History?.extendedRounds?.penalties
+                ? {
+                    type: "Pens",
+                    left: bo1History.extendedRounds.penalties.leftScore,
+                    right: bo1History.extendedRounds.penalties.rightScore,
+                }
+                : bo1History?.extendedRounds
+                    ? (() => {
+                        const winners = buildExtendedRoundWinnerList(bo1History.extendedRounds);
+
+                        let left = 0;
+                        let right = 0;
+
+                        winners.forEach((w) => {
+                            if (w.winner === "left") left++;
+                            else if (w.winner === "right") right++;
+                        });
+
+                        return left || right
+                            ? {
+                                type: "ERs",
+                                left,
+                                right,
+                            }
+                            : null;
+                    })()
+                    : null;
 
         const slotOrientedLeft =
             bo1MapScore && bo1MapScore.left != null ? bo1MapScore.left : match.scoreLeft;
@@ -2626,6 +2940,7 @@ function SpecialModePage() {
             shouldSwap,
             displayLeft,
             displayRight,
+            bo1Tiebreak,
             didUserWin,
             leftIsPick,
             rightIsPick,
@@ -2767,6 +3082,13 @@ function SpecialModePage() {
         return '#757575';
     };
 
+    const getPensMultiplierClass = (mult) => {
+        if (mult == null) return "";
+        if (mult > 0) return seriesState.penaltyTurn === "left" ? "rgb(152, 51, 51)" : "rgb(84, 204, 84)";
+        if (mult < 0) return seriesState.penaltyTurn === "right" ? "rgb(152, 51, 51)" : "rgb(84, 204, 84)";
+        return '#757575';
+    };
+
     const renderTeamLabel = (team, seriesWon = false) => {
         if (!team) return null;
         if (seriesWon) {
@@ -2812,6 +3134,249 @@ function SpecialModePage() {
 
     const getOvertimeShortLabel = (overtimeCount) => {
         return `${overtimeCount}x OT`;
+    };
+
+    const revealedExtendedRounds = buildExtendedRoundWinnerList(
+        seriesState.extendedRounds
+    ).slice(0, seriesState.extRoundRevealIndex);
+
+    const handlePenaltyShot = () => {
+        if (!seriesState.active || seriesState.banner) return;
+        if (seriesState.tiebreakerPhase !== "penalties") return;
+        if (seriesState.penaltyResolved) return;
+
+        const mult = round2(multiplierMin + Math.random() * (multiplierMax - multiplierMin));
+        setIsCalculating(true);
+
+        setSeriesState((prev) => {
+            const turn = prev.penaltyTurn;
+
+            const isNeutral = mult === 0;
+
+            const success = isNeutral
+                ? null
+                : turn === "left"
+                    ? mult > 0
+                    : mult < 0;
+            
+            if (isNeutral) {
+                setIsCalculating(false);
+
+                return {
+                    ...prev,
+                    lastMultiplier: mult,
+                    lastResult:
+                        (turn === "left"
+                            ? `Team ${prev.leftTeam.name}`
+                            : `Team ${prev.rightTeam.name}`) +
+                        " must retake the penalty!",
+                };
+            }
+
+            const nextLeftResults = [...prev.penaltyLeftResults];
+            const nextRightResults = [...prev.penaltyRightResults];
+            if (turn === "left") nextLeftResults.push(success ? "success" : "fail");
+            else nextRightResults.push(success ? "success" : "fail");
+
+            const nextLeftScore = prev.penaltyLeftScore + (turn === "left" && success ? 1 : 0);
+            const nextRightScore = prev.penaltyRightScore + (turn === "right" && success ? 1 : 0);
+
+            const nextTurn = turn === "left" ? "right" : "left";
+
+            const leftAttempts = nextLeftResults.length;
+            const rightAttempts = nextRightResults.length;
+
+            const leftRemaining = Math.max(0, 5 - leftAttempts);
+            const rightRemaining = Math.max(0, 5 - rightAttempts);
+
+            const regularFinished =
+                leftAttempts === 5 &&
+                rightAttempts === 5;
+
+            const suddenDeath = leftAttempts > 5 || rightAttempts > 5;
+
+            let resolved = false;
+            let winnerTeam = null;
+
+            const inRegularPenalties =
+                leftAttempts <= 5 &&
+                rightAttempts <= 5;
+
+            if (inRegularPenalties) {
+
+                if (nextLeftScore > nextRightScore + rightRemaining) {
+                    resolved = true;
+                    winnerTeam = prev.leftTeam;
+                }
+                else if (nextRightScore > nextLeftScore + leftRemaining) {
+                    resolved = true;
+                    winnerTeam = prev.rightTeam;
+                }
+            }
+
+            if (!resolved && regularFinished && !suddenDeath) {
+
+                if (nextLeftScore > nextRightScore) {
+                    resolved = true;
+                    winnerTeam = prev.leftTeam;
+                }
+                else if (nextRightScore > nextLeftScore) {
+                    resolved = true;
+                    winnerTeam = prev.rightTeam;
+                }
+            }
+
+            if (
+                !resolved &&
+                suddenDeath &&
+                leftAttempts === rightAttempts &&
+                nextLeftScore !== nextRightScore
+            ) {
+                resolved = true;
+                winnerTeam =
+                    nextLeftScore > nextRightScore
+                        ? prev.leftTeam
+                        : prev.rightTeam;
+            }
+
+            let banner = prev.banner;
+            let extraState = {};
+
+            if (resolved && winnerTeam) {
+                const playerWonSet = winnerTeam === prev.leftTeam;
+
+                appendSetToCurrentMatchHistory(
+                    prev.penaltyPreScore?.left ?? 0,
+                    prev.penaltyPreScore?.right ?? 0,
+                    playerWonSet,
+                    prev.firstHalfLeft,
+                    prev.firstHalfRight,
+                    {
+                        ...prev.extendedRounds,
+                        penalties: {
+                            leftResults: nextLeftResults,
+                            rightResults: nextRightResults,
+                            leftScore: nextLeftScore,
+                            rightScore: nextRightScore,
+                            preScore: prev.penaltyPreScore,
+                            penaltyResolved: resolved
+                        },
+                    }
+                );
+
+                const newWon = prev.playerWonSets + (playerWonSet ? 1 : 0);
+                const newLost = prev.playerLostSets + (playerWonSet ? 0 : 1);
+                const seriesOver = newWon >= prev.setsToWin || newLost >= prev.setsToWin;
+
+                if (seriesOver) {
+                    toast(<span>{renderTeamLabel(winnerTeam, true)}</span>, {
+                        icon: "🎉",
+                        duration: 4000,
+                    });
+                    banner = {
+                        text: "GG",
+                        shadow: `
+                        0 0 3px ${winnerTeam.color},
+                        0 0 7px ${winnerTeam.color}66,
+                        0 1px 3px rgba(0,0,0,0.4)`,
+                        color: winnerTeam.color,
+                    };
+                    extraState = {
+                        playerWonSets: newWon,
+                        playerLostSets: newLost,
+                        banner,
+                        penaltyResolved: true,
+                    };
+                } else {
+                    toast(
+                        <span>
+                            Set {newWon + newLost} has been won on penalties by{" "}
+                            {renderTeamLabel(winnerTeam)}!
+                        </span>,
+                        { icon: "🥅", duration: 4000 }
+                    );
+                    setIsLocked(true);
+                    setTimeout(() => {
+                        setSeriesState((s) => {
+                            if (!s.active || s.banner) return s;
+                            setIsLocked(false);
+                            toast("First Half is beginning", { icon: "🏁", duration: 3000 });
+                            return {
+                                ...s,
+                                playerWonSets: newWon,
+                                playerLostSets: newLost,
+                                finishedSets: [
+                                    ...(s.finishedSets || []),
+                                    {
+                                        set: s.setNumber,
+                                        leftScore: s.penaltyPreScore?.left ?? 0,
+                                        rightScore: s.penaltyPreScore?.right ?? 0,
+
+                                        extendedRoundsPlayed: true,
+                                        extendedRoundLeftScore: prev.extRoundLeftScore,
+                                        extendedRoundRightScore: prev.extRoundRightScore,
+
+                                        penaltiesPlayed: true,
+                                        penaltyLeftScore: nextLeftScore,
+                                        penaltyRightScore: nextRightScore,
+                                    },
+                                ],
+                                setNumber: s.setNumber + 1,
+                                firstHalfLeft: null,
+                                firstHalfRight: null,
+                                roundWins: 0,
+                                roundLosses: 0,
+                                roundNumber: 1,
+                                miniWins: 0,
+                                miniLosses: 0,
+                                isOvertime: false,
+                                overtimeBlock: 0,
+                                otWins: 0,
+                                otLosses: 0,
+                                extendedRounds: { firstHalf: null, secondHalf: null, overtimes: [] },
+                                tiebreakerPhase: "idle",
+                                tiebreakerBigSymbol: null,
+                                extRoundLeftScore: 0,
+                                extRoundRightScore: 0,
+                                extRoundRevealIndex: 0,
+                                extRoundCommentaryShown: false,
+                                penaltyLeftResults: [],
+                                penaltyRightResults: [],
+                                penaltyLeftScore: 0,
+                                penaltyRightScore: 0,
+                                penaltyTurn: "left",
+                                penaltyPreScore: null,
+                                penaltyResolved: false,
+                            };
+                        });
+                    }, 4000);
+                    extraState = {
+                        playerWonSets: newWon,
+                        playerLostSets: newLost,
+                        penaltyResolved: true,
+                    };
+                }
+            }
+
+            setIsCalculating(false);
+            return {
+                ...prev,
+                lastMultiplier: mult,
+                lastResult:
+                    (turn === "left"
+                        ? `Team ${prev.leftTeam.name}`
+                        : `Team ${prev.rightTeam.name}`) +
+                    (success ? " scores!" : " misses!"),
+                penaltyLeftResults: nextLeftResults,
+                penaltyRightResults: nextRightResults,
+                penaltyLeftScore: nextLeftScore,
+                penaltyRightScore: nextRightScore,
+                penaltyTurn: resolved ? prev.penaltyTurn : nextTurn,
+                roundWins: nextLeftScore,
+                roundLosses: nextRightScore,
+                ...extraState,
+            };
+        });
     };
 
     const handleSeriesGamble = () => {
@@ -3037,29 +3602,57 @@ function SpecialModePage() {
                 }
 
                 if (otTiedBlock) {
+                    if (overtimeBlock >= OT_MAX_BLOCK) {
+                        toast(
+                            "It's tied again, so another tiebreaker should be utilized...",
+                            { icon: "🧮", duration: 4000 }
+                        );
+                        setIsLocked(true);
+                        setTimeout(() => {
+                            setSeriesState((curr) => {
+                                if (!curr.active || curr.banner) return curr;
+                                return {
+                                    ...curr,
+                                    tiebreakerPhase: "extended",
+                                    tiebreakerBigSymbol: "VS",
+                                    extRoundLeftScore: 0,
+                                    extRoundRightScore: 0,
+                                    extRoundRevealIndex: 0,
+                                    extRoundCommentaryShown: false,
+                                };
+                            });
+                        }, 1500);
+
+                        setIsCalculating(false);
+                        return {
+                            ...prev,
+                            lastMultiplier: mult,
+                            lastResult: resultText,
+                            playerWonSets,
+                            playerLostSets,
+                            extendedRounds,
+                            setNumber,
+                            roundWins,
+                            roundLosses,
+                            roundNumber,
+                            miniWins,
+                            miniLosses,
+                            isOvertime: true,
+                            overtimeBlock,
+                            otWins,
+                            otLosses,
+                            banner,
+                        };
+                    }
+
                     const currentOT = getOvertimeLabel(overtimeBlock);
                     const nextOT = getOvertimeLabel(overtimeBlock + 1);
-
                     const msg =
                         overtimeBlock === 1
-                            ? `${currentOT} is tied 3-3! Starting ${nextOT}...`
+                            ? `Neither team is willing to back down! ${currentOT} is tied 3-3! Starting ${nextOT}...`
                             : overtimeBlock === 2
-                                ? `${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                : overtimeBlock === 3
-                                    ? `That's a tough battle we got here! ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                    : overtimeBlock === 4
-                                        ? `Neither team is willing to back down! ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                        : overtimeBlock === 5
-                                            ? `This match has entered legendary territory! ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                            : overtimeBlock === 6
-                                                ? `The players refuse to surrender! ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                                : overtimeBlock === 7
-                                                    ? `What are we even witnessing? ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                                    : overtimeBlock === 8
-                                                        ? `History books are being rewritten right now! ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                                        : overtimeBlock === 9
-                                                            ? `This might be the greatest match played on this tournament! ${currentOT} is tied 3-3! Starting ${nextOT}...`
-                                                            : "Another overtime ends in a tie! Somehow, this battle continues...";
+                                ? `Another overtime ends in a tie! ${currentOT} is tied 3-3 again! Starting ${nextOT}...`
+                                : `That's a tough battle we got here! ${currentOT} is tied 3-3 again! Starting ${nextOT}...`;
 
                     toast(msg, { icon: "🔄", duration: 4000 });
 
@@ -3633,6 +4226,216 @@ function SpecialModePage() {
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [seriesState.banner]);
+
+    useEffect(() => {
+        if (!seriesState.active) return;
+        if (seriesState.tiebreakerPhase !== "extended") return;
+        if (seriesState.banner) return;
+
+        const winners = buildExtendedRoundWinnerList(seriesState.extendedRounds);
+        const total = winners.length;
+
+        if (!seriesState.extRoundCommentaryShown) {
+            const t = setTimeout(() => {
+                setSeriesState((curr) => {
+                    if (curr.tiebreakerPhase !== "extended") return curr;
+                    return { ...curr, extRoundCommentaryShown: true };
+                });
+            }, EXT_ROUND_COMMENTARY_DELAY_MS);
+            return () => clearTimeout(t);
+        }
+
+        if (seriesState.extRoundRevealIndex < total) {
+            const t = setTimeout(() => {
+                setSeriesState((curr) => {
+                    if (curr.tiebreakerPhase !== "extended") return curr;
+                    const idx = curr.extRoundRevealIndex;
+                    if (idx >= total) return curr;
+                    const w = winners[idx];
+                    const isLeft = w.winner === "left";
+
+                    const nextLeft = curr.extRoundLeftScore + (isLeft ? 1 : 0);
+                    const nextRight = curr.extRoundRightScore + (isLeft ? 0 : 1);
+
+                    let finalLeft = nextLeft;
+                    let finalRight = nextRight;
+                    let finalRevealIndex = idx + 1;
+
+                    if (finalLeft >= 4 || finalRight >= 4) {
+                        for (let i = idx + 1; i < winners.length; i++) {
+                            if (winners[i].winner === "left") {
+                                finalLeft++;
+                            } else {
+                                finalRight++;
+                            }
+                        }
+
+                        finalRevealIndex = winners.length;
+                    }
+
+                    return {
+                        ...curr,
+                        extRoundRevealIndex: finalRevealIndex,
+                        extRoundLeftScore: finalLeft,
+                        extRoundRightScore: finalRight,
+                    };
+                });
+            }, EXT_ROUND_REVEAL_MS);
+            return () => clearTimeout(t);
+        }
+
+        const t = setTimeout(() => {
+            setSeriesState((curr) => {
+                if (curr.tiebreakerPhase !== "extended") return curr;
+
+                const L = curr.extRoundLeftScore;
+                const R = curr.extRoundRightScore;
+
+                if (L !== R) {
+                    const playerWonSet = L > R;
+                    appendSetToCurrentMatchHistory(
+                        curr.roundWins,
+                        curr.roundLosses,
+                        playerWonSet,
+                        curr.firstHalfLeft,
+                        curr.firstHalfRight,
+                        curr.extendedRounds
+                    );
+
+                    const newWon = curr.playerWonSets + (playerWonSet ? 1 : 0);
+                    const newLost = curr.playerLostSets + (playerWonSet ? 0 : 1);
+                    const seriesOver = newWon >= curr.setsToWin || newLost >= curr.setsToWin;
+
+                    if (seriesOver) {
+                        const winner = playerWonSet ? curr.leftTeam : curr.rightTeam;
+                        toast(<span>{renderTeamLabel(winner, true)}</span>, {
+                            icon: "🎉",
+                            duration: 4000,
+                        });
+                        setIsLocked(false);
+                        return {
+                            ...curr,
+                            playerWonSets: newWon,
+                            playerLostSets: newLost,
+                            tiebreakerBigSymbol: "GG",
+                            banner: {
+                                text: "GG",
+                                shadow: `
+                                0 0 3px ${winner.color},
+                                0 0 7px ${winner.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)`,
+                                color: winner.color,
+                            },
+                        };
+                    }
+
+                    toast(
+                        <span>
+                            Set {newWon + newLost} has been won by{" "}
+                            {renderTeamLabel(playerWonSet ? curr.leftTeam : curr.rightTeam)}!
+                        </span>,
+                        { icon: "🤯", duration: 4000 }
+                    );
+                    setTimeout(() => {
+                        setSeriesState((s) => {
+                            if (!s.active || s.banner) return s;
+                            setIsLocked(false);
+                            toast("First Half is beginning", { icon: "🏁", duration: 3000 });
+                            return {
+                                ...s,
+                                playerWonSets: newWon,
+                                playerLostSets: newLost,
+                                finishedSets: [
+                                    ...(s.finishedSets || []),
+                                    {
+                                        set: s.setNumber,
+                                        leftScore: s.roundWins,
+                                        rightScore: s.roundLosses,
+
+                                        extendedRoundsPlayed: true,
+                                        extendedRoundLeftScore: curr.extRoundLeftScore,
+                                        extendedRoundRightScore: curr.extRoundRightScore,
+
+                                        penaltiesPlayed: false,
+                                    },
+                                ],
+                                setNumber: s.setNumber + 1,
+                                firstHalfLeft: null,
+                                firstHalfRight: null,
+                                roundWins: 0,
+                                roundLosses: 0,
+                                roundNumber: 1,
+                                miniWins: 0,
+                                miniLosses: 0,
+                                isOvertime: false,
+                                overtimeBlock: 0,
+                                otWins: 0,
+                                otLosses: 0,
+                                extendedRounds: { firstHalf: null, secondHalf: null, overtimes: [] },
+                                tiebreakerPhase: "idle",
+                                tiebreakerBigSymbol: null,
+                                extRoundLeftScore: 0,
+                                extRoundRightScore: 0,
+                                extRoundRevealIndex: 0,
+                                extRoundCommentaryShown: false,
+                            };
+                        });
+                    }, 4000);
+
+                    return {
+                        ...curr,
+                        playerWonSets: newWon,
+                        playerLostSets: newLost
+                    };
+                }
+
+                toast("It's tied again!? Then.............", { icon: "😱", duration: 3000 });
+                setTimeout(() => {
+                    toast("PENALTIES!!!", { icon: "🥅", duration: 4000 });
+                }, 3000);
+
+                return { ...curr, tiebreakerBigSymbol: "=" };
+            });
+        }, EXT_ROUND_FINAL_COMPARE_MS);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        seriesState.active,
+        seriesState.tiebreakerPhase,
+        seriesState.banner,
+        seriesState.extRoundRevealIndex,
+        seriesState.extRoundCommentaryShown,
+    ]);
+
+    useEffect(() => {
+        if (!seriesState.active) return;
+        if (seriesState.tiebreakerPhase !== "extended") return;
+        if (seriesState.tiebreakerBigSymbol !== "=") return;
+
+        const t = setTimeout(() => {
+            setSeriesState((curr) => {
+                if (curr.tiebreakerBigSymbol !== "=") return curr;
+                return {
+                    ...curr,
+                    lastMultiplier: null,
+                    lastResult: "",
+                    tiebreakerPhase: "penalties",
+                    penaltyPreScore: { left: curr.roundWins, right: curr.roundLosses },
+                    roundWins: 0,
+                    roundLosses: 0,
+                    penaltyLeftResults: [],
+                    penaltyRightResults: [],
+                    penaltyLeftScore: 0,
+                    penaltyRightScore: 0,
+                    penaltyTurn: "left",
+                    penaltyResolved: false,
+                    tiebreakerBigSymbol: "VS",
+                };
+            });
+            setIsLocked(false);
+        }, 4200);
+        return () => clearTimeout(t);
+    }, [seriesState.active, seriesState.tiebreakerPhase, seriesState.tiebreakerBigSymbol]);
 
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
@@ -5011,9 +5814,9 @@ function SpecialModePage() {
                             className={css.round_text}
                             style={{
                                 position: "absolute",
-                                left: displayedMiniSquares === 10 ? "25.6%" : "15.5%",
+                                left: "-20px",
                                 marginBottom: "-2px",
-                                fontSize: "26px",
+                                fontSize: "24px",
                                 transition: 'none'
                             }}
                         >
@@ -5025,7 +5828,7 @@ function SpecialModePage() {
                             exit={{ opacity: 0, y: -40 }}
                             transition={{ duration: 0.3 }}
                             className={css.round_text}
-                            style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: displayedMiniSquares === 10 ? "47.8%" : "47%", transition: 'none' }}
+                            style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "44.55%", transition: 'none' }}
                         >
                             <FaTrophy />
                         </motion.span>
@@ -5039,7 +5842,8 @@ function SpecialModePage() {
                             style={{
                                 fontSize: "24px",
                                 position: "absolute",
-                                left: displayedMiniSquares === 10 ? "60.1%" : "64.5%",
+                                left: "210px",
+                                top: "-17px",
                                 width: "max-content",
                                 transition: 'none',
                                 display: "flex"
@@ -5116,8 +5920,34 @@ function SpecialModePage() {
                                 height: "40px",
                             }}
                         >
-                            {seriesState.finishedSets.map(
-                                ({ set, leftScore, rightScore }) => (
+                            {seriesState.finishedSets.map(({
+                                set,
+                                leftScore,
+                                rightScore,
+
+                                extendedRoundsPlayed,
+                                extendedRoundLeftScore,
+                                extendedRoundRightScore,
+
+                                penaltiesPlayed,
+                                penaltyLeftScore,
+                                penaltyRightScore,
+                            }) => {
+                                const displayLeftScore = penaltiesPlayed
+                                    ? penaltyLeftScore
+                                    : extendedRoundsPlayed
+                                        ? extendedRoundLeftScore
+                                        : leftScore;
+
+                                const displayRightScore = penaltiesPlayed
+                                    ? penaltyRightScore
+                                    : extendedRoundsPlayed
+                                        ? extendedRoundRightScore
+                                        : rightScore;
+
+                                const leftWonSet = displayLeftScore > displayRightScore;
+
+                                return (
                                     <div
                                         key={set}
                                         style={{
@@ -5130,8 +5960,12 @@ function SpecialModePage() {
                                             className={css.round_text}
                                             style={{
                                                 fontSize: "12px",
-                                                textShadow: leftScore > rightScore ? seriesState.leftTeam.shadow : seriesState.rightTeam.shadow,
-                                                color: leftScore > rightScore ? seriesState.leftTeam.color : seriesState.rightTeam.color,
+                                                textShadow: leftWonSet
+                                                    ? seriesState.leftTeam.shadow
+                                                    : seriesState.rightTeam.shadow,
+                                                color: leftWonSet
+                                                    ? seriesState.leftTeam.color
+                                                    : seriesState.rightTeam.color,
                                             }}
                                         >
                                             Set {set}
@@ -5142,7 +5976,9 @@ function SpecialModePage() {
                                                 color:
                                                     leftScore > rightScore
                                                         ? "#4caf50"
-                                                        : "#f44336",
+                                                        : leftScore === rightScore
+                                                            ? "#2e2f42"
+                                                            : "#f44336",
                                                 fontSize: "12px",
                                             }}
                                         >
@@ -5164,15 +6000,94 @@ function SpecialModePage() {
                                                 color:
                                                     rightScore > leftScore
                                                         ? "#4caf50"
-                                                        : "#f44336",
+                                                        : rightScore === leftScore
+                                                            ? "#2e2f42"
+                                                            : "#f44336",
                                                 fontSize: "12px",
                                             }}
                                         >
                                             {rightScore}
                                         </span>
+                                        {penaltiesPlayed ? (
+                                            <span
+                                                className={css.round_text}
+                                                style={{
+                                                    fontSize: "12px",
+                                                    marginLeft: "-4px"
+                                                }}
+                                            >
+                                                (Pens{" "}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            penaltyLeftScore > penaltyRightScore
+                                                                ? "#4caf50"
+                                                                : penaltyLeftScore === penaltyRightScore
+                                                                    ? "#2e2f42"
+                                                                    : "#f44336",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
+                                                    {penaltyLeftScore}
+                                                </span>{" "}
+                                                -{" "}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            penaltyRightScore > penaltyLeftScore
+                                                                ? "#4caf50"
+                                                                : penaltyLeftScore === penaltyRightScore
+                                                                    ? "#2e2f42"
+                                                                    : "#f44336",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
+                                                    {penaltyRightScore}
+                                                </span>
+                                                )
+                                            </span>
+                                        ) : extendedRoundsPlayed ? (
+                                            <span
+                                                className={css.round_text}
+                                                style={{
+                                                    fontSize: "12px",
+                                                    marginLeft: "-4px",
+                                                }}
+                                            >
+                                                (ERs{" "}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            extendedRoundLeftScore > extendedRoundRightScore
+                                                                ? "#4caf50"
+                                                                : extendedRoundLeftScore === extendedRoundRightScore
+                                                                    ? "#2e2f42"
+                                                                    : "#f44336",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
+                                                    {extendedRoundLeftScore}
+                                                </span>{" "}
+                                                -{" "}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            extendedRoundRightScore > extendedRoundLeftScore
+                                                                ? "#4caf50"
+                                                                : extendedRoundLeftScore === extendedRoundRightScore
+                                                                    ? "#2e2f42"
+                                                                    : "#f44336",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
+                                                    {extendedRoundRightScore}
+                                                </span>
+                                                )
+                                            </span>
+                                        ) : null}
                                     </div>
                                 )
-                            )}
+                            })}
                         </motion.div>
                     ) : setsToWin !== 1 ? (
                         <motion.span
@@ -5192,7 +6107,7 @@ function SpecialModePage() {
                 </span>
             </>
         );
-    }, [displayedMiniSquares, seriesState]);
+    }, [seriesState]);
 
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
@@ -5491,6 +6406,24 @@ function SpecialModePage() {
 
     const playedSets = (modalScoreLeft ?? 0) + (modalScoreRight ?? 0);
 
+    const leftAttempts = seriesState.penaltyLeftResults.length;
+    const rightAttempts = seriesState.penaltyRightResults.length;
+
+    const completedSuddenDeathPairs = Math.min(
+        Math.max(0, leftAttempts - 5),
+        Math.max(0, rightAttempts - 5)
+    );
+
+    const attemptsToDisplay =
+        PENALTY_DISPLAY_CIRCLES + completedSuddenDeathPairs;
+
+    const currentAttempt = Math.min(
+        seriesState.penaltyLeftResults.length,
+        seriesState.penaltyRightResults.length
+    ) + 1;
+
+    const inSuddenDeath = currentAttempt > 5;
+
     if (isSeriesActive) {
         const {
             playerWonSets,
@@ -5522,14 +6455,14 @@ function SpecialModePage() {
                     arePlacingButtonsArmed={arePlacingButtonsArmed}
                     hasAnyPlacings={hasAnyPlacings}
                 />
-                <div className={css.series_container}>
+                <div style={{ marginTop: setsToWin === 1 ? "40px" : "-80px" }} className={css.series_container}>
                     <button
                         type="button"
                         onClick={toggleSecretGuaranteedWin}
                         className={css.gamble_button}
                         style={{
                             position: "absolute",
-                            top: "-10%",
+                            top: setsToWin !== 1 ? "-33%" : "0%",
                             left: "42%",
                             background: "#f7f7f7ff",
                             color: "transparent",
@@ -5543,6 +6476,612 @@ function SpecialModePage() {
                         Secret
                     </button>
                     {seriesLabelNode}
+                    {seriesState.tiebreakerPhase === "extended" && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            aria-live="polite"
+                            style={{
+                                position: "fixed",
+                                inset: 0,
+                                zIndex: 9998,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "24px",
+                                background: "rgba(0,0,0,0.35)",
+                                backdropFilter: "blur(14px) saturate(240%)",
+                                animation: "fade-in 0.4s ease-out",
+                            }}
+                        >
+                            <div
+                                className={css.scoreboard}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "row-reverse",
+                                        alignItems: "center",
+                                        gap: "14px",
+                                        opacity: loserOpacity === "win" ? 0.4 : 1,
+                                        position: 'relative'
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px' }}>
+                                        <span
+                                            className={css.round_text}
+                                            style={{
+                                                height: "76px",
+                                                color: seriesState.leftTeam?.color,
+                                                fontSize: "52px",
+                                                transition: "all 2000ms ease-in-out",
+                                                textShadow:
+                                                    seriesState.extRoundLeftScore >= 4
+                                                        ? `
+                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                        `
+                                                        : "none",
+                                            }}
+                                        >
+                                            <Odometer
+                                                value={seriesState.extRoundLeftScore}
+                                                duration={900}
+                                                format="d"
+                                            />
+                                        </span>
+                                        <div className={css.lines}>
+                                            {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                                <>
+                                                    {[...Array(3)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{
+                                                                backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                                boxShadow: playerWonSets >= i + 1 ?
+                                                                    `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                    :
+                                                                    '',
+                                                                width: "16px",
+                                                            }}
+                                                            className={css.line}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : activePhase !== "playoffs" && setsToWin === 2 ? (
+                                                <>
+                                                    {[...Array(2)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{
+                                                                backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                                boxShadow: playerWonSets >= i + 1 ?
+                                                                    `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                    :
+                                                                    ''
+                                                            }}
+                                                            className={css.line}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : activePhase !== "playoffs" && setsToWin === 1 ? (
+                                                <div
+                                                    style={{
+                                                        backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                        boxShadow: playerWonSets >= 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
+                                                    className={css.line}
+                                                />
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div className={css.verticalLines}>
+                                        {activePhase === "playoffs" && setsToWin === 5 ? (
+                                            <>
+                                                {[...Array(5)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            height: "12px",
+                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow: playerWonSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 4 ? (
+                                            <>
+                                                {[...Array(4)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            height: "14px",
+                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow: playerWonSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                            <>
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            height: "16px",
+                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow: playerWonSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                            <>
+                                                {[...Array(2)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                            boxShadow: playerWonSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.leftTeam?.color},
+                                                                0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                            <div
+                                                style={{
+                                                    backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
+                                                    boxShadow: playerWonSets >= 1 ?
+                                                        `
+                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                    `
+                                                        :
+                                                        ''
+                                                }}
+                                                className={css.verticalLine}
+                                            />
+                                        ) : null}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    {banner
+                                        ? (() => {
+                                            const cleanBanner = banner.text;
+                                            const chars = cleanBanner.split("");
+
+                                            const middle = Math.ceil(chars.length / 2);
+
+                                            const topHalf = chars.slice(0, middle);
+                                            const bottomHalf = chars.slice(middle);
+
+                                            return (
+                                                <motion.span
+                                                    className={css.round_text}
+                                                    style={{
+                                                        fontSize: "38px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        gap: "0px",
+                                                        width: '63.8px',
+                                                        textShadow: banner.shadow,
+                                                        color: banner.color,
+                                                    }}
+                                                >
+                                                    {topHalf.map((char, index) => (
+                                                        <motion.span
+                                                            key={`top-${char}-${index}`}
+                                                            initial={{
+                                                                opacity: 0,
+                                                                y: -20,
+                                                            }}
+                                                            animate={{
+                                                                opacity: 1,
+                                                                y: 0,
+                                                            }}
+                                                            transition={{
+                                                                duration: 0.45
+                                                            }}
+                                                            style={{ display: "inline-block" }}
+                                                        >
+                                                            {char}
+                                                        </motion.span>
+                                                    ))}
+
+                                                    {bottomHalf.map((char, index) => (
+                                                        <motion.span
+                                                            key={`bottom-${char}-${index}`}
+                                                            initial={{
+                                                                opacity: 0,
+                                                                y: 20,
+                                                            }}
+                                                            animate={{
+                                                                opacity: 1,
+                                                                y: 0,
+                                                            }}
+                                                            transition={{
+                                                                duration: 0.45
+                                                            }}
+                                                            style={{ display: "inline-block" }}
+                                                        >
+                                                            {char}
+                                                        </motion.span>
+                                                    ))}
+
+                                                    <motion.span
+                                                        initial={{ opacity: 0, scale: 0 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        transition={{
+                                                            duration: 0.45
+                                                        }}
+                                                        style={{
+                                                            display: "inline-block",
+                                                            marginLeft: "2px",
+                                                        }}
+                                                    >
+                                                        !
+                                                    </motion.span>
+                                                </motion.span>
+                                            );
+                                        })()
+                                        : seriesState.tiebreakerBigSymbol ? (
+                                            <p
+                                                className={css.vs}
+                                                style={{ fontWeight: 700, fontSize: "32px", color: "#fff" }}
+                                            >
+                                                {seriesState.tiebreakerBigSymbol}
+                                            </p>
+                                        ) : null}
+                                </div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "14px",
+                                        opacity: loserOpacity === "loss" ? 0.4 : 1,
+                                        position: 'relative'
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            flexDirection: 'column',
+                                            width: '50.1px'
+                                        }}
+                                    >
+                                        <span
+                                            className={css.round_text}
+                                            style={{
+                                                height: "76px",
+                                                color: seriesState.rightTeam?.color,
+                                                fontSize: "52px",
+                                                transition: "all 2000ms ease-in-out",
+                                                textShadow:
+                                                    seriesState.extRoundRightScore >= 4
+                                                        ? `
+                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                        `
+                                                        : "none",
+                                            }}
+                                        >
+                                            <Odometer
+                                                value={seriesState.extRoundRightScore}
+                                                duration={900}
+                                                format="d"
+                                            />
+                                        </span>
+                                        <div className={css.lossLines}>
+                                            {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                                <>
+                                                    {[...Array(3)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{
+                                                                backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                                boxShadow: playerLostSets >= i + 1 ?
+                                                                    `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                    :
+                                                                    '',
+                                                                width: "16px",
+                                                            }}
+                                                            className={css.line}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : activePhase !== "playoffs" && setsToWin === 2 ? (
+                                                <>
+                                                    {[...Array(2)].map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            style={{
+                                                                backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                                boxShadow: playerLostSets >= i + 1 ?
+                                                                    `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                    :
+                                                                    ''
+                                                            }}
+                                                            className={css.line}
+                                                        />
+                                                    ))}
+                                                </>
+                                            ) : activePhase !== "playoffs" && setsToWin === 1 ? (
+                                                <div
+                                                    style={{
+                                                        backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                        boxShadow: playerLostSets >= 1 ?
+                                                            `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                            :
+                                                            ''
+                                                    }}
+                                                    className={`${css.line} ${playerLostSets >= 1
+                                                        ? css.lineLoss
+                                                        : css.lineDarkLoss
+                                                        }`}
+                                                />
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div className={css.verticalLossLines}>
+                                        {activePhase === "playoffs" && setsToWin === 5 ? (
+                                            <>
+                                                {[...Array(5)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            height: "12px",
+                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow: playerLostSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 4 ? (
+                                            <>
+                                                {[...Array(4)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            height: "14px",
+                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow: playerLostSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                            <>
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            height: "16px",
+                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow: playerLostSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                            <>
+                                                {[...Array(2)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                            boxShadow: playerLostSets >= i + 1 ?
+                                                                `
+                                                                0 0 3px ${seriesState.rightTeam?.color},
+                                                                0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                0 1px 3px rgba(0,0,0,0.4)
+                                                            `
+                                                                :
+                                                                ''
+                                                        }}
+                                                        className={css.verticalLine}
+                                                    />
+                                                ))}
+                                            </>
+                                        ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                            <div
+                                                style={{
+                                                    backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
+                                                    boxShadow: playerLostSets >= 1 ?
+                                                        `
+                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                    `
+                                                        :
+                                                        ''
+                                                }}
+                                                className={css.verticalLine}
+                                            />
+                                        ) : null}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {seriesState.tiebreakerPhase === "extended" && seriesState.extRoundCommentaryShown && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    style={{
+                                        color: "#fff",
+                                        textAlign: "center",
+                                        maxWidth: "640px",
+                                        fontSize: "16px",
+                                        lineHeight: 1.5,
+                                        marginTop: 16
+                                    }}
+                                    className={css.info_text}
+                                >
+                                    The winner of this set could not be determined even after Quadruple Overtime.
+                                    Therefore, the system will compare every Extended Round winner.
+                                    There were six Extended Rounds in total: the 1st Half, the 2nd Half and four Overtimes, that's why 4+ Extended Round are required to win, 3 to tie again.
+                                    We'll reveal them one by one:
+                                </motion.p>
+                            )}
+                            {seriesState.extRoundCommentaryShown && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0.4 }}
+                                    style={{
+                                        marginTop: "20px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "8px",
+                                        width: "100%",
+                                        maxWidth: "640px",
+                                    }}
+                                >
+                                    {revealedExtendedRounds.map((round) => {
+                                        const isLeft = round.winner === "left";
+
+                                        return (
+                                            <motion.div
+                                                key={round.label}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ duration: 0.35 }}
+                                                style={{
+                                                    color: "#fff",
+                                                    fontSize: "20px",
+                                                    textAlign: "left",
+                                                }}
+                                            >
+                                                <strong>{round.label}</strong> Extended Round winner is{" "}
+                                                {renderTeamLabel(
+                                                    isLeft
+                                                        ? seriesState.leftTeam
+                                                        : seriesState.rightTeam
+                                                )}
+                                            </motion.div>
+                                        );
+                                    })}
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    )}
+                    {seriesState.tiebreakerPhase === "penalties" && !seriesState.penaltyResolved ? (
+                        <motion.div
+                            key={seriesState.penaltyTurn}
+                            initial={{ opacity: 0, scale: 3 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.1 }}
+                            style={{
+                                textAlign: "center",
+                                fontSize: "18px",
+                                fontWeight: 700,
+                                marginBottom: "8px",
+                                color:
+                                    seriesState.penaltyTurn === "left"
+                                        ? seriesState.leftTeam?.color
+                                        : seriesState.rightTeam?.color,
+                            }}
+                        >
+                            Team{" "}
+                            {seriesState.penaltyTurn === "left"
+                                ? seriesState.leftTeam?.name
+                                : seriesState.rightTeam?.name}
+                            's turn!
+                        </motion.div>
+                    ) : null}
                     <div className={css.scoreboard}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                             {isSeriesPointWins ? (
@@ -5602,7 +7141,7 @@ function SpecialModePage() {
                                     transition={{ duration: 0.4 }}
                                     style={{
                                         color: seriesState.leftTeam?.color,
-                                        transition: "all 500ms ease-in-out",
+                                        transition: "all 500ms ease-in-out"
                                     }} className={css.team_name_left}>
                                     Team {seriesState.leftTeam?.name}
                                 </motion.span>
@@ -5709,7 +7248,14 @@ function SpecialModePage() {
                                         ) : null}
                                     </div>
                                 </div>
-                                {!banner && (
+                                {seriesState.tiebreakerPhase === "penalties" ? (
+                                    <PenaltyCircles
+                                        results={seriesState.penaltyLeftResults}
+                                        team="left"
+                                        attemptsToDisplay={attemptsToDisplay}
+                                        resolved={seriesState.penaltyResolved}
+                                    />
+                                ) : !banner ? (
                                     <div className={css.miniSquares}>
                                         {[...Array(displayedMiniSquares)].map((_, i) => (
                                             <div
@@ -5734,7 +7280,7 @@ function SpecialModePage() {
                                             />
                                         ))}
                                     </div>
-                                )}
+                                ) : null}
                                 <div className={css.verticalLines}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
@@ -5951,26 +7497,28 @@ function SpecialModePage() {
                                 >
                                     VS
                                 </p>
-                                <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    className={css.round_text}
-                                    style={{
-                                        fontSize: "14px",
-                                        width: "63.8px",
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    Round{" "}
-                                    <CountUp
-                                        key={roundWins + roundLosses + 1}
-                                        start={Math.max(roundWins + roundLosses, 0)}
-                                        end={roundWins + roundLosses + 1}
-                                        duration={1}
-                                    />
-                                </motion.span>
+                                {seriesState.tiebreakerPhase !== "penalties" && (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className={css.round_text}
+                                        style={{
+                                            fontSize: "14px",
+                                            width: "63.8px",
+                                            textAlign: "center",
+                                        }}
+                                    >
+                                        Round{" "}
+                                        <CountUp
+                                            key={roundWins + roundLosses + 1}
+                                            start={Math.max(roundWins + roundLosses, 0)}
+                                            end={roundWins + roundLosses + 1}
+                                            duration={1}
+                                        />
+                                    </motion.span>
+                                )}
                             </div>
                         )}
                         <div
@@ -6151,7 +7699,14 @@ function SpecialModePage() {
                                         ) : null}
                                     </div>
                                 </div>
-                                {!banner && (
+                                {seriesState.tiebreakerPhase === "penalties" ? (
+                                    <PenaltyCircles
+                                        results={seriesState.penaltyRightResults}
+                                        team="right"
+                                        attemptsToDisplay={attemptsToDisplay}
+                                        resolved={seriesState.penaltyResolved}
+                                    />
+                                ) : !banner ? (
                                     <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
                                         {[...Array(displayedMiniSquares)].map((_, i) => (
                                             <div
@@ -6171,12 +7726,12 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            'none'
+                                                            'none',
                                                 }}
                                             />
                                         ))}
                                     </div>
-                                )}
+                                ) : null}
                                 <div className={css.verticalLossLines}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
@@ -6300,7 +7855,7 @@ function SpecialModePage() {
                         </div>
                     </div>
 
-                    {!banner && isOvertime ? (
+                    {!banner && isOvertime && seriesState.tiebreakerPhase !== "penalties" ? (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -6340,7 +7895,13 @@ function SpecialModePage() {
                             </motion.span>
                         </motion.div>
                     ) : (
-                        <div className={css.game_info_text}>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className={css.game_info_text}
+                        >
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -6351,12 +7912,12 @@ function SpecialModePage() {
                                     textAlign: "center",
                                     fontSize: "14px",
                                     marginBottom: "12px",
-                                    userSelect: "none"
                                 }}
                             >
-                                &nbsp;
+                                {seriesState.tiebreakerPhase === "penalties" && !banner
+                                    ? `Penalty Series`
+                                    : "\u00A0"}
                             </motion.span>
-
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -6367,13 +7928,29 @@ function SpecialModePage() {
                                     textAlign: "center",
                                     fontSize: "20px",
                                     marginTop: "-20px",
-                                    userSelect: "none"
                                 }}
                             >
-                                &nbsp;
-                                <br />
+                                {inSuddenDeath && !banner && (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className={css.round_text}
+                                        style={{
+                                            textAlign: "center",
+                                            marginBottom: "12px",
+                                            color: "rgb(152, 51, 51)"
+                                        }}
+                                    >
+                                        Sudden Death!!! <span style={{ color: "#2e2f42" }}>|</span>{" "}
+                                    </motion.span>
+                                )}
+                                {seriesState.tiebreakerPhase === "penalties" && !banner
+                                    ? `Attempt ${currentAttempt}`
+                                    : "\u00A0"}
                             </motion.span>
-                        </div>
+                        </motion.div>
                     )}
 
                     <div className={css.seriesGambleMessage}>
@@ -6385,7 +7962,7 @@ function SpecialModePage() {
 
                                 <span
                                     className={css.seriesMultiplier}
-                                    style={{ color: getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
+                                    style={{ color: seriesState.tiebreakerPhase === "penalties" ? getPensMultiplierClass(seriesState.lastMultiplier) : getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
                                 >
                                     {seriesState.lastMultiplier.toFixed(2)}x
                                 </span>
@@ -6398,7 +7975,11 @@ function SpecialModePage() {
                             <button
                                 className={`${css.gamble_button} ${isButtonLocked || banner ? css.locked : ""}`}
                                 disabled={isButtonLocked || !!banner}
-                                onClick={handleSeriesGamble}
+                                onClick={
+                                    seriesState.tiebreakerPhase === "penalties"
+                                        ? handlePenaltyShot
+                                        : handleSeriesGamble
+                                }
                             >
                                 Gamble
                             </button>
@@ -8430,7 +10011,9 @@ function SpecialModePage() {
                                                         <div className={css.modal_vs}>
                                                             <span
                                                                 style={{
-                                                                    color: winnerIsLeft ? "#2e7d32" : "red",
+                                                                    color: winnerIsLeft
+                                                                        ? "#2e7d32"
+                                                                        : "red",
                                                                     fontWeight: 800,
                                                                     fontStyle: "italic",
                                                                     position: "absolute",
@@ -8444,7 +10027,11 @@ function SpecialModePage() {
                                                                     WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
                                                                     maskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
                                                                 }}
-                                                                className={winnerIsLeft ? css.winnerScoreShadow : css.loserScoreShadow}
+                                                                className={
+                                                                    winnerIsLeft
+                                                                        ? css.swissWinnerScoreShadow
+                                                                        : css.swissLoserScoreShadow
+                                                                }
                                                             >
                                                                 {modalDisplayScoreLeft}
                                                             </span>
@@ -8463,7 +10050,9 @@ function SpecialModePage() {
                                                             </div>
                                                             <span
                                                                 style={{
-                                                                    color: winnerIsRight ? "#2e7d32" : "red",
+                                                                    color: winnerIsRight
+                                                                        ? "#2e7d32"
+                                                                        : "red",
                                                                     fontWeight: 800,
                                                                     fontStyle: "italic",
                                                                     position: "absolute",
@@ -8477,7 +10066,11 @@ function SpecialModePage() {
                                                                     WebkitMaskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
                                                                     maskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
                                                                 }}
-                                                                className={winnerIsRight ? css.winnerScoreShadow : css.loserScoreShadow}
+                                                                className={
+                                                                    winnerIsRight
+                                                                        ? css.swissWinnerScoreShadow
+                                                                        : css.swissLoserScoreShadow
+                                                                }
                                                             >
                                                                 {modalDisplayScoreRight}
                                                             </span>
@@ -8640,15 +10233,13 @@ function SpecialModePage() {
                                                         const leftColor = modalPlayedLeft?.color || "#2e7d32";
                                                         const rightColor = modalPlayedRight?.color || "red";
 
-                                                        const InfoIcon = ({ labels }) => {
-                                                            const [hover, setHover] =
-                                                                useState(false);
-
-                                                            const labelRows = [];
-
-                                                            for (let i = 0; i < labels.length; i += 5) {
-                                                                labelRows.push(labels.slice(i, i + 5));
-                                                            }
+                                                        const InfoIcon = ({
+                                                            title,
+                                                            children,
+                                                            trigger = "hover",
+                                                            customLeft = "50%"
+                                                        }) => {
+                                                            const [open, setOpen] = useState(false);
 
                                                             return (
                                                                 <div
@@ -8656,65 +10247,63 @@ function SpecialModePage() {
                                                                         position: "relative",
                                                                         display: "flex",
                                                                     }}
-                                                                    onMouseEnter={() =>
-                                                                        setHover(true)
+                                                                    onMouseEnter={
+                                                                        trigger === "hover"
+                                                                            ? () => setOpen(true)
+                                                                            : undefined
                                                                     }
-                                                                    onMouseLeave={() =>
-                                                                        setHover(false)
+                                                                    onMouseLeave={
+                                                                        trigger === "hover"
+                                                                            ? () => setOpen(false)
+                                                                            : undefined
+                                                                    }
+                                                                    onClick={
+                                                                        trigger === "click"
+                                                                            ? (e) => {
+                                                                                e.stopPropagation();
+                                                                                setOpen((prev) => !prev);
+                                                                            }
+                                                                            : undefined
                                                                     }
                                                                 >
-                                                                    <FaCircleInfo style={{ color: 'Highlight', marginTop: '-2px' }} size={11} />
+                                                                    <FaCircleInfo
+                                                                        size={11}
+                                                                        style={{
+                                                                            color: "Highlight",
+                                                                            cursor: trigger === "click" ? "pointer" : "default",
+                                                                        }}
+                                                                    />
 
-                                                                    {hover && (
+                                                                    {open && (
                                                                         <motion.div
                                                                             initial={{ opacity: 0 }}
                                                                             animate={{ opacity: 1 }}
                                                                             exit={{ opacity: 0 }}
                                                                             transition={{ duration: 0.15 }}
+                                                                            onClick={(e) => e.stopPropagation()}
                                                                             style={{
                                                                                 position: "absolute",
                                                                                 bottom: "calc(100% + 8px)",
-                                                                                left: "50%",
-                                                                                transform:
-                                                                                    "translateX(-50%)",
+                                                                                left: customLeft,
+                                                                                transform: "translateX(-50%)",
                                                                                 background: "#fff",
-                                                                                color: '#2e2f42',
-                                                                                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+                                                                                color: "#2e2f42",
+                                                                                boxShadow: "0 2px 10px rgba(0,0,0,.2)",
                                                                                 padding: "6px 10px",
                                                                                 borderRadius: 6,
                                                                                 whiteSpace: "nowrap",
                                                                                 zIndex: 9999,
-                                                                                fontSize: 12
+                                                                                fontSize: 12,
                                                                             }}
                                                                         >
-                                                                            <span>
-                                                                                Extended OT Round{labels.length === 1 ? "" : "s"} taken in{" "}
-                                                                            </span>
+                                                                            {title && (
+                                                                                <>
+                                                                                    <span>{title}</span>
+                                                                                    <br />
+                                                                                </>
+                                                                            )}
 
-                                                                            {labelRows.map((row, rowIndex) => (
-                                                                                <React.Fragment key={rowIndex}>
-                                                                                    {rowIndex > 0 && <br />}
-                                                                                    {row.map((label, index) => {
-                                                                                        const isLastRow = rowIndex === labelRows.length - 1;
-                                                                                        const isLast = isLastRow && index === row.length - 1;
-                                                                                        const isSecondLast = isLastRow && index === row.length - 2;
-
-                                                                                        return (
-                                                                                            <React.Fragment key={index}>
-                                                                                                {index > 0 && !isLast && ", "}
-
-                                                                                                <span style={{ fontWeight: 600 }}>
-                                                                                                    {label}
-                                                                                                </span>
-
-                                                                                                {isSecondLast && (
-                                                                                                    <span style={{ fontWeight: 500 }}> and </span>
-                                                                                                )}
-                                                                                            </React.Fragment>
-                                                                                        );
-                                                                                    })}
-                                                                                </React.Fragment>
-                                                                            ))}
+                                                                            {children}
                                                                         </motion.div>
                                                                     )}
                                                                 </div>
@@ -8754,14 +10343,21 @@ function SpecialModePage() {
                                                                             const leftOpacity = won ? 1 : 0.4;
                                                                             const rightOpacity = won ? 0.4 : 1;
 
+                                                                            const isATie = wins === losses;
+
                                                                             const winnerCount = won ? wins : losses;
+
+                                                                            const finalCount = isATie ? winnerCount + 1 : winnerCount;
 
                                                                             const overtimeCount = Math.max(
                                                                                 0,
-                                                                                Math.floor((winnerCount - 13) / 3)
+                                                                                Math.floor((finalCount - 13) / 3)
                                                                             );
 
                                                                             const hasOvertime = overtimeCount > 0;
+
+                                                                            const leftAttempts = extendedRounds?.penalties?.leftResults.length ?? 0;
+                                                                            const rightAttempts = extendedRounds?.penalties?.rightResults.length ?? 0;
 
                                                                             const leftOtExtendedRounds =
                                                                                 extendedRounds.overtimes.filter(
@@ -8821,16 +10417,25 @@ function SpecialModePage() {
                                                                                 (hasOvertime ? losses - otRight : losses) -
                                                                                 firstHalfRight;
 
+                                                                            const extendedRoundLeftScore =
+                                                                                (extendedRounds.firstHalf === "left" ? 1 : 0) +
+                                                                                (extendedRounds.secondHalf === "left" ? 1 : 0) +
+                                                                                leftOtExtendedRounds.length;
+
+                                                                            const extendedRoundRightScore =
+                                                                                (extendedRounds.firstHalf === "right" ? 1 : 0) +
+                                                                                (extendedRounds.secondHalf === "right" ? 1 : 0) +
+                                                                                rightOtExtendedRounds.length;
+
+                                                                            const hasExtendedRounds = isATie &&
+                                                                                extendedRoundLeftScore + extendedRoundRightScore > 0;
+
                                                                             const totalRounds = wins + losses;
 
                                                                             const getHalfStyleLeft = (leftScore, rightScore) => {
                                                                                 if (leftScore === rightScore) {
                                                                                     return {
-                                                                                        opacity: 1,
-                                                                                        textShadow: `
-                                                                                                0 0 3px ${leftColor},
-                                                                                                0 0 6px ${leftColor}55
-                                                                                        `,
+                                                                                        opacity: 1
                                                                                     };
                                                                                 }
 
@@ -8849,11 +10454,7 @@ function SpecialModePage() {
                                                                             const getHalfStyleRight = (rightScore, leftScore) => {
                                                                                 if (rightScore === leftScore) {
                                                                                     return {
-                                                                                        opacity: 1,
-                                                                                        textShadow: `
-                                                                                                0 0 3px ${rightColor},
-                                                                                                0 0 6px ${rightColor}55
-                                                                                        `,
+                                                                                        opacity: 1
                                                                                     };
                                                                                 }
 
@@ -8868,6 +10469,20 @@ function SpecialModePage() {
                                                                                             : "none",
                                                                                 };
                                                                             };
+
+                                                                            const erLeftStyle = hasExtendedRounds
+                                                                                ? getHalfStyleLeft(
+                                                                                    extendedRoundLeftScore,
+                                                                                    extendedRoundRightScore
+                                                                                )
+                                                                                : null;
+
+                                                                            const erRightStyle = hasExtendedRounds
+                                                                                ? getHalfStyleRight(
+                                                                                    extendedRoundRightScore,
+                                                                                    extendedRoundLeftScore
+                                                                                )
+                                                                                : null;
 
                                                                             const firstHalfLeftStyle = getHalfStyleLeft(
                                                                                 firstHalfLeft,
@@ -8896,6 +10511,43 @@ function SpecialModePage() {
                                                                             const otRightStyle = hasOvertime
                                                                                 ? getHalfStyleRight(otRight, otLeft)
                                                                                 : null;
+
+                                                                            const completedSuddenDeathPairs = Math.min(
+                                                                                Math.max(0, leftAttempts - 5),
+                                                                                Math.max(0, rightAttempts - 5)
+                                                                            );
+
+                                                                            const totalAttempts = Math.min(leftAttempts, rightAttempts);
+
+                                                                            const hasUnequalAttempts = leftAttempts !== rightAttempts;
+
+                                                                            const leaderTeam =
+                                                                                leftAttempts > rightAttempts
+                                                                                    ? modalPlayedLeft
+                                                                                    : modalPlayedRight;
+
+                                                                            const leaderAttempts = Math.max(leftAttempts, rightAttempts);
+                                                                            
+                                                                            const modalAttemptsToDisplay =
+                                                                                PENALTY_DISPLAY_CIRCLES + completedSuddenDeathPairs;
+
+                                                                            const pensLeftStyle = extendedRounds?.penalties
+                                                                                ? getHalfStyleLeft(extendedRounds?.penalties.leftScore, extendedRounds?.penalties.rightScore)
+                                                                                : null;
+
+                                                                            const pensRightStyle = extendedRounds?.penalties
+                                                                                ? getHalfStyleRight(extendedRounds?.penalties.rightScore, extendedRounds?.penalties.leftScore)
+                                                                                : null;
+
+                                                                            const pensLeftWon =
+                                                                                extendedRounds?.penalties &&
+                                                                                extendedRounds.penalties.leftScore >
+                                                                                extendedRounds.penalties.rightScore;
+
+                                                                            const pensRightWon =
+                                                                                extendedRounds?.penalties &&
+                                                                                extendedRounds.penalties.rightScore >
+                                                                                extendedRounds.penalties.leftScore;
 
                                                                             return (
                                                                                 <li
@@ -8980,6 +10632,40 @@ function SpecialModePage() {
                                                                                                     }}
                                                                                                 >
                                                                                                     {otLeft}
+                                                                                                </span>
+                                                                                            )}
+
+                                                                                            {hasExtendedRounds && (
+                                                                                                <div className={css.dashed_divider} style={{ zIndex: 3, width: "200%", marginTop: "2px", marginBottom: "2px", opacity: 0 }} />
+                                                                                            )}
+
+                                                                                            {hasExtendedRounds && (
+                                                                                                <span
+                                                                                                    className={css.info_text}
+                                                                                                    style={{
+                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                                        color: leftColor,
+                                                                                                        opacity: erLeftStyle.opacity,
+                                                                                                        textShadow: erLeftStyle.textShadow,
+                                                                                                        height: isBo1Modal ? "17px" : "16px",
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {extendedRoundLeftScore}
+                                                                                                </span>
+                                                                                            )}
+
+                                                                                            {extendedRounds?.penalties && (
+                                                                                                <span
+                                                                                                    className={css.info_text}
+                                                                                                    style={{
+                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                                        color: leftColor,
+                                                                                                        opacity: pensLeftStyle.opacity,
+                                                                                                        textShadow: pensLeftStyle.textShadow,
+                                                                                                        height: isBo1Modal ? "17px" : "16px"
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {extendedRounds.penalties.leftScore}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
@@ -9082,7 +10768,7 @@ function SpecialModePage() {
                                                                                                         style={{
                                                                                                             position: "absolute",
                                                                                                             right: "107%",
-                                                                                                            top: showLeftCheck ? "1px" : "4px",
+                                                                                                            top: showLeftCheck ? "1px" : "2.5px",
                                                                                                         }}
                                                                                                     >
                                                                                                         {showLeftCheck ? (
@@ -9091,7 +10777,43 @@ function SpecialModePage() {
                                                                                                                 color="#50ff50"
                                                                                                             />
                                                                                                         ) : showLeftInfo ? (
-                                                                                                            <InfoIcon labels={leftOtLabels} />
+                                                                                                            <InfoIcon
+                                                                                                                title={`Extended OT Round${leftOtLabels.length === 1 ? "" : "s"} taken in`}
+                                                                                                            >
+                                                                                                                {(() => {
+                                                                                                                    const rows = [];
+
+                                                                                                                    for (let i = 0; i < leftOtLabels.length; i += 5) {
+                                                                                                                        rows.push(leftOtLabels.slice(i, i + 5));
+                                                                                                                    }
+
+                                                                                                                    return rows.map((row, rowIndex) => (
+                                                                                                                        <React.Fragment key={rowIndex}>
+                                                                                                                            {rowIndex > 0 && <br />}
+                                                                                                                            {row.map((label, index) => {
+                                                                                                                                const lastRow = rowIndex === rows.length - 1;
+                                                                                                                                const last = lastRow && index === row.length - 1;
+                                                                                                                                const secondLast = lastRow && index === row.length - 2;
+
+                                                                                                                                return (
+                                                                                                                                    <React.Fragment key={index}>
+                                                                                                                                        {index > 0 && !last && ", "}
+                                                                                                                                        <span style={{ fontWeight: 600 }}>
+                                                                                                                                            {label}
+                                                                                                                                        </span>
+                                                                                                                                        {secondLast && (
+                                                                                                                                            <span style={{ fontWeight: 500 }}>
+                                                                                                                                                {" "}
+                                                                                                                                                and{" "}
+                                                                                                                                            </span>
+                                                                                                                                        )}
+                                                                                                                                    </React.Fragment>
+                                                                                                                                );
+                                                                                                                            })}
+                                                                                                                        </React.Fragment>
+                                                                                                                    ));
+                                                                                                                })()}
+                                                                                                            </InfoIcon>
                                                                                                         ) : null}
                                                                                                     </span>
 
@@ -9103,7 +10825,7 @@ function SpecialModePage() {
                                                                                                         style={{
                                                                                                             position: "absolute",
                                                                                                             left: "107%",
-                                                                                                            top: showRightCheck ? "1px" : "4px",
+                                                                                                            top: showRightCheck ? "1px" : "2.5px",
                                                                                                         }}
                                                                                                     >
                                                                                                         {showRightCheck ? (
@@ -9112,9 +10834,231 @@ function SpecialModePage() {
                                                                                                                 color="#50ff50"
                                                                                                             />
                                                                                                         ) : showRightInfo ? (
-                                                                                                            <InfoIcon labels={rightOtLabels} />
+                                                                                                            <InfoIcon
+                                                                                                                title={`Extended OT Round${rightOtLabels.length === 1 ? "" : "s"} taken in`}
+                                                                                                            >
+                                                                                                                {(() => {
+                                                                                                                    const rows = [];
+
+                                                                                                                    for (let i = 0; i < rightOtLabels.length; i += 5) {
+                                                                                                                        rows.push(rightOtLabels.slice(i, i + 5));
+                                                                                                                    }
+
+                                                                                                                    return rows.map((row, rowIndex) => (
+                                                                                                                        <React.Fragment key={rowIndex}>
+                                                                                                                            {rowIndex > 0 && <br />}
+                                                                                                                            {row.map((label, index) => {
+                                                                                                                                const lastRow = rowIndex === rows.length - 1;
+                                                                                                                                const last = lastRow && index === row.length - 1;
+                                                                                                                                const secondLast = lastRow && index === row.length - 2;
+
+                                                                                                                                return (
+                                                                                                                                    <React.Fragment key={index}>
+                                                                                                                                        {index > 0 && !last && ", "}
+                                                                                                                                        <span style={{ fontWeight: 600 }}>
+                                                                                                                                            {label}
+                                                                                                                                        </span>
+                                                                                                                                        {secondLast && (
+                                                                                                                                            <span style={{ fontWeight: 500 }}>
+                                                                                                                                                {" "}
+                                                                                                                                                and{" "}
+                                                                                                                                            </span>
+                                                                                                                                        )}
+                                                                                                                                    </React.Fragment>
+                                                                                                                                );
+                                                                                                                            })}
+                                                                                                                        </React.Fragment>
+                                                                                                                    ));
+                                                                                                                })()}
+                                                                                                            </InfoIcon>
                                                                                                         ) : null}
                                                                                                     </span>
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {hasExtendedRounds && (
+                                                                                                <div className={css.dashed_divider} style={{ zIndex: 3, width: "380%", marginTop: "2px", marginBottom: "2px", borderTop: "2px dashed #999" }} />
+                                                                                            )}
+                                                                                            {hasExtendedRounds && (
+                                                                                                <div
+                                                                                                    style={{
+                                                                                                        display: "flex",
+                                                                                                        alignItems: "center",
+                                                                                                        gap: 4,
+                                                                                                        position: "relative",
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <span className={css.info_text}>
+                                                                                                        Extended Rounds
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {extendedRounds?.penalties && (
+                                                                                                <div style={{ position: "relative" }}>
+                                                                                                    {pensLeftWon && (
+                                                                                                        <span
+                                                                                                            style={{
+                                                                                                                position: "absolute",
+                                                                                                                right: "107%",
+                                                                                                                top: "2.5px",
+                                                                                                            }}
+                                                                                                        >
+                                                                                                            <InfoIcon
+                                                                                                                title={
+                                                                                                                    hasUnequalAttempts ? (
+                                                                                                                        <>
+                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams,
+                                                                                                                            <br />
+                                                                                                                            <strong>{leaderAttempts}</strong> taken by{" "}
+                                                                                                                            <span
+                                                                                                                                style={{
+                                                                                                                                    color: leaderTeam.color,
+                                                                                                                                    fontWeight: 700,
+                                                                                                                                }}
+                                                                                                                            >
+                                                                                                                                Team {leaderTeam.name}
+                                                                                                                            </span>
+                                                                                                                        </>
+                                                                                                                    ) : (
+                                                                                                                        <>
+                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams
+                                                                                                                        </>
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                trigger="hover"
+                                                                                                            >
+                                                                                                                <div
+                                                                                                                    style={{
+                                                                                                                        display: "flex",
+                                                                                                                        flexDirection: "column",
+                                                                                                                        alignItems: "start",
+                                                                                                                        gap: 6,
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    <div>
+                                                                                                                        <span
+                                                                                                                            style={{
+                                                                                                                                color: modalPlayedLeft.color,
+                                                                                                                                fontWeight: 800,
+                                                                                                                                marginBottom: 4,
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            {modalPlayedLeft.name}
+                                                                                                                        </span>
+                                                                                                                        <PenaltyCircles
+                                                                                                                            compact
+                                                                                                                            resolved
+                                                                                                                            team="right"
+                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                            results={extendedRounds.penalties.leftResults}
+                                                                                                                        />
+                                                                                                                    </div>
+
+                                                                                                                    <div>
+                                                                                                                        <span
+                                                                                                                            style={{
+                                                                                                                                color: modalPlayedRight.color,
+                                                                                                                                fontWeight: 800
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            {modalPlayedRight.name}
+                                                                                                                        </span>
+                                                                                                                        <PenaltyCircles
+                                                                                                                            compact
+                                                                                                                            resolved
+                                                                                                                            team="right"
+                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                            results={extendedRounds.penalties.rightResults}
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </InfoIcon>
+                                                                                                        </span>
+                                                                                                    )}
+
+                                                                                                    <span style={{ marginTop: !isBo1Modal ? "1px" : "0px", display: "inline-block" }} className={css.info_text}>
+                                                                                                        Penalties
+                                                                                                    </span>
+
+                                                                                                    {pensRightWon && (
+                                                                                                        <span
+                                                                                                            style={{
+                                                                                                                position: "absolute",
+                                                                                                                left: "107%",
+                                                                                                                top: "2.5px",
+                                                                                                            }}
+                                                                                                        >
+                                                                                                            <InfoIcon
+                                                                                                                title={
+                                                                                                                    hasUnequalAttempts ? (
+                                                                                                                        <>
+                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams,
+                                                                                                                            <br />
+                                                                                                                            <strong>{leaderAttempts}</strong> taken by{" "}
+                                                                                                                            <span
+                                                                                                                                style={{
+                                                                                                                                    color: leaderTeam.color,
+                                                                                                                                    fontWeight: 700,
+                                                                                                                                }}
+                                                                                                                            >
+                                                                                                                                Team {leaderTeam.name}
+                                                                                                                            </span>
+                                                                                                                        </>
+                                                                                                                    ) : (
+                                                                                                                        <>
+                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams
+                                                                                                                        </>
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                trigger="hover"
+                                                                                                            >
+                                                                                                                <div
+                                                                                                                    style={{
+                                                                                                                        display: "flex",
+                                                                                                                        flexDirection: "column",
+                                                                                                                        alignItems: "start",
+                                                                                                                        gap: 6,
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    <div>
+                                                                                                                        <span
+                                                                                                                            style={{
+                                                                                                                                color: modalPlayedLeft.color,
+                                                                                                                                fontWeight: 800
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            {modalPlayedLeft.name}
+                                                                                                                        </span>
+                                                                                                                        <PenaltyCircles
+                                                                                                                            compact
+                                                                                                                            resolved
+                                                                                                                            team="right"
+                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                            results={extendedRounds.penalties.leftResults}
+                                                                                                                        />
+                                                                                                                    </div>
+
+                                                                                                                    <div>
+                                                                                                                        <span
+                                                                                                                            style={{
+                                                                                                                                color: modalPlayedRight.color,
+                                                                                                                                fontWeight: 800,
+                                                                                                                                marginBottom: 4,
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            {modalPlayedRight.name}
+                                                                                                                        </span>
+                                                                                                                        <PenaltyCircles
+                                                                                                                            compact
+                                                                                                                            resolved
+                                                                                                                            team="right"
+                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                            results={extendedRounds.penalties.rightResults}
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </InfoIcon>
+                                                                                                        </span>
+                                                                                                    )}
                                                                                                 </div>
                                                                                             )}
                                                                                         </div>
@@ -9190,6 +11134,40 @@ function SpecialModePage() {
                                                                                                     }}
                                                                                                 >
                                                                                                     {otRight}
+                                                                                                </span>
+                                                                                            )}
+
+                                                                                            {hasExtendedRounds && (
+                                                                                                <div className={css.dashed_divider} style={{ zIndex: 3, width: "200%", marginTop: "2px", marginBottom: "2px", opacity: 0 }} />
+                                                                                            )}
+
+                                                                                            {hasExtendedRounds && (
+                                                                                                <span
+                                                                                                    className={css.info_text}
+                                                                                                    style={{
+                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                                        color: rightColor,
+                                                                                                        opacity: erRightStyle.opacity,
+                                                                                                        textShadow: erRightStyle.textShadow,
+                                                                                                        height: isBo1Modal ? "17px" : "16px",
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {extendedRoundRightScore}
+                                                                                                </span>
+                                                                                            )}
+
+                                                                                            {extendedRounds?.penalties && (
+                                                                                                <span
+                                                                                                    className={css.info_text}
+                                                                                                    style={{
+                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                                        color: rightColor,
+                                                                                                        opacity: pensRightStyle.opacity,
+                                                                                                        textShadow: pensRightStyle.textShadow,
+                                                                                                        height: isBo1Modal ? "17px" : "16px"
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {extendedRounds.penalties.rightScore}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
