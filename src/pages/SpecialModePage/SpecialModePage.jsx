@@ -7873,6 +7873,7 @@ function SpecialModePage() {
                                     textAlign: "center",
                                     fontSize: "14px",
                                     marginBottom: "12px",
+                                    userSelect: "none"
                                 }}
                             >
                                 First to {overtimeToWin}
@@ -7888,6 +7889,7 @@ function SpecialModePage() {
                                     textAlign: "center",
                                     fontSize: "20px",
                                     marginTop: "-20px",
+                                    userSelect: "none"
                                 }}
                             >
                                 {getOvertimeLabel(overtimeBlock === 0 ? 1 : overtimeBlock)}
@@ -7912,6 +7914,7 @@ function SpecialModePage() {
                                     textAlign: "center",
                                     fontSize: "14px",
                                     marginBottom: "12px",
+                                    userSelect: "none"
                                 }}
                             >
                                 {seriesState.tiebreakerPhase === "penalties" && !banner
@@ -7928,6 +7931,7 @@ function SpecialModePage() {
                                     textAlign: "center",
                                     fontSize: "20px",
                                     marginTop: "-20px",
+                                    userSelect: "none"
                                 }}
                             >
                                 {inSuddenDeath && !banner && (
@@ -7940,7 +7944,8 @@ function SpecialModePage() {
                                         style={{
                                             textAlign: "center",
                                             marginBottom: "12px",
-                                            color: "rgb(152, 51, 51)"
+                                            color: "rgb(152, 51, 51)",
+                                            userSelect: "none"
                                         }}
                                     >
                                         Sudden Death!!! <span style={{ color: "#2e2f42" }}>|</span>{" "}
