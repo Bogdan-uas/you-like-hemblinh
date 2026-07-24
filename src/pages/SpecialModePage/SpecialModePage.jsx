@@ -5814,7 +5814,7 @@ function SpecialModePage() {
                             className={css.round_text}
                             style={{
                                 position: "absolute",
-                                left: "-20px",
+                                left: "-35px",
                                 marginBottom: "-2px",
                                 fontSize: "24px",
                                 transition: 'none'
