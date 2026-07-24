@@ -1256,15 +1256,9 @@ const MatchRect = ({
     const rawRightScore =
         bo1MainScore?.right ?? match.scoreRight;
 
-    const displayScoreLeft =
-        shouldSwap ? rawRightScore : rawLeftScore;
-
-    const displayScoreRight =
-        shouldSwap ? rawLeftScore : rawRightScore;
-
     const bo1Tiebreak = (() => {
         if (!bo1History?.extendedRounds) return null;
-        if (displayScoreLeft !== displayScoreRight) return null;
+        if (rawLeftScore !== rawRightScore) return null;
 
         if (bo1History.extendedRounds.penalties) {
             return {
@@ -1294,10 +1288,10 @@ const MatchRect = ({
     })();
 
     const hasScores =
-        displayScoreLeft !== null &&
-        displayScoreLeft !== undefined &&
-        displayScoreRight !== null &&
-        displayScoreRight !== undefined;
+        rawLeftScore !== null &&
+        rawLeftScore !== undefined &&
+        rawRightScore !== null &&
+        rawRightScore !== undefined;
 
     const isUserWin =
         isPlayed &&
@@ -1333,7 +1327,7 @@ const MatchRect = ({
     const isRightLoser =
         isPlayed && match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
     
-    const isATie = displayScoreLeft === displayScoreRight;
+    const isATie = rawLeftScore === rawRightScore;
 
     return (
         <div
@@ -1408,7 +1402,7 @@ const MatchRect = ({
                                             : css.swissLoserScoreShadow
                                 }
                             >
-                                {displayScoreLeft}
+                                {rawLeftScore}
                             </span>
                             <div
                                 style={{
@@ -1447,7 +1441,7 @@ const MatchRect = ({
                                             : css.swissLoserScoreShadow
                                 }
                             >
-                                {displayScoreRight}
+                                {rawRightScore}
                             </span>
                         </div>
                         {bo1Tiebreak && (
