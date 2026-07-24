@@ -1447,7 +1447,7 @@ const MatchRect = ({
                                             : css.swissLoserScoreShadow
                                 }
                             >
-                                {bestOf === 1 ? rawRightScore : displayScoreLeft}
+                                {bestOf === 1 ? rawRightScore : displayScoreRight}
                             </span>
                         </div>
                         {bo1Tiebreak && (
