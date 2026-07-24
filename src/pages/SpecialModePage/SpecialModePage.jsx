@@ -9582,7 +9582,7 @@ function SpecialModePage() {
                                                 style={{
                                                     position: "absolute",
                                                     top: "25%",
-                                                    right: stats === leftStats ? "78%" : "auto",
+                                                    right: stats === leftStats ? "85%" : "auto",
                                                     left: stats === rightStats ? "84%" : "auto",
                                                 }}
                                             >
@@ -9897,7 +9897,7 @@ function SpecialModePage() {
                                                         zIndex: 2,
                                                         transition: "opacity 0.3s ease",
                                                         ...(side === "left"
-                                                            ? { right: "88.5%" }
+                                                            ? { right: "90.5%" }
                                                             : { left: "90.5%" }),
                                                     }}
                                                 >
