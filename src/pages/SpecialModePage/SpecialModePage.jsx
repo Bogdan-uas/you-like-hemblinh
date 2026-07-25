@@ -9702,8 +9702,9 @@ function SpecialModePage() {
                                                                         : hoveredTeamId === modalLeftTeam?.id
                                                                             ? "0 0 4px #0d6aff"
                                                                             : "0 0 4px #000",
+                                                                top: '12%'
                                                             }}
-                                                            className={css.modal_team_placing}
+                                                            className={css.finished_modal_team_placing}
                                                         >
                                                             {rankLeftSticker()}
                                                         </span>
@@ -9759,13 +9760,14 @@ function SpecialModePage() {
                                                         />
 
                                                         <span
-                                                            className={css.modal_team_placing}
+                                                            className={css.finished_modal_team_placing}
                                                             style={{
                                                                 color: "#ffffff",
                                                                 textShadow:
                                                                     hoveredTeamId === modalRightTeam?.id
                                                                         ? "0 0 4px #0d6aff"
                                                                         : "0 0 4px #000",
+                                                                top: '12%',
                                                             }}
                                                         >
                                                             {rankRightSticker()}
@@ -9999,7 +10001,7 @@ function SpecialModePage() {
 
                                                                     return (
                                                                         <>
-                                                                            <span style={{ top: '-60px', zIndex: 3, width: 'max-content' }} className={css.finished_modal_team_placing}>
+                                                                            <span style={{ top: '-60px', right: "-6px", zIndex: 3, width: 'max-content' }} className={css.finished_modal_team_placing}>
                                                                                 {deltaPlaces !== 0 && (
                                                                                     <span
                                                                                         style={{
