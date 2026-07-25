@@ -765,16 +765,16 @@
         1px -1px #d8d8d8,
         -1px 1px #d8d8d8,
         -1px -1px #d8d8d8,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a,
-        0 2px #5a5a5a,
-        0 -2px #5a5a5a,
-        2px 2px #5a5a5a,
-        2px -2px #5a5a5a,
-        -2px 2px #5a5a5a,
-        -2px -2px #5a5a5a,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a;
+        1.5px 0 #5a5a5a,
+        -1.5px 0 #5a5a5a,
+        0 1.5px #5a5a5a,
+        0 -1.5px #5a5a5a,
+        1.5px 1.5px #5a5a5a,
+        1.5px -1.5px #5a5a5a,
+        -1.5px 1.5px #5a5a5a,
+        -1.5px -1.5px #5a5a5a,
+        1.5px 0 #5a5a5a,
+        -1.5px 0 #5a5a5a;
 }
 
 .vs_text .match_rect:hover,
