@@ -21,6 +21,9 @@ const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 
 const ROUND12_TOAST_ID = "round12-warning";
+const SECRET_TOAST_ID = "secret-toast";
+const SECRET_NUM_TWO_TOAST_ID = "secret-toast-num-two";
+const SECRET_NUM_THREE_TOAST_ID = "secret-toast-num-three";
 
 const BASE_MAX_ROUNDS = 24;
 const BASE_ROUNDS_TO_WIN = 13;
@@ -3071,8 +3074,11 @@ function SpecialModePage() {
             if (next === 1) {
                 setMultiplierMin(MULTIPLIER_MAX);
                 setMultiplierMax(MULTIPLIER_MAX);
-                toast.dismiss();
+                toast.dismiss(SECRET_TOAST_ID);
+                toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
+                toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
                 toast("Don't tell anyone about this!!!", {
+                    id: SECRET_TOAST_ID,
                     duration: 2000,
                     icon: "🤫",
                 });
@@ -3081,8 +3087,11 @@ function SpecialModePage() {
             if (next === 2) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MIN);
-                toast.dismiss();
+                toast.dismiss(SECRET_TOAST_ID);
+                toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
+                toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
                 toast("Even the odds...", {
+                    id: SECRET_NUM_TWO_TOAST_ID,
                     duration: 2000,
                     icon: "😈",
                 });
@@ -3091,8 +3100,11 @@ function SpecialModePage() {
             if (next === 0) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MAX);
-                toast.dismiss();
+                toast.dismiss(SECRET_TOAST_ID);
+                toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
+                toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
                 toast("Secret mode disabled", {
+                    id: SECRET_NUM_THREE_TOAST_ID,
                     duration: 2000,
                     icon: "🔓",
                 });
