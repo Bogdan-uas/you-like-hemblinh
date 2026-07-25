@@ -3040,6 +3040,30 @@ function SpecialModePage() {
         return null;
     }, [playoffs, currentPlayablePlayoffsMatch]);
 
+    const revealedExtendedRounds =
+        buildExtendedRoundWinnerList(seriesState.extendedRounds)
+            .slice(0, seriesState.extRoundRevealIndex);
+
+    const getExtendedRoundsScore = (extendedRounds) => {
+        let left = 0;
+        let right = 0;
+
+        const addWinner = (winner) => {
+            if (!winner) return;
+            if (winner === "left") left++;
+            else right++;
+        };
+
+        addWinner(extendedRounds.firstHalf);
+        addWinner(extendedRounds.secondHalf);
+
+        for (const ot of extendedRounds.overtimes) {
+            addWinner(ot.winner);
+        }
+
+        return { left, right };
+    };
+
     const toggleSecretGuaranteedWin = () => {
         setCheatMode((prev) => {
             const next = (prev + 1) % 3;
@@ -3052,7 +3076,7 @@ function SpecialModePage() {
                     icon: "🤫",
                 });
             }
-
+        
             if (next === 2) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MIN);
@@ -3072,6 +3096,18 @@ function SpecialModePage() {
             }
 
             return next;
+        });
+    };
+
+    const handleSecretButtonContextMenu = (e) => {
+        e.preventDefault();
+
+        const { left, right } = getExtendedRoundsScore(seriesState.extendedRounds);
+
+        toast(`Extended Rounds: ${left}-${right}`, {
+            id: "extended-rounds-score",
+            icon: "📊",
+            duration: 2500,
         });
     };
 
@@ -3135,10 +3171,6 @@ function SpecialModePage() {
     const getOvertimeShortLabel = (overtimeCount) => {
         return `${overtimeCount}x OT`;
     };
-
-    const revealedExtendedRounds = buildExtendedRoundWinnerList(
-        seriesState.extendedRounds
-    ).slice(0, seriesState.extRoundRevealIndex);
 
     const handlePenaltyShot = () => {
         if (!seriesState.active || seriesState.banner) return;
@@ -6459,6 +6491,7 @@ function SpecialModePage() {
                     <button
                         type="button"
                         onClick={toggleSecretGuaranteedWin}
+                        onContextMenu={handleSecretButtonContextMenu}
                         className={css.gamble_button}
                         style={{
                             position: "absolute",
