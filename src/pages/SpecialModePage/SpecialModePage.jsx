@@ -3071,6 +3071,7 @@ function SpecialModePage() {
             if (next === 1) {
                 setMultiplierMin(MULTIPLIER_MAX);
                 setMultiplierMax(MULTIPLIER_MAX);
+                toast.dismiss();
                 toast("Don't tell anyone about this!!!", {
                     duration: 2000,
                     icon: "🤫",
@@ -3080,6 +3081,7 @@ function SpecialModePage() {
             if (next === 2) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MIN);
+                toast.dismiss();
                 toast("Even the odds...", {
                     duration: 2000,
                     icon: "😈",
@@ -3089,6 +3091,7 @@ function SpecialModePage() {
             if (next === 0) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MAX);
+                toast.dismiss();
                 toast("Secret mode disabled", {
                     duration: 2000,
                     icon: "🔓",
@@ -3301,6 +3304,7 @@ function SpecialModePage() {
                 const seriesOver = newWon >= prev.setsToWin || newLost >= prev.setsToWin;
 
                 if (seriesOver) {
+                    toast.dismiss();
                     toast(<span>{renderTeamLabel(winnerTeam, true)}</span>, {
                         icon: "🎉",
                         duration: 4000,
@@ -3320,6 +3324,7 @@ function SpecialModePage() {
                         penaltyResolved: true,
                     };
                 } else {
+                    toast.dismiss();
                     toast(
                         <span>
                             Set {newWon + newLost} has been won on penalties by{" "}
@@ -3332,6 +3337,7 @@ function SpecialModePage() {
                         setSeriesState((s) => {
                             if (!s.active || s.banner) return s;
                             setIsLocked(false);
+                            toast.dismiss();
                             toast("First Half is beginning", { icon: "🏁", duration: 3000 });
                             return {
                                 ...s,
@@ -3543,6 +3549,7 @@ function SpecialModePage() {
                     if (seriesOver) {
                         const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
 
+                        toast.dismiss();
                         toast(
                             <span>
                                 {renderTeamLabel(winner, true)}
@@ -3561,6 +3568,7 @@ function SpecialModePage() {
                             color: winner.color,
                         };
                     } else {
+                        toast.dismiss();
                         toast(
                             <span>
                                 Set {playerWonSets + playerLostSets} has been won in {getOvertimeLabel(overtimeBlock)} by{" "}
@@ -3574,6 +3582,7 @@ function SpecialModePage() {
                             setSeriesState((curr) => {
                                 if (!curr.active || curr.banner) return curr;
                                 setIsLocked(false);
+                                toast.dismiss();
                                 toast("First Half begins", {
                                     icon: "🏁",
                                     duration: 3000,
@@ -3635,6 +3644,7 @@ function SpecialModePage() {
 
                 if (otTiedBlock) {
                     if (overtimeBlock >= OT_MAX_BLOCK) {
+                        toast.dismiss();
                         toast(
                             "It's tied again, so another tiebreaker should be utilized...",
                             { icon: "🧮", duration: 4000 }
@@ -3795,6 +3805,7 @@ function SpecialModePage() {
             roundNumber += 1;
 
             if (roundNumber === 1) {
+                toast.dismiss();
                 toast("First Half begins", {
                     icon: "🏁",
                     duration: 3000,
@@ -3802,6 +3813,7 @@ function SpecialModePage() {
             }
 
             if (roundNumber === 12) {
+                toast.dismiss();
                 toast("Last Round of the First Half", {
                     id: ROUND12_TOAST_ID,
                     icon: "❗",
@@ -3842,6 +3854,7 @@ function SpecialModePage() {
             );
 
             if (roundWins === 12 && roundLosses === 12) {
+                toast.dismiss();
                 toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
                     icon: "⚔️",
                     duration: 4000,
@@ -3912,6 +3925,7 @@ function SpecialModePage() {
                 if (seriesOver) {
                     const winner = playerWonSets > playerLostSets ? prev.leftTeam : prev.rightTeam;
 
+                    toast.dismiss();
                     toast(
                         <span>
                             {renderTeamLabel(winner, true)}
@@ -3930,6 +3944,7 @@ function SpecialModePage() {
                         color: winner.color,
                     };
                 } else {
+                    toast.dismiss();
                     toast(
                         <span>
                             Set {playerWonSets + playerLostSets} has been won by{" "}
@@ -3943,6 +3958,7 @@ function SpecialModePage() {
                         setSeriesState((curr) => {
                             if (!curr.active || curr.banner) return curr;
                             setIsLocked(false);
+                            toast.dismiss();
                             toast("First Half is beginning", {
                                 icon: "🏁",
                                 duration: 3000,
@@ -4340,6 +4356,7 @@ function SpecialModePage() {
 
                     if (seriesOver) {
                         const winner = playerWonSet ? curr.leftTeam : curr.rightTeam;
+                        toast.dismiss();
                         toast(<span>{renderTeamLabel(winner, true)}</span>, {
                             icon: "🎉",
                             duration: 4000,
