@@ -5100,7 +5100,7 @@ function SpecialModePage() {
                     <SwissResultBox title="2:3" tone="red" teams={e23} />
                 </div>
 
-                <div style={{ display: "flex", gap: 60, alignItems: "center", paddingRight: 250 }}>
+                <div style={{ display: "flex", gap: 60, alignItems: "center", paddingRight: 250, transition: "none" }}>
                     {renderSwissColumn(stageObj, ["0:0"])}
                     {renderSwissColumn(stageObj, ["1:0", "0:1"])}
                     {renderSwissColumn(stageObj, ["2:0", "1:1", "0:2"])}
@@ -5842,7 +5842,7 @@ function SpecialModePage() {
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 40 }}
-                            transition={{ duration: 0.4 }}
+                            transition={{ duration: 0.6 }}
                             className={css.round_text}
                             style={{
                                 position: "absolute",
@@ -5858,7 +5858,7 @@ function SpecialModePage() {
                             initial={{ opacity: 0, y: -40 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -40 }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.6 }}
                             className={css.round_text}
                             style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "44.55%", transition: 'none' }}
                         >
@@ -5869,7 +5869,7 @@ function SpecialModePage() {
                             initial={{ opacity: 0, x: -40 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -40 }}
-                            transition={{ duration: 0.4 }}
+                            transition={{ duration: 0.6 }}
                             className={css.round_text}
                             style={{
                                 fontSize: "24px",
@@ -6436,7 +6436,9 @@ function SpecialModePage() {
         isBo1Modal
     );
 
-    const playedSets = (modalScoreLeft ?? 0) + (modalScoreRight ?? 0);
+    const playedSets = isBo1Modal
+        ? 1
+        : (modalScoreLeft ?? 0) + (modalScoreRight ?? 0);
 
     const leftAttempts = seriesState.penaltyLeftResults.length;
     const rightAttempts = seriesState.penaltyRightResults.length;
@@ -8745,6 +8747,18 @@ function SpecialModePage() {
         );
     };
 
+    const modalIndicatorTop = {
+        1: "-5%",
+        2: "-3.6%",
+        3: "-3.3%",
+        4: "-2.6%",
+        5: "-2.4%",
+        6: "-2.1%",
+        7: "-1.8%",
+        8: "-1.7%",
+        9: "-1.45%",
+    };
+
     return (
         <>
             <Header
@@ -8764,7 +8778,7 @@ function SpecialModePage() {
                 hasAnyPlacings={hasAnyPlacings}
             />
 
-            <div className={css.page_container}>
+            <div className={css.page_container} style={{ transition: "none" }}>
                 {showIntro ? (
                     <>
                         <div className={css.header_row}>
@@ -9364,15 +9378,22 @@ function SpecialModePage() {
                                 didUserWin ? (
                                     <div
                                         className={css.modalSuccessPickemIndicator}
-                                        style={
-                                            playedSets === 9 ? { top: '-1.6%', left: '-3%' } : { top: '-2.5%', left: '-3.1%' }
-                                        }
+                                        style={{
+                                            top: modalIndicatorTop[playedSets] ?? "-2.5%",
+                                            left: playedSets === 9 ? "-3%" : "-3.1%",
+                                        }}
                                     >
                                         <FaCircle size={32} color="#37b737" />
                                         <FaCheck size={20} color="#ffffff" />
                                     </div>
                                 ) : (
-                                    <div className={css.modalSuccessPickemIndicator}>
+                                    <div
+                                            className={css.modalSuccessPickemIndicator}
+                                            style={{
+                                                top: modalIndicatorTop[playedSets] ?? "-2.5%",
+                                                left: playedSets === 9 ? "-3%" : "-3.1%",
+                                            }}
+                                    >
                                         <FaCircle size={32} color="#be3939" />
                                         <FaXmark size={20} color="#fff" />
                                     </div>
@@ -9726,7 +9747,36 @@ function SpecialModePage() {
                                                     </button>
                                                 </div>
 
-                                                <p style={{ position: "static", backgroundColor: "#fff", fontSize: "24px" }} className={css.vs_text}>VS</p>
+                                                <p
+                                                    className={css.vs_text}
+                                                    style={{
+                                                        position: "static",
+                                                        backgroundColor: "#fff",
+                                                        fontSize: "24px",
+                                                        textShadow: `
+                                                            1px 0 #d8d8d8,
+                                                            -1px 0 #d8d8d8,
+                                                            0 1px #d8d8d8,
+                                                            0 -1px #d8d8d8,
+                                                            1px 1px #d8d8d8,
+                                                            1px -1px #d8d8d8,
+                                                            -1px 1px #d8d8d8,
+                                                            -1px -1px #d8d8d8,
+                                                            1.5px 0 #5a5a5a,
+                                                            -1.5px 0 #5a5a5a,
+                                                            0 1.5px #5a5a5a,
+                                                            0 -1.5px #5a5a5a,
+                                                            1.5px 1.5px #5a5a5a,
+                                                            1.5px -1.5px #5a5a5a,
+                                                            -1.5px 1.5px #5a5a5a,
+                                                            -1.5px -1.5px #5a5a5a,
+                                                            1.5px 0 #5a5a5a,
+                                                            -1.5px 0 #5a5a5a
+                                                        `,
+                                                    }}
+                                                >
+                                                    VS
+                                                </p>
 
                                                 <div
                                                     onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
