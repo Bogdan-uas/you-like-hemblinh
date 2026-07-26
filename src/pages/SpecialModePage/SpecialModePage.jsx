@@ -5501,7 +5501,33 @@ function SpecialModePage() {
                             <div className={css.vs_row}>
                                 <div style={{ backgroundColor: isPlayed ? (isUserWin ? "#2e7d32" : "red") : "" }} className={css.divider} />
                                 {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                    <span className={css.vs_text}>VS</span>
+                                    <span
+                                        style={{
+                                            textShadow: `
+                                                1px 0 #d8d8d8,
+                                                -1px 0 #d8d8d8,
+                                                0 1px #d8d8d8,
+                                                0 -1px #d8d8d8,
+                                                1px 1px #d8d8d8,
+                                                1px -1px #d8d8d8,
+                                                -1px 1px #d8d8d8,
+                                                -1px -1px #d8d8d8,
+                                                2px 0 #5a5a5a,
+                                                -2px 0 #5a5a5a,
+                                                0 2px #5a5a5a,
+                                                0 -2px #5a5a5a,
+                                                2px 2px #5a5a5a,
+                                                2px -2px #5a5a5a,
+                                                -2px 2px #5a5a5a,
+                                                -2px -2px #5a5a5a,
+                                                2px 0 #5a5a5a,
+                                                -2px 0 #5a5a5a
+                                            `,
+                                        }}
+                                        className={css.vs_text}
+                                    >
+                                        VS
+                                    </span>
                                 ) : null}
                             </div>
 
@@ -9417,11 +9443,11 @@ function SpecialModePage() {
                                     </div>
                                 ) : (
                                     <div
-                                            className={css.modalSuccessPickemIndicator}
-                                            style={{
-                                                top: modalIndicatorTop[playedSets] ?? "-2.5%",
-                                                left: playedSets === 9 ? "-3%" : "-3.1%",
-                                            }}
+                                        className={css.modalSuccessPickemIndicator}
+                                        style={{
+                                            top: modalIndicatorTop[playedSets] ?? "-2.5%",
+                                            left: playedSets === 9 ? "-3%" : "-3.1%",
+                                        }}
                                     >
                                         <FaCircle size={32} color="#be3939" />
                                         <FaXmark size={20} color="#fff" />
