@@ -6684,7 +6684,7 @@ function SpecialModePage() {
                                             ) : null}
                                         </div>
                                     </div>
-                                    <div className={css.verticalLines} style={{ marginTop: "8px" }}>
+                                    <div className={css.verticalLines} style={{ marginTop: "6px" }}>
                                         {activePhase === "playoffs" && setsToWin === 5 ? (
                                             <>
                                                 {[...Array(5)].map((_, i) => (
@@ -6981,7 +6981,7 @@ function SpecialModePage() {
                                             ) : null}
                                         </div>
                                     </div>
-                                    <div className={css.verticalLossLines} style={{ marginTop: "8px" }}>
+                                    <div className={css.verticalLossLines} style={{ marginTop: "6px" }}>
                                         {activePhase === "playoffs" && setsToWin === 5 ? (
                                             <>
                                                 {[...Array(5)].map((_, i) => (
@@ -7371,7 +7371,7 @@ function SpecialModePage() {
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className={css.verticalLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : "" }}>
+                                <div className={css.verticalLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : "" }}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
@@ -7491,7 +7491,7 @@ function SpecialModePage() {
                                             right: '110%',
                                             zIndex: 9997,
                                             fontSize: '28px',
-                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : ""
+                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : ""
                                         }} className={css.team_name_left}>
                                         Team {seriesState.leftTeam?.name}
                                     </motion.span>
@@ -7828,7 +7828,7 @@ function SpecialModePage() {
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className={css.verticalLossLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : "" }}>
+                                <div className={css.verticalLossLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : "" }}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
@@ -7948,7 +7948,7 @@ function SpecialModePage() {
                                             left: '110%',
                                             zIndex: 9999,
                                             fontSize: '28px',
-                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : ""
+                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : ""
                                         }} className={css.team_name_right}>
                                         Team {seriesState.rightTeam?.name}
                                     </motion.span>
