@@ -7102,7 +7102,7 @@ function SpecialModePage() {
                                 >
                                     The winner of this set could not be determined even after Quadruple Overtime.
                                     Therefore, the system will compare every Extended Round winner.
-                                    There were six Extended Rounds in total: the 1st Half, the 2nd Half and four Overtimes, that's why 4+ Extended Round are required to win, 3 to tie again.
+                                    There were six Extended Rounds in total: the 1st Half, the 2nd Half and four Overtimes, that's why 4+ Extended Rounds are required to win, 3 to tie again.
                                     We'll reveal them one by one:
                                 </motion.p>
                             )}
