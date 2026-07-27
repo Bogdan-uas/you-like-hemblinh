@@ -1201,17 +1201,17 @@ const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingVa
 };
 
 const buildExtendedRoundWinnerList = (extendedRounds) => {
-        const overtimes = extendedRounds?.overtimes ?? [];
-        const findOt = (n) => overtimes.find((o) => o.overtime === n)?.winner ?? null;
-        return [
-            { label: "1st Half", winner: extendedRounds?.firstHalf ?? null },
-            { label: "2nd Half", winner: extendedRounds?.secondHalf ?? null },
-            { label: "OT", winner: findOt(1) },
-            { label: "Double OT", winner: findOt(2) },
-            { label: "Triple OT", winner: findOt(3) },
-            { label: "Quadruple OT", winner: findOt(4) },
-        ];
-    };
+    const overtimes = extendedRounds?.overtimes ?? [];
+    const findOt = (n) => overtimes.find((o) => o.overtime === n)?.winner ?? null;
+    return [
+        { label: "1st Half", winner: extendedRounds?.firstHalf ?? null },
+        { label: "2nd Half", winner: extendedRounds?.secondHalf ?? null },
+        { label: "OT", winner: findOt(1) },
+        { label: "Double OT", winner: findOt(2) },
+        { label: "Triple OT", winner: findOt(3) },
+        { label: "Quadruple OT", winner: findOt(4) },
+    ];
+};
 
 const MatchRect = ({
     match,
@@ -1335,7 +1335,7 @@ const MatchRect = ({
         isPlayed && match.loserTeamId && leftTeam && match.loserTeamId === leftTeam.id;
     const isRightLoser =
         isPlayed && match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
-    
+
     const isATie = displayScoreLeft === displayScoreRight;
 
     return (
@@ -3083,7 +3083,7 @@ function SpecialModePage() {
                     icon: "🤫",
                 });
             }
-        
+
             if (next === 2) {
                 setMultiplierMin(MULTIPLIER_MIN);
                 setMultiplierMax(MULTIPLIER_MIN);
@@ -3205,7 +3205,7 @@ function SpecialModePage() {
                 : turn === "left"
                     ? mult > 0
                     : mult < 0;
-            
+
             if (isNeutral) {
                 setIsCalculating(false);
 
@@ -7471,7 +7471,7 @@ function SpecialModePage() {
                                                     `
                                                     :
                                                     '',
-                                                    width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                             }}
                                             className={css.verticalLine}
                                         />
@@ -7946,7 +7946,7 @@ function SpecialModePage() {
                                             margin: '0',
                                             position: 'absolute',
                                             left: '110%',
-                                            zIndex: 9999,
+                                            zIndex: 9997,
                                             fontSize: '28px',
                                             marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : ""
                                         }} className={css.team_name_right}>
@@ -10684,7 +10684,7 @@ function SpecialModePage() {
                                                                                     : modalPlayedRight;
 
                                                                             const leaderAttempts = Math.max(leftAttempts, rightAttempts);
-                                                                            
+
                                                                             const modalAttemptsToDisplay =
                                                                                 PENALTY_DISPLAY_CIRCLES + completedSuddenDeathPairs;
 
