@@ -6684,7 +6684,7 @@ function SpecialModePage() {
                                             ) : null}
                                         </div>
                                     </div>
-                                    <div className={css.verticalLines}>
+                                    <div className={css.verticalLines} style={{ marginTop: "8px" }}>
                                         {activePhase === "playoffs" && setsToWin === 5 ? (
                                             <>
                                                 {[...Array(5)].map((_, i) => (
@@ -6981,7 +6981,7 @@ function SpecialModePage() {
                                             ) : null}
                                         </div>
                                     </div>
-                                    <div className={css.verticalLossLines}>
+                                    <div className={css.verticalLossLines} style={{ marginTop: "8px" }}>
                                         {activePhase === "playoffs" && setsToWin === 5 ? (
                                             <>
                                                 {[...Array(5)].map((_, i) => (
@@ -7371,7 +7371,7 @@ function SpecialModePage() {
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className={css.verticalLines}>
+                                <div className={css.verticalLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : "" }}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
@@ -7387,7 +7387,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7408,7 +7409,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7429,7 +7431,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7449,7 +7452,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7466,7 +7470,8 @@ function SpecialModePage() {
                                                         0 1px 3px rgba(0,0,0,0.4)
                                                     `
                                                     :
-                                                    ''
+                                                    '',
+                                                    width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                             }}
                                             className={css.verticalLine}
                                         />
@@ -7484,8 +7489,9 @@ function SpecialModePage() {
                                             margin: '0',
                                             position: 'absolute',
                                             right: '110%',
-                                            zIndex: 9999,
+                                            zIndex: 9997,
                                             fontSize: '28px',
+                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : ""
                                         }} className={css.team_name_left}>
                                         Team {seriesState.leftTeam?.name}
                                     </motion.span>
@@ -7822,7 +7828,7 @@ function SpecialModePage() {
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className={css.verticalLossLines}>
+                                <div className={css.verticalLossLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : "" }}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
@@ -7838,7 +7844,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7859,7 +7866,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7880,7 +7888,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7900,7 +7909,8 @@ function SpecialModePage() {
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
                                                             :
-                                                            ''
+                                                            '',
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                                     }}
                                                     className={css.verticalLine}
                                                 />
@@ -7917,7 +7927,8 @@ function SpecialModePage() {
                                                         0 1px 3px rgba(0,0,0,0.4)
                                                     `
                                                     :
-                                                    ''
+                                                    '',
+                                                width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
                                             }}
                                             className={css.verticalLine}
                                         />
@@ -7937,6 +7948,7 @@ function SpecialModePage() {
                                             left: '110%',
                                             zIndex: 9999,
                                             fontSize: '28px',
+                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "8px" : ""
                                         }} className={css.team_name_right}>
                                         Team {seriesState.rightTeam?.name}
                                     </motion.span>
