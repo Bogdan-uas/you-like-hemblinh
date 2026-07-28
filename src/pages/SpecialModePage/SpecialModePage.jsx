@@ -8826,6 +8826,12 @@ function SpecialModePage() {
         9: "-1.45%",
     };
 
+    const modalScale = {
+        7: 0.85,
+        8: 0.8,
+        9: 0.75,
+    };
+
     return (
         <>
             <Header
@@ -9440,7 +9446,12 @@ function SpecialModePage() {
                             }
                         }}
                     >
-                        <div style={{ position: "relative", transform: isPlayedModal && playedSets === 9 ? "scale(0.9)" : "scale(1)", }}>
+                        <div
+                            style={{
+                                position: "relative",
+                                transform: `scale(${modalScale[playedSets] ?? 1})`,
+                            }}
+                        >
                             {isPlayedModal && (
                                 didUserWin ? (
                                     <div
