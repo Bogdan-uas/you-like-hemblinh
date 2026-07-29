@@ -8097,7 +8097,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game?
+                            Are you sure you want to restart the game? You will not be able to revert it!
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -8381,7 +8381,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game?
+                            Are you sure you want to restart the game? You will not be able to revert it!
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -9003,7 +9003,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game?
+                            Are you sure you want to restart the game? You will not be able to revert it!
                         </p>
                         <div className={css.restart_buttons}>
                             <button
