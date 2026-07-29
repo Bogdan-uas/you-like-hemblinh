@@ -9475,6 +9475,7 @@ function SpecialModePage() {
                                 position: "relative",
                                 transform: `scale(${modalScale})`,
                                 transformOrigin: "center center",
+                                transition: "none"
                             }}
                         >
                             {isPlayedModal && (
