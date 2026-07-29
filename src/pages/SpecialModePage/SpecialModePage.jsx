@@ -109,6 +109,7 @@ const PenaltyCircles = ({
     attemptsToDisplay,
     resolved,
     compact = false,
+    shouldHaveMargin = true,
 }) => {
     const total = attemptsToDisplay;
 
@@ -117,7 +118,7 @@ const PenaltyCircles = ({
     const gap = compact ? 3 : 6;
     const suddenGap = compact ? 12 : 24;
     const borderWidth = compact ? 1 : 2;
-    const marginTop = compact ? 0 : 6;
+    const marginTop = compact || !shouldHaveMargin ? 0 : 6;
 
     return (
         <div
@@ -6871,7 +6872,7 @@ function SpecialModePage() {
                                         : seriesState.tiebreakerBigSymbol ? (
                                             <p
                                                 className={css.vs}
-                                                style={{ fontWeight: 700, fontSize: "32px", color: "#fff" }}
+                                                style={{ fontWeight: 700, fontSize: "32px", color: "#fff", marginBottom: activePhase === "playoffs" ? "-12px" : "0", }}
                                             >
                                                 {seriesState.tiebreakerBigSymbol}
                                             </p>
@@ -7344,6 +7345,7 @@ function SpecialModePage() {
                                         team="left"
                                         attemptsToDisplay={attemptsToDisplay}
                                         resolved={seriesState.penaltyResolved}
+                                        shouldHaveMargin={seriesState.tiebreakerPhase === "penalties" ? false : true}
                                     />
                                 ) : !banner ? (
                                     <div className={css.miniSquares}>
@@ -7371,7 +7373,7 @@ function SpecialModePage() {
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className={css.verticalLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : "" }}>
+                                <div className={css.verticalLines}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
@@ -7490,8 +7492,7 @@ function SpecialModePage() {
                                             position: 'absolute',
                                             right: '110%',
                                             zIndex: 9997,
-                                            fontSize: '28px',
-                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : ""
+                                            fontSize: '28px'
                                         }} className={css.team_name_left}>
                                         Team {seriesState.leftTeam?.name}
                                     </motion.span>
@@ -7588,7 +7589,7 @@ function SpecialModePage() {
                                 <p
                                     className={css.vs}
                                     style={{
-                                        marginBottom: activePhase === "playoffs" ? "-12px" : "0",
+                                        marginBottom: activePhase === "playoffs" && seriesState.tiebreakerPhase !== "penalties" ? "-12px" : "0",
                                     }}
                                 >
                                     VS
@@ -7801,6 +7802,7 @@ function SpecialModePage() {
                                         team="right"
                                         attemptsToDisplay={attemptsToDisplay}
                                         resolved={seriesState.penaltyResolved}
+                                        shouldHaveMargin={seriesState.tiebreakerPhase === "penalties" ? false : true}
                                     />
                                 ) : !banner ? (
                                     <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
@@ -7828,7 +7830,7 @@ function SpecialModePage() {
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className={css.verticalLossLines} style={{ marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : "" }}>
+                                <div className={css.verticalLossLines}>
                                     {activePhase === "playoffs" && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
@@ -7947,8 +7949,7 @@ function SpecialModePage() {
                                             position: 'absolute',
                                             left: '110%',
                                             zIndex: 9997,
-                                            fontSize: '28px',
-                                            marginTop: seriesState.tiebreakerPhase === "penalties" ? "6px" : ""
+                                            fontSize: '28px'
                                         }} className={css.team_name_right}>
                                         Team {seriesState.rightTeam?.name}
                                     </motion.span>
