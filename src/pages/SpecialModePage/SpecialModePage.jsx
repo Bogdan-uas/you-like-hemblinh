@@ -1759,6 +1759,196 @@ function SpecialModePage() {
     const [placingCategory, setPlacingCategory] = useState("");
     const [placingAmount, setPlacingAmount] = useState("");
 
+    const modalRef = useRef(null);
+    const [modalScale, setModalScale] = useState(1);
+
+    const getStageObj = (key) => {
+        if (key === "stage1") return stage1;
+        if (key === "stage2") return stage2;
+        if (key === "stage3") return stage3;
+        return null;
+    };
+
+    const currentModalMatch = useMemo(() => {
+        if (!modalContext) return null;
+
+        if (modalContext.type === "swiss") {
+            const stg = getStageObj(modalContext.stageKey);
+            if (!stg) return null;
+            const arr = stg.matchesByNet[modalContext.net] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        if (modalContext.type === "playoffs") {
+            if (!playoffs) return null;
+            const arr = playoffs[modalContext.stage] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        return null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modalContext, stage1, stage2, stage3, playoffs]);
+
+    const modalBestOf = useMemo(() => {
+        if (!modalContext) return null;
+        if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net, modalContext.stageKey);
+        return getBestOfForPlayoffs(modalContext.stage);
+    }, [modalContext]);
+    const isBo1Modal = modalBestOf === 1;
+
+    const getPickOrientedModalView = (match, isBo1) => {
+        if (!match) {
+            return {
+                leftTeam: null,
+                rightTeam: null,
+                shouldSwap: false,
+                displayLeft: null,
+                displayRight: null,
+                didUserWin: false,
+                leftIsPick: false,
+                rightIsPick: false,
+                winnerIsLeft: false,
+                winnerIsRight: false,
+                leftIsLoser: false,
+                rightIsLoser: false,
+            };
+        }
+
+        const slotA = match.slotA || null;
+        const slotB = match.slotB || null;
+
+        const shouldSwap =
+            !!match.pickTeamId && slotA && slotB && match.pickTeamId === slotB.id;
+
+        const leftTeam = shouldSwap ? slotB : slotA;
+        const rightTeam = shouldSwap ? slotA : slotB;
+
+        const bo1History =
+            isBo1 && match.setHistory?.length
+                ? match.setHistory[0]
+                : null;
+
+        const bo1MapScore = bo1History
+            ? {
+                left: bo1History.wins,
+                right: bo1History.losses,
+            }
+            : null;
+
+        const bo1Tiebreak =
+            bo1History?.extendedRounds?.penalties
+                ? {
+                    type: "Pens",
+                    left: bo1History.extendedRounds.penalties.leftScore,
+                    right: bo1History.extendedRounds.penalties.rightScore,
+                }
+                : bo1History?.extendedRounds
+                    ? (() => {
+                        const winners = buildExtendedRoundWinnerList(bo1History.extendedRounds);
+
+                        let left = 0;
+                        let right = 0;
+
+                        winners.forEach((w) => {
+                            if (w.winner === "left") left++;
+                            else if (w.winner === "right") right++;
+                        });
+
+                        return left || right
+                            ? {
+                                type: "ERs",
+                                left,
+                                right,
+                            }
+                            : null;
+                    })()
+                    : null;
+
+        const slotOrientedLeft =
+            bo1MapScore && bo1MapScore.left != null ? bo1MapScore.left : match.scoreLeft;
+
+        const slotOrientedRight =
+            bo1MapScore && bo1MapScore.right != null ? bo1MapScore.right : match.scoreRight;
+
+        const displayLeft =
+            bo1MapScore
+                ? bo1MapScore.left
+                : (shouldSwap ? slotOrientedRight : slotOrientedLeft);
+
+        const displayRight =
+            bo1MapScore
+                ? bo1MapScore.right
+                : (shouldSwap ? slotOrientedLeft : slotOrientedRight);
+
+        const didUserWin =
+            !!match.played &&
+            !!match.pickTeamId &&
+            !!match.winnerTeamId &&
+            match.pickTeamId === match.winnerTeamId;
+
+        const leftIsPick = !!match.pickTeamId && leftTeam && match.pickTeamId === leftTeam.id;
+        const rightIsPick = !!match.pickTeamId && rightTeam && match.pickTeamId === rightTeam.id;
+
+        const winnerIsLeft = !!match.winnerTeamId && leftTeam && match.winnerTeamId === leftTeam.id;
+        const winnerIsRight = !!match.winnerTeamId && rightTeam && match.winnerTeamId === rightTeam.id;
+
+        const leftIsLoser = !!match.loserTeamId && leftTeam && match.loserTeamId === leftTeam.id;
+        const rightIsLoser = !!match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
+
+        return {
+            leftTeam,
+            rightTeam,
+            shouldSwap,
+            displayLeft,
+            displayRight,
+            bo1Tiebreak,
+            didUserWin,
+            leftIsPick,
+            rightIsPick,
+            winnerIsLeft,
+            winnerIsRight,
+            leftIsLoser,
+            rightIsLoser,
+        };
+    };
+
+    const {
+        displayLeft: modalScoreLeft,
+        displayRight: modalScoreRight,
+    } = getPickOrientedModalView(
+        currentModalMatch,
+        isBo1Modal
+    );
+
+    const playedSets = isBo1Modal
+        ? 1
+        : (modalScoreLeft ?? 0) + (modalScoreRight ?? 0);
+
+    useLayoutEffect(() => {
+        const updateScale = () => {
+            if (!modalRef.current) return;
+
+            if (playedSets < 7) {
+                setModalScale(1);
+                return;
+            }
+
+            const modalHeight = modalRef.current.offsetHeight;
+            const availableHeight = window.innerHeight * 0.9;
+
+            setModalScale(
+                modalHeight > availableHeight
+                    ? availableHeight / modalHeight
+                    : 1
+            );
+        };
+
+        updateScale();
+
+        window.addEventListener("resize", updateScale);
+        return () => window.removeEventListener("resize", updateScale);
+    }, [playedSets, currentModalMatch]);
+
     const lastToastTime = useRef(0);
 
     const navRef = useRef(null);
@@ -2607,13 +2797,6 @@ function SpecialModePage() {
         setGuessedCounts(nextCounts);
     };
 
-    const getStageObj = (key) => {
-        if (key === "stage1") return stage1;
-        if (key === "stage2") return stage2;
-        if (key === "stage3") return stage3;
-        return null;
-    };
-
     const openSwissMatchModal = (stageKey, net, matchId, readOnly = false) => {
         const stg = getStageObj(stageKey);
         if (!stg) return;
@@ -2837,122 +3020,6 @@ function SpecialModePage() {
                     0;
 
         return { scoreLeft, scoreRight };
-    };
-
-    const getPickOrientedModalView = (match, isBo1) => {
-        if (!match) {
-            return {
-                leftTeam: null,
-                rightTeam: null,
-                shouldSwap: false,
-                displayLeft: null,
-                displayRight: null,
-                didUserWin: false,
-                leftIsPick: false,
-                rightIsPick: false,
-                winnerIsLeft: false,
-                winnerIsRight: false,
-                leftIsLoser: false,
-                rightIsLoser: false,
-            };
-        }
-
-        const slotA = match.slotA || null;
-        const slotB = match.slotB || null;
-
-        const shouldSwap =
-            !!match.pickTeamId && slotA && slotB && match.pickTeamId === slotB.id;
-
-        const leftTeam = shouldSwap ? slotB : slotA;
-        const rightTeam = shouldSwap ? slotA : slotB;
-
-        const bo1History =
-            isBo1 && match.setHistory?.length
-                ? match.setHistory[0]
-                : null;
-
-        const bo1MapScore = bo1History
-            ? {
-                left: bo1History.wins,
-                right: bo1History.losses,
-            }
-            : null;
-
-        const bo1Tiebreak =
-            bo1History?.extendedRounds?.penalties
-                ? {
-                    type: "Pens",
-                    left: bo1History.extendedRounds.penalties.leftScore,
-                    right: bo1History.extendedRounds.penalties.rightScore,
-                }
-                : bo1History?.extendedRounds
-                    ? (() => {
-                        const winners = buildExtendedRoundWinnerList(bo1History.extendedRounds);
-
-                        let left = 0;
-                        let right = 0;
-
-                        winners.forEach((w) => {
-                            if (w.winner === "left") left++;
-                            else if (w.winner === "right") right++;
-                        });
-
-                        return left || right
-                            ? {
-                                type: "ERs",
-                                left,
-                                right,
-                            }
-                            : null;
-                    })()
-                    : null;
-
-        const slotOrientedLeft =
-            bo1MapScore && bo1MapScore.left != null ? bo1MapScore.left : match.scoreLeft;
-
-        const slotOrientedRight =
-            bo1MapScore && bo1MapScore.right != null ? bo1MapScore.right : match.scoreRight;
-
-        const displayLeft =
-            bo1MapScore
-                ? bo1MapScore.left
-                : (shouldSwap ? slotOrientedRight : slotOrientedLeft);
-
-        const displayRight =
-            bo1MapScore
-                ? bo1MapScore.right
-                : (shouldSwap ? slotOrientedLeft : slotOrientedRight);
-
-        const didUserWin =
-            !!match.played &&
-            !!match.pickTeamId &&
-            !!match.winnerTeamId &&
-            match.pickTeamId === match.winnerTeamId;
-
-        const leftIsPick = !!match.pickTeamId && leftTeam && match.pickTeamId === leftTeam.id;
-        const rightIsPick = !!match.pickTeamId && rightTeam && match.pickTeamId === rightTeam.id;
-
-        const winnerIsLeft = !!match.winnerTeamId && leftTeam && match.winnerTeamId === leftTeam.id;
-        const winnerIsRight = !!match.winnerTeamId && rightTeam && match.winnerTeamId === rightTeam.id;
-
-        const leftIsLoser = !!match.loserTeamId && leftTeam && match.loserTeamId === leftTeam.id;
-        const rightIsLoser = !!match.loserTeamId && rightTeam && match.loserTeamId === rightTeam.id;
-
-        return {
-            leftTeam,
-            rightTeam,
-            shouldSwap,
-            displayLeft,
-            displayRight,
-            bo1Tiebreak,
-            didUserWin,
-            leftIsPick,
-            rightIsPick,
-            winnerIsLeft,
-            winnerIsRight,
-            leftIsLoser,
-            rightIsLoser,
-        };
     };
 
     const getSwissNetHighlights = (stageObj, net) => {
@@ -4924,33 +4991,6 @@ function SpecialModePage() {
         return map[net] ?? 180;
     };
 
-    const currentModalMatch = useMemo(() => {
-        if (!modalContext) return null;
-
-        if (modalContext.type === "swiss") {
-            const stg = getStageObj(modalContext.stageKey);
-            if (!stg) return null;
-            const arr = stg.matchesByNet[modalContext.net] || [];
-            return arr.find((m) => m.id === modalContext.matchId) || null;
-        }
-
-        if (modalContext.type === "playoffs") {
-            if (!playoffs) return null;
-            const arr = playoffs[modalContext.stage] || [];
-            return arr.find((m) => m.id === modalContext.matchId) || null;
-        }
-
-        return null;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalContext, stage1, stage2, stage3, playoffs]);
-
-    const modalBestOf = useMemo(() => {
-        if (!modalContext) return null;
-        if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net, modalContext.stageKey);
-        return getBestOfForPlayoffs(modalContext.stage);
-    }, [modalContext]);
-
-    const isBo1Modal = modalBestOf === 1;
     const isPlayedModal = !!currentModalMatch?.played;
 
     const {
@@ -6483,18 +6523,6 @@ function SpecialModePage() {
                 return "MATCH POINT!!!";
         }
     };
-
-    const {
-        displayLeft: modalScoreLeft,
-        displayRight: modalScoreRight,
-    } = getPickOrientedModalView(
-        currentModalMatch,
-        isBo1Modal
-    );
-
-    const playedSets = isBo1Modal
-        ? 1
-        : (modalScoreLeft ?? 0) + (modalScoreRight ?? 0);
 
     const leftAttempts = seriesState.penaltyLeftResults.length;
     const rightAttempts = seriesState.penaltyRightResults.length;
@@ -8827,12 +8855,6 @@ function SpecialModePage() {
         9: "-1.45%",
     };
 
-    const modalScale = {
-        7: 0.85,
-        8: 0.8,
-        9: 0.75,
-    };
-
     return (
         <>
             <Header
@@ -9448,9 +9470,11 @@ function SpecialModePage() {
                         }}
                     >
                         <div
+                            ref={modalRef}
                             style={{
                                 position: "relative",
-                                transform: `scale(${modalScale[playedSets] ?? 1})`,
+                                transform: `scale(${modalScale})`,
+                                transformOrigin: "center center",
                             }}
                         >
                             {isPlayedModal && (
