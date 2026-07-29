@@ -6005,7 +6005,7 @@ function SpecialModePage() {
                                 columnGap: "12px",
                                 rowGap: '4px',
                                 maxWidth: "380px",
-                                height: "40px",
+                                height: setsToWin * 2 - 1 >= 5 ? "62px" : "40px",
                             }}
                         >
                             {seriesState.finishedSets.map(({
