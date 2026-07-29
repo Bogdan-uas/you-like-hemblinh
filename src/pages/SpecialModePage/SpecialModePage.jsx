@@ -1934,7 +1934,7 @@ function SpecialModePage() {
             }
 
             const modalHeight = modalRef.current.offsetHeight;
-            const availableHeight = window.innerHeight * 0.9;
+            const availableHeight = window.innerHeight * 0.95;
 
             setModalScale(
                 modalHeight > availableHeight
