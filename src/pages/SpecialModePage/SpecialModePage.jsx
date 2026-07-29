@@ -5795,10 +5795,10 @@ function SpecialModePage() {
                 case "gf":
                     if (winnerIsLeft) {
                         leftText = <><b>WINS</b> the tournament!</>;
-                        rightText = "Second place is still wonderful!";
+                        rightText = "second place is still wonderful!";
                     } else {
                         rightText = <><b>WINS</b> the tournament!</>;
-                        leftText = "Second place is still wonderful!";
+                        leftText = "second place is still wonderful!";
                     }
                     break;
             }
@@ -10163,7 +10163,7 @@ function SpecialModePage() {
                                                                                 {getPlacementBadge(winnerIsLeft, leftIsLoser)}
                                                                                 <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                                     {modalPlayedLeft?.name}
-                                                                                    {leftStakeText === "path ends here, for now!" ? "'s" : ""}
+                                                                                    {leftStakeText === "path ends here, for now!" || leftStakeText === "second place is still wonderful!" ? "'s" : ""}
                                                                                 </span>
                                                                                 {deltaPoints !== 0 && (
                                                                                     <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
@@ -10309,7 +10309,7 @@ function SpecialModePage() {
                                                                                 {getPlacementBadge(winnerIsRight, rightIsLoser)}
                                                                                 <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                                     {modalPlayedRight?.name}
-                                                                                    {rightStakeText === "path ends here, for now!" ? "'s" : ""}
+                                                                                    {rightStakeText === "path ends here, for now!" || rightStakeText === "second place is still wonderful!" ? "'s" : ""}
                                                                                 </span>
                                                                                 {deltaPoints !== 0 && (
                                                                                     <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
