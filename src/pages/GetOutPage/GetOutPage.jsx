@@ -24,12 +24,24 @@ const GetOutPage = () => {
         return () => clearTimeout(timer);
     }, [timeLeft, showMessage]);
 
+    const timerColors = {
+        0: "black",
+        1: "red",
+        2: "orange",
+        3: "yellow",
+    };
+
     return (
         <div className={css.getOut_container}>
             <span className={css.then}>Then,</span>
             <div className={`${css.message_block} ${showMessage ? css.visible : ''}`}>
                 <h2 className={css.get_out_text}>get the hell out of here!</h2>
-                <p style={{ color: timeLeft <= 2 ? 'red' : timeLeft <= 3 ? 'orange' : '' }} className={css.timer}>{timeLeft}s</p>
+                <p
+                    style={{ color: timerColors[timeLeft] ?? "" }}
+                    className={css.timer}
+                >
+                    {timeLeft}s
+                </p>
                 <Link className={css.reconsider_button} to="/">
                     I reconsidered my decision!
                 </Link>
