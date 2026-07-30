@@ -8125,7 +8125,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game? You will not be able to revert it!
+                            Are you sure you want to restart the game? <br /> <strong>You will not be able to revert this action!</strong>
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -8320,7 +8320,7 @@ function SpecialModePage() {
                                         </div>
                                     )}
 
-                                    <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static' }}>
+                                    <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static', gap: rank === 3 ? "0px" : ""  }}>
                                         <div
                                             className={circleClass}
                                             style={{
@@ -8409,7 +8409,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game? You will not be able to revert it!
+                            Are you sure you want to restart the game? <br /> <strong>You will not be able to revert this action!</strong>
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -9025,7 +9025,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game? You will not be able to revert it!
+                            Are you sure you want to restart the game? <br /> <strong>You will not be able to revert this action!</strong>
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -9603,7 +9603,6 @@ function SpecialModePage() {
                                                 {pickemLabelText}
                                             </span>
                                         )}
-                                        {/* <div className={css.divider} style={{ zIndex: 3, width: "200%" }} /> */}
                                     </div>
                                 </div>
 
