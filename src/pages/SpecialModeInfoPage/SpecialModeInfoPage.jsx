@@ -780,7 +780,7 @@ const SpecialModeInfoPage = () => {
                     </div>
                     <p className={css.info_text}>
                         It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn't been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. The rules are now different as from normal series.
-                        A point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The left team, your chosen team, always starts first and requires a positive multiplier to get a successful attempt:
+                        The point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The left team, your chosen team, always starts first and requires a positive multiplier to get a successful attempt:
                     </p>
                     <div className={css.image_container}>
                         <img src={successfulAttemptForLeft} alt="Successful attempt for the left team" className={css.image} style={{ width: '30vw', height: '40vh' }} />
