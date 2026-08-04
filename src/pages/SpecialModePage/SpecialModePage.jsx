@@ -3719,7 +3719,6 @@ function SpecialModePage() {
         setSeriesState((prev) => {
             if (!prev.active || prev.banner) return prev;
 
-            // Timeout replacement: scheduled (restart-safe) follow-up action.
             let pendingAction = null;
 
             const playerWonMini = mult > 0;
