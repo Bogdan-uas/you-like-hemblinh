@@ -4,14 +4,24 @@ import CountUp from "react-countup";
 import css from "./SpecialModePage.module.css";
 import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { FaTrophy } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
-import { FaCircleCheck, FaCircleInfo, FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
+import {
+    FaCircleCheck,
+    FaCircleInfo,
+    FaCheck,
+    FaXmark,
+    FaCircle,
+    FaCaretLeft,
+    FaCaretRight,
+    FaDiamond,
+} from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
 import "odometer/themes/odometer-theme-default.css";
 import Odometer from 'react-odometerjs';
+import { SERIES_ACTIONS } from "../../../assets/constants.js";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
@@ -1156,6 +1166,8 @@ const defaultSeriesState = {
 
     swissMatchNumber: 1,
     playoffsMatchNumber: 1,
+
+    pendingAction: null,
 };
 
 const round2 = (n) => Number(n.toFixed(2));
@@ -3182,6 +3194,248 @@ function SpecialModePage() {
         });
     };
 
+    const SERIES_COMMIT_DELAY = 3500;
+
+    const makePendingAction = (type, delay, payload = {}) => ({
+        type,
+        delay,
+        executeAt: Date.now() + delay,
+        payload,
+    });
+
+    const executePendingAction = (action) => {
+        switch (action.type) {
+            case SERIES_ACTIONS.NEXT_SET: {
+                setSeriesState(curr => {
+                    if (!curr.active || curr.banner) return curr;
+
+                    const { setNumber, leftScore, rightScore } = action.payload;
+
+                    setIsLocked(false);
+
+                    toast.dismiss();
+                    toast("First Half is beginning", {
+                        icon: "\u{1F3C1}",
+                        duration: 3000,
+                    });
+
+                    return {
+                        ...curr,
+
+                        firstHalfLeft: null,
+                        firstHalfRight: null,
+
+                        finishedSets: [
+                            ...(curr.finishedSets || []),
+                            {
+                                set: setNumber,
+                                leftScore,
+                                rightScore,
+                            },
+                        ],
+
+                        setNumber: curr.setNumber + 1,
+
+                        extendedRounds: {
+                            firstHalf: null,
+                            secondHalf: null,
+                            overtimes: [],
+                        },
+
+                        roundWins: 0,
+                        roundLosses: 0,
+                        roundNumber: 1,
+
+                        miniWins: 0,
+                        miniLosses: 0,
+
+                        isOvertime: false,
+                        overtimeBlock: 0,
+                        otWins: 0,
+                        otLosses: 0,
+
+                        pendingAction: null,
+                    };
+                });
+
+                break;
+            }
+
+            case SERIES_ACTIONS.NEXT_OT: {
+                setSeriesState(curr => {
+                    if (!curr.active || curr.banner) return curr;
+
+                    setIsLocked(false);
+
+                    return {
+                        ...curr,
+
+                        isOvertime: true,
+                        overtimeBlock: (curr.overtimeBlock || 0) + 1,
+                        roundNumber: 1,
+                        otWins: 0,
+                        otLosses: 0,
+                        miniWins: 0,
+                        miniLosses: 0,
+
+                        pendingAction: null,
+                    };
+                });
+
+                break;
+            }
+
+            case SERIES_ACTIONS.START_EXTENDED: {
+                setSeriesState(curr => {
+                    if (!curr.active || curr.banner) return curr;
+
+                    return {
+                        ...curr,
+
+                        tiebreakerPhase: "extended",
+                        tiebreakerBigSymbol: "VS",
+                        extRoundLeftScore: 0,
+                        extRoundRightScore: 0,
+                        extRoundRevealIndex: 0,
+                        extRoundCommentaryShown: false,
+
+                        pendingAction: null,
+                    };
+                });
+
+                break;
+            }
+
+            case SERIES_ACTIONS.NEXT_SET_AFTER_PENALTIES: {
+                setSeriesState(curr => {
+                    if (!curr.active || curr.banner) return curr;
+
+                    const {
+                        playerWonSets,
+                        playerLostSets,
+                        nextLeftScore,
+                        nextRightScore,
+                    } = action.payload;
+
+                    setIsLocked(false);
+
+                    toast.dismiss();
+                    toast("First Half is beginning", {
+                        icon: "🏁",
+                        duration: 3000,
+                    });
+
+                    return {
+                        ...curr,
+
+                        playerWonSets,
+                        playerLostSets,
+
+                        finishedSets: [
+                            ...(curr.finishedSets || []),
+                            {
+                                set: curr.setNumber,
+                                leftScore: curr.penaltyPreScore?.left ?? 0,
+                                rightScore: curr.penaltyPreScore?.right ?? 0,
+
+                                extendedRoundsPlayed: true,
+                                extendedRoundLeftScore: curr.extRoundLeftScore,
+                                extendedRoundRightScore: curr.extRoundRightScore,
+
+                                penaltiesPlayed: true,
+                                penaltyLeftScore: nextLeftScore,
+                                penaltyRightScore: nextRightScore,
+                            },
+                        ],
+
+                        setNumber: curr.setNumber + 1,
+
+                        firstHalfLeft: null,
+                        firstHalfRight: null,
+
+                        roundWins: 0,
+                        roundLosses: 0,
+                        roundNumber: 1,
+
+                        miniWins: 0,
+                        miniLosses: 0,
+
+                        isOvertime: false,
+                        overtimeBlock: 0,
+                        otWins: 0,
+                        otLosses: 0,
+
+                        extendedRounds: {
+                            firstHalf: null,
+                            secondHalf: null,
+                            overtimes: [],
+                        },
+
+                        tiebreakerPhase: "idle",
+                        tiebreakerBigSymbol: null,
+
+                        extRoundLeftScore: 0,
+                        extRoundRightScore: 0,
+                        extRoundRevealIndex: 0,
+                        extRoundCommentaryShown: false,
+
+                        penaltyLeftResults: [],
+                        penaltyRightResults: [],
+                        penaltyLeftScore: 0,
+                        penaltyRightScore: 0,
+                        penaltyTurn: "left",
+                        penaltyPreScore: null,
+                        penaltyResolved: false,
+
+                        pendingAction: null,
+                    };
+                });
+
+                break;
+            }
+
+            default:
+                break;
+        }
+    };
+
+    const [pendingActionReady, setPendingActionReady] = useState(false);
+
+    useEffect(() => {
+        setSeriesState(curr => {
+            if (!curr.pendingAction) return curr;
+
+            return {
+                ...curr,
+                pendingAction: {
+                    ...curr.pendingAction,
+                    executeAt: Date.now() + (curr.pendingAction.delay ?? 0),
+                },
+            };
+        });
+
+        setPendingActionReady(true);
+    }, []);
+
+    useEffect(() => {
+        if (!pendingActionReady) return;
+        if (!seriesState.pendingAction) return;
+
+        setIsLocked(true);
+
+        const remaining = Math.max(
+            0,
+            seriesState.pendingAction.executeAt - Date.now()
+        );
+
+        const timer = setTimeout(() => {
+            executePendingAction(seriesState.pendingAction);
+        }, remaining);
+
+        return () => clearTimeout(timer);
+
+    }, [seriesState.pendingAction, pendingActionReady]);
+
     const handleSecretButtonContextMenu = (e) => {
         e.preventDefault();
 
@@ -3265,6 +3519,8 @@ function SpecialModePage() {
 
         setSeriesState((prev) => {
             const turn = prev.penaltyTurn;
+
+            let pendingAction = null;
 
             const isNeutral = mult === 0;
 
@@ -3413,61 +3669,16 @@ function SpecialModePage() {
                         { icon: "🥅", duration: 4000 }
                     );
                     setIsLocked(true);
-                    setTimeout(() => {
-                        setSeriesState((s) => {
-                            if (!s.active || s.banner) return s;
-                            setIsLocked(false);
-                            toast.dismiss();
-                            toast("First Half is beginning", { icon: "🏁", duration: 3000 });
-                            return {
-                                ...s,
-                                playerWonSets: newWon,
-                                playerLostSets: newLost,
-                                finishedSets: [
-                                    ...(s.finishedSets || []),
-                                    {
-                                        set: s.setNumber,
-                                        leftScore: s.penaltyPreScore?.left ?? 0,
-                                        rightScore: s.penaltyPreScore?.right ?? 0,
-
-                                        extendedRoundsPlayed: true,
-                                        extendedRoundLeftScore: prev.extRoundLeftScore,
-                                        extendedRoundRightScore: prev.extRoundRightScore,
-
-                                        penaltiesPlayed: true,
-                                        penaltyLeftScore: nextLeftScore,
-                                        penaltyRightScore: nextRightScore,
-                                    },
-                                ],
-                                setNumber: s.setNumber + 1,
-                                firstHalfLeft: null,
-                                firstHalfRight: null,
-                                roundWins: 0,
-                                roundLosses: 0,
-                                roundNumber: 1,
-                                miniWins: 0,
-                                miniLosses: 0,
-                                isOvertime: false,
-                                overtimeBlock: 0,
-                                otWins: 0,
-                                otLosses: 0,
-                                extendedRounds: { firstHalf: null, secondHalf: null, overtimes: [] },
-                                tiebreakerPhase: "idle",
-                                tiebreakerBigSymbol: null,
-                                extRoundLeftScore: 0,
-                                extRoundRightScore: 0,
-                                extRoundRevealIndex: 0,
-                                extRoundCommentaryShown: false,
-                                penaltyLeftResults: [],
-                                penaltyRightResults: [],
-                                penaltyLeftScore: 0,
-                                penaltyRightScore: 0,
-                                penaltyTurn: "left",
-                                penaltyPreScore: null,
-                                penaltyResolved: false,
-                            };
-                        });
-                    }, 4000);
+                    pendingAction = makePendingAction(
+                        SERIES_ACTIONS.NEXT_SET_AFTER_PENALTIES,
+                        4000,
+                        {
+                            playerWonSets: newWon,
+                            playerLostSets: newLost,
+                            nextLeftScore,
+                            nextRightScore,
+                        }
+                    );
                     extraState = {
                         playerWonSets: newWon,
                         playerLostSets: newLost,
@@ -3493,6 +3704,7 @@ function SpecialModePage() {
                 roundWins: nextLeftScore,
                 roundLosses: nextRightScore,
                 ...extraState,
+                pendingAction: pendingAction ?? prev.pendingAction ?? null,
             };
         });
     };
@@ -3506,6 +3718,9 @@ function SpecialModePage() {
 
         setSeriesState((prev) => {
             if (!prev.active || prev.banner) return prev;
+
+            // Timeout replacement: scheduled (restart-safe) follow-up action.
+            let pendingAction = null;
 
             const playerWonMini = mult > 0;
             const playerLostMini = mult < 0;
@@ -3658,45 +3873,15 @@ function SpecialModePage() {
                         );
 
                         setIsLocked(true);
-                        setTimeout(() => {
-                            setSeriesState((curr) => {
-                                if (!curr.active || curr.banner) return curr;
-                                setIsLocked(false);
-                                toast.dismiss();
-                                toast("First Half begins", {
-                                    icon: "🏁",
-                                    duration: 3000,
-                                });
-                                return {
-                                    ...curr,
-                                    roundNumber: 1,
-                                    firstHalfLeft: null,
-                                    firstHalfRight: null,
-                                    finishedSets: [
-                                        ...(curr.finishedSets || []),
-                                        {
-                                            set: setNumber,
-                                            leftScore: updatedRoundWins,
-                                            rightScore: updatedRoundLosses,
-                                        },
-                                    ],
-                                    setNumber: curr.setNumber + 1,
-                                    extendedRounds: {
-                                        firstHalf: null,
-                                        secondHalf: null,
-                                        overtimes: [],
-                                    },
-                                    roundWins: 0,
-                                    roundLosses: 0,
-                                    miniWins: 0,
-                                    miniLosses: 0,
-                                    isOvertime: false,
-                                    overtimeBlock: 0,
-                                    otWins: 0,
-                                    otLosses: 0,
-                                };
-                            });
-                        }, 4000);
+                        pendingAction = makePendingAction(
+                            SERIES_ACTIONS.NEXT_SET,
+                            4000,
+                            {
+                                setNumber,
+                                leftScore: updatedRoundWins,
+                                rightScore: updatedRoundLosses,
+                            }
+                        );
                     }
 
                     setIsCalculating(false);
@@ -3719,6 +3904,7 @@ function SpecialModePage() {
                         otWins,
                         otLosses,
                         banner,
+                        pendingAction: pendingAction ?? prev.pendingAction ?? null,
                     };
                 }
 
@@ -3730,20 +3916,10 @@ function SpecialModePage() {
                             { icon: "🧮", duration: 4000 }
                         );
                         setIsLocked(true);
-                        setTimeout(() => {
-                            setSeriesState((curr) => {
-                                if (!curr.active || curr.banner) return curr;
-                                return {
-                                    ...curr,
-                                    tiebreakerPhase: "extended",
-                                    tiebreakerBigSymbol: "VS",
-                                    extRoundLeftScore: 0,
-                                    extRoundRightScore: 0,
-                                    extRoundRevealIndex: 0,
-                                    extRoundCommentaryShown: false,
-                                };
-                            });
-                        }, 1500);
+                        pendingAction = makePendingAction(
+                            SERIES_ACTIONS.START_EXTENDED,
+                            1500
+                        );
 
                         setIsCalculating(false);
                         return {
@@ -3764,6 +3940,7 @@ function SpecialModePage() {
                             otWins,
                             otLosses,
                             banner,
+                            pendingAction: pendingAction ?? prev.pendingAction ?? null,
                         };
                     }
 
@@ -3779,22 +3956,7 @@ function SpecialModePage() {
                     toast(msg, { icon: "🔄", duration: 4000 });
 
                     setIsLocked(true);
-                    setTimeout(() => {
-                        setSeriesState((curr) => {
-                            if (!curr.active || curr.banner) return curr;
-                            setIsLocked(false);
-                            return {
-                                ...curr,
-                                isOvertime: true,
-                                overtimeBlock: (curr.overtimeBlock || 1) + 1,
-                                roundNumber: 1,
-                                otWins: 0,
-                                otLosses: 0,
-                                miniWins: 0,
-                                miniLosses: 0,
-                            };
-                        });
-                    }, 4000);
+                    pendingAction = makePendingAction(SERIES_ACTIONS.NEXT_OT, 4000);
 
                     setIsCalculating(false);
 
@@ -3816,6 +3978,7 @@ function SpecialModePage() {
                         otWins,
                         otLosses,
                         banner,
+                        pendingAction: pendingAction ?? prev.pendingAction ?? null,
                     };
                 }
 
@@ -3839,6 +4002,7 @@ function SpecialModePage() {
                     otWins,
                     otLosses,
                     banner,
+                    pendingAction: pendingAction ?? prev.pendingAction ?? null,
                 };
             }
 
@@ -3941,22 +4105,7 @@ function SpecialModePage() {
                 });
 
                 setIsLocked(true);
-                setTimeout(() => {
-                    setSeriesState((curr) => {
-                        if (!curr.active || curr.banner) return curr;
-                        setIsLocked(false);
-                        return {
-                            ...curr,
-                            isOvertime: true,
-                            overtimeBlock: curr.overtimeBlock ? curr.overtimeBlock + 1 : 1,
-                            otWins: 0,
-                            otLosses: 0,
-                            roundNumber: 1,
-                            miniWins: 0,
-                            miniLosses: 0,
-                        };
-                    });
-                }, 4000);
+                pendingAction = makePendingAction(SERIES_ACTIONS.NEXT_OT, 4000);
 
                 setIsCalculating(false);
 
@@ -3977,6 +4126,7 @@ function SpecialModePage() {
                     otWins,
                     otLosses,
                     banner,
+                    pendingAction: pendingAction ?? prev.pendingAction ?? null,
                 };
             }
 
@@ -4034,45 +4184,15 @@ function SpecialModePage() {
                     );
 
                     setIsLocked(true);
-                    setTimeout(() => {
-                        setSeriesState((curr) => {
-                            if (!curr.active || curr.banner) return curr;
-                            setIsLocked(false);
-                            toast.dismiss();
-                            toast("First Half is beginning", {
-                                icon: "🏁",
-                                duration: 3000,
-                            });
-                            return {
-                                ...curr,
-                                firstHalfLeft: null,
-                                firstHalfRight: null,
-                                finishedSets: [
-                                    ...(curr.finishedSets || []),
-                                    {
-                                        set: setNumber,
-                                        leftScore: roundWins,
-                                        rightScore: roundLosses,
-                                    },
-                                ],
-                                roundWins: 0,
-                                roundLosses: 0,
-                                roundNumber: 1,
-                                extendedRounds: {
-                                    firstHalf: null,
-                                    secondHalf: null,
-                                    overtimes: [],
-                                },
-                                setNumber: curr.setNumber + 1,
-                                miniWins: 0,
-                                miniLosses: 0,
-                                isOvertime: false,
-                                overtimeBlock: 0,
-                                otWins: 0,
-                                otLosses: 0,
-                            };
-                        });
-                    }, 4000);
+                    pendingAction = makePendingAction(
+                        SERIES_ACTIONS.NEXT_SET,
+                        4000,
+                        {
+                            setNumber,
+                            leftScore: roundWins,
+                            rightScore: roundLosses,
+                        }
+                    );
                 }
             }
 
@@ -4098,12 +4218,22 @@ function SpecialModePage() {
                 otWins,
                 otLosses,
                 banner,
+                pendingAction: pendingAction ?? prev.pendingAction ?? null,
             };
         });
     };
 
+    const seriesCommitExecuteAtRef = useRef(null);
+
     useEffect(() => {
-        if (!seriesState.banner) return;
+        if (!pendingActionReady) {
+            return;
+        }
+
+        if (!seriesState.banner) {
+            seriesCommitExecuteAtRef.current = null;
+            return;
+        }
 
         const {
             phase,
@@ -4128,7 +4258,15 @@ function SpecialModePage() {
 
         const playedAtMs = Date.now();
 
+        seriesCommitExecuteAtRef.current = Date.now() + SERIES_COMMIT_DELAY;
+
+        const remaining = Math.max(
+            0,
+            seriesCommitExecuteAtRef.current - Date.now()
+        );
+
         const t = setTimeout(() => {
+            seriesCommitExecuteAtRef.current = null;
             if (phase === "playoffs") {
                 setPlayoffs((prev) => {
                     if (!prev) return prev;
@@ -4349,11 +4487,11 @@ function SpecialModePage() {
 
             setSeriesState(defaultSeriesState);
             recomputePickemTotals();
-        }, 3500);
+        }, remaining);
 
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [seriesState.banner]);
+    }, [seriesState.banner, pendingActionReady]);
 
     useEffect(() => {
         if (!seriesState.active) return;
@@ -6555,6 +6693,13 @@ function SpecialModePage() {
             banner,
         } = seriesState;
 
+        const momentum =
+            roundWins > roundLosses
+                ? "left"
+                : roundLosses > roundWins
+                    ? "right"
+                    : "tied";
+
         return (
             <>
                 <Header
@@ -7614,14 +7759,90 @@ function SpecialModePage() {
                                     alignItems: "center",
                                 }}
                             >
-                                <p
-                                    className={css.vs}
+                                <div
                                     style={{
-                                        marginBottom: activePhase === "playoffs" && seriesState.tiebreakerPhase !== "penalties" ? "-12px" : "0",
+                                        width: "63.8px",
+                                        height: "42px",
+                                        marginBottom:
+                                            activePhase === "playoffs" &&
+                                                seriesState.tiebreakerPhase !== "penalties"
+                                                ? "-12px"
+                                                : "0",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        overflow: "hidden",
                                     }}
                                 >
-                                    VS
-                                </p>
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={momentum}
+                                            initial={{
+                                                opacity: 0,
+                                                scale: momentum === "tied" ? 0.5 : 0.65,
+                                                rotate: momentum === "tied" ? 25 : -15,
+                                                x:
+                                                    momentum === "left"
+                                                        ? 10
+                                                        : momentum === "right"
+                                                            ? -10
+                                                            : 0,
+                                            }}
+                                            animate={{
+                                                opacity: 1,
+                                                scale: 1,
+                                                rotate: 0,
+                                                x:
+                                                    momentum === "left"
+                                                        ? -20
+                                                        : momentum === "right"
+                                                            ? 20
+                                                            : 0,
+                                            }}
+                                            exit={{
+                                                opacity: 0,
+                                                scale: momentum === "tied" ? 0.5 : 0.65,
+                                                rotate: momentum === "tied" ? -25 : 15,
+                                                x:
+                                                    momentum === "left"
+                                                        ? -10
+                                                        : momentum === "right"
+                                                            ? 10
+                                                            : 0,
+                                            }}
+                                            transition={{
+                                                duration: 0.35,
+                                                ease: "easeInOut",
+                                            }}
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                userSelect: "none",
+                                                color:
+                                                    momentum === "left"
+                                                        ? seriesState.leftTeam?.color
+                                                        : momentum === "right"
+                                                            ? seriesState.rightTeam?.color
+                                                            : "#7a7a7a",
+                                                filter:
+                                                    momentum === "left"
+                                                        ? `drop-shadow(0 0 3.5px ${seriesState.leftTeam?.color})`
+                                                        : momentum === "right"
+                                                            ? `drop-shadow(0 0 3.5px ${seriesState.rightTeam?.color})`
+                                                            : "drop-shadow(0 0 4px #7a7a7a)",
+                                            }}
+                                        >
+                                            {momentum === "left" ? (
+                                                <FaCaretLeft size={30} />
+                                            ) : momentum === "right" ? (
+                                                <FaCaretRight size={30} />
+                                            ) : (
+                                                <FaDiamond size={20} />
+                                            )}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </div>
                                 {seriesState.tiebreakerPhase !== "penalties" && (
                                     <motion.span
                                         initial={{ opacity: 0 }}
@@ -8320,7 +8541,7 @@ function SpecialModePage() {
                                         </div>
                                     )}
 
-                                    <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static', gap: rank === 3 ? "0px" : ""  }}>
+                                    <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static', gap: rank === 3 ? "0px" : "" }}>
                                         <div
                                             className={circleClass}
                                             style={{
