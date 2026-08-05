@@ -1,0 +1,8 @@
+import GradientIcon from "./GradientIcon";
+
+const DIAMOND_PATH =
+"M81 279L279 81C289.9 70.1 304.6 64 320 64C335.4 64 350.1 70.1 361 81L559 279C569.9 289.9 576 304.6 576 320C576 335.4 569.9 350.1 559 361L361 559C350.1 569.9 335.4 576 320 576C304.6 576 289.9 569.9 279 559L81 361C70.1 350.1 64 335.4 64 320C64 304.6 70.1 289.9 81 279z";
+
+export default function GradientDiamond(props) {
+    return <GradientIcon {...props} path={DIAMOND_PATH} />;
+}

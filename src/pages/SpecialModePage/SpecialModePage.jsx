@@ -13,15 +13,15 @@ import {
     FaCircleInfo,
     FaCheck,
     FaXmark,
-    FaCircle,
-    FaCaretLeft,
-    FaCaretRight,
-    FaDiamond,
+    FaCircle
 } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
 import "odometer/themes/odometer-theme-default.css";
 import Odometer from 'react-odometerjs';
 import { SERIES_ACTIONS } from "../../../assets/constants.js";
+import GradientCaretLeft from "../../components/GradientIcon/GradientCaretLeft.jsx";
+import GradientCaretRight from "../../components/GradientIcon/GradientCaretRight.jsx";
+import GradientDiamond from "../../components/GradientIcon/GradientDiamond.jsx";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
@@ -29,6 +29,7 @@ const STORAGE_KEY = "specialPageState_swiss_v2";
 const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";
 const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
+const TOURNAMENT_NUMBER_LS_KEY = "specialMode_tournamentNumber_v1";
 
 const ROUND12_TOAST_ID = "round12-warning";
 const SECRET_TOAST_ID = "secret-toast";
@@ -113,89 +114,6 @@ const AnimatedCrossIcon = (props) => (
     </svg>
 );
 
-const PenaltyCircles = ({
-    results,
-    team,
-    attemptsToDisplay,
-    resolved,
-    compact = false,
-    shouldHaveMargin = true,
-}) => {
-    const total = attemptsToDisplay;
-
-    const circleSize = compact ? 11 : 22;
-    const iconSize = compact ? 7 : 14;
-    const gap = compact ? 3 : 6;
-    const suddenGap = compact ? 12 : 24;
-    const borderWidth = compact ? 1 : 2;
-    const marginTop = compact || !shouldHaveMargin ? 0 : 6;
-
-    return (
-        <div
-            style={{
-                display: "flex",
-                alignItems: "center",
-                flexDirection: team === "left" ? "row-reverse" : "row",
-                gap,
-                marginTop: marginTop,
-            }}
-        >
-            {Array.from({ length: total }).map((_, i) => {
-                const r = results[i];
-                const isSuddenDeath = i === 5;
-                const filled = r === "success";
-                const missed = r === "fail";
-                const shouldHide =
-                    resolved &&
-                    i >= results.length &&
-                    i >= PENALTY_DISPLAY_CIRCLES;
-
-                if (shouldHide) {
-                    return null;
-                }
-                return (
-                    <div
-                        key={i}
-                        style={{
-                            marginLeft: isSuddenDeath && team === "left" ? 0 : isSuddenDeath ? suddenGap : 0,
-                            marginRight: isSuddenDeath && team === "left" ? suddenGap : 0,
-                            width: circleSize,
-                            height: circleSize,
-                            borderRadius: "50%",
-                            border:
-                                r
-                                    ? "none"
-                                    : `${borderWidth}px dashed #828282`,
-                            background: filled
-                                ? "rgb(84, 204, 84)"
-                                : missed
-                                    ? "rgb(152, 51, 51)"
-                                    : "transparent",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "background 0.25s ease",
-                        }}
-                    >
-                        {filled &&
-                            <AnimatedCheckIcon
-                                width={iconSize}
-                                height={iconSize}
-                            />
-                        }
-                        {missed &&
-                            <AnimatedCrossIcon
-                                width={iconSize}
-                                height={iconSize}
-                            />
-                        }
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
 const MULTIPLIER_MIN = -2.0;
 const MULTIPLIER_MAX = 2.0;
 
@@ -222,6 +140,24 @@ const hexToRgb = (hex) => {
 
 const clamp = (n) => Math.max(0, Math.min(255, n));
 
+const lightenHex = (hex, amount = 0.18) => {
+    const { r, g, b } = hexToRgb(hex);
+
+    return `#${[
+        clamp(Math.round(r + (255 - r) * amount)),
+        clamp(Math.round(g + (255 - g) * amount)),
+        clamp(Math.round(b + (255 - b) * amount)),
+    ]
+        .map((x) => x.toString(16).padStart(2, "0"))
+        .join("")}`;
+};
+
+const getBrightness = (hex) => {
+    const { r, g, b } = hexToRgb(hex);
+
+    return (r * 299 + g * 587 + b * 114) / 1000;
+};
+
 const darkenHex = (hex, amount = 0.68) => {
     const { r, g, b } = hexToRgb(hex);
     const dr = clamp(Math.round(r * (1 - amount)));
@@ -235,16 +171,29 @@ const darkenHex = (hex, amount = 0.68) => {
 const makeColor = (
     hex,
     name,
-    { shadowAlpha = 0.55, unlitAmount = 0.7, hoverAmount = 0.5 } = {}
+    {
+        shadowAlpha = 0.55,
+        unlitAmount = 0.7,
+        hoverAmount = 0.5,
+    } = {}
 ) => {
     const normalized = hex.toUpperCase();
 
     if (normalized === "#000000") {
         return {
-            shadow: `0 0 10px rgba(0, 0, 0, ${shadowAlpha})`,
+            shadow: `0 0 10px rgba(0,0,0,${shadowAlpha})`,
             color: "#000000",
+
+            gradient:
+                "linear-gradient(180deg,#565656 0%,#1C1C1C 45%,#000000 100%)",
+
             hoverOn: "#2A2A2A",
+
             unlitColor: "#5D5D5D",
+
+            unlitGradient:
+                "linear-gradient(180deg,#707070 0%,#5D5D5D 45%,#454545 100%)",
+
             name,
         };
     }
@@ -252,19 +201,65 @@ const makeColor = (
     if (normalized === "#E6E6E6" || normalized === "#E6E6E6FF") {
         return {
             shadow: `0 0 10px rgba(150,150,150,0.35)`,
+
             color: "#E6E6E6",
+
+            gradient:
+                "linear-gradient(180deg,#FFFFFF 0%,#ECECEC 45%,#BEBEBE 100%)",
+
             hoverOn: "#C8C8C8",
+
             unlitColor: "#5D5D5D",
+
+            unlitGradient:
+                "linear-gradient(180deg,#777777 0%,#5D5D5D 45%,#474747 100%)",
+
             name,
         };
     }
 
     const { r, g, b } = hexToRgb(hex);
+
+    const brightness = getBrightness(hex);
+
+    const isBright = brightness > 210;
+
+    const lighter = isBright
+        ? hex
+        : lightenHex(hex, 0.18);
+
+    const darker = darkenHex(
+        hex,
+        isBright ? 0.22 : 0.35
+    );
+
+    const unlit = darkenHex(hex, unlitAmount);
+
+    const unlitGradient = `linear-gradient(
+        180deg,
+        ${lightenHex(unlit, 0.24)} 0%,
+        ${unlit} 45%,
+        ${darkenHex(unlit, 0.24)} 100%
+    )`;
+
     return {
         shadow: `0 0 10px rgba(${r}, ${g}, ${b}, ${shadowAlpha})`,
+
         color: hex,
+
+        gradient: `linear-gradient(
+            180deg,
+            ${lighter} 0%,
+            ${hex} 45%,
+            ${darker} 100%
+        )`,
+
         hoverOn: darkenHex(hex, hoverAmount),
-        unlitColor: darkenHex(hex, unlitAmount),
+
+        unlitColor: unlit,
+
+        unlitGradient,
+
         name,
     };
 };
@@ -352,6 +347,104 @@ const COLORS = {
     royal: makeColor("#5B5BE6", "Royal"),
 };
 
+const PenaltyCircles = ({
+    results,
+    team,
+    attemptsToDisplay,
+    resolved,
+    compact = false,
+    shouldHaveMargin = true,
+}) => {
+    const total = attemptsToDisplay;
+
+    const circleSize = compact ? 11 : 22;
+    const iconSize = compact ? 7 : 14;
+    const gap = compact ? 3 : 6;
+    const suddenGap = compact ? 12 : 24;
+    const borderWidth = compact ? 1 : 2;
+    const marginTop = compact || !shouldHaveMargin ? 0 : 6;
+
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: team === "left" ? "row-reverse" : "row",
+                gap,
+                marginTop: marginTop,
+            }}
+        >
+            {Array.from({ length: total }).map((_, i) => {
+                const r = results[i];
+                const isSuddenDeath = i === 5;
+                const filled = r === "success";
+                const missed = r === "fail";
+                const shouldHide =
+                    resolved &&
+                    i >= results.length &&
+                    i >= PENALTY_DISPLAY_CIRCLES;
+
+                if (shouldHide) {
+                    return null;
+                }
+                return (
+                    <div
+                        key={i}
+                        style={{
+                            marginLeft: isSuddenDeath && team === "left" ? 0 : isSuddenDeath ? suddenGap : 0,
+                            marginRight: isSuddenDeath && team === "left" ? suddenGap : 0,
+                            width: circleSize,
+                            height: circleSize,
+                            borderRadius: "50%",
+                            border:
+                                r
+                                    ? "none"
+                                    : `${borderWidth}px dashed #828282`,
+                            backgroundImage: filled
+                                ? `linear-gradient(
+                                    180deg,
+                                    ${lightenHex("#54CC54", 0.18)} 0%,
+                                    #54CC54 45%,
+                                    ${darkenHex("#54CC54", 0.35)} 100%
+                                )`
+                                : missed
+                                    ? `linear-gradient(
+                                        180deg,
+                                        ${lightenHex("#983333", 0.18)} 0%,
+                                        #983333 45%,
+                                        ${darkenHex("#983333", 0.35)} 100%
+                                    )`
+                                    : "none",
+
+                            backgroundColor:
+                                filled || missed
+                                    ? "transparent"
+                                    : "transparent",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "background 0.25s ease",
+                        }}
+                    >
+                        {filled &&
+                            <AnimatedCheckIcon
+                                width={iconSize}
+                                height={iconSize}
+                            />
+                        }
+                        {missed &&
+                            <AnimatedCrossIcon
+                                width={iconSize}
+                                height={iconSize}
+                            />
+                        }
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 const clampMin0 = (n) => Math.max(0, Number.isFinite(n) ? n : 0);
 
 const buildDefaultTeamRatings = (teams) => {
@@ -377,6 +470,26 @@ const loadTeamRatings = (teams) => {
         return out;
     } catch {
         return buildDefaultTeamRatings(teams);
+    }
+};
+
+const loadTournamentNumber = () => {
+    try {
+        const raw = localStorage.getItem(TOURNAMENT_NUMBER_LS_KEY);
+        if (raw === null) return 0;
+
+        const parsed = parseInt(raw, 10);
+        return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    } catch {
+        return 0;
+    }
+};
+
+const saveTournamentNumber = (value) => {
+    try {
+        localStorage.setItem(TOURNAMENT_NUMBER_LS_KEY, String(value));
+    } catch {
+        console.error("Couldn't save the tournament number")
     }
 };
 
@@ -648,9 +761,15 @@ const toBaseTeam = (t) => ({
     id: t.id,
     key: t.key,
     name: t.name,
+
     color: t.color,
+    gradient: t.gradient,
+
     hoverOn: t.hoverOn,
+
     unlitColor: t.unlitColor,
+    unlitGradient: t.unlitGradient,
+
     shadow: t.shadow,
 });
 
@@ -665,13 +784,21 @@ const uniqById = (teams) => {
 
 const getAllTeams64 = () => {
     const entries = Object.entries(COLORS);
+
     return entries.map(([key, val], idx) => ({
         id: String(idx + 1),
+
         key,
         name: val.name,
+
         color: val.color,
+        gradient: val.gradient,
+
         hoverOn: val.hoverOn,
+
         unlitColor: val.unlitColor,
+        unlitGradient: val.unlitGradient,
+
         shadow: val.shadow,
     }));
 };
@@ -1604,7 +1731,13 @@ const PODIUM_QUOTES = {
         "Built for the moment, defined by it",
         "When it mattered most, they were already ready",
         "No debate left, only recognition",
-        "They didn't chase greatness, they enforced it"
+        "They didn't chase greatness, they enforced it",
+        "Only one team leaves without regrets",
+        "The trophy follows those who refuse to let go",
+        "Excellence became expectation, and they delivered",
+        "History remembers champions, not predictions",
+        "Perfection wasn't required, only superiority",
+        "The crown found its rightful owner"
     ],
 
     runnerUp: [
@@ -1622,7 +1755,13 @@ const PODIUM_QUOTES = {
         "The final chapter just slipped away",
         "Defeated, but never outclassed",
         "They proved they belong, just not at the top",
-        "Next time won't be the same"
+        "Next time won't be the same",
+        "One victory short of immortality",
+        "A painful ending to an unforgettable journey",
+        "The trophy escaped them, but respect did not",
+        "Close enough to dream, far enough to remember",
+        "The finish line was visible, but unreachable",
+        "Tomorrow's champions are often today's runners-up"
     ],
 
     thirdPlace: [
@@ -1639,7 +1778,13 @@ const PODIUM_QUOTES = {
         "Not the final goal, but still a finish worth respect",
         "They stayed sharp when others faded",
         "Resilience has a rank, and it's here",
-        "They leave with something still shining"
+        "They leave with something still shining",
+        "One last victory to leave with heads held high",
+        "Bronze medals still shine under bright lights",
+        "The tournament ends, but the progress doesn't",
+        "They answered defeat with determination",
+        "A finish worthy of applause",
+        "Not the ending they wanted, but one they earned"
     ],
 
     fourthPlace: [
@@ -1656,7 +1801,13 @@ const PODIUM_QUOTES = {
         "They disappear from standings, not from story",
         "Every great run needs a final witness",
         "Not forgotten, just unfinished",
-        "They leave with questions still unanswered"
+        "They leave with questions still unanswered",
+        "One series away from standing on the podium",
+        "The medals slipped away, but the experience remained",
+        "Every tournament has heroes without trophies",
+        "Sometimes fourth place is the beginning, not the ending",
+        "They leave empty-handed, but not empty-hearted",
+        "A tournament remembered for the journey, not the destination"
     ],
 };
 
@@ -1765,6 +1916,16 @@ function SpecialModePage() {
     const [isRemovePlacingsFinalModalOpen, setIsRemovePlacingsFinalModalOpen] = useState(false);
 
     const [placingsAdminCode, setPlacingsAdminCode] = useState("");
+
+    const [tournamentNumber, setTournamentNumber] = useState(() => loadTournamentNumber());
+
+    const [isTournamentNumberCodeModalOpen, setIsTournamentNumberCodeModalOpen] = useState(false);
+    const [isTournamentNumberModalOpen, setIsTournamentNumberModalOpen] = useState(false);
+    const [isTournamentNumberFinalModalOpen, setIsTournamentNumberFinalModalOpen] = useState(false);
+    const [tournamentNumberCode, setTournamentNumberCode] = useState("");
+    const [tournamentNumberMode, setTournamentNumberMode] = useState("add");
+    const [tournamentNumberAmount, setTournamentNumberAmount] = useState("");
+    const [isTournamentNumberButtonArmed, setIsTournamentNumberButtonArmed] = useState(false);
 
     const [selectedPlacingTeamIds, setSelectedPlacingTeamIds] = useState([]);
 
@@ -2048,6 +2209,10 @@ function SpecialModePage() {
         return areRatingsAtDefault(allTeams, teamRatings);
     }, [allTeams, teamRatings]);
 
+    const isTournamentNumberAlreadyDefault = useMemo(() => {
+        return tournamentNumber === 0;
+    }, [tournamentNumber]);
+
     const isButtonLocked =
         isCalculating ||
         isRestartModalOpen ||
@@ -2060,7 +2225,27 @@ function SpecialModePage() {
         isRemovePlacingsCodeModalOpen ||
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
+        isTournamentNumberCodeModalOpen ||
+        isTournamentNumberModalOpen ||
+        isTournamentNumberFinalModalOpen ||
         showIntro ||
+        isLocked;
+
+    const isTournamentNumberButtonLocked =
+        isCalculating ||
+        isRestartModalOpen ||
+        isTerminateModalOpen ||
+        isScoreBoardResetModalOpen ||
+        isScoreBoardResetConfirmModalOpen ||
+        isAddPlacingsCodeModalOpen ||
+        isAddPlacingsModalOpen ||
+        isAddPlacingsFinalModalOpen ||
+        isRemovePlacingsCodeModalOpen ||
+        isRemovePlacingsModalOpen ||
+        isRemovePlacingsFinalModalOpen ||
+        isTournamentNumberCodeModalOpen ||
+        isTournamentNumberModalOpen ||
+        isTournamentNumberFinalModalOpen ||
         isLocked;
 
     const isMatchRectLocked =
@@ -2075,6 +2260,9 @@ function SpecialModePage() {
         isRemovePlacingsCodeModalOpen ||
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
+        isTournamentNumberCodeModalOpen ||
+        isTournamentNumberModalOpen ||
+        isTournamentNumberFinalModalOpen ||
         showIntro ||
         isLocked;
 
@@ -2089,9 +2277,13 @@ function SpecialModePage() {
         isRemovePlacingsCodeModalOpen ||
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
+        isTournamentNumberCodeModalOpen ||
+        isTournamentNumberModalOpen ||
+        isTournamentNumberFinalModalOpen ||
         isLocked;
+    
     const isScoreBoardResetButtonLocked =
-        isScoreboardAlreadyDefault ||
+        (isScoreboardAlreadyDefault && isTournamentNumberAlreadyDefault) ||
         isTerminateModalOpen ||
         isRestartModalOpen ||
         isScoreBoardResetModalOpen ||
@@ -2102,7 +2294,17 @@ function SpecialModePage() {
         isRemovePlacingsCodeModalOpen ||
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
+        isTournamentNumberCodeModalOpen ||
+        isTournamentNumberModalOpen ||
+        isTournamentNumberFinalModalOpen ||
         isLocked;
+
+    useEffect(() => {
+        console.log({
+            isScoreboardAlreadyDefault,
+            isTournamentNumberAlreadyDefault,
+        });
+    }, [isScoreboardAlreadyDefault, isTournamentNumberAlreadyDefault]);
 
     const isReadOnlyView = viewPhase.startsWith("results_");
 
@@ -2227,8 +2429,86 @@ function SpecialModePage() {
         hasPlayedWinnerAnimation,
     ]);
 
+    useEffect(() => {
+        saveTournamentNumber(tournamentNumber);
+    }, [tournamentNumber]);
+
+    const tournamentLabel = `Official #${tournamentNumber}`;
+
+    const clearTournamentNumberAdminState = () => {
+        setTournamentNumberCode("");
+        setTournamentNumberMode("add");
+        setTournamentNumberAmount("");
+    };
+
+    const handleTournamentNumberClick = () => {
+        clearTournamentNumberAdminState();
+        setIsTournamentNumberCodeModalOpen(true);
+    };
+
+    const handleCloseTournamentNumberModals = () => {
+        setIsTournamentNumberCodeModalOpen(false);
+        setIsTournamentNumberModalOpen(false);
+        setIsTournamentNumberFinalModalOpen(false);
+        clearTournamentNumberAdminState();
+    };
+
+    const handleVerifyTournamentNumberPassword = () => {
+        if (!SCOREBOARD_RESET_CODE) {
+            toast.error("Reset code is not configured.");
+            return;
+        }
+        if (tournamentNumberCode !== SCOREBOARD_RESET_CODE) {
+            toast.error("WRONG PASSWORD!");
+            return;
+        }
+        toast.success("Password correct!!!");
+        setTournamentNumberCode("");
+        setIsTournamentNumberCodeModalOpen(false);
+        setIsTournamentNumberModalOpen(true);
+    };
+
+    const getNextTournamentNumber = () => {
+        const amount = parseInt(tournamentNumberAmount, 10);
+        if (!Number.isFinite(amount)) return tournamentNumber;
+
+        if (tournamentNumberMode === "add")
+            return tournamentNumber + amount;
+
+        if (tournamentNumberMode === "subtract")
+            return Math.max(0, tournamentNumber - amount);
+
+        return Math.max(0, amount);
+    };
+
+    const handleSubmitTournamentNumber = () => {
+        const amount = parseInt(tournamentNumberAmount, 10);
+        if (!Number.isFinite(amount)) {
+            toast.error("Put in a number first.");
+            return;
+        }
+        setIsTournamentNumberModalOpen(false);
+        setIsTournamentNumberFinalModalOpen(true);
+    };
+
+    const handleConfirmTournamentNumber = () => {
+        const next = getNextTournamentNumber();
+        setTournamentNumber(next);
+        saveTournamentNumber(next);
+        setIsTournamentNumberFinalModalOpen(false);
+        clearTournamentNumberAdminState();
+        toast.success(`Tournament number is now #${next}.`);
+    };
+
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
+        if (!tournamentResults) {
+            setTournamentNumber((prev) => {
+                const next = Math.max(0, prev - 1);
+                saveTournamentNumber(next);
+                return next;
+            });
+        }
 
         tournamentSeedsRef.current = null;
 
@@ -2366,6 +2646,9 @@ function SpecialModePage() {
         setTeamRatings(defaults);
         teamRatingsRef.current = defaults;
         saveTeamRatings(defaults);
+
+        setTournamentNumber(0);
+        saveTournamentNumber(tournamentNumber);
 
         const seeded = classifyTeamsForStages(allTeams, defaults);
 
@@ -2605,6 +2888,12 @@ function SpecialModePage() {
 
     const handleTournamentStart = () => {
         tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+
+        setTournamentNumber((prev) => {
+            const next = prev + 1;
+            saveTournamentNumber(next);
+            return next;
+        });
 
         setShowIntro(false);
         setShowTournamentIntro(true);
@@ -3450,16 +3739,40 @@ function SpecialModePage() {
 
     const getMultiplierClass = (mult) => {
         if (mult == null) return "";
-        if (mult > 0) return seriesState.leftTeam.color;
-        if (mult < 0) return seriesState.rightTeam.color;
-        return '#757575';
+
+        if (mult > 0) return seriesState.leftTeam.gradient;
+        if (mult < 0) return seriesState.rightTeam.gradient;
+
+        return "linear-gradient(180deg,#9c9c9c 0%,#757575 45%,#555555 100%)";
     };
 
     const getPensMultiplierClass = (mult) => {
         if (mult == null) return "";
-        if (mult > 0) return seriesState.penaltyTurn === "left" ? "rgb(152, 51, 51)" : "rgb(84, 204, 84)";
-        if (mult < 0) return seriesState.penaltyTurn === "right" ? "rgb(152, 51, 51)" : "rgb(84, 204, 84)";
-        return '#757575';
+
+        const successColor = "#54CC54";
+        const failColor = "#983333";
+
+        const color =
+            mult > 0
+                ? seriesState.penaltyTurn === "left"
+                    ? failColor
+                    : successColor
+                : mult < 0
+                    ? seriesState.penaltyTurn === "right"
+                        ? failColor
+                        : successColor
+                    : null;
+
+        if (!color) {
+            return "linear-gradient(180deg,#9c9c9c 0%,#757575 45%,#555555 100%)";
+        }
+
+        return `linear-gradient(
+        180deg,
+        ${lightenHex(color, 0.36)} 0%,
+        ${color} 45%,
+        ${darkenHex(color, 0.35)} 100%
+    )`;
     };
 
     const renderTeamLabel = (team, seriesWon = false) => {
@@ -3652,6 +3965,7 @@ function SpecialModePage() {
                         0 0 7px ${winnerTeam.color}66,
                         0 1px 3px rgba(0,0,0,0.4)`,
                         color: winnerTeam.color,
+                        gradient: winnerTeam.gradient,
                     };
                     extraState = {
                         playerWonSets: newWon,
@@ -3860,6 +4174,7 @@ function SpecialModePage() {
                                 0 1px 3px rgba(0,0,0,0.4)
                             `,
                             color: winner.color,
+                            gradient: winner.gradient,
                         };
                     } else {
                         toast.dismiss();
@@ -4171,6 +4486,7 @@ function SpecialModePage() {
                             0 1px 3px rgba(0,0,0,0.4)
                         `,
                         color: winner.color,
+                        gradient: winner.gradient,
                     };
                 } else {
                     toast.dismiss();
@@ -4723,7 +5039,7 @@ function SpecialModePage() {
             }, 7000);
 
             const t4 = setTimeout(() => {
-                setWinnersText("And the WINNER is:");
+                setWinnersText("And the CHAMPION is:");
             }, 10000);
 
             const proceed = setTimeout(() => {
@@ -5052,14 +5368,14 @@ function SpecialModePage() {
     })();
 
     const getStageTitleForView = () => {
-        if (viewPhase === "stage1") return "Stage I";
-        if (viewPhase === "stage2") return "Stage II";
-        if (viewPhase === "stage3") return "Stage III";
-        if (viewPhase === "playoffs") return "Playoffs";
+        if (viewPhase === "stage1") return `${tournamentLabel} | Stage I`;
+        if (viewPhase === "stage2") return `${tournamentLabel} | Stage II`;
+        if (viewPhase === "stage3") return `${tournamentLabel} | Stage III`;
+        if (viewPhase === "playoffs") return `${tournamentLabel} | Playoffs`;
 
-        if (viewPhase === "results_stage1") return "Stage I";
-        if (viewPhase === "results_stage2") return "Stage II";
-        if (viewPhase === "results_stage3") return "Stage III";
+        if (viewPhase === "results_stage1") return `${tournamentLabel} | Stage I`;
+        if (viewPhase === "results_stage2") return `${tournamentLabel} | Stage II`;
+        if (viewPhase === "results_stage3") return `${tournamentLabel} | Stage III`;
         return "";
     };
 
@@ -6048,16 +6364,16 @@ function SpecialModePage() {
         let big = "";
 
         if (seriesState.phase === "playoffs") {
-            small = "Playoffs";
+            small = tournamentLabel;
             big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "stage1") {
-            small = "Stage I";
+            small = `${tournamentLabel} | Stage I`;
             big = swissNetTitle(seriesState.swissNet);
         } else if (seriesState.phase === "stage2") {
-            small = "Stage II";
+            small = `${tournamentLabel} | Stage II`;
             big = swissNetTitle(seriesState.swissNet);
         } else if (seriesState.phase === "stage3") {
-            small = "Stage III";
+            small = `${tournamentLabel} | Stage III`;
             big = swissNetTitle(seriesState.swissNet);
         }
 
@@ -6079,7 +6395,7 @@ function SpecialModePage() {
                             className={css.round_text}
                             style={{
                                 position: "absolute",
-                                left: "-35px",
+                                left: "-165px",
                                 marginBottom: "-2px",
                                 fontSize: "24px",
                                 transition: 'none'
@@ -6372,7 +6688,7 @@ function SpecialModePage() {
                 </span>
             </>
         );
-    }, [seriesState]);
+    }, [seriesState, tournamentLabel]);
 
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
@@ -6474,7 +6790,9 @@ function SpecialModePage() {
     }
 
     const pickQuote = (list, seed = 0) => {
-        return list[seed % list.length];
+        if (!list || list.length === 0) return "";
+        const index = ((seed + tournamentNumber * 3) % list.length + list.length) % list.length;
+        return list[index];
     };
 
     if (showWinnersScreen && tournamentResults) {
@@ -6704,7 +7022,10 @@ function SpecialModePage() {
                 <Header
                     setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                     setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
-                    setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
+                    setIsScoreBoardOpen={() => {
+                        setIsLeaderboardOpen(false);
+                        setIsTournamentNumberButtonArmed(false);
+                    }}
                     setIsScoreBoard={() => setIsLeaderboardOpen(true)}
                     isIntroClosed={showIntro || showPickemLine2}
                     isLeaderboardOpen={isLeaderboardOpen}
@@ -6716,6 +7037,7 @@ function SpecialModePage() {
                     setIsRemoveTournamentPlacingsModalOpen={handleRemovePlacingsClick}
                     arePlacingButtonsArmed={arePlacingButtonsArmed}
                     hasAnyPlacings={hasAnyPlacings}
+                    onInfoPage={() => navigate("/special-mode-info")}
                 />
                 <div style={{ marginTop: setsToWin === 1 ? "40px" : "-80px" }} className={css.series_container}>
                     <button
@@ -6803,20 +7125,34 @@ function SpecialModePage() {
                                                     {[...Array(3)].map((_, i) => (
                                                         <div
                                                             key={i}
+                                                            className={css.line}
                                                             style={{
-                                                                backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                                boxShadow: playerWonSets >= i + 1 ?
-                                                                    `
-                                                                    0 0 3px ${seriesState.leftTeam?.color},
-                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                    :
-                                                                    '',
+                                                                boxShadow:
+                                                                    playerWonSets >= i + 1
+                                                                        ? `
+                                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                        : "none",
                                                                 width: "16px",
                                                             }}
-                                                            className={css.line}
-                                                        />
+                                                        >
+                                                            <div
+                                                                className={css.lineUnlit}
+                                                                style={{
+                                                                    background: seriesState.leftTeam?.unlitGradient,
+                                                                }}
+                                                            />
+
+                                                            <div
+                                                                className={css.lineLit}
+                                                                style={{
+                                                                    background: seriesState.leftTeam?.gradient,
+                                                                    opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ))}
                                                 </>
                                             ) : activePhase !== "playoffs" && setsToWin === 2 ? (
@@ -6824,36 +7160,64 @@ function SpecialModePage() {
                                                     {[...Array(2)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{
-                                                                backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                                boxShadow: playerWonSets >= i + 1 ?
-                                                                    `
-                                                                    0 0 3px ${seriesState.leftTeam?.color},
-                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                    :
-                                                                    ''
-                                                            }}
                                                             className={css.line}
-                                                        />
+                                                            style={{
+                                                                boxShadow:
+                                                                    playerWonSets >= i + 1
+                                                                        ? `
+                                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                        : "none",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                className={css.lineUnlit}
+                                                                style={{
+                                                                    background: seriesState.leftTeam?.unlitGradient,
+                                                                }}
+                                                            />
+
+                                                            <div
+                                                                className={css.lineLit}
+                                                                style={{
+                                                                    background: seriesState.leftTeam?.gradient,
+                                                                    opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ))}
                                                 </>
                                             ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                                 <div
-                                                    style={{
-                                                        backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                        boxShadow: playerWonSets >= 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            ''
-                                                    }}
                                                     className={css.line}
-                                                />
+                                                    style={{
+                                                        boxShadow:
+                                                            playerWonSets >= 1
+                                                                ? `
+                                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                : "none",
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={css.lineUnlit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.lineLit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.gradient,
+                                                            opacity: playerWonSets >= 1 ? 1 : 0,
+                                                        }}
+                                                    />
+                                                </div>
                                             ) : null}
                                         </div>
                                     </div>
@@ -6863,20 +7227,34 @@ function SpecialModePage() {
                                                 {[...Array(5)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.verticalLine}
                                                         style={{
                                                             height: "12px",
-                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow: playerWonSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
+                                                            boxShadow:
+                                                                playerWonSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
                                                         }}
-                                                        className={css.verticalLine}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.verticalLineUnlit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLineLit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.gradient,
+                                                                opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 4 ? (
@@ -6884,20 +7262,34 @@ function SpecialModePage() {
                                                 {[...Array(4)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.verticalLine}
                                                         style={{
                                                             height: "14px",
-                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow: playerWonSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
+                                                            boxShadow:
+                                                                playerWonSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
                                                         }}
-                                                        className={css.verticalLine}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.verticalLineUnlit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLineLit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.gradient,
+                                                                opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 3 ? (
@@ -6905,20 +7297,34 @@ function SpecialModePage() {
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.verticalLine}
                                                         style={{
                                                             height: "16px",
-                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow: playerWonSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
+                                                            boxShadow:
+                                                                playerWonSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
                                                         }}
-                                                        className={css.verticalLine}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.verticalLineUnlit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLineLit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.gradient,
+                                                                opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 2 ? (
@@ -6926,36 +7332,64 @@ function SpecialModePage() {
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        style={{
-                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow: playerWonSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
-                                                        }}
                                                         className={css.verticalLine}
-                                                    />
+                                                        style={{
+                                                            boxShadow:
+                                                                playerWonSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className={css.verticalLineUnlit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLineLit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.gradient,
+                                                                opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 1 ? (
                                             <div
-                                                style={{
-                                                    backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                    boxShadow: playerWonSets >= 1 ?
-                                                        `
-                                                        0 0 3px ${seriesState.leftTeam?.color},
-                                                        0 0 7px ${seriesState.leftTeam?.color}66,
-                                                        0 1px 3px rgba(0,0,0,0.4)
-                                                    `
-                                                        :
-                                                        ''
-                                                }}
                                                 className={css.verticalLine}
-                                            />
+                                                style={{
+                                                    boxShadow:
+                                                        playerWonSets >= 1
+                                                            ? `
+                                                                        0 0 3px ${seriesState.leftTeam?.color},
+                                                                        0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                            : "none",
+                                                }}
+                                            >
+                                                <div
+                                                    className={css.verticalLineUnlit}
+                                                    style={{
+                                                        background: seriesState.leftTeam?.unlitGradient,
+                                                    }}
+                                                />
+
+                                                <div
+                                                    className={css.verticalLineLit}
+                                                    style={{
+                                                        background: seriesState.leftTeam?.gradient,
+                                                        opacity: playerWonSets >= 1 ? 1 : 0,
+                                                    }}
+                                                />
+                                            </div>
                                         ) : null}
                                     </div>
                                 </div>
@@ -6981,8 +7415,7 @@ function SpecialModePage() {
                                                         justifyContent: "center",
                                                         gap: "0px",
                                                         width: '63.8px',
-                                                        textShadow: banner.shadow,
-                                                        color: banner.color,
+                                                        textShadow: banner.shadow
                                                     }}
                                                 >
                                                     {topHalf.map((char, index) => (
@@ -6999,7 +7432,15 @@ function SpecialModePage() {
                                                             transition={{
                                                                 duration: 0.45
                                                             }}
-                                                            style={{ display: "inline-block" }}
+                                                            style={{
+                                                                display: "inline-block",
+                                                                background: banner.gradient,
+                                                                backgroundClip: "text",
+                                                                WebkitBackgroundClip: "text",
+
+                                                                color: "transparent",
+                                                                WebkitTextFillColor: "transparent",
+                                                            }}
                                                         >
                                                             {char}
                                                         </motion.span>
@@ -7019,7 +7460,15 @@ function SpecialModePage() {
                                                             transition={{
                                                                 duration: 0.45
                                                             }}
-                                                            style={{ display: "inline-block" }}
+                                                            style={{
+                                                                display: "inline-block",
+                                                                background: banner.gradient,
+                                                                backgroundClip: "text",
+                                                                WebkitBackgroundClip: "text",
+
+                                                                color: "transparent",
+                                                                WebkitTextFillColor: "transparent",
+                                                            }}
                                                         >
                                                             {char}
                                                         </motion.span>
@@ -7034,6 +7483,12 @@ function SpecialModePage() {
                                                         style={{
                                                             display: "inline-block",
                                                             marginLeft: "2px",
+                                                            background: banner.gradient,
+                                                            backgroundClip: "text",
+                                                            WebkitBackgroundClip: "text",
+
+                                                            color: "transparent",
+                                                            WebkitTextFillColor: "transparent",
                                                         }}
                                                     >
                                                         !
@@ -7097,20 +7552,34 @@ function SpecialModePage() {
                                                     {[...Array(3)].map((_, i) => (
                                                         <div
                                                             key={i}
+                                                            className={css.line}
                                                             style={{
-                                                                backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                                boxShadow: playerLostSets >= i + 1 ?
-                                                                    `
-                                                                    0 0 3px ${seriesState.rightTeam?.color},
-                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                    :
-                                                                    '',
+                                                                boxShadow:
+                                                                    playerLostSets >= i + 1
+                                                                        ? `
+                                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                        : "none",
                                                                 width: "16px",
                                                             }}
-                                                            className={css.line}
-                                                        />
+                                                        >
+                                                            <div
+                                                                className={css.lossLineUnlit}
+                                                                style={{
+                                                                    background: seriesState.rightTeam?.unlitGradient,
+                                                                }}
+                                                            />
+
+                                                            <div
+                                                                className={css.lossLineLit}
+                                                                style={{
+                                                                    background: seriesState.rightTeam?.gradient,
+                                                                    opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ))}
                                                 </>
                                             ) : activePhase !== "playoffs" && setsToWin === 2 ? (
@@ -7118,39 +7587,64 @@ function SpecialModePage() {
                                                     {[...Array(2)].map((_, i) => (
                                                         <div
                                                             key={i}
-                                                            style={{
-                                                                backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                                boxShadow: playerLostSets >= i + 1 ?
-                                                                    `
-                                                                    0 0 3px ${seriesState.rightTeam?.color},
-                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                    :
-                                                                    ''
-                                                            }}
                                                             className={css.line}
-                                                        />
+                                                            style={{
+                                                                boxShadow:
+                                                                    playerLostSets >= i + 1
+                                                                        ? `
+                                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                        : "none"
+                                                            }}
+                                                        >
+                                                            <div
+                                                                className={css.lossLineUnlit}
+                                                                style={{
+                                                                    background: seriesState.rightTeam?.unlitGradient,
+                                                                }}
+                                                            />
+
+                                                            <div
+                                                                className={css.lossLineLit}
+                                                                style={{
+                                                                    background: seriesState.rightTeam?.gradient,
+                                                                    opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ))}
                                                 </>
                                             ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                                 <div
+                                                    className={css.line}
                                                     style={{
-                                                        backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                        boxShadow: playerLostSets >= 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            ''
+                                                        boxShadow:
+                                                            playerLostSets >= 1
+                                                                ? `
+                                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                : "none"
                                                     }}
-                                                    className={`${css.line} ${playerLostSets >= 1
-                                                        ? css.lineLoss
-                                                        : css.lineDarkLoss
-                                                        }`}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.lossLineUnlit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.lossLineLit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.gradient,
+                                                            opacity: playerLostSets >= 1 ? 1 : 0,
+                                                        }}
+                                                    />
+                                                </div>
                                             ) : null}
                                         </div>
                                     </div>
@@ -7160,20 +7654,34 @@ function SpecialModePage() {
                                                 {[...Array(5)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.verticalLine}
                                                         style={{
                                                             height: "12px",
-                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow: playerLostSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
+                                                            boxShadow:
+                                                                playerLostSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
                                                         }}
-                                                        className={css.verticalLine}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.verticalLossLineUnlit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLossLineLit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.gradient,
+                                                                opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 4 ? (
@@ -7181,20 +7689,34 @@ function SpecialModePage() {
                                                 {[...Array(4)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.verticalLine}
                                                         style={{
                                                             height: "14px",
-                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow: playerLostSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
+                                                            boxShadow:
+                                                                playerLostSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
                                                         }}
-                                                        className={css.verticalLine}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.verticalLossLineUnlit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLossLineLit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.gradient,
+                                                                opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 3 ? (
@@ -7202,20 +7724,34 @@ function SpecialModePage() {
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.verticalLine}
                                                         style={{
                                                             height: "16px",
-                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow: playerLostSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
+                                                            boxShadow:
+                                                                playerLostSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
                                                         }}
-                                                        className={css.verticalLine}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.verticalLossLineUnlit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLossLineLit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.gradient,
+                                                                opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 2 ? (
@@ -7223,36 +7759,65 @@ function SpecialModePage() {
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        style={{
-                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow: playerLostSets >= i + 1 ?
-                                                                `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                                :
-                                                                ''
-                                                        }}
                                                         className={css.verticalLine}
-                                                    />
+                                                        style={{
+                                                            boxShadow:
+                                                                playerLostSets >= i + 1
+                                                                    ? `
+                                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                                    : "none",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className={css.verticalLossLineUnlit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.verticalLossLineLit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.gradient,
+                                                                opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase === "playoffs" && setsToWin === 1 ? (
                                             <div
-                                                style={{
-                                                    backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                    boxShadow: playerLostSets >= 1 ?
-                                                        `
-                                                        0 0 3px ${seriesState.rightTeam?.color},
-                                                        0 0 7px ${seriesState.rightTeam?.color}66,
-                                                        0 1px 3px rgba(0,0,0,0.4)
-                                                    `
-                                                        :
-                                                        ''
-                                                }}
                                                 className={css.verticalLine}
-                                            />
+                                                style={{
+                                                    height: "12px",
+                                                    boxShadow:
+                                                        playerLostSets >= 1
+                                                            ? `
+                                                                        0 0 3px ${seriesState.rightTeam?.color},
+                                                                        0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                        0 1px 3px rgba(0,0,0,0.4)
+                                                                    `
+                                                            : "none",
+                                                }}
+                                            >
+                                                <div
+                                                    className={css.verticalLossLineUnlit}
+                                                    style={{
+                                                        background: seriesState.rightTeam?.unlitGradient,
+                                                    }}
+                                                />
+
+                                                <div
+                                                    className={css.verticalLossLineLit}
+                                                    style={{
+                                                        background: seriesState.rightTeam?.gradient,
+                                                        opacity: playerLostSets >= 1 ? 1 : 0,
+                                                    }}
+                                                />
+                                            </div>
                                         ) : null}
                                     </div>
                                 </div>
@@ -7332,10 +7897,21 @@ function SpecialModePage() {
                                 fontSize: "18px",
                                 fontWeight: 700,
                                 marginBottom: "8px",
-                                color:
+                                display: "inline-block",
+
+                                backgroundImage:
                                     seriesState.penaltyTurn === "left"
-                                        ? seriesState.leftTeam?.color
-                                        : seriesState.rightTeam?.color,
+                                        ? seriesState.leftTeam?.gradient
+                                        : seriesState.rightTeam?.gradient,
+
+                                backgroundRepeat: "no-repeat",
+                                backgroundSize: "100% 100%",
+
+                                WebkitBackgroundClip: "text",
+                                backgroundClip: "text",
+
+                                WebkitTextFillColor: "transparent",
+                                color: "transparent",
                             }}
                         >
                             Team{" "}
@@ -7345,7 +7921,7 @@ function SpecialModePage() {
                             's turn!
                         </motion.div>
                     ) : null}
-                    <div className={css.scoreboard}>
+                    <div className={css.scoreboard} style={{ backgroundColor: "#fff" }}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                             {isSeriesPointWins ? (
                                 <motion.span
@@ -7401,11 +7977,23 @@ function SpecialModePage() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
+                                    transition={{ duration: 0.6 }}
                                     style={{
-                                        color: seriesState.leftTeam?.color,
-                                        transition: "all 500ms ease-in-out"
-                                    }} className={css.team_name_left}>
+                                        display: "inline-block",
+
+                                        backgroundImage: seriesState.leftTeam?.gradient,
+                                        backgroundRepeat: "no-repeat",
+                                        backgroundSize: "100% 100%",
+
+                                        WebkitBackgroundClip: "text",
+                                        backgroundClip: "text",
+
+                                        WebkitTextFillColor: "transparent",
+                                        color: "transparent",
+
+                                        transition: "all 500ms ease-in-out",
+                                    }}
+                                    className={css.team_name_left}>
                                     Team {seriesState.leftTeam?.name}
                                 </motion.span>
                             ) : null}
@@ -7427,7 +8015,17 @@ function SpecialModePage() {
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ duration: 0.7 }}
                                         className={css.round_text}
-                                        style={{ height: '76px' }}
+                                        style={{
+                                            height: '76px',
+                                            filter:
+                                                roundWins === overtimeTarget
+                                                    ? `
+                                                        drop-shadow(0 0 1.5px ${seriesState.leftTeam.color})
+                                                        drop-shadow(0 0 3.5px ${seriesState.leftTeam?.color}66)
+                                                        drop-shadow(0 1px 3px rgba(0,0,0,0.4))
+                                                    `
+                                                    : "none",
+                                        }}
                                     >
                                         <CountUp
                                             key={roundWins}
@@ -7435,19 +8033,13 @@ function SpecialModePage() {
                                             end={roundWins}
                                             duration={1}
                                             style={{
-                                                color: seriesState.leftTeam?.color,
+                                                background: seriesState.leftTeam?.gradient,
+                                                WebkitBackgroundClip: "text",
+                                                backgroundClip: "text",
+                                                WebkitTextFillColor: "transparent",
+                                                color: "transparent",
                                                 fontSize: "52px",
-                                                transition: "all 2000ms ease-in-out",
-                                                textShadow:
-                                                    roundWins === overtimeTarget
-                                                        ?
-                                                        `
-                                                            0 0 3px ${seriesState.leftTeam?.color},
-                                                            0 0 7px ${seriesState.leftTeam?.color}66,
-                                                            0 1px 3px rgba(0,0,0,0.4)
-                                                        `
-                                                        :
-                                                        "none",
+                                                transition: "all 2000ms ease-in-out"
                                             }}
                                         />
                                     </motion.span>
@@ -7457,20 +8049,34 @@ function SpecialModePage() {
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.line}
                                                         style={{
-                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow: playerWonSets >= i + 1 ?
-                                                                `
-                                                                    0 0 3px ${seriesState.leftTeam?.color},
-                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                :
-                                                                '',
+                                                            boxShadow:
+                                                                playerWonSets >= i + 1
+                                                                    ? `
+                                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                    : "none",
                                                             width: "16px",
                                                         }}
-                                                        className={css.line}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.lineUnlit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.lineLit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.gradient,
+                                                                opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase !== "playoffs" && setsToWin === 2 ? (
@@ -7478,36 +8084,64 @@ function SpecialModePage() {
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        style={{
-                                                            backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                            boxShadow: playerWonSets >= i + 1 ?
-                                                                `
-                                                                    0 0 3px ${seriesState.leftTeam?.color},
-                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                :
-                                                                ''
-                                                        }}
                                                         className={css.line}
-                                                    />
+                                                        style={{
+                                                            boxShadow:
+                                                                playerWonSets >= i + 1
+                                                                    ? `
+                                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                    : "none",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className={css.lineUnlit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.lineLit}
+                                                            style={{
+                                                                background: seriesState.leftTeam?.gradient,
+                                                                opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                             <div
-                                                style={{
-                                                    backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                    boxShadow: playerWonSets >= 1 ?
-                                                        `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                        :
-                                                        ''
-                                                }}
                                                 className={css.line}
-                                            />
+                                                style={{
+                                                    boxShadow:
+                                                        playerWonSets >= 1
+                                                            ? `
+                                                                            0 0 3px ${seriesState.leftTeam?.color},
+                                                                            0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                            : "none",
+                                                }}
+                                            >
+                                                <div
+                                                    className={css.lineUnlit}
+                                                    style={{
+                                                        background: seriesState.leftTeam?.unlitGradient,
+                                                    }}
+                                                />
+
+                                                <div
+                                                    className={css.lineLit}
+                                                    style={{
+                                                        background: seriesState.leftTeam?.gradient,
+                                                        opacity: playerWonSets >= 1 ? 1 : 0,
+                                                    }}
+                                                />
+                                            </div>
                                         ) : null}
                                     </div>
                                 </div>
@@ -7521,28 +8155,40 @@ function SpecialModePage() {
                                     />
                                 ) : !banner ? (
                                     <div className={css.miniSquares}>
-                                        {[...Array(displayedMiniSquares)].map((_, i) => (
-                                            <div
-                                                key={i}
-                                                className={css.square}
-                                                style={{
-                                                    backgroundColor:
-                                                        i < miniWins
-                                                            ? seriesState.leftTeam?.color
-                                                            : seriesState.leftTeam?.unlitColor,
-                                                    boxShadow:
-                                                        i < miniWins
-                                                            ?
-                                                            `
+                                        {[...Array(displayedMiniSquares)].map((_, i) => {
+                                            const isLit = i < miniWins;
+
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={css.square}
+                                                    style={{
+                                                        boxShadow: isLit
+                                                            ? `
                                                                 0 0 3px ${seriesState.leftTeam?.color},
                                                                 0 0 7px ${seriesState.leftTeam?.color}66,
                                                                 0 1px 3px rgba(0,0,0,0.4)
                                                             `
-                                                            :
-                                                            'none',
-                                                }}
-                                            />
-                                        ))}
+                                                            : "none",
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={css.squareUnlit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.squareLit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.gradient,
+                                                            opacity: isLit ? 1 : 0,
+                                                        }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ) : null}
                                 <div className={css.verticalLines}>
@@ -7551,21 +8197,36 @@ function SpecialModePage() {
                                             {[...Array(5)].map((_, i) => (
                                                 <div
                                                     key={i}
+                                                    className={css.verticalLine}
                                                     style={{
                                                         height: "12px",
-                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                        boxShadow: playerWonSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerWonSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
                                                     }}
-                                                    className={css.verticalLine}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.verticalLineUnlit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLineLit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.gradient,
+                                                            opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 4 ? (
@@ -7573,21 +8234,36 @@ function SpecialModePage() {
                                             {[...Array(4)].map((_, i) => (
                                                 <div
                                                     key={i}
+                                                    className={css.verticalLine}
                                                     style={{
                                                         height: "14px",
-                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                        boxShadow: playerWonSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerWonSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
                                                     }}
-                                                    className={css.verticalLine}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.verticalLineUnlit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLineLit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.gradient,
+                                                            opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 3 ? (
@@ -7595,21 +8271,36 @@ function SpecialModePage() {
                                             {[...Array(3)].map((_, i) => (
                                                 <div
                                                     key={i}
+                                                    className={css.verticalLine}
                                                     style={{
                                                         height: "16px",
-                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                        boxShadow: playerWonSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerWonSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
                                                     }}
-                                                    className={css.verticalLine}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.verticalLineUnlit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLineLit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.gradient,
+                                                            opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 2 ? (
@@ -7617,55 +8308,100 @@ function SpecialModePage() {
                                             {[...Array(2)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{
-                                                        backgroundColor: playerWonSets >= i + 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                        boxShadow: playerWonSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.leftTeam?.color},
-                                                                0 0 7px ${seriesState.leftTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
-                                                    }}
                                                     className={css.verticalLine}
-                                                />
+                                                    style={{
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerWonSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={css.verticalLineUnlit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLineLit}
+                                                        style={{
+                                                            background: seriesState.leftTeam?.gradient,
+                                                            opacity: playerWonSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 1 ? (
                                         <div
-                                            style={{
-                                                backgroundColor: playerWonSets >= 1 ? seriesState.leftTeam?.color : seriesState.leftTeam?.unlitColor,
-                                                boxShadow: playerWonSets >= 1 ?
-                                                    `
-                                                        0 0 3px ${seriesState.leftTeam?.color},
-                                                        0 0 7px ${seriesState.leftTeam?.color}66,
-                                                        0 1px 3px rgba(0,0,0,0.4)
-                                                    `
-                                                    :
-                                                    '',
-                                                width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
-                                            }}
                                             className={css.verticalLine}
-                                        />
+                                            style={{
+                                                height: "12px",
+                                                width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                boxShadow:
+                                                    playerWonSets >= 1
+                                                        ? `
+                                                                    0 0 3px ${seriesState.leftTeam?.color},
+                                                                    0 0 7px ${seriesState.leftTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                        : "none",
+                                            }}
+                                        >
+                                            <div
+                                                className={css.verticalLineUnlit}
+                                                style={{
+                                                    background: seriesState.leftTeam?.unlitGradient,
+                                                }}
+                                            />
+
+                                            <div
+                                                className={css.verticalLineLit}
+                                                style={{
+                                                    background: seriesState.leftTeam?.gradient,
+                                                    opacity: playerWonSets >= 1 ? 1 : 0,
+                                                    width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                }}
+                                            />
+                                        </div>
                                     ) : null}
                                 </div>
                                 {!banner && activePhase === "playoffs" ? (
                                     <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
+                                        key={seriesState.leftTeam?.name}
+                                        initial={{ x: 420 }}
+                                        animate={{ x: 0 }}
+                                        exit={{ x: 420 }}
+                                        transition={{ duration: 0.6, ease: "easeInOut" }}
                                         style={{
-                                            color: seriesState.leftTeam?.color,
+                                            display: "inline-block",
+
+                                            backgroundImage: seriesState.leftTeam?.gradient,
+                                            backgroundRepeat: "no-repeat",
+                                            backgroundSize: "100% 100%",
+
+                                            WebkitBackgroundClip: "text",
+                                            backgroundClip: "text",
+
+                                            WebkitTextFillColor: "transparent",
+                                            color: "transparent",
+
                                             transition: "all 500ms ease-in-out",
-                                            margin: '0',
-                                            position: 'absolute',
-                                            right: '110%',
-                                            zIndex: 9997,
-                                            fontSize: '28px'
-                                        }} className={css.team_name_left}>
+
+                                            margin: "0",
+                                            position: "absolute",
+                                            right: "110%",
+                                            zIndex: -1,
+                                            fontSize: "28px",
+                                        }}
+                                        className={css.team_name_left}>
                                         Team {seriesState.leftTeam?.name}
                                     </motion.span>
                                 ) : null}
@@ -7690,8 +8426,7 @@ function SpecialModePage() {
                                         justifyContent: "center",
                                         gap: "0px",
                                         width: '63.8px',
-                                        textShadow: banner.shadow,
-                                        color: banner.color,
+                                        textShadow: banner.shadow
                                     }}
                                 >
                                     {topHalf.map((char, index) => (
@@ -7708,7 +8443,15 @@ function SpecialModePage() {
                                             transition={{
                                                 duration: 0.45
                                             }}
-                                            style={{ display: "inline-block" }}
+                                            style={{
+                                                display: "inline-block",
+                                                background: banner.gradient,
+                                                backgroundClip: "text",
+                                                WebkitBackgroundClip: "text",
+
+                                                color: "transparent",
+                                                WebkitTextFillColor: "transparent",
+                                            }}
                                         >
                                             {char}
                                         </motion.span>
@@ -7728,7 +8471,15 @@ function SpecialModePage() {
                                             transition={{
                                                 duration: 0.45
                                             }}
-                                            style={{ display: "inline-block" }}
+                                            style={{
+                                                display: "inline-block",
+                                                background: banner.gradient,
+                                                backgroundClip: "text",
+                                                WebkitBackgroundClip: "text",
+
+                                                color: "transparent",
+                                                WebkitTextFillColor: "transparent",
+                                            }}
                                         >
                                             {char}
                                         </motion.span>
@@ -7743,6 +8494,12 @@ function SpecialModePage() {
                                         style={{
                                             display: "inline-block",
                                             marginLeft: "2px",
+                                            background: banner.gradient,
+                                            backgroundClip: "text",
+                                            WebkitBackgroundClip: "text",
+
+                                            color: "transparent",
+                                            WebkitTextFillColor: "transparent",
                                         }}
                                     >
                                         !
@@ -7779,13 +8536,13 @@ function SpecialModePage() {
                                             initial={{
                                                 opacity: 0,
                                                 scale: momentum === "tied" ? 0.5 : 0.65,
-                                                rotate: momentum === "tied" ? 25 : -15,
+                                                rotate: momentum === "tied" ? 0 : -15,
                                                 x:
                                                     momentum === "left"
-                                                        ? 10
+                                                        ? 15
                                                         : momentum === "right"
-                                                            ? -10
-                                                            : 0,
+                                                            ? -30
+                                                            : -2,
                                             }}
                                             animate={{
                                                 opacity: 1,
@@ -7793,21 +8550,21 @@ function SpecialModePage() {
                                                 rotate: 0,
                                                 x:
                                                     momentum === "left"
-                                                        ? -20
+                                                        ? -28
                                                         : momentum === "right"
-                                                            ? 20
-                                                            : 0,
+                                                            ? 8
+                                                            : -6,
                                             }}
                                             exit={{
                                                 opacity: 0,
                                                 scale: momentum === "tied" ? 0.5 : 0.65,
-                                                rotate: momentum === "tied" ? -25 : 15,
+                                                rotate: momentum === "tied" ? 0 : 15,
                                                 x:
                                                     momentum === "left"
-                                                        ? -10
+                                                        ? -15
                                                         : momentum === "right"
-                                                            ? 10
-                                                            : 0,
+                                                            ? 4
+                                                            : -6,
                                             }}
                                             transition={{
                                                 duration: 0.35,
@@ -7823,21 +8580,55 @@ function SpecialModePage() {
                                                         ? seriesState.leftTeam?.color
                                                         : momentum === "right"
                                                             ? seriesState.rightTeam?.color
-                                                            : "#7a7a7a",
+                                                            : "#757575",
                                                 filter:
                                                     momentum === "left"
                                                         ? `drop-shadow(0 0 3.5px ${seriesState.leftTeam?.color})`
                                                         : momentum === "right"
                                                             ? `drop-shadow(0 0 3.5px ${seriesState.rightTeam?.color})`
-                                                            : "drop-shadow(0 0 4px #7a7a7a)",
+                                                            : "drop-shadow(0 0 4px #757575)",
                                             }}
                                         >
                                             {momentum === "left" ? (
-                                                <FaCaretLeft size={30} />
+                                                <GradientCaretLeft
+                                                    size={30}
+                                                    gradient={{
+                                                        top: lightenHex(seriesState.leftTeam.color, 0.18),
+                                                        middle: seriesState.leftTeam.color,
+                                                        bottom: darkenHex(
+                                                            seriesState.leftTeam.color,
+                                                            getBrightness(seriesState.leftTeam.color) > 210
+                                                                ? 0.22
+                                                                : 0.35
+                                                        ),
+                                                    }}
+                                                    glowColor={seriesState.leftTeam.color}
+                                                />
                                             ) : momentum === "right" ? (
-                                                <FaCaretRight size={30} />
+                                                <GradientCaretRight
+                                                    size={30}
+                                                    gradient={{
+                                                        top: lightenHex(seriesState.rightTeam.color, 0.18),
+                                                        middle: seriesState.rightTeam.color,
+                                                        bottom: darkenHex(
+                                                            seriesState.rightTeam.color,
+                                                            getBrightness(seriesState.rightTeam.color) > 210
+                                                                ? 0.22
+                                                                : 0.35
+                                                        ),
+                                                    }}
+                                                    glowColor={seriesState.rightTeam.color}
+                                                />
                                             ) : (
-                                                <FaDiamond size={20} />
+                                                <GradientDiamond
+                                                    size={20}
+                                                    gradient={{
+                                                        top: "#9c9c9c",
+                                                        middle: "#757575",
+                                                        bottom: "#555555",
+                                                    }}
+                                                    glowColor="#757575"
+                                                />
                                             )}
                                         </motion.div>
                                     </AnimatePresence>
@@ -7853,6 +8644,7 @@ function SpecialModePage() {
                                             fontSize: "14px",
                                             width: "63.8px",
                                             textAlign: "center",
+                                            marginTop: activePhase === "playoffs" ? "8px" : "0px",
                                         }}
                                     >
                                         Round{" "}
@@ -7927,9 +8719,21 @@ function SpecialModePage() {
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.4 }}
                                     style={{
-                                        color: seriesState.rightTeam?.color,
+                                        display: "inline-block",
+
+                                        backgroundImage: seriesState.rightTeam?.gradient,
+                                        backgroundRepeat: "no-repeat",
+                                        backgroundSize: "100% 100%",
+
+                                        WebkitBackgroundClip: "text",
+                                        backgroundClip: "text",
+
+                                        WebkitTextFillColor: "transparent",
+                                        color: "transparent",
+
                                         transition: "all 500ms ease-in-out",
-                                    }} className={css.team_name_right}>
+                                    }}
+                                    className={css.team_name_right}>
                                     Team {seriesState.rightTeam?.name}
                                 </motion.span>
                             ) : null}
@@ -7957,7 +8761,17 @@ function SpecialModePage() {
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ duration: 0.7 }}
                                         className={css.round_text}
-                                        style={{ height: '76px' }}
+                                        style={{
+                                            height: '76px',
+                                            filter:
+                                                roundLosses === overtimeTarget
+                                                    ? `
+                                                        drop-shadow(0 0 1.5px ${seriesState.rightTeam.color})
+                                                        drop-shadow(0 0 3.5px ${seriesState.rightTeam?.color}66)
+                                                        drop-shadow(0 1px 3px rgba(0,0,0,0.4))
+                                                    `
+                                                    : "none",
+                                        }}
                                     >
                                         <CountUp
                                             key={roundLosses}
@@ -7965,19 +8779,13 @@ function SpecialModePage() {
                                             end={roundLosses}
                                             duration={1}
                                             style={{
-                                                color: seriesState.rightTeam?.color,
+                                                background: seriesState.rightTeam?.gradient,
+                                                WebkitBackgroundClip: "text",
+                                                backgroundClip: "text",
+                                                WebkitTextFillColor: "transparent",
+                                                color: "transparent",
                                                 fontSize: "52px",
-                                                transition: "all 2000ms ease-in-out",
-                                                textShadow:
-                                                    roundLosses === overtimeTarget
-                                                        ?
-                                                        `
-                                                            0 0 3px ${seriesState.rightTeam?.color},
-                                                            0 0 7px ${seriesState.rightTeam?.color}66,
-                                                            0 1px 3px rgba(0,0,0,0.4)
-                                                        `
-                                                        :
-                                                        "none",
+                                                transition: "all 2000ms ease-in-out"
                                             }}
                                         />
                                     </motion.span>
@@ -7987,20 +8795,34 @@ function SpecialModePage() {
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
                                                         key={i}
+                                                        className={css.line}
                                                         style={{
-                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow: playerLostSets >= i + 1 ?
-                                                                `
-                                                                    0 0 3px ${seriesState.rightTeam?.color},
-                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                :
-                                                                '',
+                                                            boxShadow:
+                                                                playerLostSets >= i + 1
+                                                                    ? `
+                                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                    : "none",
                                                             width: "16px",
                                                         }}
-                                                        className={css.line}
-                                                    />
+                                                    >
+                                                        <div
+                                                            className={css.lossLineUnlit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.lossLineLit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.gradient,
+                                                                opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase !== "playoffs" && setsToWin === 2 ? (
@@ -8008,39 +8830,64 @@ function SpecialModePage() {
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        style={{
-                                                            backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                            boxShadow: playerLostSets >= i + 1 ?
-                                                                `
-                                                                    0 0 3px ${seriesState.rightTeam?.color},
-                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `
-                                                                :
-                                                                ''
-                                                        }}
                                                         className={css.line}
-                                                    />
+                                                        style={{
+                                                            boxShadow:
+                                                                playerLostSets >= i + 1
+                                                                    ? `
+                                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                                    : "none"
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className={css.lossLineUnlit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.unlitGradient,
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            className={css.lossLineLit}
+                                                            style={{
+                                                                background: seriesState.rightTeam?.gradient,
+                                                                opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ))}
                                             </>
                                         ) : activePhase !== "playoffs" && setsToWin === 1 ? (
                                             <div
+                                                className={css.line}
                                                 style={{
-                                                    backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                    boxShadow: playerLostSets >= 1 ?
-                                                        `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                        :
-                                                        ''
+                                                    boxShadow:
+                                                        playerLostSets >= 1
+                                                            ? `
+                                                                            0 0 3px ${seriesState.rightTeam?.color},
+                                                                            0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                            0 1px 3px rgba(0,0,0,0.4)
+                                                                        `
+                                                            : "none"
                                                 }}
-                                                className={`${css.line} ${playerLostSets >= 1
-                                                    ? css.lineLoss
-                                                    : css.lineDarkLoss
-                                                    }`}
-                                            />
+                                            >
+                                                <div
+                                                    className={css.lossLineUnlit}
+                                                    style={{
+                                                        background: seriesState.rightTeam?.unlitGradient,
+                                                    }}
+                                                />
+
+                                                <div
+                                                    className={css.lossLineLit}
+                                                    style={{
+                                                        background: seriesState.rightTeam?.gradient,
+                                                        opacity: playerLostSets >= 1 ? 1 : 0,
+                                                    }}
+                                                />
+                                            </div>
                                         ) : null}
                                     </div>
                                 </div>
@@ -8054,28 +8901,40 @@ function SpecialModePage() {
                                     />
                                 ) : !banner ? (
                                     <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
-                                        {[...Array(displayedMiniSquares)].map((_, i) => (
-                                            <div
-                                                key={i}
-                                                className={css.lossSquare}
-                                                style={{
-                                                    backgroundColor:
-                                                        i < miniLosses
-                                                            ? seriesState.rightTeam?.color
-                                                            : seriesState.rightTeam?.unlitColor,
-                                                    boxShadow:
-                                                        i < miniLosses
-                                                            ?
-                                                            `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            'none',
-                                                }}
-                                            />
-                                        ))}
+                                        {[...Array(displayedMiniSquares)].map((_, i) => {
+                                            const isLit = i < miniLosses;
+
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={css.lossSquare}
+                                                    style={{
+                                                        boxShadow: isLit
+                                                            ? `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                            : "none",
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={css.lossSquareUnlit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.lossSquareLit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.gradient,
+                                                            opacity: isLit ? 1 : 0,
+                                                        }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ) : null}
                                 <div className={css.verticalLossLines}>
@@ -8084,21 +8943,36 @@ function SpecialModePage() {
                                             {[...Array(5)].map((_, i) => (
                                                 <div
                                                     key={i}
+                                                    className={css.verticalLine}
                                                     style={{
                                                         height: "12px",
-                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                        boxShadow: playerLostSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerLostSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
                                                     }}
-                                                    className={css.verticalLine}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.verticalLossLineUnlit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLossLineLit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.gradient,
+                                                            opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 4 ? (
@@ -8106,21 +8980,36 @@ function SpecialModePage() {
                                             {[...Array(4)].map((_, i) => (
                                                 <div
                                                     key={i}
+                                                    className={css.verticalLine}
                                                     style={{
                                                         height: "14px",
-                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                        boxShadow: playerLostSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerLostSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
                                                     }}
-                                                    className={css.verticalLine}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.verticalLossLineUnlit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLossLineLit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.gradient,
+                                                            opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 3 ? (
@@ -8128,21 +9017,36 @@ function SpecialModePage() {
                                             {[...Array(3)].map((_, i) => (
                                                 <div
                                                     key={i}
+                                                    className={css.verticalLine}
                                                     style={{
                                                         height: "16px",
-                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                        boxShadow: playerLostSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerLostSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
                                                     }}
-                                                    className={css.verticalLine}
-                                                />
+                                                >
+                                                    <div
+                                                        className={css.verticalLossLineUnlit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLossLineLit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.gradient,
+                                                            opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 2 ? (
@@ -8150,55 +9054,99 @@ function SpecialModePage() {
                                             {[...Array(2)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    style={{
-                                                        backgroundColor: playerLostSets >= i + 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                        boxShadow: playerLostSets >= i + 1 ?
-                                                            `
-                                                                0 0 3px ${seriesState.rightTeam?.color},
-                                                                0 0 7px ${seriesState.rightTeam?.color}66,
-                                                                0 1px 3px rgba(0,0,0,0.4)
-                                                            `
-                                                            :
-                                                            '',
-                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
-                                                    }}
                                                     className={css.verticalLine}
-                                                />
+                                                    style={{
+                                                        width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                        boxShadow:
+                                                            playerLostSets >= i + 1
+                                                                ? `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                                : "none",
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={css.verticalLossLineUnlit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.unlitGradient,
+                                                        }}
+                                                    />
+
+                                                    <div
+                                                        className={css.verticalLossLineLit}
+                                                        style={{
+                                                            background: seriesState.rightTeam?.gradient,
+                                                            opacity: playerLostSets >= i + 1 ? 1 : 0,
+                                                            width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </>
                                     ) : activePhase === "playoffs" && setsToWin === 1 ? (
                                         <div
-                                            style={{
-                                                backgroundColor: playerLostSets >= 1 ? seriesState.rightTeam?.color : seriesState.rightTeam?.unlitColor,
-                                                boxShadow: playerLostSets >= 1 ?
-                                                    `
-                                                        0 0 3px ${seriesState.rightTeam?.color},
-                                                        0 0 7px ${seriesState.rightTeam?.color}66,
-                                                        0 1px 3px rgba(0,0,0,0.4)
-                                                    `
-                                                    :
-                                                    '',
-                                                width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px"
-                                            }}
                                             className={css.verticalLine}
-                                        />
+                                            style={{
+                                                width: seriesState.tiebreakerPhase === "penalties" ? "4.7px" : "5px",
+                                                boxShadow:
+                                                    playerLostSets >= 1
+                                                        ? `
+                                                                    0 0 3px ${seriesState.rightTeam?.color},
+                                                                    0 0 7px ${seriesState.rightTeam?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `
+                                                        : "none",
+                                            }}
+                                        >
+                                            <div
+                                                className={css.verticalLossLineUnlit}
+                                                style={{
+                                                    background: seriesState.rightTeam?.unlitGradient,
+                                                }}
+                                            />
+
+                                            <div
+                                                className={css.verticalLossLineLit}
+                                                style={{
+                                                    background: seriesState.rightTeam?.gradient,
+                                                    opacity: playerLostSets >= 1 ? 1 : 0,
+                                                    width: seriesState.tiebreakerPhase === "penalties" ? "5.2px" : "5.5px",
+                                                }}
+                                            />
+                                        </div>
                                     ) : null}
                                 </div>
                                 {!banner && activePhase === "playoffs" ? (
                                     <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
+                                        key={seriesState.rightTeam?.name}
+                                        initial={{ x: -420 }}
+                                        animate={{ x: 0 }}
+                                        exit={{ x: -420 }}
+                                        transition={{ duration: 0.6, ease: "easeInOut" }}
                                         style={{
-                                            color: seriesState.rightTeam?.color,
+                                            display: "inline-block",
+
+                                            backgroundImage: seriesState.rightTeam?.gradient,
+                                            backgroundRepeat: "no-repeat",
+                                            backgroundSize: "100% 100%",
+
+                                            WebkitBackgroundClip: "text",
+                                            backgroundClip: "text",
+
+                                            WebkitTextFillColor: "transparent",
+                                            color: "transparent",
+
                                             transition: "all 500ms ease-in-out",
-                                            margin: '0',
-                                            position: 'absolute',
-                                            left: '110%',
-                                            zIndex: 9997,
-                                            fontSize: '28px'
-                                        }} className={css.team_name_right}>
+
+                                            margin: "0",
+                                            position: "absolute",
+                                            left: "110%",
+                                            zIndex: -1,
+                                            fontSize: "28px",
+                                        }}
+                                        className={css.team_name_right}>
                                         Team {seriesState.rightTeam?.name}
                                     </motion.span>
                                 ) : null}
@@ -8318,7 +9266,23 @@ function SpecialModePage() {
 
                                 <span
                                     className={css.seriesMultiplier}
-                                    style={{ color: seriesState.tiebreakerPhase === "penalties" ? getPensMultiplierClass(seriesState.lastMultiplier) : getMultiplierClass(seriesState.lastMultiplier), transition: 'none' }}
+                                    style={{
+                                        display: "inline-block",
+
+                                        backgroundImage:
+                                            seriesState.tiebreakerPhase === "penalties"
+                                                ? getPensMultiplierClass(seriesState.lastMultiplier)
+                                                : getMultiplierClass(seriesState.lastMultiplier),
+
+                                        backgroundRepeat: "no-repeat",
+                                        backgroundSize: "100% 100%",
+
+                                        WebkitBackgroundClip: "text",
+                                        backgroundClip: "text",
+
+                                        WebkitTextFillColor: "transparent",
+                                        color: "transparent",
+                                    }}
                                 >
                                     {seriesState.lastMultiplier.toFixed(2)}x
                                 </span>
@@ -8428,7 +9392,10 @@ function SpecialModePage() {
                 <Header
                     setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                     setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
-                    setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
+                    setIsScoreBoardOpen={() => {
+                        setIsLeaderboardOpen(false);
+                        setIsTournamentNumberButtonArmed(false);
+                    }}
                     setIsScoreBoard={() => setIsLeaderboardOpen(true)}
                     isIntroClosed={showIntro || showPickemLine2}
                     isLeaderboardOpen={isLeaderboardOpen}
@@ -8440,11 +9407,45 @@ function SpecialModePage() {
                     setIsRemoveTournamentPlacingsModalOpen={handleRemovePlacingsClick}
                     arePlacingButtonsArmed={arePlacingButtonsArmed}
                     hasAnyPlacings={hasAnyPlacings}
+                    onInfoPage={() => navigate("/special-mode-info")}
                 />
-                <div className={css.page_container}>
+                <div className={css.page_container} style={{ position: "relative" }}>
+                    <button
+                        type="button"
+                        className={css.gamble_button}
+                        onClick={() => {
+                            if (!isTournamentNumberButtonArmed) {
+                                setIsTournamentNumberButtonArmed(true);
+                                return;
+                            }
+
+                            handleTournamentNumberClick();
+                        }}
+                        disabled={isTournamentNumberButtonLocked}
+                        title="Tournament number management"
+                        style={{
+                            position: "absolute",
+                            top: "7%",
+                            left: "-100%",
+                            opacity: isTournamentNumberButtonArmed ? 1 : 0,
+                            pointerEvents: "auto",
+                            cursor: isTournamentNumberButtonArmed ? "pointer" : "default",
+                        }}
+                    >
+                        Change tournament number
+                    </button>
                     <div className={css.leaderboard_header}>
-                        <div style={{ fontSize: "40px", textShadow: "0 0 4px #000" }} className={css.game_title}>
+
+                        <div style={{ fontSize: "40px", textShadow: "0 0 4px #000", textTransform: "none" }} className={css.game_title}>
                             Leaderboard
+                            {tournamentNumber >= 1 && (
+                                <span>{" "}
+                                    after{" "}
+                                    <span style={{ textShadow: "none" }}>
+                                        {tournamentLabel}
+                                    </span>
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -8665,6 +9666,100 @@ function SpecialModePage() {
                                 onClick={confirmTerminate}
                             >
                                 Terminate
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isTournamentNumberCodeModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="tournament-number-code">
+                                Identification code
+                            </label>
+                            <input
+                                id="tournament-number-code"
+                                className={css.reset_input}
+                                type="password"
+                                value={tournamentNumberCode}
+                                onChange={(e) => setTournamentNumberCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCloseTournamentNumberModals}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyTournamentNumberPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isTournamentNumberModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px", top: "10%" }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Tournament number management
+                        </p>
+
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Right now, it's Official <b>#{tournamentNumber}</b>
+                        </p>
+
+                        <div style={{ display: "flex", gap: 12, width: "80%", marginBottom: 4 }}>
+                            <select
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                value={tournamentNumberMode}
+                                onChange={(e) => setTournamentNumberMode(e.target.value)}
+                            >
+                                <option value="add">Add</option>
+                                <option value="subtract">Substract</option>
+                                <option value="set">Set</option>
+                            </select>
+
+                            <input
+                                className={css.reset_input}
+                                style={{ marginBottom: 0 }}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                type="text"
+                                placeholder="Number"
+                                value={tournamentNumberAmount}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const digitsOnly = raw.replace(/[^0-9]/g, "");
+                                    setTournamentNumberAmount(digitsOnly);
+                                }}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCloseTournamentNumberModals}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleSubmitTournamentNumber}>
+                                Submit
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isTournamentNumberFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are sure you want to change the tournament number?
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCloseTournamentNumberModals}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleConfirmTournamentNumber}>
+                                Confirm
                             </button>
                         </div>
                     </div>
@@ -9080,7 +10175,10 @@ function SpecialModePage() {
             <Header
                 setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                 setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
-                setIsScoreBoardOpen={() => setIsLeaderboardOpen(false)}
+                setIsScoreBoardOpen={() => {
+                    setIsLeaderboardOpen(false);
+                    setIsTournamentNumberButtonArmed(false);
+                }}
                 setIsScoreBoard={() => setIsLeaderboardOpen(true)}
                 isIntroClosed={showIntro || showPickemLine2}
                 isLeaderboardOpen={isLeaderboardOpen}
@@ -9092,6 +10190,7 @@ function SpecialModePage() {
                 setIsRemoveTournamentPlacingsModalOpen={handleRemovePlacingsClick}
                 arePlacingButtonsArmed={arePlacingButtonsArmed}
                 hasAnyPlacings={hasAnyPlacings}
+                onInfoPage={() => navigate("/special-mode-info")}
             />
 
             <div className={css.page_container} style={{ transition: "none" }}>
@@ -11605,6 +12704,10 @@ function SpecialModePage() {
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>
+                                <div className={css.game_title} style={{ fontSize: "44px", fontStyle: "italic", marginBottom: 18 }}>
+                                    {tournamentLabel}
+                                </div>
+
                                 <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
                                     Auto-qualifiers for Stage III
                                 </div>

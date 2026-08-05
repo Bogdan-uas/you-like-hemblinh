@@ -16,6 +16,7 @@ const Header = ({
     setIsRemoveTournamentPlacingsModalOpen,
     arePlacingButtonsArmed = false,
     hasAnyPlacings = false,
+    onInfoPage,
 }) => {
     const armedStyle = { opacity: 1, pointerEvents: "auto" };
 
@@ -70,7 +71,16 @@ const Header = ({
                     >
                         Leaderboard
                     </button>
-                ) : null}
+                ) : (
+                    <button
+                        className={`${css.gamble_button} ${isButtonLocked ? css.locked : ""}`}
+                        onClick={onInfoPage}
+                        disabled={isButtonLocked}
+                        style={{ pointerEvents: isGameWon ? "none" : "auto", marginLeft: "64px" }}
+                    >
+                        Info Page
+                    </button>
+                )}
 
                 {isLeaderboardOpen ? (
                     <>

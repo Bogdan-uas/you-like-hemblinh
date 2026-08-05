@@ -1239,6 +1239,59 @@
     transition: all 300ms ease-in-out;
 }
 
+.line,
+.verticalLine {
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow .35s ease;
+}
+
+.lineUnlit,
+.lineLit,
+.verticalLineUnlit,
+.verticalLineLit {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.lineLit,
+.verticalLineLit {
+    transition: opacity .35s ease;
+    will-change: opacity;
+}
+
+.lineLit {
+    height: 5.5px;
+}
+
+.verticalLineLit {
+    width: 5.5px;
+}
+
+.lossLineUnlit,
+.lossLineLit,
+.verticalLossLineUnlit,
+.verticalLossLineLit {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.lossLineLit,
+.verticalLossLineLit {
+    transition: opacity .35s ease;
+    will-change: opacity;
+}
+
+.lossLineLit {
+    height: 5.5px;
+}
+
+.verticalLossLineLit {
+    width: 5.5px;
+}
+
 .miniSquares {
     display: flex;
     align-items: center;
@@ -1278,6 +1331,48 @@
     height: 10px;
     border-right: 1px solid #fff;
     transition: all 300ms ease-in-out;
+}
+
+.square {
+    position: relative;
+    overflow: hidden;
+
+    transition: box-shadow 0.35s ease;
+}
+
+.squareUnlit,
+.squareLit {
+    position: absolute;
+    inset: 0;
+
+    border-radius: inherit;
+}
+
+.squareLit {
+    height: 10.5px;
+    transition: opacity 0.35s ease;
+    will-change: opacity;
+}
+
+.lossSquare {
+    position: relative;
+    overflow: hidden;
+
+    transition: box-shadow 0.35s ease;
+}
+
+.lossSquareUnlit,
+.lossSquareLit {
+    position: absolute;
+    inset: 0;
+
+    border-radius: inherit;
+}
+
+.lossSquareLit {
+    height: 10.5px;
+    transition: opacity 0.35s ease;
+    will-change: opacity;
 }
 
 .game_info_text {
