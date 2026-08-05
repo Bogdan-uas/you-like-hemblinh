@@ -1811,6 +1811,67 @@ const PODIUM_QUOTES = {
     ],
 };
 
+const ANNIVERSARY_THEMES = [
+    {
+        min: 1000,
+        max: Infinity,
+        every: 100,
+        gradient: "linear-gradient(90deg,#ffd700 0%,#ffffff 18%,#7df9ff 35%,#ffd700 100%)",
+        glow: "#ffd700",
+        animation: "gradientShift 30s linear infinite",
+    },
+    {
+        min: 500,
+        max: 999,
+        every: 50,
+        gradient: "linear-gradient(90deg,#ff0000 0%,#ff7f00 18%,#ffff00 35%,#00ff00 55%,#00bfff 75%,#8a2be2 85%,#ff1493 100%)",
+        glow: "#ffffff",
+        animation: "gradientShift 10s linear infinite",
+    },
+    {
+        min: 250,
+        max: 499,
+        every: 25,
+        gradient: "linear-gradient(180deg,#c77dff 0%,#9d4edd 45%,#5a189a 100%)",
+        glow: "#b56cff",
+    },
+    {
+        min: 100,
+        max: 249,
+        every: 10,
+        gradient: "linear-gradient(180deg,#ffffff 0%,#b8f3ff 45%,#5fd3ff 100%)",
+        glow: "#8be7ff",
+    },
+    {
+        min: 50,
+        max: 99,
+        every: 5,
+        gradient: "linear-gradient(180deg,#ff7f7f 0%,#d61a3c 45%,#760019 100%)",
+        glow: "#ff4d6d",
+    },
+    {
+        min: 25,
+        max: 49,
+        every: 5,
+        gradient: "linear-gradient(180deg,#ffffff 0%,#dcdcdc 45%,#9c9c9c 100%)",
+        glow: "#f0f0f0",
+    },
+    {
+        min: 10,
+        max: 24,
+        every: 5,
+        gradient: "linear-gradient(180deg,#fff7b3 0%,gold 45%,#c49000 100%)",
+        glow: "gold",
+    },
+    {
+        min: 5,
+        max: 9,
+        every: 5,
+        gradient: "linear-gradient(180deg,#e8b67a 0%,#cd7f32 45%,#8c5317 100%)",
+        glow: "#cd7f32",
+    },
+];
+
 function SpecialModePage() {
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
@@ -2433,7 +2494,47 @@ function SpecialModePage() {
         saveTournamentNumber(tournamentNumber);
     }, [tournamentNumber]);
 
-    const tournamentLabel = `Official #${tournamentNumber}`;
+    const getTournamentTheme = (number) => {
+        if (number < 5) return null;
+
+        return (
+            ANNIVERSARY_THEMES.find(
+                theme =>
+                    number >= theme.min &&
+                    number <= theme.max &&
+                    number % theme.every === 0
+            ) ?? null
+        );
+    };
+
+    const tournamentTheme = getTournamentTheme(tournamentNumber);
+
+    const tournamentLabel = useMemo(() => (
+        <>
+            Official{" "}
+            <span
+                style={
+                    tournamentTheme
+                        ? {
+                            backgroundImage: tournamentTheme.gradient,
+                            backgroundRepeat: "no-repeat",
+                            backgroundSize: tournamentTheme.animation
+                                ? "120% 120%"
+                                : "100% 100%",
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            color: "transparent",
+                            filter: `drop-shadow(0 0 3px ${tournamentTheme.glow})`,
+                            animation: tournamentTheme.animation,
+                        }
+                        : undefined
+                }
+            >
+                #{tournamentNumber}
+            </span>
+        </>
+    ), [tournamentNumber, tournamentTheme]);
 
     const clearTournamentNumberAdminState = () => {
         setTournamentNumberCode("");
@@ -5368,15 +5469,28 @@ function SpecialModePage() {
     })();
 
     const getStageTitleForView = () => {
-        if (viewPhase === "stage1") return `${tournamentLabel} | Stage I`;
-        if (viewPhase === "stage2") return `${tournamentLabel} | Stage II`;
-        if (viewPhase === "stage3") return `${tournamentLabel} | Stage III`;
-        if (viewPhase === "playoffs") return `${tournamentLabel} | Playoffs`;
+        if (viewPhase === "stage1")
+            return <>{tournamentLabel} | Stage I</>;
 
-        if (viewPhase === "results_stage1") return `${tournamentLabel} | Stage I`;
-        if (viewPhase === "results_stage2") return `${tournamentLabel} | Stage II`;
-        if (viewPhase === "results_stage3") return `${tournamentLabel} | Stage III`;
-        return "";
+        if (viewPhase === "stage2")
+            return <>{tournamentLabel} | Stage II</>;
+
+        if (viewPhase === "stage3")
+            return <>{tournamentLabel} | Stage III</>;
+
+        if (viewPhase === "playoffs")
+            return <>{tournamentLabel} | Playoffs</>;
+
+        if (viewPhase === "results_stage1")
+            return <>{tournamentLabel} | Stage I</>;
+
+        if (viewPhase === "results_stage2")
+            return <>{tournamentLabel} | Stage II</>;
+
+        if (viewPhase === "results_stage3")
+            return <>{tournamentLabel} | Stage III</>;
+
+        return null;
     };
 
     const canOpenSwissMatch = (stageObj, net, match) => {
@@ -6367,13 +6481,25 @@ function SpecialModePage() {
             small = tournamentLabel;
             big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "stage1") {
-            small = `${tournamentLabel} | Stage I`;
+            small = (
+                <>
+                    {tournamentLabel} | Stage I
+                </>
+            );
             big = swissNetTitle(seriesState.swissNet);
         } else if (seriesState.phase === "stage2") {
-            small = `${tournamentLabel} | Stage II`;
+            small = (
+                <>
+                    {tournamentLabel} | Stage II
+                </>
+            );
             big = swissNetTitle(seriesState.swissNet);
         } else if (seriesState.phase === "stage3") {
-            small = `${tournamentLabel} | Stage III`;
+            small = (
+                <>
+                    {tournamentLabel} | Stage III
+                </>
+            );
             big = swissNetTitle(seriesState.swissNet);
         }
 
@@ -6387,7 +6513,7 @@ function SpecialModePage() {
                 <span className={css.series_label}>
                     <span className={css.series_upper_label}>
                         <motion.span
-                            key={small}
+                            key={`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage}`}
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 40 }}
@@ -9436,14 +9562,20 @@ function SpecialModePage() {
                     </button>
                     <div className={css.leaderboard_header}>
 
-                        <div style={{ fontSize: "40px", textShadow: "0 0 4px #000", textTransform: "none" }} className={css.game_title}>
+                        <div
+                            style={{
+                                fontSize: "40px",
+                                textShadow: "0 0 4px #000",
+                                textTransform: "none",
+                            }}
+                            className={css.game_title}
+                        >
                             Leaderboard
+
                             {tournamentNumber >= 1 && (
-                                <span>{" "}
-                                    after{" "}
-                                    <span style={{ textShadow: "none" }}>
-                                        {tournamentLabel}
-                                    </span>
+                                <span style={{ textShadow: "none" }}>
+                                    {" "}after{" "}
+                                    {tournamentLabel}
                                 </span>
                             )}
                         </div>
@@ -12704,7 +12836,14 @@ function SpecialModePage() {
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>
-                                <div className={css.game_title} style={{ fontSize: "44px", fontStyle: "italic", marginBottom: 18 }}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                    }}
+                                >
                                     {tournamentLabel}
                                 </div>
 
