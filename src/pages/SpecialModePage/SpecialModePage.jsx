@@ -2360,13 +2360,6 @@ function SpecialModePage() {
         isTournamentNumberFinalModalOpen ||
         isLocked;
 
-    useEffect(() => {
-        console.log({
-            isScoreboardAlreadyDefault,
-            isTournamentNumberAlreadyDefault,
-        });
-    }, [isScoreboardAlreadyDefault, isTournamentNumberAlreadyDefault]);
-
     const isReadOnlyView = viewPhase.startsWith("results_");
 
     useEffect(() => {
