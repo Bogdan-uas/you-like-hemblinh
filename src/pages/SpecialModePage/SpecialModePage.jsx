@@ -9548,7 +9548,6 @@ function SpecialModePage() {
                             handleTournamentNumberClick();
                         }}
                         disabled={isTournamentNumberButtonLocked}
-                        title="Tournament number management"
                         style={{
                             position: "absolute",
                             top: "7%",

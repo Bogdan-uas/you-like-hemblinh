@@ -71,16 +71,19 @@ const Header = ({
                     >
                         Leaderboard
                     </button>
-                ) : (
+                ) : onInfoPage ? (
                     <button
                         className={`${css.gamble_button} ${isButtonLocked ? css.locked : ""}`}
                         onClick={onInfoPage}
                         disabled={isButtonLocked}
-                        style={{ pointerEvents: isGameWon ? "none" : "auto", marginLeft: "64px" }}
+                        style={{
+                            pointerEvents: isGameWon ? "none" : "auto",
+                            marginLeft: "64px",
+                        }}
                     >
                         Info Page
                     </button>
-                )}
+                ) : null}
 
                 {isLeaderboardOpen ? (
                     <>
