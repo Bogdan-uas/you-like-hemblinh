@@ -1298,7 +1298,7 @@ const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" })
                             style={{
                                 boxShadow: lineGlow(isLit),
                                 ...(total >= 3 ? { width: "16px" } : null),
-                                marginTop: "4px"
+                                marginTop: "8px"
                             }}
                         >
                             <div
