@@ -2022,7 +2022,7 @@ const SetBreakdownOverlay = ({
                     flexDirection: "column",
                     alignItems: "center",
                     gap: "2px",
-                    marginTop: "14px",
+                    marginTop: "48px",
                 }}
             >
                 <div
@@ -2052,6 +2052,7 @@ const SetBreakdownOverlay = ({
                                 width: "14px",
                                 height: "14px",
                                 borderRadius: "50%",
+                                marginTop: "-2px",
                                 backgroundColor: "#54CC54",
                                 boxShadow: BREAKDOWN_GLOW("#54CC54"),
                             }}
@@ -2066,6 +2067,7 @@ const SetBreakdownOverlay = ({
                                 width: "14px",
                                 height: "14px",
                                 borderRadius: "50%",
+                                marginTop: "-2px",
                                 backgroundColor: "#54CC54",
                                 boxShadow: BREAKDOWN_GLOW("#54CC54"),
                             }}
