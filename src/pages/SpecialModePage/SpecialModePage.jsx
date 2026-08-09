@@ -1955,6 +1955,10 @@ const SetBreakdownOverlay = ({
         (!won && rightSetsAfter === setsToWin);
 
     const roundsPlayed = (entry.wins ?? 0) + (entry.losses ?? 0);
+    const roundsLabel =
+        roundsPlayed % 10 === 1 && roundsPlayed % 100 !== 11
+            ? "Round"
+            : "Rounds";
 
     const penaltyView = plan.penalties
         ? (() => {
@@ -2430,7 +2434,7 @@ const SetBreakdownOverlay = ({
                         scoreSize={44}
                         scoreWidth={49}
                         center="text"
-                        centerText={`${roundsPlayed} Rounds`}
+                        centerText={`${roundsPlayed} ${roundsLabel}`}
                         centerColor="#ffffff"
                         isPlayoffs={isPlayoffs}
                         setLinesTotal={setLinesTotal}
