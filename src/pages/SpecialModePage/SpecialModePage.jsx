@@ -2025,9 +2025,53 @@ const SetBreakdownOverlay = ({
                     marginTop: "14px",
                 }}
             >
-                <span className={css.info_text} style={{ fontSize: "15px", color: "#555", fontWeight: 600 }}>
-                    Round {round.roundNumber}
-                </span>
+                <div
+                    style={{
+                        position: "relative",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                    }}
+                >
+                    <span
+                        className={css.info_text}
+                        style={{
+                            fontSize: "15px",
+                            color: "#555",
+                            fontWeight: 600,
+                        }}
+                    >
+                        Round {round.roundNumber}
+                    </span>
+
+                    {round.winner === "left" && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                left: -32,
+                                width: "14px",
+                                height: "14px",
+                                borderRadius: "50%",
+                                backgroundColor: "#54CC54",
+                                boxShadow: BREAKDOWN_GLOW("#54CC54"),
+                            }}
+                        />
+                    )}
+
+                    {round.winner === "right" && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                right: -32,
+                                width: "14px",
+                                height: "14px",
+                                borderRadius: "50%",
+                                backgroundColor: "#54CC54",
+                                boxShadow: BREAKDOWN_GLOW("#54CC54"),
+                            }}
+                        />
+                    )}
+                </div>
 
                 <BreakdownScoreRow
                     leftTeam={leftTeam}
