@@ -13,30 +13,45 @@ import matchModal from "../../../assets/images/image-7.png";
 import chosenLeftTeamModal from "../../../assets/images/image-8.png";
 import chosenRightTeamModal from "../../../assets/images/image-8.5.png";
 import seriesScreen from "../../../assets/images/image-9.png";
-import miniRoundWonAmber from "../../../assets/images/image-10.png";
-import miniRoundWonAzure from "../../../assets/images/image-11.png";
+import miniRoundWonChocolate from "../../../assets/images/image-10.png";
+import miniRoundWonIvory from "../../../assets/images/image-11.png";
+import wholeRoundWonChocolate from "../../../assets/images/image-11.5.png";
 import matchPointImg from "../../../assets/images/image-12.png";
-import teamAmberGoesTo10Net from "../../../assets/images/image-13.png";
-import extRoundsScreenOne from "../../../assets/images/image-13.1.png";
-import extRoundsScreenTwo from "../../../assets/images/image-13.2.png";
-import extRoundsScreenThree from "../../../assets/images/image-13.3.png";
-import pensScreen from "../../../assets/images/image-13.4.png";
-import successfulAttemptForLeft from "../../../assets/images/image-13.5.png";
-import unSuccessfulAttemptForRight from "../../../assets/images/image-13.6.png";
-import neutralAttemptForLeft from "../../../assets/images/image-13.7.png";
-import leftWinsPens from "../../../assets/images/image-13.8.png";
-import matchRectPens from "../../../assets/images/image-13.9.png";
-import matchModalExtRoundsAndPens from "../../../assets/images/image-13.91.png";
-import matchModalExtRoundsAndPensHovered from "../../../assets/images/image-13.92.png";
+import teamChocolateGoesTo10Net from "../../../assets/images/image-13.png";
 import finishedMatchModalImg from "../../../assets/images/image-14.png";
 import finishedMatchModalTwoImg from "../../../assets/images/image-14.1.png";
+import hoveredTotalRoundsCountButton from "../../../assets/images/image-14.2.png";
+import detailedMatchResults from "../../../assets/images/image-14.3.png";
+import significantPartDivider from "../../../assets/images/image-14.4.png";
+import setEnding from "../../../assets/images/image-14.5.png";
+import boThreeFinishedMatchModal from "../../../assets/images/image-14.6.png";
+import detailedMatchResultsBoThreeFirstSet from "../../../assets/images/image-14.7.png";
+import detailedMatchResultsBoThreeSecondSet from "../../../assets/images/image-14.8.png";
+import detailedMatchResultsBoThreeDecider from "../../../assets/images/image-14.9.png";
 import finishedMatchModalThreeImg from "../../../assets/images/image-15.png";
+import extRoundsScreenOne from "../../../assets/images/image-15.1.png";
+import extRoundsScreenTwo from "../../../assets/images/image-15.2.png";
+import extRoundsScreenThree from "../../../assets/images/image-15.3.png";
+import pensScreen from "../../../assets/images/image-15.4.png";
+import successfulAttemptForLeft from "../../../assets/images/image-15.5.png";
+import unSuccessfulAttemptForRight from "../../../assets/images/image-15.6.png";
+import neutralAttemptForLeft from "../../../assets/images/image-15.7.png";
+import rightWinsPens from "../../../assets/images/image-15.8.png";
+import matchRectPens from "../../../assets/images/image-15.9.png";
+import matchModalExtRoundsAndPens from "../../../assets/images/image-15.91.png";
+import matchModalExtRoundsAndPensHovered from "../../../assets/images/image-15.92.png";
+import extendedRoundsAndPensInDetailedMatchResults from "../../../assets/images/image-15.93.png";
 import stageTwoQualifiersImg from "../../../assets/images/image-16.png";
 import stageTwoImg from "../../../assets/images/image-17.png";
 import playoffsImg from "../../../assets/images/image-18.png";
 import playoffsQualifiersImg from "../../../assets/images/image-19.png";
+import grandFinalistsImg from "../../../assets/images/image-19.5.png";
 import winnersScreenImg from "../../../assets/images/image-20.png";
 import pickemSummaryImg from "../../../assets/images/image-21.png";
+import playoffsResultsAndTournamentFinished from "../../../assets/images/image-22.png";
+import updatedLeaderboard from "../../../assets/images/image-23.png";
+import introImgTwo from "../../../assets/images/image-24.png";
+import tournamentIntroScreenImgTwo from "../../../assets/images/image-25.png";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 
@@ -203,6 +218,10 @@ const SECTIONS = [
         label: "— Can I watch the results of this first match? — Of course!",
     },
     {
+        id: "breakdown-explained",
+        label: "Detailed Match Results",
+    },
+    {
         id: "tiebreaker-system",
         label: "Tiebreaker system after Quadruple Overtime",
     },
@@ -217,6 +236,10 @@ const SECTIONS = [
     {
         id: "what-happens",
         label: "What happens next?",
+    },
+    {
+        id: "finale",
+        label: "Finale? Or not?"
     }
 ];
 
@@ -349,6 +372,12 @@ const SpecialModeInfoPage = () => {
         document.getElementById("tiebreaker-system")?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const scrollToBreakdownExplained = (e) => {
+        e.preventDefault();
+        document.getElementById("breakdown-explained")?.scrollIntoView({ behavior: "smooth" });
+    };
+    
+
     const renderInfoNavigation = () => {
         return (
             <div
@@ -415,7 +444,7 @@ const SpecialModeInfoPage = () => {
                     </p>
                     <p className={css.info_text}>
                         When firstly clicking on the "Special" button and going onto this page, you will see the Intro Page (depicted below this text). <br />
-                        Above you see already a familiar <b>header</b> with two buttons: "Restart the game?" and "Terminate the game?".
+                        Above, you see already a familiar <b>header</b> with two buttons: "Restart the game?" and "Terminate the game?".
                         First restarts the tournament and redirects you to this page again & second redirects you to Home Page but doesn't restart the tournament.
                         Near those two, you will see an orange button, named as "Leaderboard". We will come to this in a minute, ok? <br />
                         Below the header, you see the encouraging text to the tournament and the button leading to this Info Page nearby. <br />
@@ -430,7 +459,7 @@ const SpecialModeInfoPage = () => {
                         There you see all 64 teams, their points and placements.
                     </p>
                     <div className={css.image_container}>
-                        <img src={scoreBoardImg} alt="Scoreboard" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                        <img src={scoreBoardImg} alt="Leaderboard" className={css.image} style={{ width: '34vw', height: '35vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                             (Higher points = higher placement)
                         </span>
@@ -445,7 +474,7 @@ const SpecialModeInfoPage = () => {
                         <img src={dashedDividerTwoImg} alt="Divider, which show the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '73vh' }} />
                     </div>
                     <p style={{ marginBottom: '24px' }} className={css.info_text}>
-                        As you can read it, these should be dividers to show which Stages which teams autoqualify to. But wait, what are Stages meant here?
+                        As you can read it, these should be dividers to show which Stages which teams autoqualify to. <br /> <i>— But wait, what are "Stages" meant here?</i> <br />
                         There are three stages throughout the whole tournament, which are being played in Swiss Format: <b>Stage I</b>, <b>Stage II</b> and <b>Stage III</b>. <br />
                         After Stage III, there will stay only 16 teams remaining, which will play in Playoffs (or another name for it, Knockout Stage), starting from Round of 16.
                     </p>
@@ -483,13 +512,16 @@ const SpecialModeInfoPage = () => {
                     <div className={css.image_container}>
                         <img src={tournamentIntroScreenHoverImg} alt="Hovering onto a team circle to see the team's name in Tournament Intro Screen" className={css.image} style={{ width: '35vw', height: '35vh' }} />
                     </div>
+                    <p className={css.info_text} style={{ marginBottom: '12px' }}>
+                        And as you see by yourself, the tournament has a name and this name is "<b>Official</b>" (my example was Dota 2's "International" and so I came to "Official"). Each new tournament has its order number and since I start the very first tournament, I have "Official #1".
+                    </p>
                     <p className={css.info_text}>
-                        When you click "Continue", the tournament starts. You'll start from this: <br />
+                        When you click "Continue", the <b>Official #1</b> starts. You'll start from this: <br />
                     </p>
                     <div className={css.image_container}>
-                        <img src={swissStageImg} alt="First look of Stage I" className={css.image} style={{ width: '37vw', height: '50vh' }} />
+                        <img src={swissStageImg} alt="First look of Stage I" className={css.image} style={{ width: '37vw', height: '48vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                            (Teams' distribution here depends on their placement in the top, but very first tournament has always the same qualifiers for every Stage, as well as Stage I. Exactly how the distribution system works, it all will be explained in the chapter <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToDistributionExplained} href='#distribution-explained'>"Distribution system in Swiss Stages"</a>)
+                            (Teams' distribution here depends on their placement in the top, but very first tournament has always the same qualifiers for every Stage, as well as Stage I. Exactly how the distribution system works, it all will be explained in the <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToDistributionExplained} href='#distribution-explained'>"Distribution system in Swiss Stages"</a> section)
                         </span>
                     </div>
                     <p className={css.info_text}>
@@ -531,7 +563,7 @@ const SpecialModeInfoPage = () => {
                         So for example, a team had an opponent, which finished 3:0 and then an opponent, which is in Round 4 with the record 2:1, then the Buchholz score is 3 + 2 = 5.
                         In the nets, the teams are sorted by two factors in two lists: by the placements and Buchholz scores.
                         Then the teams are match-upped as always but if a rematch between two teams is happening, the Buchholz scores are playing a role. Two teams, which had the chance of a rematch, get separated and put into match-ups with those teams, which have another Buchholz scores than themselves. <br />
-                        <i>Still, there is no guaranteeing that a rematch between two teams can't happen in different Swiss Stages!</i>
+                        <i>Still, there is no guaranteeing that a rematch between two teams can't happen in different Stages!!!</i>
                     </p>
                     <p style={{ marginTop: '8px', fontStyle: "italic", fontWeight: 800 }} className={css.info_text}>
                         This is a bit complicated, so you don't have to understand it in order to play freely. I just had to explain it for those who need this.
@@ -545,60 +577,6 @@ const SpecialModeInfoPage = () => {
                     <p className={css.info_text}>To start a match, you need to find a rectangle with yellow glow: <b>(this doesn't look exactly like in reality)</b></p>
                     <div
                         className={`${css.match_rect} ${css.match_current}`}
-                        style={{ pointerEvents: "none", marginTop: '24px', marginBottom: '4px' }}
-                    >
-                        <div
-                            className={
-                                css.match_content
-                            }
-                        >
-                            <div
-                                className={
-                                    css.team_cell
-                                }
-                            >
-                                <div
-                                    className={
-                                        css.team_circle
-                                    }
-                                    style={{
-                                        background: COLORS.amber.color
-                                    }}
-                                    title={COLORS.amber.name}
-                                />
-                            </div>
-                
-                            <div
-                                className={
-                                    css.vs_cell
-                                }
-                            >
-                                <span className={css.vs_text}>VS</span>
-                            </div>
-                
-                            <div
-                                className={
-                                    css.team_cell
-                                }
-                            >
-                                <div
-                                    className={
-                                        css.team_circle
-                                    }
-                                    style={{ background: COLORS.azure.color }}
-                                    title={COLORS.azure.name}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(This yellow glow shows that this match is current)</span>
-                    <p className={css.info_text}>
-                        Only the matches with this glow are clickable and playable.
-                        Once the match is played and finished, previously dashed match becomes a match with a yellow glow, which means it becomes playable. <br />
-                        To know the order of the matches, look at the right darker part of a match rectangle, where each of the rectangles has its own order number.
-                    </p>
-                    <div
-                        className={`${css.match_rect} ${css.match_next}`}
                         style={{ pointerEvents: "none", marginTop: '24px', marginBottom: '4px' }}
                     >
                         <div
@@ -641,6 +619,60 @@ const SpecialModeInfoPage = () => {
                                     }
                                     style={{ background: COLORS.ivory.color }}
                                     title={COLORS.ivory.name}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(This yellow glow shows that this match is current)</span>
+                    <p className={css.info_text}>
+                        Only the matches with this glow are clickable and playable.
+                        Once the match is played and finished, previously dashed match becomes a match with a yellow glow, which means it becomes playable. <br />
+                        To know the order of the matches, look at the right darker part of a match rectangle, where each of the rectangles has its own order number.
+                    </p>
+                    <div
+                        className={`${css.match_rect} ${css.match_next}`}
+                        style={{ pointerEvents: "none", marginTop: '24px', marginBottom: '4px' }}
+                    >
+                        <div
+                            className={
+                                css.match_content
+                            }
+                        >
+                            <div
+                                className={
+                                    css.team_cell
+                                }
+                            >
+                                <div
+                                    className={
+                                        css.team_circle
+                                    }
+                                    style={{
+                                        background: COLORS.peach.color
+                                    }}
+                                    title={COLORS.peach.name}
+                                />
+                            </div>
+                
+                            <div
+                                className={
+                                    css.vs_cell
+                                }
+                            >
+                                <span className={css.vs_text}>VS</span>
+                            </div>
+                
+                            <div
+                                className={
+                                    css.team_cell
+                                }
+                            >
+                                <div
+                                    className={
+                                        css.team_circle
+                                    }
+                                    style={{ background: COLORS.lilac.color }}
+                                    title={COLORS.lilac.name}
                                 />
                             </div>
                         </div>
@@ -688,7 +720,7 @@ const SpecialModeInfoPage = () => {
                     <p className={css.info_text}>
                         At the very top, there are a stage name, a trophy icon, which all teams are fighting for and a match name with its order number. <br />
                         Lower from it, there is the "Best of" of the match. <br />
-                        In the center, there is the scoreboard. In the middle, there is a big "VS" and round count. On the left and on the right, there are these big numbers, which tell who how much rounds has already taken and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
+                        In the center, there is the scoreboard. In the middle, there is a leading indicator, which at the start is a diamond, because of tied score and round count. On the left and on the right, there are these big numbers, which tell who how much rounds has already taken and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
                         Below the scoreboard, there is "First to n" and "nx Overtime". These show up, once it's Overtime and the Overtime can go to multiple ones.
                         At the bottom, there's gamble button. <br />
                         In general, all the rules are from Extended Mode. In order to win a set here, 13 rounds are required to be won. Maximum of a normal regulation is 24 rounds, so if it is a tie 12-12 after 24 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 15-15, so each team won 3 OT rounds, we go onto Double Overtime and it can go up to 4 Overtimes. If after 4 Overtimes, there's still a tie, then there will be taken another tiebreaker system. This tiebreaker system is explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToTiebreakingExplained} href='#tiebreaker-system'>here</a>. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 13th Round and each first round of every Overtime require 10 mini-wins to win a round.</i> <br /> In order to win a mini-round, some specific multiplier is required. Here is one more difference: <br />
@@ -701,14 +733,18 @@ const SpecialModeInfoPage = () => {
                     </p>
                     <p className={css.info_text}>And the win <i>here</i> counts for <span style={{ textDecoration: 'underline' }}>your chosen team</span>. A bad multiplier (below 0x) counts then for the team, that is against your chosen team:</p>
                     <div className={css.image_container}>
-                        <img src={miniRoundWonAmber} alt="Won mini-round for Team Amber" className={css.image} style={{ width: '32vw', height: '36vh' }} />
-                        <img src={miniRoundWonAzure} alt="Won mini-round for Team Azure" className={css.image} style={{ width: '32vw', height: '36vh' }} />
+                        <img src={miniRoundWonChocolate} alt="Won mini-round for Team Chocolate" className={css.image} style={{ width: '29vw', height: '36vh' }} />
+                        <img src={miniRoundWonIvory} alt="Won mini-round for Team Ivory" className={css.image} style={{ width: '29vw', height: '36vh' }} />
+                    </div>
+                    <p className={css.info_text}>And by taking a round, a team gets a lead and leading indicator will show to the team, which has a lead:</p>
+                    <div className={css.image_container}>
+                        <img src={wholeRoundWonChocolate} alt="Won round for Team Chocolate" className={css.image} style={{ width: '26vw', height: '36vh' }} />
                     </div>
                     <p className={css.info_text}>And as it is a Best of 1 in 0:0 net of Stage I, a team needs one set to win:</p>
                     <div className={css.image_container}>
                         <img src={matchPointImg} alt="MATCH POINT!!! for the Team Amber!" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                            (Once a team is one round away from taking a set, they have a "Set Point!" above their names. But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". "MATCH POINT!!!" differs itself in some specific matches like Progression and Elimination matches, but I'll leave it already to you to find "some other specific cases" out)
+                            (Once a team is one round away from taking a set, they have a "Set Point!" label above their names. But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". This label differs itself in some specific matches like Progression and Elimination matches, but I'll leave it already to you to find "some other specific cases" out)
                         </span>
                     </div>
                     <p className={css.info_text}>
@@ -718,7 +754,7 @@ const SpecialModeInfoPage = () => {
                         The winner side is light-green and the loser side is light-red on the rectangle. Depending if your chosen team won, a green check icon appears and a red cross appears, if lost. The "VS" is replaced by the final score of the match: <br />
                     </p>
                     <div className={css.image_container}>
-                        <img src={teamAmberGoesTo10Net} alt="Team Amber goes to 1:0 net and Team Azure goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                        <img src={teamChocolateGoesTo10Net} alt="Team Amber goes to 1:0 net and Team Azure goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                     </div>
                 </section>
                 <section>
@@ -736,8 +772,8 @@ const SpecialModeInfoPage = () => {
                     <p className={css.info_text}>
                         On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the check icon again (it can also be a cross icon but if the match would have been lost). <br />
                         And there is also a small label, which tells how many <b>Pick&apos;em points</b> you got. <br />
-                        In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 36th place to 33rd place. Loser team loses 5 points and moves from 61st place to 64th place.<br />
-                        In the footer, there is a precise series summary. Here, you can see total played rounds, the score after 1st Half, the score after 2nd Half and in some case, like here as well, the score after all OTs (here, it was only 1x OT).
+                        In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 48th place to 33rd place. Loser team loses 5 points and moves from 49st place to 64th place.<br />
+                        In the footer, there is a precise series summary. Here, you can see total played rounds, which is also a clickable button (we will come back to it soon in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToBreakdownExplained} href='#breakdown-explained'>"Detailed Match Results"</a> section), the score after 1st Half, the score after 2nd Half and in some cases, like here as well, the score after all OTs (here, it was only 1x OT).
                     </p>
                     <p className={css.info_text}>
                         These check marks near the names of Halfs and OT show which team won the Extended Round (10 mini-wins round) in that half. <br />
@@ -757,6 +793,63 @@ const SpecialModeInfoPage = () => {
                     </div>
                 </section>
                 <section>
+                    <div id="breakdown-explained" style={{ marginTop: '24px' }} className={css.divider_container}>
+                        <h3 style={{ marginTop: '12px', width: "max-content", textAlign: "start" }} className={css.title}>
+                            Detailed Match Results
+                        </h3>
+                        <div className={css.divider} />
+                    </div>
+                    <p className={css.info_text}>As I have already spoiled it to you in the previous section, there is even more detailed series summary. To open it, we should click onto that blue button with total rounds count:</p>
+                    <div className={css.image_container}>
+                        <img src={hoveredTotalRoundsCountButton} alt="Hovered blue button with total rounds count" className={css.image} style={{ width: '24vw', height: '35vh', margin: "0 auto" }} />
+                        <img src={detailedMatchResults} alt="Detailed Match Results" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                    </div>
+                    <p className={css.info_text}>
+                        At the top, there are a modal and the navigation. The modal contains the match Stage, name and order number, "Best of" of this match, gained Pick&apos;em points specifically in this set(this is a Bo1 here, so in this Bo1), final set score with total played rounds, "Back?" button and the text, which can be clicked and shrink the modal for a better view of the breakdown. The modal also has all the possible indicator to show whether your pickem team won this specific set(again, it's a Bo1 here, so in this Bo1). <br />
+                        The navigation contains all significant parts of the set and allows you to go directly to that or that part. These two (modal and navigation) are always with you on the screen (until you click on the "Back?" button, of course).
+                    </p>
+                    <p className={css.info_text}>
+                        And as you already understood, this is a detailed breakdown of each round, each having the won amount of mini-rounds for both teams. The parts are also visually separated, like here for example:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={significantPartDivider} alt="Divider between First Half and Second Half" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                    </div>
+                    <p className={css.info_text}>
+                        The ending of the set looks like this, for example (in this case, it has happened in first Overtime):
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={setEnding} alt="Ending of the set in Overtime" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                    </div>
+                    <p className={css.info_text}>
+                        For non-Bo1 matches, like e.g. Bo3s, there are different looks of match modals and detailed match results:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={boThreeFinishedMatchModal} alt="Finished Match modal, Bo3" className={css.image} style={{ width: '24vw', height: '50vh', margin: "0 auto" }} />
+                        <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                            (Decider is the last playable set of a series; In this case, it's meant a Set 3)
+                        </span>
+                    </div>
+                    <p className={css.info_text}>
+                        And the UI for the Detailed Match Results modal for non-Bo1 matches is also different. I open at first the "Set 1":
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={detailedMatchResultsBoThreeFirstSet} alt="Detailed Match Results of Set 1 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                    </div>
+                    <p className={css.info_text}>
+                        Here, it's visible that the modal indicates whether your picked team won the set you're currently reviewing. Gained Pick&apos;em points are here as well only for a set you've taken.
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={detailedMatchResultsBoThreeSecondSet} alt="Detailed Match Results of Set 2 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                        <img src={detailedMatchResultsBoThreeDecider} alt="Detailed Match Results of the Decider of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                        <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                            (Golden label is only shown at the last played set of a series and shows how much Pick&apos;em points you have gained from the whole series)
+                        </span>
+                        <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                            (If your picked team wins last needed set to win, you get from that set only 1 Pick&apos;em point)
+                        </span>
+                    </div>
+                </section>
+                <section>
                     <div id="tiebreaker-system" style={{ marginTop: '24px' }} className={css.divider_container}>
                         <h3 style={{ marginTop: '12px', width: "max-content", textAlign: "start" }} className={css.title}>
                             Tiebreaker system after Quadruple Overtime
@@ -766,17 +859,17 @@ const SpecialModeInfoPage = () => {
                     <p className={css.info_text}>There has been a simple tiebreaker system for a long time: Overtimes could go up to infinity, until a team gets 4 OT Rounds in a single Overtime. Now, the system has changed and the previous system only works up to Quadruple(4x) Overtime. If it's tied again in 4x Overtime, another way to separate teams is being implemented.</p>
                     <p className={css.info_text}>After 24-24 tie, this screen will show up. We see here the scores and the set lines below. Below that, we'll see the explanation text of what will happen now and then you will see messages showing up in a list and the scores being updated. Here, we are seeing a chronological order of all 6 possible Extended Rounds to be won. That team, which won more Extended Rounds throughout the whole set, that team also wins the set (4 Extended Rounds are already enough):</p>
                     <div className={css.image_container}>
-                        <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '38vh' }} />
+                        <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '34vh' }} />
                     </div>
                     <div className={css.image_container}>
-                        <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '36vh' }} />
+                        <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '34vh' }} />
                     </div>
                     <p className={css.info_text}>If the Extended Rounds score is tied 3-3, penalty series will start, which will decide everything:</p>
                     <div className={css.image_container}>
-                        <img src={extRoundsScreenThree} alt="Extended Rounds score tied 3-3" className={css.image} style={{ width: '30vw', height: '55vh' }} />
+                        <img src={extRoundsScreenThree} alt="Extended Rounds score tied 3-3" className={css.image} style={{ width: '30vw', height: '32vh' }} />
                     </div>
                     <div className={css.image_container}>
-                        <img src={pensScreen} alt="Penalty series screen" className={css.image} style={{ width: '30vw', height: '37vh' }} />
+                        <img src={pensScreen} alt="Penalty series screen" className={css.image} style={{ width: '30vw', height: '39vh' }} />
                     </div>
                     <p className={css.info_text}>
                         It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn't been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. The rules are now different as from normal series.
@@ -795,19 +888,19 @@ const SpecialModeInfoPage = () => {
                         If the multiplier is 0.00x, no matter the team, the same team needs to retake the same attempt:
                     </p>
                     <div className={css.image_container}>
-                        <img src={neutralAttemptForLeft} alt="Neutral attempt for the left team" className={css.image} style={{ width: '30vw', height: '41vh' }} />
+                        <img src={neutralAttemptForLeft} alt="Neutral attempt for the left team (must retake the attempt)" className={css.image} style={{ width: '30vw', height: '38vh' }} />
                     </div>
                     <p className={css.info_text}>
-                        The rules on how many successful attempts are needed to win, are explained in that same Wikipedia page. But, whoever wins the penalty series that one also wins the whole set:
+                        The rules on how many successful attempts are needed to win, are explained in that same Wikipedia page. But, whoever wins the penalty series, that one also wins the whole set:
                     </p>
                     <div className={css.image_container}>
-                        <img src={leftWinsPens} alt="Left team win the penalty series" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                        <img src={rightWinsPens} alt="Right team win the penalty series" className={css.image} style={{ width: '30vw', height: '34vh' }} />
                     </div>
                     <p className={css.info_text}>
                         Match rectangle of such a match looks like this then:
                     </p>
                     <div className={css.image_container}>
-                        <img src={matchRectPens} alt="Match rectangle with penalty score" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                        <img src={matchRectPens} alt="Match rectangle with penalty score" className={css.image} style={{ width: '30vw', height: '21.5vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                             (Instead of "Pens", it could be also "ERs", which stands for "Extended Rounds". "ERs" is there if this match was finished already by Extended Rounds score. Also, this label underneath is only in BO1s.)
                         </span>
@@ -819,7 +912,13 @@ const SpecialModeInfoPage = () => {
                         <img src={matchModalExtRoundsAndPens} alt="Match modal with Extended Rounds score and penalty score" className={css.image} style={{ width: '28vw', height: '43vh' }} />
                     </div>
                     <div className={css.image_container}>
-                        <img src={matchModalExtRoundsAndPensHovered} alt="Hovered onto the info icon near 'Penalties' text, where we see a pop-up with full penalties breakdown" className={css.image} style={{ width: '28vw', height: '44vh' }} />
+                        <img src={matchModalExtRoundsAndPensHovered} alt="Hovered onto the info icon near 'Penalties' text, where we see a pop-up with full penalties breakdown" className={css.image} style={{ width: '28vw', height: '47vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        And this is how it looks in Detailed Match Results:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={extendedRoundsAndPensInDetailedMatchResults} alt="Look of 'Extended Rounds' and 'Penalties' parts in Detailed Match Results" className={css.image} style={{ width: '28vw', height: '31vh' }} />
                     </div>
                 </section>
                 <section>
@@ -987,34 +1086,69 @@ const SpecialModeInfoPage = () => {
                     </div>
                     <p className={css.info_text}>After that, you can proceed with further matches. When all the match-ups in Stage I are finished, only 16 teams are left. They qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
                     <div className={css.image_container}>
-                        <img src={stageTwoQualifiersImg} alt="Stage II Qualifiers" className={css.image} style={{ width: '30vw', height: '50vh' }} />
+                        <img src={stageTwoQualifiersImg} alt="Stage II Qualifiers" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                     </div>
                     <div className={css.image_container}>
-                        <img src={stageTwoImg} alt="Stage II" className={css.image} style={{ width: '33vw', height: '40vh' }} />
+                        <img src={stageTwoImg} alt="Stage II" className={css.image} style={{ width: '33vw', height: '42vh' }} />
                         <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                             (There is a navigation menu in top left corner, where you can also see Stage III and Playoffs, once you finish Stage II)
                         </span>
                     </div>
                     <p className={css.info_text}>And so you can proceed from Stage II to Stage III and from Stage III to Playoffs:</p>
                     <div className={css.image_container}>
-                        <img src={playoffsQualifiersImg} alt="Playoffs Qualifiers" className={css.image} style={{ width: '30vw', height: '50vh' }} />
+                        <img src={playoffsQualifiersImg} alt="Playoffs Qualifiers" className={css.image} style={{ width: '30vw', height: '40vh' }} />
                     </div>
                     <div className={css.image_container}>
-                        <img src={playoffsImg} alt="Playoffs" className={css.image} style={{ width: '33vw', height: '45vh' }} />
+                        <img src={playoffsImg} alt="Playoffs" className={css.image} style={{ width: '33vw', height: '40vh' }} />
                     </div>
                     <p className={css.info_text}>As I mentioned above, Round of 16 and Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and the Grand Final is <b>BO9</b>.</p>
                     <p className={css.info_text}>
-                        Playoffs are single-elimination stage, which means that once a team loses a series, it flies out of the tournament directly. By the time we reach Grand Final, there should be only two teams left.
+                        Playoffs are single-elimination stage, which means that once a team loses a series, it flies out of the tournament directly. By the time we reach Grand Final, there should be only two teams left:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={grandFinalistsImg} alt="Two contenders for the championship remaining" className={css.image} style={{ width: '33vw', height: '38vh' }} />
+                    </div>
+                    <p className={css.info_text}>
                         In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner's screen, where we see first 4 places of the tournament:
                     </p>
                     <div className={css.image_container}>
-                        <img src={winnersScreenImg} alt="Team Lime as Winner, Team Blue as Runner-up, Team Gold as Third Place, Team Orange as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
+                        <img src={winnersScreenImg} alt="Team Gold as Winner, Team Lime as Runner-up, Team Blue as Third Place, Team Green as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
                     </div>
                     <p className={css.info_text}>After clicking "Proceed", we are redirected to Pick&apos;em summary, where you can see how many matches overall you've guessed correctly throughout the tournament and your final Pick&apos;em points score and also whether you won or not:</p>
                     <div className={css.image_container}>
-                        <img src={pickemSummaryImg} alt="Pick'em Summary Screen" className={css.image} style={{ width: '35vw', height: '60vh' }} />
+                        <img src={pickemSummaryImg} alt="Pick'em Summary Screen" className={css.image} style={{ width: '35vw', height: '52vh' }} />
                     </div>
-                    <p className={css.info_text}>Afterwards you can start a new tournament in Special Mode once again or click on "To the bracket" button to see the full results of the tournament.</p>
+                </section>
+                <section>
+                    <div id="finale" style={{ marginTop: '24px' }} className={css.divider_container}>
+                        <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Finale? Or not?</h3>
+                        <div className={css.divider} />
+                    </div>
+                    <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button and I'm getting indeed redirected to the playoffs results:</p>
+                    <div className={css.image_container}>
+                        <img src={playoffsResultsAndTournamentFinished} alt="Playoffs Results and Finished Tournament Results" className={css.image} style={{ width: '33vw', height: '40vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        Five buttons are replacing now the Needed Pick&apos;em points and they explain by themselves, what they do. Also, in the Header, we can open the updated Leaderboard:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={updatedLeaderboard} alt="Updated Leaderboard" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                        <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                            (The trophy icon resembles each Official win for the teams, the medals are understandable, what they resemble)
+                        </span>
+                    </div>
+                    <p className={css.info_text}>
+                        Then, I clicked "Back to the start of Special Mode" and got redirected to Intro Page again:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={introImgTwo} alt="Intro Page 2" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                    </div>
+                    <p className={css.info_text}>
+                        Afterwards, I can start the Official #2:
+                    </p>
+                    <div className={css.image_container}>
+                        <img src={tournamentIntroScreenImgTwo} alt="Tournament Intro Screen #2" className={css.image} style={{ width: '35vw', height: '35vh' }} />
+                    </div>
                 </section>
                 <div style={{ marginTop: '24px' }} className={css.divider} />
                 <p style={{ fontWeight: '700' }} className={css.info_text}>Hope, it helps those who don't understand how to play without any explanations. 😜</p>

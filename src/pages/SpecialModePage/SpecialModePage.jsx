@@ -22,14 +22,17 @@ import { SERIES_ACTIONS } from "../../../assets/constants.js";
 import GradientCaretLeft from "../../components/GradientIcon/GradientCaretLeft.jsx";
 import GradientCaretRight from "../../components/GradientIcon/GradientCaretRight.jsx";
 import GradientDiamond from "../../components/GradientIcon/GradientDiamond.jsx";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
 const STORAGE_KEY = "specialPageState_swiss_v2";
 const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";
+const ROUND_LOG_LS_KEY = "specialMode_currentRoundLog_v1";
 const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 const TOURNAMENT_NUMBER_LS_KEY = "specialMode_tournamentNumber_v1";
+const BREAKDOWN_HIDDEN_LS_KEY = "specialMode_breakdownModalHidden_v1";
 
 const ROUND12_TOAST_ID = "round12-warning";
 const SECRET_TOAST_ID = "secret-toast";
@@ -1231,6 +1234,1352 @@ const trophyCountToDisplay = (n) => {
     return { mode: "count", n };
 };
 
+const BREAKDOWN_GLOW = (color) => `
+                                0 0 6px ${color},
+                                0 0 14px ${color}66,
+                                0 2px 6px rgba(0,0,0,0.4)`;
+
+const BreakdownSquares = ({ team, lit, total, side }) => (
+    <div
+        className={css.miniSquares}
+        style={side === "right" ? { flexDirection: "row-reverse" } : undefined}
+    >
+        {[...Array(total)].map((_, i) => {
+            const isLit = i < lit;
+
+            return (
+                <div
+                    key={i}
+                    className={side === "right" ? css.lossSquare : css.square}
+                    style={{
+                        boxShadow: isLit
+                            ? `
+                                0 0 3px ${team?.color},
+                                0 0 7px ${team?.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `
+                            : "none",
+                    }}
+                >
+                    <div
+                        className={side === "right" ? css.lossSquareUnlit : css.squareUnlit}
+                        style={{ background: team?.unlitGradient }}
+                    />
+                    <div
+                        className={side === "right" ? css.lossSquareLit : css.squareLit}
+                        style={{ background: team?.gradient, opacity: isLit ? 1 : 0 }}
+                    />
+                </div>
+            );
+        })}
+    </div>
+);
+
+const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" }) => {
+    const lineGlow = (isLit) =>
+        isLit
+            ? `
+                0 0 3px ${team?.color},
+                0 0 7px ${team?.color}66,
+                0 1px 3px rgba(0,0,0,0.4)
+            `
+            : "none";
+
+    if (orientation === "horizontal") {
+        return (
+            <div className={side === "right" ? css.lossLines : css.lines}>
+                {[...Array(total)].map((_, i) => {
+                    const isLit = i < lit;
+
+                    return (
+                        <div
+                            key={i}
+                            className={css.line}
+                            style={{
+                                boxShadow: lineGlow(isLit),
+                                ...(total >= 3 ? { width: "16px" } : null),
+                                marginTop: "4px"
+                            }}
+                        >
+                            <div
+                                className={side === "right" ? css.lossLineUnlit : css.lineUnlit}
+                                style={{ background: team?.unlitGradient }}
+                            />
+                            <div
+                                className={side === "right" ? css.lossLineLit : css.lineLit}
+                                style={{
+                                    background: team?.gradient,
+                                    opacity: isLit ? 1 : 0,
+                                }}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    return (
+        <div className={side === "right" ? css.verticalLossLines : css.verticalLines}>
+            {[...Array(total)].map((_, i) => {
+                const isLit = i < lit;
+
+                return (
+                    <div
+                        key={i}
+                        className={css.verticalLine}
+                        style={{
+                            height: total >= 5 ? "14px" : total >= 3 ? "16px" : "18px",
+                            width: "5px",
+                            boxShadow: lineGlow(isLit),
+                        }}
+                    >
+                        <div
+                            className={side === "right" ? css.verticalLossLineUnlit : css.verticalLineUnlit}
+                            style={{ background: team?.unlitGradient }}
+                        />
+                        <div
+                            className={side === "right" ? css.verticalLossLineLit : css.verticalLineLit}
+                            style={{
+                                background: team?.gradient,
+                                opacity: isLit ? 1 : 0,
+                                width: "5.5px",
+                            }}
+                        />
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+const BreakdownScoreNumber = ({ team, value, glow, dim, size = 44, width }) => (
+    <span
+        className={css.round_text}
+        style={{
+            fontSize: `${size}px`,
+            lineHeight: 1,
+            color: team?.color,
+            opacity: dim ? 0.4 : 1,
+            textShadow: glow ? BREAKDOWN_GLOW(team?.color) : "none",
+            ...(width ? { width: `${width}px`, display: "inline-block", textAlign: "center" } : null),
+        }}
+    >
+        {value}
+    </span>
+);
+
+const BreakdownLeadingIndicator = ({ leftTeam, rightTeam, leftScore, rightScore }) => {
+    const momentum =
+        leftScore > rightScore ? "left" : rightScore > leftScore ? "right" : "tie";
+
+    if (momentum === "left" && leftTeam) {
+        return (
+            <GradientCaretLeft
+                size={26}
+                gradient={{
+                    top: lightenHex(leftTeam.color, 0.18),
+                    middle: leftTeam.color,
+                    bottom: darkenHex(
+                        leftTeam.color,
+                        getBrightness(leftTeam.color) > 210 ? 0.22 : 0.35
+                    ),
+                }}
+                glowColor={leftTeam.color}
+            />
+        );
+    }
+
+    if (momentum === "right" && rightTeam) {
+        return (
+            <GradientCaretRight
+                size={26}
+                gradient={{
+                    top: lightenHex(rightTeam.color, 0.18),
+                    middle: rightTeam.color,
+                    bottom: darkenHex(
+                        rightTeam.color,
+                        getBrightness(rightTeam.color) > 210 ? 0.22 : 0.35
+                    ),
+                }}
+                glowColor={rightTeam.color}
+            />
+        );
+    }
+
+    return (
+        <GradientDiamond
+            size={18}
+            gradient={{ top: "#9c9c9c", middle: "#757575", bottom: "#555555" }}
+            glowColor="#757575"
+        />
+    );
+};
+
+const BreakdownPointLabel = ({ team, text }) => (
+    <span
+        className={css.info_text}
+        style={{
+            color: team?.color,
+            fontSize: "16px",
+            fontWeight: 500,
+            minHeight: "20px",
+            marginTop: "-8px",
+            transition: "all 500ms ease-in-out",
+            textShadow: text
+                ? `
+                    0 0 3px ${team?.color},
+                    0 0 7px ${team?.color}66,
+                    0 1px 3px rgba(0,0,0,0.4)
+                `
+                : "none",
+            whiteSpace: "nowrap",
+        }}
+    >
+        {text || "\u00A0"}
+    </span>
+);
+
+const BreakdownScoreRow = ({
+    leftTeam,
+    rightTeam,
+    leftScore,
+    rightScore,
+    scoreSize = 44,
+    scoreWidth,
+    squaresTotal = 0,
+    leftSquares = 0,
+    rightSquares = 0,
+    setLinesTotal = 0,
+    leftSets = 0,
+    rightSets = 0,
+    leftGlow = false,
+    rightGlow = false,
+    leftDim = false,
+    rightDim = false,
+    leftOpacity = 1,
+    rightOpacity = 1,
+    isPlayoffs = false,
+    center = "indicator",
+    centerText = "",
+    centerColor = "#2e2f42",
+    penalties = null,
+    leftLabel = "",
+    rightLabel = "",
+    showLabels = false,
+}) => {
+    const momentum =
+        leftScore > rightScore
+            ? "left"
+            : rightScore > leftScore
+                ? "right"
+                : "tied";
+
+    const hasPens = !!penalties;
+
+    const renderSide = (side) => {
+        const team = side === "left" ? leftTeam : rightTeam;
+        const score = side === "left" ? leftScore : rightScore;
+        const glow = side === "left" ? leftGlow : rightGlow;
+        const dim = side === "left" ? leftDim : rightDim;
+        const squares = side === "left" ? leftSquares : rightSquares;
+        const sets = side === "left" ? leftSets : rightSets;
+        const label = side === "left" ? leftLabel : rightLabel;
+        const opacity = side === "left" ? leftOpacity : rightOpacity;
+
+        return (
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: side === "left" ? "flex-start" : "flex-end",
+                    opacity,
+                    transition: "opacity 400ms ease",
+                }}
+            >
+                {showLabels && (
+                    <BreakdownPointLabel
+                        team={team}
+                        text={label}
+                    />
+                )}
+
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: side === "left" ? "row-reverse" : "row",
+                        alignItems: "center",
+                        gap: hasPens ? "10px" : "14px",
+                    }}
+                >
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                        }}
+                    >
+                        <BreakdownScoreNumber
+                            team={team}
+                            value={score}
+                            glow={glow}
+                            dim={dim}
+                            size={scoreSize}
+                            width={scoreWidth}
+                        />
+
+                        {!isPlayoffs && setLinesTotal > 0 && (
+                            <BreakdownSetLines
+                                team={team}
+                                lit={sets}
+                                total={setLinesTotal}
+                                side={side === "right" ? "right" : undefined}
+                                orientation="horizontal"
+                            />
+                        )}
+                    </div>
+
+                    {hasPens ? (
+                        <PenaltyCircles
+                            results={
+                                side === "left"
+                                    ? penalties.leftResults ?? []
+                                    : penalties.rightResults ?? []
+                            }
+                            team={side}
+                            attemptsToDisplay={penalties.attemptsToDisplay}
+                            resolved={penalties.resolved}
+                            shouldHaveMargin={false}
+                        />
+                    ) : squaresTotal > 0 ? (
+                        <BreakdownSquares
+                            team={team}
+                            lit={squares}
+                            total={squaresTotal}
+                            side={side === "right" ? "right" : undefined}
+                        />
+                    ) : null}
+
+                    {isPlayoffs && setLinesTotal > 0 && (
+                        <BreakdownSetLines
+                            team={team}
+                            lit={sets}
+                            total={setLinesTotal}
+                            side={side === "right" ? "right" : undefined}
+                        />
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "16px",
+            }}
+        >
+            {renderSide("left")}
+
+            <div
+                style={{
+                    minWidth: "63.8px",
+                    height: "42px",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    overflow: center === "indicator" ? "hidden" : "visible",
+                    flexShrink: 0,
+                    marginTop: showLabels ? "20px" : 0,
+                }}
+            >
+                {center === "indicator" ? (
+                    <motion.div
+                        initial={false}
+                        animate={{
+                            x:
+                                momentum === "left"
+                                    ? -28
+                                    : momentum === "right"
+                                        ? 8
+                                        : -6,
+                        }}
+                        transition={{
+                            duration: 0.35,
+                            ease: "easeInOut",
+                        }}
+                        style={{ marginTop: "-4px" }}
+                    >
+                        <BreakdownLeadingIndicator
+                            leftTeam={leftTeam}
+                            rightTeam={rightTeam}
+                            leftScore={leftScore}
+                            rightScore={rightScore}
+                        />
+                    </motion.div>
+                ) : (
+                    <span
+                        className={css.info_text}
+                        style={{
+                            fontSize: "16px",
+                            fontWeight: 700,
+                            color: centerColor,
+                            whiteSpace: "nowrap",
+                            marginTop: "-4px",
+                        }}
+                    >
+                        {centerText}
+                    </span>
+                )}
+            </div>
+
+            {renderSide("right")}
+        </div>
+    );
+};
+
+const BreakdownSectionTitle = ({ text, marginTop = "16px", marginBottom = "0px" }) => (
+    <h4
+        className={css.game_title}
+        style={{ fontSize: "30px", color: "#999", marginTop, marginBottom }}
+    >
+        {text}
+    </h4>
+);
+
+const BreakdownDivider = ({ from, to }) => (
+    <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+        <BreakdownSectionTitle text={from} marginTop="0px" marginBottom="16px" />
+        <hr style={{ width: "600px", margin: "0 auto" }} className={css.dashed_divider} />
+        <BreakdownSectionTitle text={to} marginTop="16px" />
+    </div>
+);
+
+const BREAKDOWN_OT_NAMES = {
+    1: "Overtime",
+    2: "Double Overtime",
+    3: "Triple Overtime",
+    4: "Quadruple Overtime",
+    5: "Quintuple Overtime",
+    6: "Sextuple Overtime",
+};
+
+const BREAKDOWN_OT_SHORT = {
+    1: "Overtime",
+    2: "Double Overtime",
+    3: "Triple Overtime",
+    4: "Quadruple Overtime",
+    5: "Quintuple Overtime",
+    6: "Sextuple Overtime",
+};
+
+const SetBreakdownOverlay = ({
+    sets,
+    index,
+    onIndexChange,
+    onClose,
+    leftTeam,
+    rightTeam,
+    bestOf,
+    stageLabel,
+    matchTitle,
+    matchNumber,
+    isPlayoffs = false,
+    pointLabelText = "MATCH POINT!!!",
+}) => {
+    const isBo1 = bestOf === 1;
+    const entry = sets?.[index] ?? null;
+
+    const scrollRef = useRef(null);
+    const sectionRefs = useRef({});
+    const modalRef = useRef(null);
+    const [activeSection, setActiveSection] = useState(null);
+    const [modalHeight, setModalHeight] = useState(300);
+
+    const [isModalHidden, setIsModalHidden] = useState(() => {
+        try {
+            return localStorage.getItem(BREAKDOWN_HIDDEN_LS_KEY) === "1";
+        } catch {
+            return false;
+        }
+    });
+
+    const toggleModalHidden = () => {
+        setIsModalHidden((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem(BREAKDOWN_HIDDEN_LS_KEY, next ? "1" : "0");
+            } catch {
+                /* ignore */
+            }
+            return next;
+        });
+    };
+
+    const navRef = useRef(null);
+
+    const [indicator, setIndicator] = useState({
+        top: 0,
+        height: 0,
+    });
+
+    const plan = useMemo(() => {
+        if (!entry) return null;
+
+        const log = Array.isArray(entry.roundLog) ? entry.roundLog : [];
+
+        const firstHalf = log.filter((r) => r.part === "firstHalf");
+        const secondHalf = log.filter((r) => r.part === "secondHalf");
+
+        const otMap = new Map();
+        log
+            .filter((r) => typeof r.part === "string" && r.part.startsWith("ot"))
+            .forEach((r) => {
+                const block = r.overtimeBlock ?? Number(String(r.part).slice(2));
+                if (!otMap.has(block)) otMap.set(block, []);
+                otMap.get(block).push(r);
+            });
+
+        const overtimes = [...otMap.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([block, rounds]) => ({ block, rounds }));
+
+        const extendedRounds = entry.extendedRounds ?? {
+            firstHalf: null,
+            secondHalf: null,
+            overtimes: [],
+        };
+
+        const extWinners = buildExtendedRoundWinnerList(extendedRounds).filter(
+            (x) => x.winner
+        );
+
+        const isATie = entry.wins === entry.losses;
+        const hasExtended = isATie && extWinners.length > 0;
+        const penalties = extendedRounds.penalties ?? null;
+
+        let extLeft = 0;
+        let extRight = 0;
+        extWinners.forEach((w) => {
+            if (w.winner === "left") extLeft += 1;
+            else extRight += 1;
+        });
+
+        const tieDecidedBy = isATie
+            ? penalties
+                ? "penalties"
+                : extWinners.length
+                    ? "extended"
+                    : null
+            : null;
+
+        const tieLeftScore = penalties ? (penalties.leftScore ?? 0) : extLeft;
+        const tieRightScore = penalties ? (penalties.rightScore ?? 0) : extRight;
+
+        const sections = [];
+        if (firstHalf.length) sections.push({ id: "firstHalf", label: "1st Half" });
+        if (secondHalf.length) sections.push({ id: "secondHalf", label: "2nd Half" });
+        overtimes.forEach(({ block }) =>
+            sections.push({
+                id: `ot${block}`,
+                label: BREAKDOWN_OT_SHORT[block] ?? `${block}x OT`,
+            })
+        );
+        if (hasExtended) sections.push({ id: "extended", label: "Extended Rounds" });
+        if (penalties) sections.push({ id: "penalties", label: "Pens" });
+
+        const lastLogged = log.length ? log[log.length - 1] : null;
+
+        return {
+            firstHalf,
+            secondHalf,
+            overtimes,
+            extWinners,
+            hasExtended,
+            penalties,
+            sections,
+            lastLogged,
+            isATie,
+            tieDecidedBy,
+            tieLeftScore,
+            tieRightScore,
+        };
+    }, [entry]);
+
+    const updateIndicator = useCallback(() => {
+        if (!navRef.current) return;
+
+        const active = navRef.current.querySelector(
+            "[data-breakdown-active='true']"
+        );
+
+        if (!active) {
+            setIndicator({
+                top: 0,
+                height: 0,
+            });
+            return;
+        }
+
+        const rect = active.getBoundingClientRect();
+        const parent = navRef.current.getBoundingClientRect();
+
+        setIndicator({
+            top: rect.top - parent.top,
+            height: rect.height,
+        });
+    }, []);
+
+    useLayoutEffect(() => {
+        requestAnimationFrame(updateIndicator);
+    }, [activeSection, plan, updateIndicator]);
+
+    useEffect(() => {
+        const handleResize = () => updateIndicator();
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [updateIndicator]);
+
+    const setsWonByLeft = useMemo(
+        () =>
+            (sets ?? [])
+                .slice(0, index + 1)
+                .filter((s) => s.won).length,
+        [sets, index]
+    );
+
+    const setLinesTotal = Math.max(1, Math.ceil(bestOf / 2));
+    const setsToWin = Math.max(1, Math.ceil(bestOf / 2));
+    const leftSetsAfter = setsWonByLeft;
+    const rightSetsAfter = index + 1 - setsWonByLeft;
+
+    const setsWonByLeftBefore = useMemo(
+        () => (sets ?? []).slice(0, index).filter((s) => s.won).length,
+        [sets, index]
+    );
+    const setsWonByRightBefore = Math.max(0, index - setsWonByLeftBefore);
+
+    useLayoutEffect(() => {
+        const node = modalRef.current;
+        if (!node) return;
+
+        const measure = () => setModalHeight(node.offsetHeight || 300);
+
+        measure();
+
+        const id = setTimeout(measure, 0);
+
+        window.addEventListener("resize", measure);
+
+        return () => {
+            clearTimeout(id);
+            window.removeEventListener("resize", measure);
+        };
+    }, [index, entry, isModalHidden]);
+
+    const updateActiveSection = useCallback(() => {
+        const container = scrollRef.current;
+        if (!container || !plan) return;
+
+        let current = plan.sections[0]?.id ?? null;
+        const threshold = modalHeight + 100;
+
+        plan.sections.forEach((section) => {
+            const node = sectionRefs.current[section.id];
+            if (!node) return;
+            if (node.offsetTop - container.scrollTop <= threshold) {
+                current = section.id;
+            }
+        });
+
+        setActiveSection(current);
+    }, [plan, modalHeight]);
+
+    useEffect(() => {
+        const container = scrollRef.current;
+        if (container) container.scrollTop = 0;
+        requestAnimationFrame(() => updateActiveSection());
+    }, [index, updateActiveSection]);
+
+    const totalPickemPoints = useMemo(() => {
+        let leftSets = 0;
+        let rightSets = 0;
+        let points = 0;
+
+        for (let i = 0; i <= index; i++) {
+            const set = sets[i];
+
+            if (!set.won) continue;
+
+            if (set.winner === "left") {
+                leftSets++;
+            } else {
+                rightSets++;
+            }
+
+            const clinched =
+                leftSets === setsToWin ||
+                rightSets === setsToWin;
+
+            points += clinched ? 1 : 2;
+        }
+
+        return points;
+    }, [sets, index, setsToWin]);
+
+    const scrollToSection = (id) => {
+        const container = scrollRef.current;
+        const node = sectionRefs.current[id];
+        if (!container || !node) return;
+        container.scrollTo({
+            top: Math.max(0, node.offsetTop - modalHeight - 60),
+            behavior: "smooth",
+        });
+    };
+
+    if (!entry || !plan) return null;
+
+    const won = !!entry.won;
+    const background = won ? "linear-gradient(180deg,#b8ffd7 0%,#ffffff 120%)" : "linear-gradient(180deg, #ffbfbf 0%, #ffffff 120%)";
+    const tieDecided = !!plan.tieDecidedBy;
+    const tieWinner = plan.tieLeftScore > plan.tieRightScore ? "left" : plan.tieRightScore > plan.tieLeftScore ? "right" : null;
+
+    const setLabel = index + 1 === bestOf ? "Decider" : `Set ${index + 1}`;
+
+    const isClinchingSet =
+        (won && leftSetsAfter === setsToWin) ||
+        (!won && rightSetsAfter === setsToWin);
+
+    const roundsPlayed = (entry.wins ?? 0) + (entry.losses ?? 0);
+
+    const penaltyView = plan.penalties
+        ? (() => {
+            const leftResults = plan.penalties.leftResults ?? [];
+            const rightResults = plan.penalties.rightResults ?? [];
+            const completedSuddenDeathPairs = Math.min(
+                Math.max(0, leftResults.length - 5),
+                Math.max(0, rightResults.length - 5)
+            );
+
+            return {
+                leftResults,
+                rightResults,
+                attemptsToDisplay:
+                    PENALTY_DISPLAY_CIRCLES + completedSuddenDeathPairs,
+                resolved: plan.penalties.penaltyResolved ?? true,
+            };
+        })()
+        : null;
+
+    const loserSideOpacity = (loserSetsBefore) =>
+        loserSetsBefore + 1 >= setsToWin ? 0.4 : 0.7;
+
+    const decisiveOpacities = (leftWins) => {
+        if (leftWins) {
+            return { leftOpacity: 1, rightOpacity: loserSideOpacity(setsWonByRightBefore) };
+        }
+        return { leftOpacity: loserSideOpacity(setsWonByLeftBefore), rightOpacity: 1 };
+    };
+
+    const renderRound = (round, key) => {
+        const isDecisive =
+            !tieDecided && plan.lastLogged && round.key === plan.lastLogged.key;
+
+        const threshold = 12 + 3 * (round.overtimeBlock ?? 0);
+        const leftAtPoint =
+            round.scoreLeft === threshold && round.scoreRight < threshold;
+        const rightAtPoint =
+            round.scoreRight === threshold && round.scoreLeft < threshold;
+
+        const leftLabel = leftAtPoint
+            ? setsWonByLeftBefore === setsToWin - 1
+                ? pointLabelText
+                : "Set point!"
+            : "";
+        const rightLabel = rightAtPoint
+            ? setsWonByRightBefore === setsToWin - 1
+                ? pointLabelText
+                : "Set point!"
+            : "";
+
+        const opacities = isDecisive
+            ? decisiveOpacities(!!won)
+            : { leftOpacity: 1, rightOpacity: 1 };
+
+        return (
+            <div
+                key={key}
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "2px",
+                    marginTop: "14px",
+                }}
+            >
+                <span className={css.info_text} style={{ fontSize: "15px", color: "#555", fontWeight: 600 }}>
+                    Round {round.roundNumber}
+                </span>
+
+                <BreakdownScoreRow
+                    leftTeam={leftTeam}
+                    rightTeam={rightTeam}
+                    leftScore={round.scoreLeft}
+                    rightScore={round.scoreRight}
+                    scoreSize={44}
+                    squaresTotal={round.squares}
+                    leftSquares={round.miniLeft}
+                    rightSquares={round.miniRight}
+                    setLinesTotal={isDecisive ? setLinesTotal : 0}
+                    leftSets={leftSetsAfter}
+                    rightSets={rightSetsAfter}
+                    leftGlow={isDecisive && won}
+                    rightGlow={isDecisive && !won}
+                    isPlayoffs={isPlayoffs}
+                    showLabels
+                    leftLabel={leftLabel}
+                    rightLabel={rightLabel}
+                    {...opacities}
+                />
+            </div>
+        );
+    };
+
+    const arrowStyle = (disabled) => ({
+        position: "absolute",
+        top: "50%",
+        transform: "translateY(-50%)",
+        background: "none",
+        border: "none",
+        padding: 0,
+        opacity: disabled ? 0.35 : 1,
+        cursor: disabled ? "default" : "pointer",
+        pointerEvents: disabled ? "none" : "auto",
+        zIndex: 3,
+    });
+
+    return (
+        <>
+            <motion.div
+                ref={scrollRef}
+                onScroll={updateActiveSection}
+                className={css.hidden_scrollbar}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{
+                    position: "fixed",
+                    inset: 0,
+                    background: "#ffffff",
+                    overflowY: "auto",
+                    zIndex: 80,
+                }}
+            >
+                {plan.sections.length > 1 && (
+                    <div
+                        ref={navRef}
+                        className={css.infoNavigation}
+                    >
+                        {plan.sections.map((section) => (
+                            <button
+                                key={section.id}
+                                data-breakdown-active={activeSection === section.id}
+                                type="button"
+                                onClick={() => scrollToSection(section.id)}
+                                className={`${css.resultsNavigationButton} ${activeSection === section.id
+                                    ? css.resultsNavigationButtonActive
+                                    : ""
+                                    }`}
+                            >
+                                {section.label}
+                            </button>
+                        ))}
+                        <motion.div
+                            className={css.resultsNavigationIndicator}
+                            initial={false}
+                            animate={{
+                                top: indicator.top,
+                                height: indicator.height,
+                            }}
+                            transition={{
+                                duration: 0.22,
+                                ease: "easeInOut",
+                            }}
+                        />
+                    </div>
+                )}
+
+                <div
+                    style={{
+                        paddingTop: `${modalHeight + 60}px`,
+                        paddingBottom: "80px",
+                        textAlign: "center",
+                    }}
+                >
+                    {plan.firstHalf.length > 0 && (
+                        <div ref={(node) => { sectionRefs.current.firstHalf = node; }}>
+                            <hr style={{ width: "600px", margin: "0 auto" }} className={css.dashed_divider} />
+                            <div style={{ marginTop: "24px" }}>
+                                <BreakdownSectionTitle text="First Half" marginTop="0px" />
+                            </div>
+                            {plan.firstHalf.map((round, i) => renderRound(round, `fh-${i}`))}
+                        </div>
+                    )}
+
+                    {plan.secondHalf.length > 0 && (
+                        <div ref={(node) => { sectionRefs.current.secondHalf = node; }}>
+                            <BreakdownDivider from="First Half" to="Second Half" />
+                            {plan.secondHalf.map((round, i) => renderRound(round, `sh-${i}`))}
+                        </div>
+                    )}
+
+                    {plan.overtimes.map(({ block, rounds }, i) => {
+                        const previousLabel =
+                            i === 0
+                                ? "Second Half"
+                                : BREAKDOWN_OT_NAMES[plan.overtimes[i - 1].block] ??
+                                `${plan.overtimes[i - 1].block}x Overtime`;
+
+                        const label = BREAKDOWN_OT_NAMES[block] ?? `${block}x Overtime`;
+
+                        return (
+                            <div
+                                key={`ot-${block}`}
+                                ref={(node) => { sectionRefs.current[`ot${block}`] = node; }}
+                            >
+                                <BreakdownDivider from={previousLabel} to={label} />
+                                {rounds.map((round, j) => renderRound(round, `ot-${block}-${j}`))}
+                            </div>
+                        );
+                    })}
+
+                    {plan.hasExtended && (
+                        <div ref={(node) => { sectionRefs.current.extended = node; }}>
+                            <BreakdownDivider
+                                from={
+                                    plan.overtimes.length
+                                        ? BREAKDOWN_OT_NAMES[
+                                        plan.overtimes[plan.overtimes.length - 1].block
+                                        ] ?? "Overtime"
+                                        : "Second Half"
+                                }
+                                to="Extended Rounds"
+                            />
+
+                            {(() => {
+                                let left = 0;
+                                let right = 0;
+
+                                return plan.extWinners.map((item, i) => {
+                                    if (item.winner === "left") left += 1;
+                                    else right += 1;
+
+                                    const winnerTeam =
+                                        item.winner === "left" ? leftTeam : rightTeam;
+
+                                    const extDecisive =
+                                        plan.tieDecidedBy === "extended" &&
+                                        i === plan.extWinners.length - 1;
+
+                                    return (
+                                        <div
+                                            key={`ext-${i}`}
+                                            style={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                                gap: "2px",
+                                                marginTop: "14px",
+                                            }}
+                                        >
+                                            <span
+                                                className={css.info_text}
+                                                style={{ fontSize: "15px", color: "#555", fontWeight: 600 }}
+                                            >
+                                                {item.label} Extended Round winner is{" "}
+                                                <span style={{ color: winnerTeam?.color, fontWeight: 900 }}>
+                                                    Team {winnerTeam?.name}
+                                                </span>
+                                            </span>
+
+                                            <BreakdownScoreRow
+                                                leftTeam={leftTeam}
+                                                rightTeam={rightTeam}
+                                                leftScore={left}
+                                                rightScore={right}
+                                                scoreSize={44}
+                                                center="text"
+                                                centerText="VS"
+                                                centerColor="#2e2f42"
+                                                isPlayoffs={isPlayoffs}
+                                                setLinesTotal={extDecisive ? setLinesTotal : 0}
+                                                leftSets={leftSetsAfter}
+                                                rightSets={rightSetsAfter}
+                                                leftGlow={extDecisive && won}
+                                                rightGlow={extDecisive && !won}
+                                                {...(extDecisive
+                                                    ? decisiveOpacities(!!won)
+                                                    : { leftOpacity: 1, rightOpacity: 1 })}
+                                            />
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    )}
+
+                    {plan.penalties && (
+                        <div ref={(node) => { sectionRefs.current.penalties = node; }}>
+                            <BreakdownDivider
+                                from="Extended Rounds"
+                                to="Penalties"
+                            />
+
+                            {(() => {
+                                const leftScore = plan.penalties.leftScore ?? 0;
+                                const rightScore = plan.penalties.rightScore ?? 0;
+                                const leftWon = leftScore > rightScore;
+
+                                return (
+                                    <div style={{ marginTop: "14px" }}>
+                                        <BreakdownScoreRow
+                                            leftTeam={leftTeam}
+                                            rightTeam={rightTeam}
+                                            leftScore={leftScore}
+                                            rightScore={rightScore}
+                                            scoreSize={44}
+                                            center="text"
+                                            centerText="VS"
+                                            centerColor="#2e2f42"
+                                            isPlayoffs={isPlayoffs}
+                                            penalties={penaltyView}
+                                            setLinesTotal={setLinesTotal}
+                                            leftSets={leftSetsAfter}
+                                            rightSets={rightSetsAfter}
+                                            leftGlow={leftWon}
+                                            rightGlow={!leftWon}
+                                            {...decisiveOpacities(leftWon)}
+                                        />
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+            <motion.div
+                ref={modalRef}
+                className={css.restart_modal}
+                initial={{ opacity: 0, x: "-50%", y: -120 }}
+                animate={{ opacity: 1, x: "-50%", y: 0 }}
+                exit={{ opacity: 0, x: "-50%", y: -100 }}
+                transition={{ type: "spring", stiffness: 240, damping: 22, duration: 3 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    position: "fixed",
+                    top: isModalHidden ? "108px" : "190px",
+                    left: "50%",
+                    transform: "none",
+                    width: "620px",
+                    maxWidth: "92vw",
+                    background,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transformOrigin: "top",
+                    padding: isModalHidden ? "16px 56px 14px" : "20px 56px 22px",
+                    zIndex: 81,
+                    border: won ? "2px solid #006a32" : "2px solid rgb(188, 108, 108)",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "-16.5px",
+                        left: "-16.5px",
+                        display: "flex",
+                        alignItems: "center",
+                        color: won ? "#1f9d55" : "#c62828",
+                        zIndex: 3,
+                    }}
+                >
+                    {won ? (
+                        <div
+                            className={css.modalSuccessPickemIndicator}
+                        >
+                            <FaCircle size={32} color="#37b737" />
+                            <FaCheck size={20} color="#ffffff" />
+                        </div>
+                    ) : (
+                        <div
+                            className={css.modalSuccessPickemIndicator}
+                        >
+                            <FaCircle size={32} color="#be3939" />
+                            <FaXmark size={20} color="#fff" />
+                        </div>
+                    )}
+                </div>
+
+                {!isBo1 && (
+                    <>
+                        <button
+                            type="button"
+                            aria-label="Previous set"
+                            disabled={index <= 0}
+                            onClick={() => index > 0 && onIndexChange(index - 1)}
+                            style={{ ...arrowStyle(index <= 0), left: "10px" }}
+                            className={css.arrowToAnotherSet}
+                        >
+                            <IoIosArrowBack size={34} />
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="Next set"
+                            disabled={index >= sets.length - 1}
+                            onClick={() => index < sets.length - 1 && onIndexChange(index + 1)}
+                            style={{ ...arrowStyle(index >= sets.length - 1), right: "10px" }}
+                            className={css.arrowToAnotherSet}
+                        >
+                            <IoIosArrowForward size={34} />
+                        </button>
+                    </>
+                )}
+
+                {!isModalHidden && (
+                    <div className={css.match_modal_header} style={{ marginBottom: "6px" }}>
+                        {stageLabel ? (
+                            <span
+                                className={css.match_modal_title}
+                                style={{ fontSize: "16px", marginBottom: "-8px", color: "#ffffff" }}
+                            >
+                                {stageLabel}
+                            </span>
+                        ) : null}
+
+                        <h3 className={css.match_modal_title} style={{ margin: 0, color: "#ffffff" }}>
+                            {matchTitle}
+                            {matchNumber ? (
+                                <div
+                                    className={css.points}
+                                    style={{ marginLeft: "2px", marginTop: "-2px", padding: "4px 8px", color: "#ffffff", backgroundColor: won ? "#2e7d32" : "#7d2e2e" }}
+                                >
+                                    #{matchNumber}
+                                </div>
+                            ) : null}
+                        </h3>
+
+                        <span
+                            className={css.match_modal_title}
+                            style={{ margin: 0, fontSize: "18px", marginTop: "-6px", color: "#ffffff" }}
+                        >
+                            Best of {bestOf}
+                        </span>
+
+                        {!isBo1 ? (
+                            <span
+                                className={css.match_modal_title}
+                                style={{ margin: 0, fontSize: "20px", marginTop: "-4px", color: "#ffffff" }}
+                            >
+                                {setLabel}
+                            </span>
+                        ) : (
+                            <span
+                                className={css.match_modal_title}
+                                style={{ margin: 0, fontSize: "20px", marginTop: "-4px" }}
+                            >
+                                &nbsp;
+                            </span>
+                        )}
+
+                        {isClinchingSet && !isBo1 && (
+                            <span
+                                className={css.match_modal_pickem_total}
+                                style={{
+                                    left: isPlayoffs ? "95%" : "74%",
+                                }}
+                            >
+                                +{totalPickemPoints} Pick&apos;em point{totalPickemPoints !== 1 ? "s" : ""}
+                            </span>
+                        )}
+                        <span
+                            className={css.match_modal_pickem}
+                            style={{
+                                color: won ? "#2e7d32" : "red",
+                                left: isPlayoffs ? "95%" : "75%",
+                            }}
+                        >
+                            {won
+                                ? (isClinchingSet ? "+1 Pick'em point" : "+2 Pick'em points")
+                                : "+0 Pick'em points"}
+                        </span>
+                    </div>
+                )}
+
+                <div style={{ marginTop: isModalHidden ? "0px" : "10px" }}>
+                    <BreakdownScoreRow
+                        leftTeam={leftTeam}
+                        rightTeam={rightTeam}
+                        leftScore={entry.wins}
+                        rightScore={entry.losses}
+                        scoreSize={44}
+                        scoreWidth={49}
+                        center="text"
+                        centerText={`${roundsPlayed} Rounds`}
+                        centerColor="#ffffff"
+                        isPlayoffs={isPlayoffs}
+                        setLinesTotal={setLinesTotal}
+                        leftSets={leftSetsAfter}
+                        rightSets={rightSetsAfter}
+                        leftGlow={won}
+                        rightGlow={!won}
+                        {...decisiveOpacities(!!won)}
+                    />
+                </div>
+
+                {tieDecided ? (
+                    <div
+                        className={css.info_text}
+                        style={{
+                            marginTop: "6px",
+                            fontSize: "15px",
+                            fontWeight: 700,
+                            color: "#555",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                        }}
+                    >
+                        <span
+                            style={{
+                                color: leftTeam?.color,
+                                fontWeight: 700,
+                                marginRight: "28px",
+                                textShadow: tieWinner === "left" ? BREAKDOWN_GLOW(leftTeam?.color) : "none",
+                            }}
+                        >
+                            {plan.tieLeftScore}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => scrollToSection(plan.tieDecidedBy)}
+                            className={css.link_button}
+                            style={{
+                                pointerEvents:
+                                    activeSection === "penalties" ||
+                                        activeSection === "extended"
+                                        ? "none"
+                                        : "auto",
+                                cursor:
+                                    activeSection === "penalties" ||
+                                        activeSection === "extended"
+                                        ? "default"
+                                        : "pointer",
+                            }}
+                        >
+                            {plan.tieDecidedBy === "penalties"
+                                ? "Penalties"
+                                : "Extended Rounds"}
+                        </button>
+                        <span
+                            style={{
+                                color: rightTeam?.color,
+                                fontWeight: 700,
+                                marginLeft: "28px",
+                                textShadow: tieWinner === "right" ? BREAKDOWN_GLOW(rightTeam?.color) : "none",
+                            }}>
+                            {plan.tieRightScore}
+                        </span>
+                    </div>
+                ) : (
+                    <div
+                        className={css.info_text}
+                        style={{
+                            marginTop: "6px",
+                            fontSize: "15px",
+                            fontWeight: 700,
+                            color: "#555",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            pointerEvents: "none"
+                        }}
+                    >
+                        &nbsp;
+                        <button
+                            type="button"
+                            className={css.link_button}
+                            style={{
+                                pointerEvents: "none"
+                            }}
+                        >
+                            &nbsp;
+                        </button>
+                        <span
+                            style={{
+                                fontWeight: 700,
+                                marginLeft: "28px",
+                                pointerEvents: "none"
+                            }}>
+                            &nbsp;
+                        </span>
+                    </div>
+                )}
+
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginTop: isModalHidden ? "10px" : "14px",
+                    }}
+                >
+                    <button
+                        className={css.gamble_button}
+                        style={
+                            isModalHidden
+                                ? { padding: "6px 16px", fontSize: "14px" }
+                                : undefined
+                        }
+                        onClick={() => {
+                            onIndexChange(-1);
+
+                            requestAnimationFrame(() => {
+                                onClose();
+                            });
+                        }}
+                    >
+                        Back?
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={toggleModalHidden}
+                        style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            color: "#8c8c8c",
+                            fontSize: "13px",
+                            textDecoration: "underline",
+                        }}
+                    >
+                        {isModalHidden ? "Show full modal" : "Hide full modal"}
+                    </button>
+                </div>
+            </motion.div>
+        </>
+    );
+};
+
+
 const defaultSeriesState = {
     active: false,
 
@@ -2185,6 +3534,45 @@ function SpecialModePage() {
 
     const lastToastTime = useRef(0);
 
+    const roundLogRef = useRef(
+        (() => {
+            try {
+                const raw = localStorage.getItem(ROUND_LOG_LS_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        })()
+    );
+
+    const persistRoundLog = () => {
+        try {
+            localStorage.setItem(ROUND_LOG_LS_KEY, JSON.stringify(roundLogRef.current));
+        } catch {
+            /* ignore */
+        }
+    };
+
+    const logRound = (entry) => {
+        const list = roundLogRef.current;
+        if (list.some((e) => e.key === entry.key)) return;
+        list.push(entry);
+        persistRoundLog();
+    };
+
+    const clearRoundLog = () => {
+        roundLogRef.current = [];
+        try {
+            localStorage.removeItem(ROUND_LOG_LS_KEY);
+        } catch {
+            /* ignore */
+        }
+    };
+
+    const [breakdownSetIndex, setBreakdownSetIndex] = useState(null);
+
+
     const navRef = useRef(null);
 
     const [indicator, setIndicator] = useState({
@@ -2629,6 +4017,7 @@ function SpecialModePage() {
         setShowIntro(true);
 
         setSeriesState(defaultSeriesState);
+        clearRoundLog();
 
         setNeededPickemPoints(getRandomNeededPickemPoints());
         setFinalPickemPoints(0);
@@ -2689,6 +4078,7 @@ function SpecialModePage() {
 
     const resetTournamentStateWithSeeds = (seededStage1Seeds) => {
         localStorage.removeItem(STORAGE_KEY);
+        clearRoundLog();
 
         const s1 = buildSwissStage("stage1", seededStage1Seeds);
         setStage1(s1);
@@ -2701,6 +4091,7 @@ function SpecialModePage() {
         setShowIntro(true);
 
         setSeriesState(defaultSeriesState);
+        clearRoundLog();
 
         setNeededPickemPoints(getRandomNeededPickemPoints());
         setFinalPickemPoints(0);
@@ -3277,6 +4668,8 @@ function SpecialModePage() {
             if (stageKey === "stage2") applyPick(setStage2, stage2);
             if (stageKey === "stage3") applyPick(setStage3, stage3);
 
+            clearRoundLog();
+
             setSeriesState({
                 ...defaultSeriesState,
                 active: true,
@@ -3316,6 +4709,8 @@ function SpecialModePage() {
                 return copy;
             });
 
+            clearRoundLog();
+
             setSeriesState({
                 ...defaultSeriesState,
                 active: true,
@@ -3350,6 +4745,7 @@ function SpecialModePage() {
                 firstHalfLeft,
                 firstHalfRight,
                 extendedRounds,
+                roundLog: roundLogRef.current.map((e) => ({ ...e })),
             },
         ];
         if (seriesState.phase === "playoffs" && playoffs && seriesState.playoffsStage && seriesState.playoffsMatchId) {
@@ -3596,6 +4992,8 @@ function SpecialModePage() {
 
                     setIsLocked(false);
 
+                    clearRoundLog();
+
                     toast.dismiss();
                     toast("First Half is beginning", {
                         icon: "\u{1F3C1}",
@@ -3701,6 +5099,8 @@ function SpecialModePage() {
                     } = action.payload;
 
                     setIsLocked(false);
+
+                    clearRoundLog();
 
                     toast.dismiss();
                     toast("First Half is beginning", {
@@ -3816,7 +5216,7 @@ function SpecialModePage() {
         }, remaining);
 
         return () => clearTimeout(timer);
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [seriesState.pendingAction, pendingActionReady]);
 
     const handleSecretButtonContextMenu = (e) => {
@@ -4221,6 +5621,19 @@ function SpecialModePage() {
                 roundWins = updatedRoundWins;
                 roundLosses = updatedRoundLosses;
 
+                logRound({
+                    key: `s${prev.setNumber}-ot${overtimeBlock}-r${prev.roundWins + prev.roundLosses + 1}`,
+                    part: `ot${overtimeBlock}`,
+                    overtimeBlock,
+                    roundNumber: prev.roundWins + prev.roundLosses + 1,
+                    squares: miniWinsToWinRound,
+                    miniLeft: nextMiniWins,
+                    miniRight: nextMiniLosses,
+                    scoreLeft: updatedRoundWins,
+                    scoreRight: updatedRoundLosses,
+                    winner: wonOtRound ? "left" : "right",
+                });
+
                 roundToast(
                     <span>
                         {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}OT round!
@@ -4497,6 +5910,18 @@ function SpecialModePage() {
 
             miniWins = 0;
             miniLosses = 0;
+
+            logRound({
+                key: `s${prev.setNumber}-reg-r${prev.roundWins + prev.roundLosses + 1}`,
+                part: prev.roundNumber <= 12 ? "firstHalf" : "secondHalf",
+                roundNumber: prev.roundWins + prev.roundLosses + 1,
+                squares: miniWinsToWinRound,
+                miniLeft: nextMiniWins,
+                miniRight: nextMiniLosses,
+                scoreLeft: roundWins,
+                scoreRight: roundLosses,
+                winner: playerWonRound ? "left" : "right",
+            });
 
             roundToast(
                 <span>
@@ -6442,6 +7867,20 @@ function SpecialModePage() {
         return index >= 0 ? index + 1 : 1;
     }, [modalContext, currentModalMatch, playoffs]);
 
+    const breakdownPointLabel = useMemo(() => {
+        if (!modalContext) return "MATCH POINT!!!";
+        if (modalContext.type === "playoffs") return "MATCH POINT!!!";
+
+        const pointNet = ["2:0", "2:1", "2:2"];
+        if (!pointNet.includes(modalContext.net)) return "MATCH POINT!!!";
+
+        if (modalContext.stageKey === "stage1") return "STAGE II POINT!!!";
+        if (modalContext.stageKey === "stage2") return "STAGE III POINT!!!";
+        if (modalContext.stageKey === "stage3") return "PLAYOFFS POINT!!!";
+
+        return "MATCH POINT!!!";
+    }, [modalContext]);
+
     const modalStageSmallLabel = useMemo(() => {
         if (!modalContext) return "";
         if (modalContext.type === "playoffs") return "";
@@ -6514,7 +7953,8 @@ function SpecialModePage() {
                             className={css.round_text}
                             style={{
                                 position: "absolute",
-                                left: "-165px",
+                                right: "205px",
+                                width: "max-content",
                                 marginBottom: "-2px",
                                 fontSize: "24px",
                                 transition: 'none'
@@ -9542,9 +10982,9 @@ function SpecialModePage() {
                         }}
                         disabled={isTournamentNumberButtonLocked}
                         style={{
-                            position: "absolute",
+                            position: "fixed",
                             top: "7%",
-                            left: "-100%",
+                            left: "2%",
                             opacity: isTournamentNumberButtonArmed ? 1 : 0,
                             pointerEvents: "auto",
                             cursor: isTournamentNumberButtonArmed ? "pointer" : "default",
@@ -12208,7 +13648,7 @@ function SpecialModePage() {
                                                                                         {!isBo1Modal && (
                                                                                             <span
                                                                                                 className={css.round_text}
-                                                                                                style={{ opacity: leftOpacity, height: "42px" }}
+                                                                                                style={{ opacity: leftOpacity, height: "42px", marginTop: "1px" }}
                                                                                             >
                                                                                                 <CountUp
                                                                                                     start={Math.max(wins - 1, 0)}
@@ -12229,7 +13669,7 @@ function SpecialModePage() {
                                                                                             </span>
                                                                                         )}
 
-                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "22px" : "0px" }}>
+                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
                                                                                             <span
                                                                                                 className={css.info_text}
                                                                                                 style={{
@@ -12316,17 +13756,40 @@ function SpecialModePage() {
                                                                                         }}
                                                                                     >
                                                                                         {!isBo1Modal && (
-                                                                                            <span
-                                                                                                className={css.info_text}
-                                                                                                style={{ fontWeight: 600 }}
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                className={css.gamble_button}
+                                                                                                style={{ fontSize: "inherit", lineHeight: 1.1, padding: "1px 1px" }}
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    setBreakdownSetIndex(set - 1);
+                                                                                                }}
                                                                                             >
-                                                                                                {label}
-                                                                                            </span>
+                                                                                                <span className={css.info_text} style={{ fontWeight: 600, color: "#ffffff" }}>
+                                                                                                    {label}
+                                                                                                </span>
+                                                                                            </button>
                                                                                         )}
 
-                                                                                        <span style={{ fontSize: "18px", textAlign: "center", marginTop: "-4px" }} className={css.vs}>
-                                                                                            {totalRounds} {formatRoundsCount()}
-                                                                                        </span>
+                                                                                        {isBo1Modal ? (
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                className={css.gamble_button}
+                                                                                                style={{ fontSize: "inherit", lineHeight: 1.1, padding: "6px 12px", paddingBottom: "4.2px", marginTop: "-4px" }}
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    setBreakdownSetIndex(set - 1);
+                                                                                                }}
+                                                                                            >
+                                                                                                <span style={{ fontSize: "18px", textAlign: "center", color: "#ffffff" }} className={css.vs}>
+                                                                                                    {totalRounds} {formatRoundsCount()}
+                                                                                                </span>
+                                                                                            </button>
+                                                                                        ) : (
+                                                                                            <span style={{ fontSize: "18px", textAlign: "center", marginTop: "-4px" }} className={css.vs}>
+                                                                                                {totalRounds} {formatRoundsCount()}
+                                                                                            </span>
+                                                                                        )}
 
                                                                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "0px", fontSize: isBo1Modal ? "12px" : "11px" }}>
                                                                                             <div
@@ -12710,7 +14173,7 @@ function SpecialModePage() {
                                                                                         {!isBo1Modal && (
                                                                                             <span
                                                                                                 className={css.round_text}
-                                                                                                style={{ opacity: rightOpacity, height: "42px" }}
+                                                                                                style={{ opacity: rightOpacity, height: "42px", marginTop: "1px" }}
                                                                                             >
                                                                                                 <CountUp
                                                                                                     start={Math.max(losses - 1, 0)}
@@ -12731,7 +14194,7 @@ function SpecialModePage() {
                                                                                             </span>
                                                                                         )}
 
-                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "22px" : "0px" }}>
+                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
                                                                                             <span
                                                                                                 className={css.info_text}
                                                                                                 style={{
@@ -12822,6 +14285,45 @@ function SpecialModePage() {
                                     })()}
                             </motion.div>
                         </div>
+
+                        <AnimatePresence>
+                            {breakdownSetIndex !== null &&
+                                (() => {
+                                    const {
+                                        leftTeam: modalPlayedLeft,
+                                        rightTeam: modalPlayedRight,
+                                    } = getPickOrientedModalView(
+                                        currentModalMatch,
+                                        isBo1Modal
+                                    );
+
+                                    return (
+                                        <SetBreakdownOverlay
+                                            sets={currentModalMatch?.setHistory ?? []}
+                                            index={breakdownSetIndex}
+                                            onIndexChange={setBreakdownSetIndex}
+                                            onClose={() => setBreakdownSetIndex(null)}
+                                            leftTeam={modalPlayedLeft}
+                                            rightTeam={modalPlayedRight}
+                                            bestOf={modalBestOf}
+                                            stageLabel={
+                                                modalContext.type !== "playoffs"
+                                                    ? modalStageSmallLabel
+                                                    : null
+                                            }
+                                            matchTitle={modalTitle}
+                                            matchNumber={
+                                                modalContext.stage !== "gf" &&
+                                                    modalContext.stage !== "thirdPlace"
+                                                    ? modalMatchNumber
+                                                    : null
+                                            }
+                                            isPlayoffs={modalContext.type === "playoffs"}
+                                            pointLabelText={breakdownPointLabel}
+                                        />
+                                    );
+                                })()}
+                        </AnimatePresence>
                     </motion.div>
                 )}
                 {showTournamentIntro && (
