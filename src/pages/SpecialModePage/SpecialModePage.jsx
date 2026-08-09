@@ -1902,8 +1902,11 @@ const SetBreakdownOverlay = ({
     useEffect(() => {
         const container = scrollRef.current;
         if (container) container.scrollTop = 0;
+    }, [index]);
+
+    useEffect(() => {
         requestAnimationFrame(() => updateActiveSection());
-    }, [index, updateActiveSection]);
+    }, [updateActiveSection]);
 
     const totalPickemPoints = useMemo(() => {
         let leftSets = 0;
