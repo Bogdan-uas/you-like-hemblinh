@@ -6608,7 +6608,7 @@ function SpecialModePage() {
             }, 7000);
 
             const t4 = setTimeout(() => {
-                setWinnersText("And the CHAMPION is:");
+                setWinnersText(`And the CHAMPION of Official #${tournamentNumber} is:`);
             }, 10000);
 
             const proceed = setTimeout(() => {
@@ -6631,6 +6631,7 @@ function SpecialModePage() {
         setShowWinnerText(true);
         setShowProceed(true);
         setWinnersText("And the WINNER is:");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         showWinnersScreen,
         tournamentResults,
