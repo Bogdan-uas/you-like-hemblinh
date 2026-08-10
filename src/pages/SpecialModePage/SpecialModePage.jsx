@@ -1468,6 +1468,7 @@ const BreakdownScoreRow = ({
     rightLabel = "",
     showLabels = false,
     isInModal = false,
+    isModalHidden
 }) => {
     const momentum =
         leftScore > rightScore
@@ -1521,7 +1522,7 @@ const BreakdownScoreRow = ({
                             position: "relative",
                         }}
                     >
-                        {!isPlayoffs && team && (
+                        {team && (
                             <span
                                 className={
                                     side === "left"
@@ -1530,7 +1531,12 @@ const BreakdownScoreRow = ({
                                 }
                                 style={{
                                     position: "absolute",
-                                    top: isPlayoffs ? "-38px" : "-24px",
+                                    top:
+                                        isPlayoffs
+                                            ? "-42px"
+                                            : isModalHidden
+                                                ? "-20px"
+                                                : "-24px",
                                     display: !isInModal ? "none" : "inline-block",
                                     backgroundImage: team.gradient,
                                     backgroundRepeat: "no-repeat",
@@ -2370,7 +2376,7 @@ const SetBreakdownOverlay = ({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                     position: "fixed",
-                    top: isModalHidden ? "108px" : isBo1 ? "174px" : "198px",
+                    top: isPlayoffs && isModalHidden ? "124px" : isModalHidden ? "112px" : isBo1 ? "174px" : "198px",
                     left: "50%",
                     transform: "none",
                     width: "620px",
@@ -2520,6 +2526,7 @@ const SetBreakdownOverlay = ({
                         leftGlow={won}
                         rightGlow={!won}
                         isInModal={true}
+                        isModalHidden={isModalHidden}
                         {...decisiveOpacities(!!won)}
                     />
                 </div>
