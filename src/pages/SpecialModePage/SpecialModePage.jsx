@@ -2370,7 +2370,7 @@ const SetBreakdownOverlay = ({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                     position: "fixed",
-                    top: isModalHidden ? "108px" : isBo1 ? "174px" : "190px",
+                    top: isModalHidden ? "108px" : isBo1 ? "174px" : "198px",
                     left: "50%",
                     transform: "none",
                     width: "620px",
@@ -2472,7 +2472,7 @@ const SetBreakdownOverlay = ({
                         {!isBo1 && (
                             <span
                                 className={css.match_modal_title}
-                                style={{ margin: 0, fontSize: "20px", marginTop: "-4px", color: "#ffffff" }}
+                                style={{ margin: 0, fontSize: "24px", marginTop: "-4px", color: "#ffffff" }}
                             >
                                 {setLabel}
                             </span>
