@@ -1467,6 +1467,7 @@ const BreakdownScoreRow = ({
     leftLabel = "",
     rightLabel = "",
     showLabels = false,
+    isInModal = false,
 }) => {
     const momentum =
         leftScore > rightScore
@@ -1517,8 +1518,36 @@ const BreakdownScoreRow = ({
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            position: "relative",
                         }}
                     >
+                        {!isPlayoffs && team && (
+                            <span
+                                className={
+                                    side === "left"
+                                        ? css.team_name_left
+                                        : css.team_name_right
+                                }
+                                style={{
+                                    position: "absolute",
+                                    top: isPlayoffs ? "-38px" : "-24px",
+                                    display: !isInModal ? "none" : "inline-block",
+                                    backgroundImage: team.gradient,
+                                    backgroundRepeat: "no-repeat",
+                                    backgroundSize: "100% 100%",
+                                    WebkitBackgroundClip: "text",
+                                    backgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                    color: "transparent",
+                                    transition: "all 500ms ease-in-out",
+                                    whiteSpace: "nowrap",
+                                    marginLeft: isInModal && side === "left" ? "-108px" : "",
+                                    marginRight: isInModal && side === "right" ? "-108px" : "",
+                                }}
+                            >
+                                Team {team.name}
+                            </span>
+                        )}
                         <BreakdownScoreNumber
                             team={team}
                             value={score}
@@ -1697,7 +1726,7 @@ const SetBreakdownOverlay = ({
     const sectionRefs = useRef({});
     const modalRef = useRef(null);
     const [activeSection, setActiveSection] = useState(null);
-    const [modalHeight, setModalHeight] = useState(300);
+    const [fullModalHeight, setFullModalHeight] = useState(300);
 
     const [isModalHidden, setIsModalHidden] = useState(() => {
         try {
@@ -1867,7 +1896,13 @@ const SetBreakdownOverlay = ({
         const node = modalRef.current;
         if (!node) return;
 
-        const measure = () => setModalHeight(node.offsetHeight || 300);
+        const measure = () => {
+            const height = node.offsetHeight || 300;
+
+            if (!isModalHidden) {
+                setFullModalHeight(height);
+            }
+        };
 
         measure();
 
@@ -1886,7 +1921,7 @@ const SetBreakdownOverlay = ({
         if (!container || !plan) return;
 
         let current = plan.sections[0]?.id ?? null;
-        const threshold = modalHeight + 100;
+        const threshold = fullModalHeight + 100;
 
         plan.sections.forEach((section) => {
             const node = sectionRefs.current[section.id];
@@ -1897,7 +1932,7 @@ const SetBreakdownOverlay = ({
         });
 
         setActiveSection(current);
-    }, [plan, modalHeight]);
+    }, [plan, fullModalHeight]);
 
     useEffect(() => {
         const container = scrollRef.current;
@@ -1939,7 +1974,7 @@ const SetBreakdownOverlay = ({
         const node = sectionRefs.current[id];
         if (!container || !node) return;
         container.scrollTo({
-            top: Math.max(0, node.offsetTop - modalHeight - 60),
+            top: Math.max(0, node.offsetTop - fullModalHeight - 60),
             behavior: "smooth",
         });
     };
@@ -2169,7 +2204,7 @@ const SetBreakdownOverlay = ({
 
                 <div
                     style={{
-                        paddingTop: `${modalHeight + 60}px`,
+                        paddingTop: `${fullModalHeight + 60}px`,
                         paddingBottom: "80px",
                         textAlign: "center",
                     }}
@@ -2484,6 +2519,7 @@ const SetBreakdownOverlay = ({
                         rightSets={rightSetsAfter}
                         leftGlow={won}
                         rightGlow={!won}
+                        isInModal={true}
                         {...decisiveOpacities(!!won)}
                     />
                 </div>
