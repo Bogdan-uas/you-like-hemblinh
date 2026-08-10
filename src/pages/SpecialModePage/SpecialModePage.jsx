@@ -2143,6 +2143,22 @@ const SetBreakdownOverlay = ({
         );
     };
 
+    const tieOpacities =
+        tieWinner === "left"
+            ? {
+                leftOpacity: 1,
+                rightOpacity: loserSideOpacity(setsWonByRightBefore),
+            }
+            : tieWinner === "right"
+                ? {
+                    leftOpacity: loserSideOpacity(setsWonByLeftBefore),
+                    rightOpacity: 1,
+                }
+                : {
+                    leftOpacity: 1,
+                    rightOpacity: 1,
+                };
+
     const arrowStyle = (disabled) => ({
         position: "absolute",
         top: "50%",
@@ -2549,7 +2565,12 @@ const SetBreakdownOverlay = ({
                                 color: leftTeam?.color,
                                 fontWeight: 700,
                                 marginRight: "28px",
-                                textShadow: tieWinner === "left" ? BREAKDOWN_GLOW(leftTeam?.color) : "none",
+                                textShadow:
+                                    tieWinner === "left"
+                                        ? BREAKDOWN_GLOW(leftTeam?.color)
+                                        : "none",
+                                opacity: tieOpacities.leftOpacity,
+                                transition: "opacity 400ms ease",
                             }}
                         >
                             {plan.tieLeftScore}
@@ -2580,8 +2601,14 @@ const SetBreakdownOverlay = ({
                                 color: rightTeam?.color,
                                 fontWeight: 700,
                                 marginLeft: "28px",
-                                textShadow: tieWinner === "right" ? BREAKDOWN_GLOW(rightTeam?.color) : "none",
-                            }}>
+                                textShadow:
+                                    tieWinner === "right"
+                                        ? BREAKDOWN_GLOW(rightTeam?.color)
+                                        : "none",
+                                opacity: tieOpacities.rightOpacity,
+                                transition: "opacity 400ms ease",
+                            }}
+                        >
                             {plan.tieRightScore}
                         </span>
                     </div>
