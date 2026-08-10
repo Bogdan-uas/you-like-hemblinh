@@ -2331,15 +2331,6 @@
     }
 }
 
-.hidden_scrollbar {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.hidden_scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
 .bo_label {
     background-color: #909090;
     color: #fff;
