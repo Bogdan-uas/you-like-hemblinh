@@ -8,6 +8,7 @@ import { randomUniform, randomNormal } from "d3-random";
 import css from "./GamblingPage.module.css";
 import loaderCss from "../../components/Loader/Loader.module.css";
 import Header from "../../components/Header/Header";
+import Lenis from "lenis";
 
 const DelayedMount = ({ delay, children }) => {
     const [show, setShow] = useState(false);
@@ -422,6 +423,22 @@ const SERIES_APPLY_DELAY = 6000;
 const SERIES_RESET_WINDOW = 15000;
 
 const GamblingPage = () => {
+    useEffect(() => {
+        const lenis = new Lenis({
+            duration: 1.2,
+            smoothWheel: true,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+
+        requestAnimationFrame(raf);
+
+        return () => lenis.destroy();
+    }, []);
+    
     const [difficulty, setDifficulty] = useState("");
     const [showDifficultyOverlay, setShowDifficultyOverlay] = useState(true);
     const [showIntro, setShowIntro] = useState(false);

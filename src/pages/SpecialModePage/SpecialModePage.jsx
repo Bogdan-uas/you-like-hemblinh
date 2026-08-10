@@ -23,6 +23,7 @@ import GradientCaretLeft from "../../components/GradientIcon/GradientCaretLeft.j
 import GradientCaretRight from "../../components/GradientIcon/GradientCaretRight.jsx";
 import GradientDiamond from "../../components/GradientIcon/GradientDiamond.jsx";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import Lenis from "lenis";
 
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
@@ -1729,10 +1730,40 @@ const SetBreakdownOverlay = ({
     const entry = sets?.[index] ?? null;
 
     const scrollRef = useRef(null);
+    const lenisRef = useRef(null);
+    const contentRef = useRef(null);
     const sectionRefs = useRef({});
     const modalRef = useRef(null);
     const [activeSection, setActiveSection] = useState(null);
     const [fullModalHeight, setFullModalHeight] = useState(300);
+
+    useEffect(() => {
+        if (!scrollRef.current || !contentRef.current) return;
+
+        const lenis = new Lenis({
+            wrapper: scrollRef.current,
+            content: contentRef.current,
+            duration: 1.8,
+            smoothWheel: true,
+        });
+
+        lenisRef.current = lenis;
+
+        let rafId;
+
+        const raf = (time) => {
+            lenis.raf(time);
+            rafId = requestAnimationFrame(raf);
+        };
+
+        rafId = requestAnimationFrame(raf);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            lenis.destroy();
+            lenisRef.current = null;
+        };
+    }, []);
 
     const [isModalHidden, setIsModalHidden] = useState(() => {
         try {
@@ -1941,8 +1972,15 @@ const SetBreakdownOverlay = ({
     }, [plan, fullModalHeight]);
 
     useEffect(() => {
-        const container = scrollRef.current;
-        if (container) container.scrollTop = 0;
+        if (!lenisRef.current) return;
+
+        lenisRef.current.scrollTo(0, {
+            immediate: true,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        });
     }, [index]);
 
     useEffect(() => {
@@ -1979,10 +2017,15 @@ const SetBreakdownOverlay = ({
         const container = scrollRef.current;
         const node = sectionRefs.current[id];
         if (!container || !node) return;
-        container.scrollTo({
-            top: Math.max(0, node.offsetTop - fullModalHeight - 60),
-            behavior: "smooth",
-        });
+        lenisRef.current?.scrollTo(
+            Math.max(0, node.offsetTop - fullModalHeight - 60), {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        }
+        );
     };
 
     if (!entry || !plan) return null;
@@ -2225,6 +2268,7 @@ const SetBreakdownOverlay = ({
                 )}
 
                 <div
+                    ref={contentRef}
                     style={{
                         paddingTop: `${fullModalHeight + 60}px`,
                         paddingBottom: "80px",

@@ -54,6 +54,7 @@ import introImgTwo from "../../../assets/images/image-24.png";
 import tournamentIntroScreenImgTwo from "../../../assets/images/image-25.png";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
+import Lenis from "lenis";
 
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
@@ -247,6 +248,31 @@ const SpecialModeInfoPage = () => {
     const [activeSection, setActiveSection] = useState("starting-off");
     const [isAutoScrolling, setIsAutoScrolling] = useState(false);
     const navRef = useRef(null);
+    const lenisRef = useRef(null);
+
+    useEffect(() => {
+        const lenis = new Lenis({
+            duration: 1.2,
+            smoothWheel: true,
+        });
+
+        lenisRef.current = lenis;
+
+        let rafId;
+
+        const raf = (time) => {
+            lenis.raf(time);
+            rafId = requestAnimationFrame(raf);
+        };
+
+        rafId = requestAnimationFrame(raf);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            lenis.destroy();
+            lenisRef.current = null;
+        };
+    }, []);
     
     const [indicator, setIndicator] = useState({
         top: 0,
@@ -342,41 +368,93 @@ const SpecialModeInfoPage = () => {
             window.innerHeight / 2 +
             el.offsetHeight / 2;
 
-        window.scrollTo({
-            top: y,
-            behavior: "smooth",
+        lenisRef.current?.scrollTo(y, {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            onComplete: () => {
+                setIsAutoScrolling(false);
+            },
         });
-
-        setTimeout(() => {
-            setIsAutoScrolling(false);
-        }, 1000);
     };
 
     const scrollToDuringMatch = (e) => {
         e.preventDefault();
-        document.getElementById("during-match")?.scrollIntoView({ behavior: "smooth" });
+
+        const el = document.getElementById("during-match");
+        if (el) lenisRef.current?.scrollTo(el, {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            onComplete: () => {
+                setIsAutoScrolling(false);
+            },
+        });
     };
 
     const scrollToDistributionExplained = (e) => {
         e.preventDefault();
-        document.getElementById("distribution-explained")?.scrollIntoView({ behavior: "smooth" });
+        const el = document.getElementById("distribution-explained");
+        if (el) lenisRef.current?.scrollTo(el, {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            onComplete: () => {
+                setIsAutoScrolling(false);
+            },
+        });
     };
 
     const scrollToLeaderboardExplained = (e) => {
         e.preventDefault();
-        document.getElementById("leaderboard-explained")?.scrollIntoView({ behavior: "smooth" });
+        const el = document.getElementById("leaderboard-explained");
+        if (el) lenisRef.current?.scrollTo(el, {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            onComplete: () => {
+                setIsAutoScrolling(false);
+            },
+        });
     };
 
     const scrollToTiebreakingExplained = (e) => {
         e.preventDefault();
-        document.getElementById("tiebreaker-system")?.scrollIntoView({ behavior: "smooth" });
+        const el = document.getElementById("tiebreaker-system");
+        if (el) lenisRef.current?.scrollTo(el, {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            onComplete: () => {
+                setIsAutoScrolling(false);
+            },
+        });
     };
 
     const scrollToBreakdownExplained = (e) => {
         e.preventDefault();
-        document.getElementById("breakdown-explained")?.scrollIntoView({ behavior: "smooth" });
+        const el = document.getElementById("breakdown-explained");
+        if (el) lenisRef.current?.scrollTo(el, {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            onComplete: () => {
+                setIsAutoScrolling(false);
+            },
+        });
     };
-    
 
     const renderInfoNavigation = () => {
         return (
