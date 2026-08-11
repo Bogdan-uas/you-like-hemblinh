@@ -883,7 +883,7 @@ const SpecialModeInfoPage = () => {
                         <img src={detailedMatchResults} alt="Detailed Match Results" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
                     </div>
                     <p className={css.info_text}>
-                        At the top, there are a modal and the navigation. The modal contains the match Stage, name and order number, "Best of" of this match, gained Pick&apos;em points specifically in this set(this is a Bo1 here, so in this Bo1), final set score with total played rounds, "Back?" button and the text, which can be clicked and shrink the modal for a better view of the breakdown. The modal also has all the possible indicator to show whether your pickem team won this specific set(again, it's a Bo1 here, so in this Bo1). <br />
+                        At the top, there are a modal and the navigation. The modal contains the match Stage, name and order number, "Best of" of this match, gained Pick&apos;em points specifically in this set(this is a Bo1 here, so in this Bo1), final set score with total played rounds, "Back?" button and the text, which can be clicked and shrink the modal for a better view of the breakdown. The modal also has all the possible indicators to show whether your pickem team won this specific set(again, it's a Bo1 here, so this Bo1). <br />
                         The navigation contains all significant parts of the set and allows you to go directly to that or that part. These two (modal and navigation) are always with you on the screen (until you click on the "Back?" button, of course).
                     </p>
                     <p className={css.info_text}>
