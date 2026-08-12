@@ -252,7 +252,7 @@ const SpecialModeInfoPage = () => {
 
     useEffect(() => {
         const lenis = new Lenis({
-            duration: 1.2,
+            duration: 1.8,
             smoothWheel: true,
         });
 
