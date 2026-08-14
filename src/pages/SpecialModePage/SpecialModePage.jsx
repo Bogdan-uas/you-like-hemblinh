@@ -6600,6 +6600,7 @@ function SpecialModePage() {
                     setTimeout(() => {
                         setSeriesState((s) => {
                             if (!s.active || s.banner) return s;
+                            clearRoundLog();
                             setIsLocked(false);
                             toast("First Half is beginning", { icon: "🏁", duration: 3000 });
                             return {
@@ -6639,6 +6640,7 @@ function SpecialModePage() {
                                 extRoundRightScore: 0,
                                 extRoundRevealIndex: 0,
                                 extRoundCommentaryShown: false,
+                                pendingAction: null,
                             };
                         });
                     }, 4000);
