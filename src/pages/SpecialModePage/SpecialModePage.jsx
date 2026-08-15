@@ -6662,7 +6662,7 @@ function SpecialModePage() {
 
                     toast(
                         <span>
-                            Set {newWon + newLost} has been won by{" "}
+                            Set {newWon + newLost} has been won in Extended Rounds by{" "}
                             {renderTeamLabel(playerWonSet ? curr.leftTeam : curr.rightTeam)}!
                         </span>,
                         { icon: "🤯", duration: 4000 }
