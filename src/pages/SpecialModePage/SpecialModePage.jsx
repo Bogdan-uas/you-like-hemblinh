@@ -6812,7 +6812,7 @@ function SpecialModePage() {
 
         setShowWinnerText(true);
         setShowProceed(true);
-        setWinnersText("And the WINNER is:");
+        setWinnersText(`And the CHAMPION of Official #${tournamentNumber} is:`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         showWinnersScreen,
@@ -8598,7 +8598,11 @@ function SpecialModePage() {
                             transition={{ duration: 0.6 }}
                             className={css.winnerHeadline}
                         >
-                            {winnersText}
+                            {hasPlayedWinnerAnimation ? (
+                                <span>
+                                    The Top 4 of {tournamentLabel}
+                                </span>
+                            ) : winnersText}
                         </motion.h2>
                     )}
                     <div className={css.winnerPodium}>
