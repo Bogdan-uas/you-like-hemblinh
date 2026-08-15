@@ -1469,7 +1469,8 @@ const BreakdownScoreRow = ({
     rightLabel = "",
     showLabels = false,
     isInModal = false,
-    isModalHidden
+    isModalHidden,
+    ggBanner = null,
 }) => {
     const momentum =
         leftScore > rightScore
@@ -1632,7 +1633,41 @@ const BreakdownScoreRow = ({
                     marginTop: showLabels ? "20px" : 0,
                 }}
             >
-                {center === "indicator" ? (
+                {ggBanner ? (
+                    <span
+                        className={css.round_text}
+                        style={{
+                            fontSize: "38px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0px",
+                            marginTop: "-4px",
+                            minWidth: "77.8px",
+                            textShadow: `
+                                0 0 4px ${ggBanner.team?.color},
+                                0 0 10px ${ggBanner.team?.color}66,
+                                0 2px 6px rgba(0,0,0,0.4)
+                            `,
+                        }}
+                    >
+                        {"GG!".split("").map((char, i) => (
+                            <span
+                                key={`${char}-${i}`}
+                                style={{
+                                    display: "inline-block",
+                                    background: ggBanner.team?.gradient,
+                                    backgroundClip: "text",
+                                    WebkitBackgroundClip: "text",
+                                    color: "transparent",
+                                    WebkitTextFillColor: "transparent",
+                                }}
+                            >
+                                {char}
+                            </span>
+                        ))}
+                    </span>
+                ) : center === "indicator" ? (
                     <motion.div
                         initial={false}
                         animate={{
@@ -2041,6 +2076,8 @@ const SetBreakdownOverlay = ({
         (won && leftSetsAfter === setsToWin) ||
         (!won && rightSetsAfter === setsToWin);
 
+    const isFinalSet = index === (sets?.length ?? 0) - 1;
+
     const roundsPlayed = (entry.wins ?? 0) + (entry.losses ?? 0);
     const roundsLabel =
         roundsPlayed % 10 === 1 && roundsPlayed % 100 !== 11
@@ -2078,7 +2115,17 @@ const SetBreakdownOverlay = ({
 
     const renderRound = (round, key) => {
         const isDecisive =
-            !tieDecided && plan.lastLogged && round.key === plan.lastLogged.key;
+            !tieDecided &&
+            plan.lastLogged &&
+            round.key === plan.lastLogged.key;
+
+        const isFinalSet = index === (sets?.length ?? 0) - 1;
+
+        const isMatchDecidingRound =
+            isFinalSet &&
+            isDecisive &&
+            !plan.hasExtended &&
+            !plan.penalties;
 
         const threshold = 12 + 3 * (round.overtimeBlock ?? 0);
         const leftAtPoint =
@@ -2168,6 +2215,7 @@ const SetBreakdownOverlay = ({
                     leftScore={round.scoreLeft}
                     rightScore={round.scoreRight}
                     scoreSize={44}
+                    scoreWidth={49}
                     squaresTotal={round.squares}
                     leftSquares={round.miniLeft}
                     rightSquares={round.miniRight}
@@ -2180,6 +2228,11 @@ const SetBreakdownOverlay = ({
                     showLabels
                     leftLabel={leftLabel}
                     rightLabel={rightLabel}
+                    ggBanner={
+                        isMatchDecidingRound
+                            ? { team: won ? leftTeam : rightTeam }
+                            : null
+                    }
                     {...opacities}
                 />
             </div>
@@ -2340,6 +2393,11 @@ const SetBreakdownOverlay = ({
                                         plan.tieDecidedBy === "extended" &&
                                         i === plan.extWinners.length - 1;
 
+                                    const isFinalSet = index === (sets?.length ?? 0) - 1;
+
+                                    const isMatchDecidingExtendedRound =
+                                        isFinalSet && extDecisive;
+
                                     return (
                                         <div
                                             key={`ext-${i}`}
@@ -2367,6 +2425,7 @@ const SetBreakdownOverlay = ({
                                                 leftScore={left}
                                                 rightScore={right}
                                                 scoreSize={44}
+                                                scoreWidth={49}
                                                 center="text"
                                                 centerText="VS"
                                                 centerColor="#2e2f42"
@@ -2376,6 +2435,11 @@ const SetBreakdownOverlay = ({
                                                 rightSets={rightSetsAfter}
                                                 leftGlow={extDecisive && won}
                                                 rightGlow={extDecisive && !won}
+                                                ggBanner={
+                                                    isMatchDecidingExtendedRound
+                                                        ? { team: winnerTeam }
+                                                        : null
+                                                }
                                                 {...(extDecisive
                                                     ? decisiveOpacities(!!won)
                                                     : { leftOpacity: 1, rightOpacity: 1 })}
@@ -2407,6 +2471,7 @@ const SetBreakdownOverlay = ({
                                             leftScore={leftScore}
                                             rightScore={rightScore}
                                             scoreSize={44}
+                                            scoreWidth={49}
                                             center="text"
                                             centerText="VS"
                                             centerColor="#2e2f42"
@@ -2417,6 +2482,11 @@ const SetBreakdownOverlay = ({
                                             rightSets={rightSetsAfter}
                                             leftGlow={leftWon}
                                             rightGlow={!leftWon}
+                                            ggBanner={
+                                                isFinalSet
+                                                    ? { team: leftWon ? leftTeam : rightTeam }
+                                                    : null
+                                            }
                                             {...decisiveOpacities(leftWon)}
                                         />
                                     </div>
