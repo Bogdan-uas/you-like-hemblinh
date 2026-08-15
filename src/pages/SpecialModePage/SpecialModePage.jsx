@@ -1435,6 +1435,7 @@ const BreakdownPointLabel = ({ team, text }) => (
                 `
                 : "none",
             whiteSpace: "nowrap",
+            userSelect: "none"
         }}
     >
         {text || "\u00A0"}
