@@ -761,6 +761,95 @@ const applyRatings = ({
     };
 };
 
+const getRsPrediction = ({
+    ratings,
+    teams,
+    leftTeam,
+    rightTeam,
+    phase,
+    swissStageKey,
+    swissNet,
+    playoffsStage,
+    bestOf,
+    loserSetsWon,
+    playedAtMs,
+}) => {
+    if (!leftTeam?.id || !rightTeam?.id) return null;
+
+    const simulate = (winnerId, loserId) => {
+        const result = applyRatings({
+            ratings: { ...ratings },
+            teams,
+            winnerId,
+            loserId,
+            phase,
+            swissStageKey,
+            swissNet,
+            playoffsStage,
+            bestOf,
+            loserSetsWon,
+            playedAtMs,
+        });
+
+        const before = result.meta.before;
+        const after = result.meta.after;
+
+        return {
+            winnerId,
+            loserId,
+
+            left: {
+                deltaPoints:
+                    (after[leftTeam.id]?.points ?? 0) -
+                    (before[leftTeam.id]?.points ?? 0),
+
+                beforeRank: before[leftTeam.id]?.rank ?? null,
+                afterRank: after[leftTeam.id]?.rank ?? null,
+            },
+
+            right: {
+                deltaPoints:
+                    (after[rightTeam.id]?.points ?? 0) -
+                    (before[rightTeam.id]?.points ?? 0),
+
+                beforeRank: before[rightTeam.id]?.rank ?? null,
+                afterRank: after[rightTeam.id]?.rank ?? null,
+            },
+        };
+    };
+
+    const leftWins = simulate(leftTeam.id, rightTeam.id);
+    const rightWins = simulate(rightTeam.id, leftTeam.id);
+
+    return {
+        left: {
+            win: {
+                points: leftWins.left.deltaPoints,
+                beforeRank: leftWins.left.beforeRank,
+                afterRank: leftWins.left.afterRank,
+            },
+            loss: {
+                points: rightWins.left.deltaPoints,
+                beforeRank: rightWins.left.beforeRank,
+                afterRank: rightWins.left.afterRank,
+            },
+        },
+
+        right: {
+            win: {
+                points: rightWins.right.deltaPoints,
+                beforeRank: rightWins.right.beforeRank,
+                afterRank: rightWins.right.afterRank,
+            },
+            loss: {
+                points: leftWins.right.deltaPoints,
+                beforeRank: leftWins.right.beforeRank,
+                afterRank: leftWins.right.afterRank,
+            },
+        },
+    };
+};
+
 const toBaseTeam = (t) => ({
     id: t.id,
     key: t.key,
@@ -12899,6 +12988,183 @@ function SpecialModePage() {
                                         }
                                     }
 
+                                    const rsPrediction = getRsPrediction({
+                                        ratings: teamRatings,
+                                        teams: allTeams,
+
+                                        leftTeam: modalLeftTeam,
+                                        rightTeam: modalRightTeam,
+
+                                        phase: modalContext?.type === "swiss"
+                                            ? "swiss"
+                                            : "playoffs",
+
+                                        swissStageKey:
+                                            modalContext?.type === "swiss"
+                                                ? modalContext?.stageKey ?? modalContext?.swissStageKey
+                                                : null,
+
+                                        swissNet:
+                                            modalContext?.type === "swiss"
+                                                ? modalContext?.net
+                                                : null,
+
+                                        playoffsStage:
+                                            modalContext?.type === "playoffs"
+                                                ? modalContext?.stage
+                                                : null,
+
+                                        bestOf: modalBestOf,
+                                        loserSetsWon: 0,
+
+                                        playedAtMs: Date.now(),
+                                    });
+
+                                    const renderRsPrediction = (prediction, isWin, side = "left") => {
+                                        if (!prediction) return null;
+
+                                        const {
+                                            points,
+                                            beforeRank,
+                                            afterRank,
+                                        } = prediction;
+
+                                        const deltaPlaces =
+                                            beforeRank !== null && afterRank !== null
+                                                ? beforeRank - afterRank
+                                                : 0;
+
+                                        const placementColor =
+                                            placementColors[afterRank] || "#ffffff";
+
+                                        return (
+                                            <span
+                                                className={css.finished_modal_team_placing}
+                                                style={{
+                                                    position: "absolute",
+                                                    top:
+                                                        side === "left"
+                                                            ? (isWin ? "0%" : "86%")
+                                                            : (isWin ? "86%" : "0%"),
+                                                    right: side === "left" ? "0%" : "auto",
+                                                    left: side === "right" ? "24%" : "auto",
+                                                    zIndex: 3,
+                                                    fontSize: "10px",
+                                                    width: "70px",
+                                                    minWidth: "max-content",
+                                                    color: "#2e2f42"
+                                                }}
+                                            >
+                                                <span style={{ position: "relative" }}>
+                                                    <span
+                                                        style={{
+                                                            color: isWin
+                                                                ? "#2e7d32"
+                                                                : "#be3939",
+                                                            fontWeight: 900,
+                                                            marginRight: "5px",
+                                                            position: "absolute",
+                                                            right: isWin ? "110%" : !isWin ? "117%" : "auto",
+                                                        }}
+                                                    >
+                                                        {isWin ? "W" : "L"}
+                                                    </span>
+
+                                                    {deltaPlaces !== 0 ? (
+                                                        <span
+                                                            style={{
+                                                                color:
+                                                                    deltaPlaces > 0
+                                                                        ? "#2e7d32"
+                                                                        : "red",
+                                                                fontWeight: 900,
+                                                                marginRight: "0px",
+                                                                display: "inline-flex",
+                                                                alignItems: "center",
+                                                                gap: "2px",
+                                                                width: 21,
+                                                            }}
+                                                        >
+                                                            {deltaPlaces > 0 ? (
+                                                                <>
+                                                                    <span style={{ marginRight: "-3px" }}>
+                                                                        {deltaPlaces}
+                                                                    </span>
+                                                                    <MdOutlineKeyboardDoubleArrowUp />
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span style={{ marginRight: "-3px" }}>
+                                                                        {Math.abs(deltaPlaces)}
+                                                                    </span>
+                                                                    <MdOutlineKeyboardDoubleArrowDown />
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <span
+                                                            style={{
+                                                                color:
+                                                                    deltaPlaces > 0
+                                                                        ? "#2e7d32"
+                                                                        : "red",
+                                                                fontWeight: 900,
+                                                                marginRight: "-2px",
+                                                                display: "inline-flex",
+                                                                alignItems: "center",
+                                                                gap: "2px",
+                                                                userSelect: "none",
+                                                                width: 21
+                                                            }}
+                                                        >
+                                                            {deltaPlaces > 0 ? (
+                                                                <>
+                                                                    <span style={{ marginRight: "-4px" }}>
+                                                                        &nbsp;
+                                                                    </span>
+                                                                    &nbsp;
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span style={{ marginRight: "-4px" }}>
+                                                                        &nbsp;
+                                                                    </span>
+                                                                    &nbsp;
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    )}
+
+                                                    <span
+                                                        style={{
+                                                            color: placementColor,
+                                                            textShadow: "0 0 4px #000"
+                                                        }}
+                                                    >
+                                                        {formatOrdinal(afterRank)}
+                                                    </span>
+
+                                                    <span
+                                                        style={{
+                                                            color:
+                                                                points > 0
+                                                                    ? "#2e7d32"
+                                                                    : points < 0
+                                                                        ? "red"
+                                                                        : "#fff",
+                                                            fontWeight: 900,
+                                                            marginLeft: "4px"
+                                                        }}
+                                                    >
+                                                        {points > 0
+                                                            ? `+${points}p`
+                                                            : `${points}p`}
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        );
+                                    };
+
                                     return (
                                         <>
                                             <div className={css.match_modal_row}>
@@ -12910,6 +13176,11 @@ function SpecialModePage() {
                                                     onClick={handleChooseLeft}
                                                     className={css.modal_team_btn}
                                                 >
+                                                    {rsPrediction && (
+                                                        <>
+                                                            {renderRsPrediction(rsPrediction.left.win, true, "left")}
+                                                        </>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         style={{
@@ -12969,6 +13240,11 @@ function SpecialModePage() {
                                                             {modalLeftTeam?.name}
                                                         </span>
                                                     </button>
+                                                    {rsPrediction && (
+                                                        <>
+                                                            {renderRsPrediction(rsPrediction.left.loss, false, "left")}
+                                                        </>
+                                                    )}
                                                 </div>
 
                                                 <p
@@ -13009,6 +13285,11 @@ function SpecialModePage() {
                                                     className={css.modal_team_btn}
                                                     style={{ marginRight: '12px' }}
                                                 >
+                                                    {rsPrediction && (
+                                                        <>
+                                                            {renderRsPrediction(rsPrediction.right.win, true, "right")}
+                                                        </>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         style={{
@@ -13060,6 +13341,11 @@ function SpecialModePage() {
                                                             {modalRightTeam?.name}
                                                         </span>
                                                     </button>
+                                                    {rsPrediction && (
+                                                        <>
+                                                            {renderRsPrediction(rsPrediction.right.loss, false, "right")}
+                                                        </>
+                                                    )}
                                                 </div>
                                                 {renderStats(rightStats)}
                                             </div>
