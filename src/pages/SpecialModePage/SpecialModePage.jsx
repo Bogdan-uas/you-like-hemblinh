@@ -13356,10 +13356,11 @@ function SpecialModePage() {
                                                                     alignItems: "center",
                                                                     gap: 2,
                                                                     marginTop: 2,
+                                                                    marginLeft: 2
                                                                 }}
                                                             >
-                                                                <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
-                                                                <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                                                <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                                                <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
                                                             </div>
                                                             <span
                                                                 style={{
