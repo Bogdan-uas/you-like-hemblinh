@@ -10395,7 +10395,7 @@ function SpecialModePage() {
                         })() : (
                             <div
                                 style={{
-                                    marginTop: activePhase === "playoffs" ? "0" : "24px",
+                                    marginTop: activePhase === "playoffs" ? "16px" : "24px",
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
