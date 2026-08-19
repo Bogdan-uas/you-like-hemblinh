@@ -10519,29 +10519,38 @@ function SpecialModePage() {
                                         </motion.div>
                                     </AnimatePresence>
                                 </div>
-                                {seriesState.tiebreakerPhase !== "penalties" && (
-                                    <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className={css.round_text}
-                                        style={{
-                                            fontSize: "14px",
-                                            width: "63.8px",
-                                            textAlign: "center",
-                                            marginTop: activePhase === "playoffs" ? "8px" : "0px",
-                                        }}
-                                    >
-                                        Round{" "}
-                                        <CountUp
-                                            key={roundWins + roundLosses + 1}
-                                            start={Math.max(roundWins + roundLosses, 0)}
-                                            end={roundWins + roundLosses + 1}
-                                            duration={1}
-                                        />
-                                    </motion.span>
-                                )}
+                                {activePhase !== "playoffs" && seriesState.tiebreakerPhase === "penalties"
+                                    ? null
+                                    : (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className={css.round_text}
+                                            style={{
+                                                fontSize: "14px",
+                                                width: "63.8px",
+                                                textAlign: "center",
+                                                marginTop: activePhase === "playoffs" ? "8px" : "0px",
+                                            }}
+                                        >
+                                            {seriesState.tiebreakerPhase === "penalties" ? (
+                                                "\u00A0"
+                                            ) : (
+                                                <>
+                                                    Round{" "}
+                                                    <CountUp
+                                                        key={roundWins + roundLosses + 1}
+                                                        start={Math.max(roundWins + roundLosses, 0)}
+                                                        end={roundWins + roundLosses + 1}
+                                                        duration={1}
+                                                    />
+                                                </>
+                                            )}
+                                        </motion.span>
+                                    )
+                                }
                             </div>
                         )}
                         <div
