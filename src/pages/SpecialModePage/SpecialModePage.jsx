@@ -1419,7 +1419,7 @@ const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" })
                         key={i}
                         className={css.verticalLine}
                         style={{
-                            height: total >= 5 ? "14px" : total >= 3 ? "16px" : "18px",
+                            height: total >= 5 ? "12px" : total >= 4 ? "14px" : total >= 3 ? "16px" : "",
                             width: "5px",
                             boxShadow: lineGlow(isLit),
                         }}
