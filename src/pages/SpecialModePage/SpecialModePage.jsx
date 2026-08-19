@@ -6903,7 +6903,7 @@ function SpecialModePage() {
         setShowWinnerText(true);
         setShowProceed(true);
         setWinnersText(`And the CHAMPION of Official #${tournamentNumber} is:`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         showWinnersScreen,
         tournamentResults,
@@ -10532,7 +10532,11 @@ function SpecialModePage() {
                                                 fontSize: "14px",
                                                 width: "63.8px",
                                                 textAlign: "center",
-                                                marginTop: activePhase === "playoffs" ? "8px" : "0px",
+                                                marginTop:
+                                                    activePhase === "playoffs" &&
+                                                        seriesState.tiebreakerPhase !== "penalties"
+                                                        ? "8px"
+                                                        : "0px",
                                             }}
                                         >
                                             {seriesState.tiebreakerPhase === "penalties" ? (
