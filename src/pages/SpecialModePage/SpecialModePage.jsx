@@ -4947,11 +4947,17 @@ function SpecialModePage() {
     };
 
     const HALL_PLACEMENT_KEYS = ["winner", "second", "third", "fourth", "rest"];
+    // A team starts the tournament at exactly one stage, so these three lists never overlap.
+    const HALL_SEED_KEYS = ["stage1", "stage2Auto", "stage3Auto"];
 
     const getHallPickAccess = (form, fieldKey, teamId) => {
         const picks = form?.picks || {};
         const inList = (key) => (picks[key] || []).includes(teamId);
 
+        if (HALL_SEED_KEYS.includes(fieldKey)) {
+            const usedElsewhere = HALL_SEED_KEYS.some((key) => key !== fieldKey && (picks[key] || []).includes(teamId));
+            return { allowed: !usedElsewhere, locked: false };
+        }
         if (fieldKey === "stage2All") {
             if (inList("stage2Auto")) return { allowed: true, locked: true };
             return { allowed: inList("stage1"), locked: false };
@@ -4970,6 +4976,11 @@ function SpecialModePage() {
 
     const normalizeHallPicks = (picks) => {
         const next = Object.fromEntries(Object.entries(picks).map(([key, value]) => [key, [...(value || [])]]));
+        const seedUsed = new Set();
+        HALL_SEED_KEYS.forEach((key) => {
+            next[key] = (next[key] || []).filter((id) => !seedUsed.has(id));
+            next[key].forEach((id) => seedUsed.add(id));
+        });
         next.stage2All = [...new Set([...(next.stage2Auto || []), ...(next.stage2All || []).filter((id) => (next.stage1 || []).includes(id))])].slice(0, 32);
         next.stage3All = [...new Set([...(next.stage3Auto || []), ...(next.stage3All || []).filter((id) => next.stage2All.includes(id))])].slice(0, 32);
         next.playoffs = (next.playoffs || []).filter((id) => next.stage3All.includes(id)).slice(0, 16);
@@ -5004,6 +5015,77 @@ function SpecialModePage() {
             return { ...prev, picks };
         });
     };
+
+    const hallPickDragRef = useRef({ active: false, fieldKey: null, mode: null });
+    const hallPickClickGuardRef = useRef(null);
+
+    const setHallPickSelected = (fieldKey, teamId, shouldSelect) => {
+        setHallManagerForm((prev) => {
+            if (!prev) return prev;
+            const field = getTournamentTypeConfig(prev.type).fields.find((item) => item.key === fieldKey);
+            const current = prev.picks?.[fieldKey] || [];
+            if (current.includes(teamId) === shouldSelect) return prev;
+
+            const access = getHallPickAccess(prev, fieldKey, teamId);
+            if (access.locked) return prev;
+            if (shouldSelect && !access.allowed) return prev;
+
+            let next;
+            if (!shouldSelect) next = current.filter((id) => id !== teamId);
+            else if (!field?.multi) next = [teamId];
+            else if (field.exactCount && current.length >= field.exactCount) return prev;
+            else next = [...current, teamId];
+
+            const picks = normalizeHallPicks({ ...prev.picks, [fieldKey]: next });
+            return { ...prev, picks };
+        });
+    };
+
+    const handleHallPickPointerDown = (e, fieldKey, teamId, isSelected) => {
+        if (e.pointerType === "touch") return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        hallPickDragRef.current = {
+            active: true,
+            fieldKey,
+            mode: isSelected ? "remove" : "add",
+        };
+
+        hallPickClickGuardRef.current = `${fieldKey}:${teamId}`;
+        setHallPickSelected(fieldKey, teamId, !isSelected);
+    };
+
+    const handleHallPickPointerEnter = (fieldKey, teamId) => {
+        const drag = hallPickDragRef.current;
+        if (!drag.active || drag.fieldKey !== fieldKey) return;
+        setHallPickSelected(fieldKey, teamId, drag.mode === "add");
+    };
+
+    const handleHallPickClick = (fieldKey, teamId) => {
+        if (hallPickClickGuardRef.current === `${fieldKey}:${teamId}`) {
+            hallPickClickGuardRef.current = null;
+            return;
+        }
+        toggleHallPick(fieldKey, teamId);
+    };
+
+    useEffect(() => {
+        const endHallPickDrag = () => {
+            if (!hallPickDragRef.current.active) return;
+            hallPickDragRef.current = { active: false, fieldKey: null, mode: null };
+            window.setTimeout(() => {
+                hallPickClickGuardRef.current = null;
+            }, 0);
+        };
+
+        window.addEventListener("pointerup", endHallPickDrag);
+        window.addEventListener("pointercancel", endHallPickDrag);
+
+        return () => {
+            window.removeEventListener("pointerup", endHallPickDrag);
+            window.removeEventListener("pointercancel", endHallPickDrag);
+        };
+    }, []);
 
     const canConfirmHallForm = () => {
         const form = hallManagerForm;
@@ -8529,7 +8611,7 @@ function SpecialModePage() {
                                                     marginTop: 8,
                                                 }}
                                             >
-                                                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                                                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", userSelect: "none" }}>
                                                     {sortHallTeams(allTeams).map((team) => {
                                                         const isSelected = picked.includes(team.id);
                                                         const access = getHallPickAccess(form, field.key, team.id);
@@ -8539,7 +8621,9 @@ function SpecialModePage() {
                                                                 key={team.id}
                                                                 type="button"
                                                                 disabled={disabled}
-                                                                onClick={() => toggleHallPick(field.key, team.id)}
+                                                                onPointerDown={(e) => handleHallPickPointerDown(e, field.key, team.id, isSelected)}
+                                                                onPointerEnter={() => handleHallPickPointerEnter(field.key, team.id)}
+                                                                onClick={() => handleHallPickClick(field.key, team.id)}
                                                                 className={css.team_circle_ro32}
                                                                 style={{
                                                                     width: 37.2,
