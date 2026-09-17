@@ -34,6 +34,88 @@ const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 const TOURNAMENT_NUMBER_LS_KEY = "specialMode_tournamentNumber_v1";
 const BREAKDOWN_HIDDEN_LS_KEY = "specialMode_breakdownModalHidden_v1";
+const TOURNAMENT_NUMBERS_LS_KEY = "specialMode_tournamentNumbers_v1";
+const HALL_TEAM_SORT_LS_KEY = "specialMode_hallTeamSort_v1";
+
+const TOURNAMENT_TYPES = [
+    {
+        id: "Official",
+        label: "Official",
+        highlightCard: true,
+        fields: [
+            { key: "stage1", label: "Qualifiers to Stage I", multi: true, exactCount: 32 },
+            { key: "stage2Auto", label: "Auto-qualifiers for Stage II", multi: true, exactCount: 16 },
+            { key: "stage3Auto", label: "Auto-qualifiers for Stage III", multi: true, exactCount: 16 },
+            { key: "stage2All", label: "All teams to Stage II", multi: true, exactCount: 32 },
+            { key: "stage3All", label: "All teams to Stage III", multi: true, exactCount: 32 },
+            { key: "playoffs", label: "All 16 playoffs qualifiers", multi: true, exactCount: 16 },
+            { key: "winner", label: "Winner", multi: false },
+            { key: "second", label: "2nd place", multi: false },
+            { key: "third", label: "3rd place", multi: false },
+            { key: "fourth", label: "4th place", multi: false },
+            { key: "rest", label: "Top 5-16", multi: true, exactCount: 12 },
+        ],
+    },
+];
+
+const getTournamentTypeConfig = (id) =>
+    TOURNAMENT_TYPES.find((type) => type.id === id) || TOURNAMENT_TYPES[0];
+
+const loadTournamentNumbers = () => {
+    try {
+        const raw = localStorage.getItem(TOURNAMENT_NUMBERS_LS_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+        return {};
+    }
+};
+
+const saveTournamentNumbers = (numbers) => {
+    try {
+        localStorage.setItem(TOURNAMENT_NUMBERS_LS_KEY, JSON.stringify(numbers));
+    } catch {
+        /* ignore */
+    }
+};
+const HALL_OF_FAME_DB_NAME = "specialModeHallOfFame";
+const HALL_OF_FAME_STORE = "tournaments";
+
+const openHallOfFameDb = () =>
+    new Promise((resolve, reject) => {
+        if (!("indexedDB" in window)) {
+            reject(new Error("IndexedDB is not available in this browser."));
+            return;
+        }
+        const request = indexedDB.open(HALL_OF_FAME_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+            if (!request.result.objectStoreNames.contains(HALL_OF_FAME_STORE)) {
+                request.result.createObjectStore(HALL_OF_FAME_STORE, { keyPath: "id" });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+
+const readHallOfFame = async () => {
+    const db = await openHallOfFameDb();
+    return new Promise((resolve, reject) => {
+        const request = db.transaction(HALL_OF_FAME_STORE, "readonly")
+            .objectStore(HALL_OF_FAME_STORE).getAll();
+        request.onsuccess = () => resolve((request.result || []).sort((a, b) => b.number - a.number));
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const saveHallTournament = async (record) => {
+    const db = await openHallOfFameDb();
+    return new Promise((resolve, reject) => {
+        const request = db.transaction(HALL_OF_FAME_STORE, "readwrite")
+            .objectStore(HALL_OF_FAME_STORE).put(record);
+        request.onsuccess = () => resolve(record);
+        request.onerror = () => reject(request.error);
+    });
+};
 
 const ROUND12_TOAST_ID = "round12-warning";
 const SECRET_TOAST_ID = "secret-toast";
@@ -123,6 +205,26 @@ const MULTIPLIER_MAX = 2.0;
 
 const MIN_NEEDED_PICKEM = 351;
 const MAX_NEEDED_PICKEM = 576;
+const deleteHallTournament = async (id) => {
+    const db = await openHallOfFameDb();
+    return new Promise((resolve, reject) => {
+        const request = db.transaction(HALL_OF_FAME_STORE, "readwrite")
+            .objectStore(HALL_OF_FAME_STORE).delete(id);
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const clearHallOfFameStore = async () => {
+    const db = await openHallOfFameDb();
+    return new Promise((resolve, reject) => {
+        const request = db.transaction(HALL_OF_FAME_STORE, "readwrite")
+            .objectStore(HALL_OF_FAME_STORE).clear();
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => reject(request.error);
+    });
+};
+
 const getRandomNeededPickemPoints = () =>
     Math.floor(Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)) +
     MIN_NEEDED_PICKEM;
@@ -2363,7 +2465,6 @@ const SetBreakdownOverlay = ({
             <motion.div
                 ref={scrollRef}
                 onScroll={updateActiveSection}
-                className={css.hidden_scrollbar}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -3621,6 +3722,9 @@ function SpecialModePage() {
     const { rankById } = leaderboard;
 
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const [isHallOfFameOpen, setIsHallOfFameOpen] = useState(false);
+    const [hallOfFame, setHallOfFame] = useState([]);
+    const [selectedHallTournament, setSelectedHallTournament] = useState(null);
     const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
 
     const [isScoreBoardResetModalOpen, setIsScoreBoardResetModalOpen] = useState(false);
@@ -3656,6 +3760,42 @@ function SpecialModePage() {
     const [tournamentNumberMode, setTournamentNumberMode] = useState("add");
     const [tournamentNumberAmount, setTournamentNumberAmount] = useState("");
     const [isTournamentNumberButtonArmed, setIsTournamentNumberButtonArmed] = useState(false);
+    const [isTournamentNumberTypeModalOpen, setIsTournamentNumberTypeModalOpen] = useState(false);
+    const [tournamentNumberType, setTournamentNumberType] = useState("");
+    const [tournamentNumbers, setTournamentNumbers] = useState(() => loadTournamentNumbers());
+
+    const [isHallManagerButtonArmed, setIsHallManagerButtonArmed] = useState(false);
+    const [isHallManagerCodeModalOpen, setIsHallManagerCodeModalOpen] = useState(false);
+    const [isHallManagerModeModalOpen, setIsHallManagerModeModalOpen] = useState(false);
+    const [isHallManagerSelectModalOpen, setIsHallManagerSelectModalOpen] = useState(false);
+    const [isHallManagerFormModalOpen, setIsHallManagerFormModalOpen] = useState(false);
+    const [isHallManagerFinalModalOpen, setIsHallManagerFinalModalOpen] = useState(false);
+    const [hallManagerCode, setHallManagerCode] = useState("");
+    const [hallManagerMode, setHallManagerMode] = useState("");
+    const [hallManagerTargetId, setHallManagerTargetId] = useState("");
+    const [hallManagerForm, setHallManagerForm] = useState(null);
+    const [hallPickerField, setHallPickerField] = useState("");
+    const [hallTeamSortMode, setHallTeamSortModeState] = useState(() => {
+        try {
+            const saved = localStorage.getItem(HALL_TEAM_SORT_LS_KEY);
+            return ["colors", "points", "placement"].includes(saved) ? saved : "colors";
+        } catch {
+            return "colors";
+        }
+    });
+    const [selectedHallMatch, setSelectedHallMatch] = useState(null);
+
+    useEffect(() => {
+        readHallOfFame()
+            .then(setHallOfFame)
+            .catch((error) => console.warn("Hall of Fame could not be loaded:", error));
+    }, []);
+
+    const closeHallOfFame = () => {
+        setIsHallOfFameOpen(false);
+        setSelectedHallTournament(null);
+        setSelectedHallMatch(null);
+    };
 
     const [selectedPlacingTeamIds, setSelectedPlacingTeamIds] = useState([]);
 
@@ -3664,6 +3804,296 @@ function SpecialModePage() {
 
     const modalRef = useRef(null);
     const [modalScale, setModalScale] = useState(1);
+
+    const lenisRef = useRef(null);
+    const hallManagerScrollRef = useRef(null);
+
+    useEffect(() => {
+        const lenis = new Lenis({
+            duration: 1.8,
+            smoothWheel: true,
+            prevent: (node) => node === hallManagerScrollRef.current,
+        });
+
+        lenisRef.current = lenis;
+
+        let rafId;
+
+        const raf = (time) => {
+            lenis.raf(time);
+            rafId = requestAnimationFrame(raf);
+        };
+
+        rafId = requestAnimationFrame(raf);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            lenis.destroy();
+            lenisRef.current = null;
+        };
+    }, []);
+
+    const hallScrollRef = useRef(null);
+    const hallScrollTargetRef = useRef(0);
+    const hallScrollFrameRef = useRef(null);
+
+    // --- Drag-to-scroll ("grab and pull", like on a phone) -------------------
+    // Added alongside the Lenis-style smooth wheel scrolling below, not instead of it.
+    // Mouse and pen only: real touch devices already do this natively, and hijacking
+    // touch here would fight the browser's own momentum scrolling.
+    const hallDragRef = useRef({
+        isDown: false,
+        isDragging: false,
+        pointerId: null,
+        startX: 0,
+        startScrollLeft: 0,
+        lastX: 0,
+        lastTime: 0,
+        velocity: 0,
+    });
+    const hallMomentumFrameRef = useRef(null);
+    const hallSuppressClickRef = useRef(false);
+
+    // How far the cursor has to travel before it counts as a pull instead of a click.
+    const HALL_DRAG_THRESHOLD = 4;
+
+    const stopHallMomentum = () => {
+        if (hallMomentumFrameRef.current) {
+            cancelAnimationFrame(hallMomentumFrameRef.current);
+            hallMomentumFrameRef.current = null;
+        }
+    };
+
+    const stopHallWheelGlide = () => {
+        if (hallScrollFrameRef.current) {
+            cancelAnimationFrame(hallScrollFrameRef.current);
+            hallScrollFrameRef.current = null;
+        }
+    };
+
+    // Throw the list based on how hard the pointer was moving when it was released.
+    const startHallMomentum = (releaseVelocity) => {
+        const container = hallScrollRef.current;
+        if (!container) return;
+
+        // releaseVelocity is px per millisecond; turn it into px per frame.
+        let velocity = releaseVelocity * 16;
+
+        if (Math.abs(velocity) < 0.4) {
+            hallScrollTargetRef.current = container.scrollLeft;
+            return;
+        }
+
+        const maxVelocity = 140;
+        velocity = Math.max(-maxVelocity, Math.min(velocity, maxVelocity));
+
+        const friction = 0.94;
+
+        const step = () => {
+            velocity *= friction;
+
+            if (Math.abs(velocity) < 0.1) {
+                hallMomentumFrameRef.current = null;
+                hallScrollTargetRef.current = container.scrollLeft;
+                return;
+            }
+
+            const maxScroll = container.scrollWidth - container.clientWidth;
+            const next = Math.max(0, Math.min(container.scrollLeft + velocity, maxScroll));
+
+            if (next === container.scrollLeft) {
+                hallMomentumFrameRef.current = null;
+                hallScrollTargetRef.current = container.scrollLeft;
+                return;
+            }
+
+            container.scrollLeft = next;
+            hallScrollTargetRef.current = next;
+            hallMomentumFrameRef.current = requestAnimationFrame(step);
+        };
+
+        hallMomentumFrameRef.current = requestAnimationFrame(step);
+    };
+
+    const handleHallPointerDown = (e) => {
+        const container = hallScrollRef.current;
+        if (!container) return;
+        if (e.pointerType === "touch") return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        // A fresh grab always takes over from whatever was still gliding.
+        stopHallMomentum();
+        stopHallWheelGlide();
+
+        hallSuppressClickRef.current = false;
+
+        const drag = hallDragRef.current;
+        drag.isDown = true;
+        drag.isDragging = false;
+        drag.pointerId = e.pointerId;
+        drag.startX = e.clientX;
+        drag.startScrollLeft = container.scrollLeft;
+        drag.lastX = e.clientX;
+        drag.lastTime = performance.now();
+        drag.velocity = 0;
+
+        hallScrollTargetRef.current = container.scrollLeft;
+    };
+
+    const handleHallPointerMove = (e) => {
+        const container = hallScrollRef.current;
+        const drag = hallDragRef.current;
+        if (!container || !drag.isDown || e.pointerId !== drag.pointerId) return;
+
+        const travelled = e.clientX - drag.startX;
+
+        if (!drag.isDragging) {
+            if (Math.abs(travelled) < HALL_DRAG_THRESHOLD) return;
+
+            drag.isDragging = true;
+            // Swallow the click that would otherwise open a card at the end of the pull.
+            hallSuppressClickRef.current = true;
+            container.style.cursor = "grabbing";
+            container.style.userSelect = "none";
+
+            try {
+                container.setPointerCapture(e.pointerId);
+            } catch {
+                // Pointer capture is a nicety, not a requirement.
+            }
+        }
+
+        e.preventDefault();
+
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        const nextScrollLeft = Math.max(
+            0,
+            Math.min(drag.startScrollLeft - travelled, maxScroll)
+        );
+
+        container.scrollLeft = nextScrollLeft;
+        hallScrollTargetRef.current = nextScrollLeft;
+
+        const now = performance.now();
+        const elapsed = now - drag.lastTime;
+
+        if (elapsed > 0) {
+            // Positive velocity means the content is moving the same way scrollLeft grows.
+            const instant = (drag.lastX - e.clientX) / elapsed;
+            drag.velocity = drag.velocity * 0.7 + instant * 0.3;
+            drag.lastX = e.clientX;
+            drag.lastTime = now;
+        }
+    };
+
+    const handleHallPointerUp = (e) => {
+        const container = hallScrollRef.current;
+        const drag = hallDragRef.current;
+        if (!drag.isDown) return;
+        if (drag.pointerId !== null && e.pointerId !== drag.pointerId) return;
+
+        if (container) {
+            container.style.cursor = "grab";
+            container.style.userSelect = "";
+
+            try {
+                if (drag.pointerId !== null && container.hasPointerCapture(drag.pointerId)) {
+                    container.releasePointerCapture(drag.pointerId);
+                }
+            } catch {
+                // Nothing to release.
+            }
+        }
+
+        const wasDragging = drag.isDragging;
+        const releaseVelocity = drag.velocity;
+
+        drag.isDown = false;
+        drag.isDragging = false;
+        drag.pointerId = null;
+        drag.velocity = 0;
+
+        // If the pointer went idle before release, don't throw the list.
+        const wentStale = performance.now() - drag.lastTime > 90;
+
+        if (!wasDragging || !container) return;
+        if (e.type === "pointercancel" || wentStale) {
+            hallScrollTargetRef.current = container.scrollLeft;
+            return;
+        }
+
+        startHallMomentum(releaseVelocity);
+    };
+
+    // A pull ends with a click on whichever card was under the cursor, so eat that one.
+    const handleHallClickCapture = (e) => {
+        if (!hallSuppressClickRef.current) return;
+
+        hallSuppressClickRef.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleHallWheel = (e) => {
+        const container = hallScrollRef.current;
+        if (!container) return;
+
+        // A wheel nudge interrupts an in-flight throw rather than fighting it.
+        if (hallMomentumFrameRef.current) {
+            stopHallMomentum();
+            hallScrollTargetRef.current = container.scrollLeft;
+        }
+
+        hallScrollTargetRef.current += e.deltaY;
+
+        const maxScroll =
+            container.scrollWidth - container.clientWidth;
+
+        hallScrollTargetRef.current = Math.max(
+            0,
+            Math.min(hallScrollTargetRef.current, maxScroll)
+        );
+
+        if (hallScrollFrameRef.current) return;
+
+        const animate = () => {
+            const current = container.scrollLeft;
+            const target = hallScrollTargetRef.current;
+            const difference = target - current;
+
+            if (Math.abs(difference) < 0.5) {
+                container.scrollLeft = target;
+                hallScrollFrameRef.current = null;
+                return;
+            }
+
+            container.scrollLeft = current + difference * 0.06;
+            hallScrollFrameRef.current = requestAnimationFrame(animate);
+        };
+
+        hallScrollFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    useEffect(() => {
+        const container = hallScrollRef.current;
+        if (!container) return;
+
+        hallScrollTargetRef.current = container.scrollLeft;
+
+        return () => {
+            if (hallScrollFrameRef.current) {
+                cancelAnimationFrame(hallScrollFrameRef.current);
+                hallScrollFrameRef.current = null;
+            }
+
+            if (hallMomentumFrameRef.current) {
+                cancelAnimationFrame(hallMomentumFrameRef.current);
+                hallMomentumFrameRef.current = null;
+            }
+
+            hallScrollTargetRef.current = 0;
+        };
+    }, []);
 
     const getStageObj = (key) => {
         if (key === "stage1") return stage1;
@@ -3674,6 +4104,10 @@ function SpecialModePage() {
 
     const currentModalMatch = useMemo(() => {
         if (!modalContext) return null;
+
+        if (modalContext.isArchivedHallOfFame) {
+            return selectedHallMatch?.match || null;
+        }
 
         if (modalContext.type === "swiss") {
             const stg = getStageObj(modalContext.stageKey);
@@ -3690,7 +4124,7 @@ function SpecialModePage() {
 
         return null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalContext, stage1, stage2, stage3, playoffs]);
+    }, [modalContext, stage1, stage2, stage3, playoffs, selectedHallMatch]);
 
     const modalBestOf = useMemo(() => {
         if (!modalContext) return null;
@@ -3995,6 +4429,7 @@ function SpecialModePage() {
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
         isTournamentNumberCodeModalOpen ||
+        isTournamentNumberTypeModalOpen ||
         isTournamentNumberModalOpen ||
         isTournamentNumberFinalModalOpen ||
         showIntro ||
@@ -4013,6 +4448,7 @@ function SpecialModePage() {
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
         isTournamentNumberCodeModalOpen ||
+        isTournamentNumberTypeModalOpen ||
         isTournamentNumberModalOpen ||
         isTournamentNumberFinalModalOpen ||
         isLocked;
@@ -4030,6 +4466,7 @@ function SpecialModePage() {
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
         isTournamentNumberCodeModalOpen ||
+        isTournamentNumberTypeModalOpen ||
         isTournamentNumberModalOpen ||
         isTournamentNumberFinalModalOpen ||
         showIntro ||
@@ -4047,6 +4484,7 @@ function SpecialModePage() {
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
         isTournamentNumberCodeModalOpen ||
+        isTournamentNumberTypeModalOpen ||
         isTournamentNumberModalOpen ||
         isTournamentNumberFinalModalOpen ||
         isLocked;
@@ -4064,6 +4502,7 @@ function SpecialModePage() {
         isRemovePlacingsModalOpen ||
         isRemovePlacingsFinalModalOpen ||
         isTournamentNumberCodeModalOpen ||
+        isTournamentNumberTypeModalOpen ||
         isTournamentNumberModalOpen ||
         isTournamentNumberFinalModalOpen ||
         isLocked;
@@ -4249,6 +4688,8 @@ function SpecialModePage() {
     };
 
     const handleCloseTournamentNumberModals = () => {
+        setIsTournamentNumberTypeModalOpen(false);
+        setTournamentNumberType("");
         setIsTournamentNumberCodeModalOpen(false);
         setIsTournamentNumberModalOpen(false);
         setIsTournamentNumberFinalModalOpen(false);
@@ -4267,20 +4708,23 @@ function SpecialModePage() {
         toast.success("Password correct!!!");
         setTournamentNumberCode("");
         setIsTournamentNumberCodeModalOpen(false);
-        setIsTournamentNumberModalOpen(true);
+        setIsTournamentNumberTypeModalOpen(true);
     };
 
+    const activeNumberType = tournamentNumberType || TOURNAMENT_TYPES[0].id;
+
     const getNextTournamentNumber = () => {
+        const current = getTypeNumber(activeNumberType);
         const amount = parseInt(tournamentNumberAmount, 10);
-        if (!Number.isFinite(amount)) return tournamentNumber;
+        if (!Number.isFinite(amount)) return current;
 
         if (tournamentNumberMode === "add")
-            return tournamentNumber + amount;
+            return current + amount;
 
         if (tournamentNumberMode === "subtract")
-            return Math.max(0, tournamentNumber - amount);
+            return current - amount;
 
-        return Math.max(0, amount);
+        return amount;
     };
 
     const handleSubmitTournamentNumber = () => {
@@ -4295,11 +4739,444 @@ function SpecialModePage() {
 
     const handleConfirmTournamentNumber = () => {
         const next = getNextTournamentNumber();
-        setTournamentNumber(next);
-        saveTournamentNumber(next);
+        setTypeNumber(activeNumberType, next);
         setIsTournamentNumberFinalModalOpen(false);
+        setIsTournamentNumberTypeModalOpen(false);
+        setTournamentNumberType("");
         clearTournamentNumberAdminState();
         toast.success(`Tournament number is now #${next}.`);
+    };
+
+    const getTypeNumber = (typeId) =>
+        typeId === "Official"
+            ? tournamentNumber
+            : (tournamentNumbers?.[typeId] ?? 0);
+
+    const setTypeNumber = (typeId, next) => {
+        if (typeId === "Official") {
+            setTournamentNumber(next);
+            saveTournamentNumber(next);
+            return;
+        }
+        setTournamentNumbers((prev) => {
+            const updated = { ...prev, [typeId]: next };
+            saveTournamentNumbers(updated);
+            return updated;
+        });
+    };
+
+    const renderTournamentLabelFor = (typeId, number) => {
+        const theme = getTournamentTheme(number);
+        const config = getTournamentTypeConfig(typeId);
+        return (
+            <>
+                <span
+                    style={{
+                        textShadow: config.highlightCard ? "0 0 24px rgba(255, 215, 0, 0.9)" : "",
+                        color: config.highlightCard ? "rgba(255, 215, 0, 0.9)" : "",
+                    }}
+                >
+                    {config.label}
+                </span>{" "}
+                <span
+                    style={
+                        theme
+                            ? {
+                                backgroundImage: theme.gradient,
+                                backgroundRepeat: "no-repeat",
+                                backgroundSize: theme.animation ? "120% 120%" : "100% 100%",
+                                WebkitBackgroundClip: "text",
+                                backgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                color: "transparent",
+                                filter: `drop-shadow(0 0 3px ${theme.glow})`,
+                                animation: theme.animation,
+                            }
+                            : undefined
+                    }
+                >
+                    #{number}
+                </span>
+            </>
+        );
+    };
+
+    const hallTeamById = (id) => allTeams.find((team) => team.id === id) || null;
+
+    const setHallTeamSortMode = (mode) => {
+        if (!["colors", "points", "placement"].includes(mode)) return;
+        setHallTeamSortModeState(mode);
+        try {
+            localStorage.setItem(HALL_TEAM_SORT_LS_KEY, mode);
+        } catch {
+            /* ignore */
+        }
+    };
+
+    const sortHallTeams = (teams) => {
+        const originalOrder = new Map(allTeams.map((team, index) => [team.id, index]));
+        return [...(teams || [])].sort((a, b) => {
+            if (hallTeamSortMode === "points") {
+                const pointsDifference = (teamRatings?.[b.id] ?? 0) - (teamRatings?.[a.id] ?? 0);
+                return pointsDifference || (originalOrder.get(a.id) ?? 0) - (originalOrder.get(b.id) ?? 0);
+            }
+
+            if (hallTeamSortMode === "placement") {
+                const placementDifference = (rankById?.[a.id] ?? 64) - (rankById?.[b.id] ?? 64);
+                return placementDifference || (originalOrder.get(a.id) ?? 0) - (originalOrder.get(b.id) ?? 0);
+            }
+
+            return (originalOrder.get(a.id) ?? 0) - (originalOrder.get(b.id) ?? 0);
+        });
+    };
+
+    const hallTeamPickerValue = (team) => {
+        if (hallTeamSortMode === "points") return `${teamRatings?.[team.id] ?? 0}p`;
+        if (hallTeamSortMode === "placement") return formatOrdinal(rankById?.[team.id] ?? 64);
+        return null;
+    };
+
+    const emptyHallPicks = (typeId) =>
+        Object.fromEntries(getTournamentTypeConfig(typeId).fields.map((field) => [field.key, []]));
+
+    const makeEmptyHallForm = (typeId = "") => ({
+        type: typeId,
+        number: "",
+        needed: "",
+        achieved: "",
+        picks: emptyHallPicks(typeId),
+    });
+
+    const hallRecordToForm = (record) => {
+        const typeId = record?.type || TOURNAMENT_TYPES[0].id;
+        const ids = (list) => (list || []).map((team) => team?.id).filter(Boolean);
+        const restPlaces = (record?.places || [])
+            .filter((entry) => entry.place >= 5 && entry.place <= 16)
+            .map((entry) => entry.team?.id)
+            .filter(Boolean);
+
+        return {
+            type: typeId,
+            number: String(record?.number ?? ""),
+            needed: String(record?.neededPickemPoints ?? ""),
+            achieved: String(record?.achievedPickemPoints ?? ""),
+            picks: {
+                ...emptyHallPicks(typeId),
+                stage1: ids(record?.qualifiers?.stage1),
+                stage2Auto: ids(record?.qualifiers?.stage2),
+                stage3Auto: ids(record?.qualifiers?.stage3),
+                stage2All: ids(record?.stages?.stage2?.teams),
+                stage3All: ids(record?.stages?.stage3?.teams),
+                playoffs: ids(record?.qualifiers?.playoffs),
+                winner: record?.results?.winner?.id ? [record.results.winner.id] : [],
+                second: record?.results?.runnerUp?.id ? [record.results.runnerUp.id] : [],
+                third: record?.results?.thirdPlace?.id ? [record.results.thirdPlace.id] : [],
+                fourth: record?.results?.fourthPlace?.id ? [record.results.fourthPlace.id] : [],
+                rest: restPlaces,
+            },
+        };
+    };
+
+    const clearHallManagerState = () => {
+        setHallManagerCode("");
+        setHallManagerMode("");
+        setHallManagerTargetId("");
+        setHallManagerForm(null);
+        setHallPickerField("");
+    };
+
+    const closeHallManagerModals = () => {
+        setIsHallManagerCodeModalOpen(false);
+        setIsHallManagerModeModalOpen(false);
+        setIsHallManagerSelectModalOpen(false);
+        setIsHallManagerFormModalOpen(false);
+        setIsHallManagerFinalModalOpen(false);
+        clearHallManagerState();
+    };
+
+    const handleHallManagerClick = () => {
+        clearHallManagerState();
+        setIsHallManagerCodeModalOpen(true);
+    };
+
+    const handleVerifyHallManagerPassword = () => {
+        if (!SCOREBOARD_RESET_CODE) {
+            toast.error("Reset code is not configured.");
+            return;
+        }
+        if (hallManagerCode !== SCOREBOARD_RESET_CODE) {
+            toast.error("WRONG PASSWORD!");
+            return;
+        }
+        toast.success("Password correct!!!");
+        setHallManagerCode("");
+        setIsHallManagerCodeModalOpen(false);
+        setIsHallManagerModeModalOpen(true);
+    };
+
+    const handleHallManagerModeConfirm = () => {
+        if (!hallManagerMode) return;
+        setIsHallManagerModeModalOpen(false);
+
+        if (hallManagerMode === "deleteAll") {
+            setIsHallManagerFinalModalOpen(true);
+            return;
+        }
+
+        if (hallManagerMode === "add") {
+            setHallManagerForm(makeEmptyHallForm(""));
+            setIsHallManagerFormModalOpen(true);
+            return;
+        }
+
+        setIsHallManagerSelectModalOpen(true);
+    };
+
+    const handleHallManagerSelectConfirm = () => {
+        if (!hallManagerTargetId) return;
+        setIsHallManagerSelectModalOpen(false);
+
+        if (hallManagerMode === "delete") {
+            setIsHallManagerFinalModalOpen(true);
+            return;
+        }
+
+        const record = hallOfFame.find((item) => item.id === hallManagerTargetId);
+        setHallManagerForm(hallRecordToForm(record));
+        setIsHallManagerFormModalOpen(true);
+    };
+
+    const HALL_PLACEMENT_KEYS = ["winner", "second", "third", "fourth", "rest"];
+
+    const getHallPickAccess = (form, fieldKey, teamId) => {
+        const picks = form?.picks || {};
+        const inList = (key) => (picks[key] || []).includes(teamId);
+
+        if (fieldKey === "stage2All") {
+            if (inList("stage2Auto")) return { allowed: true, locked: true };
+            return { allowed: inList("stage1"), locked: false };
+        }
+        if (fieldKey === "stage3All") {
+            if (inList("stage3Auto")) return { allowed: true, locked: true };
+            return { allowed: inList("stage2All"), locked: false };
+        }
+        if (fieldKey === "playoffs") return { allowed: inList("stage3All"), locked: false };
+        if (HALL_PLACEMENT_KEYS.includes(fieldKey)) {
+            const usedElsewhere = HALL_PLACEMENT_KEYS.some((key) => key !== fieldKey && (picks[key] || []).includes(teamId));
+            return { allowed: inList("playoffs") && !usedElsewhere, locked: false };
+        }
+        return { allowed: true, locked: false };
+    };
+
+    const normalizeHallPicks = (picks) => {
+        const next = Object.fromEntries(Object.entries(picks).map(([key, value]) => [key, [...(value || [])]]));
+        next.stage2All = [...new Set([...(next.stage2Auto || []), ...(next.stage2All || []).filter((id) => (next.stage1 || []).includes(id))])].slice(0, 32);
+        next.stage3All = [...new Set([...(next.stage3Auto || []), ...(next.stage3All || []).filter((id) => next.stage2All.includes(id))])].slice(0, 32);
+        next.playoffs = (next.playoffs || []).filter((id) => next.stage3All.includes(id)).slice(0, 16);
+        const used = new Set();
+        HALL_PLACEMENT_KEYS.forEach((key) => {
+            next[key] = (next[key] || []).filter((id) => next.playoffs.includes(id) && !used.has(id));
+            next[key].forEach((id) => used.add(id));
+            if (key !== "rest") next[key] = next[key].slice(0, 1);
+            else next[key] = next[key].slice(0, 12);
+        });
+        return next;
+    };
+
+    const toggleHallPick = (fieldKey, teamId) => {
+        setHallManagerForm((prev) => {
+            if (!prev) return prev;
+            const field = getTournamentTypeConfig(prev.type).fields.find((item) => item.key === fieldKey);
+            const current = prev.picks?.[fieldKey] || [];
+            const access = getHallPickAccess(prev, fieldKey, teamId);
+            if (access.locked) return prev;
+            if (!current.includes(teamId) && !access.allowed) return prev;
+
+            let next;
+            if (!field?.multi) next = current.includes(teamId) ? [] : [teamId];
+            else if (current.includes(teamId)) next = current.filter((id) => id !== teamId);
+            else if (field.exactCount && current.length >= field.exactCount) {
+                toast.error(`You can only choose ${field.exactCount} teams here.`);
+                return prev;
+            } else next = [...current, teamId];
+
+            const picks = normalizeHallPicks({ ...prev.picks, [fieldKey]: next });
+            return { ...prev, picks };
+        });
+    };
+
+    const canConfirmHallForm = () => {
+        const form = hallManagerForm;
+        if (!form) return false;
+        if (!form.type) return false;
+        if (form.number === "" || form.needed === "" || form.achieved === "") return false;
+        const needed = Number(form.needed);
+        if (!Number.isInteger(needed) || needed < MIN_NEEDED_PICKEM || needed > MAX_NEEDED_PICKEM) return false;
+
+        const fieldsValid = getTournamentTypeConfig(form.type).fields.every((field) => {
+            const picked = form.picks?.[field.key] || [];
+            if (!field.multi) return picked.length === 1;
+            if (field.exactCount) return picked.length === field.exactCount;
+            return picked.length > 0;
+        });
+        if (!fieldsValid) return false;
+        const normalized = normalizeHallPicks(form.picks || {});
+        if (JSON.stringify(normalized) !== JSON.stringify(form.picks || {})) return false;
+
+        if (hallManagerMode === "edit") {
+            const existing = hallOfFame.find((item) => item.id === hallManagerTargetId);
+            if (existing) {
+                const original = hallRecordToForm(existing);
+                return JSON.stringify({
+                    ...form,
+                    picks: normalizeHallPicks(form.picks || {}),
+                }) !== JSON.stringify({
+                    ...original,
+                    picks: normalizeHallPicks(original.picks || {}),
+                });
+            }
+        }
+
+        return true;
+    };
+
+    const hallNeededPointsIsValid = (value) => {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= MIN_NEEDED_PICKEM && number <= MAX_NEEDED_PICKEM;
+    };
+
+    const handleHallNeededPointsChange = (value) => {
+        const digits = value.replace(/[^0-9]/g, "");
+        if (digits && Number(digits) > MAX_NEEDED_PICKEM) {
+            toast.error("This is higher than the limit");
+            return;
+        }
+        setHallManagerForm((prev) => ({ ...prev, needed: digits }));
+    };
+
+    const handleHallNeededPointsBlur = () => {
+        const value = hallManagerForm?.needed;
+        if (value !== "" && Number(value) < MIN_NEEDED_PICKEM) {
+            toast.error("This is lower than the limit");
+            setHallManagerForm((prev) => ({ ...prev, needed: "" }));
+        }
+    };
+
+    const hallFormFieldIsComplete = (field) => {
+        const picked = hallManagerForm?.picks?.[field.key] || [];
+        if (!field.multi) return picked.length === 1;
+        if (field.exactCount) return picked.length === field.exactCount;
+        return picked.length > 0;
+    };
+
+    const hallFormFieldIsUnlocked = (fieldIndex) => {
+        const form = hallManagerForm;
+        if (!form?.type || form.number === "" || !hallNeededPointsIsValid(form.needed) || form.achieved === "") return false;
+        const fields = getTournamentTypeConfig(form.type).fields;
+        return fields.slice(0, fieldIndex).every(hallFormFieldIsComplete);
+    };
+
+    const buildHallRecordFromForm = (existing) => {
+        const form = hallManagerForm;
+        const teams = (key) => (form.picks?.[key] || []).map(hallTeamById).filter(Boolean);
+        const single = (key) => teams(key)[0] || null;
+
+        const results = {
+            winner: single("winner"),
+            runnerUp: single("second"),
+            thirdPlace: single("third"),
+            fourthPlace: single("fourth"),
+        };
+
+        const restTeams = teams("rest");
+        const places = [
+            results.winner,
+            results.runnerUp,
+            results.thirdPlace,
+            results.fourthPlace,
+            ...restTeams,
+        ].filter(Boolean).map((team, index) => ({ place: index + 1, team }));
+
+        const needed = parseInt(form.needed, 10) || 0;
+        const achieved = parseInt(form.achieved, 10) || 0;
+        const number = parseInt(form.number, 10) || 0;
+
+        return {
+            id: existing?.id || `${form.type.toLowerCase()}-${number}-${Date.now()}`,
+            type: form.type,
+            number,
+            finishedAt: existing?.finishedAt || new Date().toISOString(),
+            neededPickemPoints: needed,
+            achievedPickemPoints: achieved,
+            pickemWon: achieved >= needed,
+            custom: existing ? (existing.custom ?? false) : true,
+            results,
+            places,
+            qualifiers: {
+                stage1: teams("stage1"),
+                stage2: teams("stage2Auto"),
+                stage3: teams("stage3Auto"),
+                playoffs: teams("playoffs"),
+            },
+            stages: {
+                stage2: { teams: teams("stage2All") },
+                stage3: { teams: teams("stage3All") },
+            },
+            playoffs: existing?.playoffs || {},
+        };
+    };
+
+    const handleHallManagerFormConfirm = () => {
+        if (!canConfirmHallForm()) return;
+        setIsHallManagerFormModalOpen(false);
+        setIsHallManagerFinalModalOpen(true);
+    };
+
+    const handleHallManagerFinalConfirm = () => {
+        if (hallManagerMode === "deleteAll") {
+            clearHallOfFameStore()
+                .then(() => {
+                    setHallOfFame([]);
+                    setSelectedHallTournament(null);
+                    toast.success("The whole Hall of Fame has been wiped.");
+                })
+                .catch(() => toast.error("Couldn't wipe the Hall of Fame."));
+            closeHallManagerModals();
+            return;
+        }
+
+        if (hallManagerMode === "delete") {
+            const id = hallManagerTargetId;
+            deleteHallTournament(id)
+                .then(() => {
+                    setHallOfFame((prev) => prev.filter((item) => item.id !== id));
+                    setSelectedHallTournament((prev) => (prev?.id === id ? null : prev));
+                    toast.success("Tournament deleted from the Hall of Fame.");
+                })
+                .catch(() => toast.error("Couldn't delete this tournament."));
+            closeHallManagerModals();
+            return;
+        }
+
+        const existing = hallManagerMode === "edit"
+            ? hallOfFame.find((item) => item.id === hallManagerTargetId)
+            : null;
+        const record = buildHallRecordFromForm(existing);
+
+        saveHallTournament(record)
+            .then(() => {
+                setHallOfFame((prev) => {
+                    const without = prev.filter((item) => item.id !== record.id);
+                    return [record, ...without].sort((a, b) => (b.number ?? 0) - (a.number ?? 0));
+                });
+                setSelectedHallTournament((prev) => (prev?.id === record.id ? record : prev));
+                toast.success(hallManagerMode === "edit"
+                    ? "Tournament updated."
+                    : "Tournament added to the Hall of Fame.");
+            })
+            .catch(() => toast.error("Couldn't save this tournament."));
+
+        closeHallManagerModals();
     };
 
     const confirmRestart = () => {
@@ -4929,12 +5806,36 @@ function SpecialModePage() {
         setIsMatchModalOpen(true);
     };
 
+    const openArchivedHallMatchModal = (record, stage, index, match) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, stage, index, match });
+        setModalContext({
+            type: "playoffs",
+            stage,
+            matchId: match.id || `hall-${stage}-${index}`,
+            readOnly: true,
+            isArchivedHallOfFame: true,
+        });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
     const closeMatchModal = () => {
+        const isArchivedHallModal = !!modalContext?.isArchivedHallOfFame;
+
         setIsMatchModalOpen(false);
         setModalContext(null);
         setModalLeftTeam(null);
         setModalRightTeam(null);
         setHasChosen(false);
+        setBreakdownSetIndex(null);
+
+        if (isArchivedHallModal) {
+            setSelectedHallMatch(null);
+        }
     };
 
     const handleChooseLeft = () => {
@@ -6516,12 +7417,14 @@ function SpecialModePage() {
                             fourthPlace = tpLoser;
                         }
 
-                        setTournamentResults({
+                        const finishedResults = {
                             winner,
                             runnerUp: loser,
                             thirdPlace: thirdPlaceWinner,
                             fourthPlace,
-                        });
+                        };
+                        setTournamentResults(finishedResults);
+                        saveFinishedTournamentToHallOfFame(copy, finishedResults);
                         setTeamPlacings((prev) => {
                             const next = { ...prev };
 
@@ -7074,6 +7977,1150 @@ function SpecialModePage() {
     const handleProceed = () => {
         recomputePickemTotals();
         setShowPickemSummary(true);
+    };
+
+    const saveFinishedTournamentToHallOfFame = (finishedPlayoffs, finishedResults) => {
+        const loserOf = (match) =>
+            match?.played
+                ? [match.slotA, match.slotB].find((team) => team?.id === match.loserTeamId) || null
+                : null;
+
+        const firstLosers = (finishedPlayoffs.ro16 || []).map(loserOf).filter(Boolean);
+        const quarterLosers = (finishedPlayoffs.qf || []).map(loserOf).filter(Boolean);
+        const orderedPlaces = [
+            finishedResults.winner,
+            finishedResults.runnerUp,
+            finishedResults.thirdPlace,
+            finishedResults.fourthPlace,
+            ...quarterLosers,
+            ...firstLosers,
+        ].filter(Boolean);
+        const hallAchievedPickemPoints = [
+            stage1,
+            stage2,
+            stage3,
+        ].reduce((total, stage) => total + Object.values(stage?.matchesByNet || {})
+            .flat()
+            .reduce((sum, match) => sum + swissMatchPoints(match), 0), 0)
+            + Object.values(finishedPlayoffs || {})
+                .flat()
+                .reduce((sum, match) => sum + playoffsMatchPoints(match), 0);
+        setFinalPickemPoints(hallAchievedPickemPoints);
+
+        const record = {
+            id: `official-${tournamentNumber}-${Date.now()}`,
+            number: tournamentNumber,
+            type: "Official",
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints: hallAchievedPickemPoints,
+            pickemWon: hallAchievedPickemPoints >= neededPickemPoints,
+            results: finishedResults,
+            places: orderedPlaces.map((team, index) => ({
+                place: index + 1,
+                team,
+            })),
+            qualifiers: {
+                stage1: tournamentSeedsRef.current?.stage1Seeds || [],
+                stage2: tournamentSeedsRef.current?.stage2Seeds || [],
+                stage3: tournamentSeedsRef.current?.stage3Seeds || [],
+                playoffs: finishedPlayoffs.ro16?.flatMap((match) => [match.slotA, match.slotB]).filter(Boolean) || [],
+            },
+            stages: { stage1, stage2, stage3 },
+            playoffs: finishedPlayoffs,
+        };
+
+        saveHallTournament(record)
+            .then(() => setHallOfFame((prev) => [record, ...prev.filter((item) => item.id !== record.id)]))
+            .catch((error) => console.error("Couldn't save tournament to Hall of Fame:", error));
+    };
+
+    const hallTeamCircle = (team, size = 52) => (
+        <div
+            title={team ? `Team ${team.name}` : "Unknown team"}
+            style={{
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                background: team?.color || "#666",
+                border: "3px solid #999",
+                boxShadow: team?.shadow || "0 0 8px rgba(0,0,0,.35)",
+                flex: "0 0 auto",
+            }}
+        />
+    );
+    const hallCardIcon = (won) => (
+        <div style={{ top: "-3.2%", left: "-4.75%" }} className={css.modalSuccessPickemIndicator}>
+            <FaCircle size={32} color={won ? "#37b737" : "#be3939"} />
+            {won ? <FaCheck size={20} color="#ffffff" /> : <FaXmark size={20} color="#fff" />}
+        </div>
+    );
+
+    const hallPlaceRow = (label, team, size = 52) => (
+        <div style={{ display: "flex", alignItems: "center", marginTop: 18, position: "relative" }}>
+            {hallTeamCircle(team, size)}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <span
+                    className={css.finished_modal_team_label}
+                    style={{
+                        fontSize: 20,
+                        fontWeight: 800,
+                        color: "#fff",
+                        textShadow: `
+                            0 0 6px ${team?.color},
+                            0 0 14px ${team?.color}66,
+                            0 1px 3px rgba(0,0,0,0.4)
+                        `,
+                        width: "max-content",
+                        position: "absolute",
+                        top: '60%',
+                        left: '50%',
+                        transform: 'translateX(-50%)'
+                    }}
+                >
+                    {label}
+                </span>
+                <span
+                    className={css.finished_modal_team_label}
+                    style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: "#fff",
+                        textShadow: '0 0 4px #000',
+                        width: "max-content",
+                        position: "absolute",
+                        top: '-14%',
+                        left: '50%',
+                        transform: 'translateX(-50%)'
+                    }}
+                >
+                    Team {team?.name ?? "—"}
+                </span>
+            </div>
+        </div>
+    );
+
+    const renderHallTeamRow = (teams, size = 38) => (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {(teams || []).length === 0
+                ? <span className={css.info_text} style={{ fontSize: 14 }}>No teams saved.</span>
+                : (teams || []).map((team, index) => (
+                    <span key={`${team?.id ?? "team"}-${index}`} title={`Team ${team?.name}`}>
+                        {hallTeamCircle(team, size)}
+                    </span>
+                ))}
+        </div>
+    );
+
+    const renderHallCard = (item) => {
+        const won = item.pickemWon;
+        const config = getTournamentTypeConfig(item.type);
+        const results = item.results || {};
+
+        return (
+            <button
+                type="button"
+                key={item.id}
+                onClick={() => setSelectedHallTournament(item)}
+                className={`${config.highlightCard ? css.cardOfficial : ""} ${won ? css.cardPickemWin : css.cardPickemLoss}`}
+                style={{
+                    position: "relative",
+                    flex: "0 0 auto",
+                    width: 340,
+                    minHeight: 520,
+                    padding: "22px 18px",
+                    borderRadius: 16,
+                    cursor: "pointer",
+                    color: "#2e2f42",
+                    textAlign: "center",
+                    overflow: "visible",
+                    border: config.highlightCard ? "none" : "",
+                }}
+            >
+                {hallCardIcon(won)}
+
+                <div style={{
+                    display: "flex",
+                    position: "relative",
+                    zIndex: 2
+                }}>
+                    <span
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#fff",
+                            position: "absolute",
+                            top: "-60px",
+                            left: "-8px"
+                        }}
+                    >
+                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                    </span>
+                    {config.highlightCard && (
+                        <span
+                            style={{
+                                position: "absolute",
+                                top: "-60px",
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                color: "#2e2f42",
+                                fontWeight: 700,
+                                fontSize: "32px"
+                            }}
+                        >
+                            <FaTrophy />
+                        </span>
+                    )}
+                    <span
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: won ? "#2e7d32" : "#be3939",
+                            position: "absolute",
+                            top: "-60px",
+                            right: "-8px"
+                        }}
+                    >
+                        <strong style={{ fontSize: 14 }}><i>{item.achievedPickemPoints}({item.achievedPickemPoints - item.neededPickemPoints > 0 && item.achievedPickemPoints - item.neededPickemPoints !== 0 ? '+' : ''}{item.achievedPickemPoints - item.neededPickemPoints})</i></strong> <br /> achieved Pick&apos;em Point{item.achievedPickemPoints !== 1 ? 's' : ''}
+                    </span>
+                </div>
+
+                <div
+                    className={css.game_title}
+                    style={{
+                        fontSize: 48,
+                        margin: "84px 0 -16px",
+                        position: "relative",
+                        zIndex: 2,
+                        color: "#fff",
+                        fontStyle: "oblique"
+                    }}
+                >
+                    <span style={{ position: "absolute", width: "max-content", transform: "translateX(-50%)", left: "50%", bottom: "42px" }}>{renderTournamentLabelFor(item.type, item.number)}</span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14, position: "relative" }}>
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: `#ffffff`,
+                            fontSize: "32px",
+                            width: "max-content",
+                            textShadow: '0 0 4px #000',
+                            position: "absolute",
+                            left: "50%",
+                            top: "-25%",
+                            transform: "translateX(-50%)",
+                            zIndex: 3
+                        }}
+                    >
+                        Team {results.winner?.name ?? "—"}
+                    </span>
+                    <div style={{ position: "relative", zIndex: 2 }}>
+                        {hallTeamCircle(results.winner, 96)}
+                    </div>
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: '#ffffff',
+                            fontSize: "48px",
+                            textShadow: `
+                                0 0 6px ${results.winner?.color},
+                                0 0 14px ${results.winner?.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
+                            position: "absolute",
+                            left: "50%",
+                            top: "55%",
+                            transform: "translateX(-50%)",
+                            zIndex: 3
+                        }}
+                    >
+                        CHAMPION
+                    </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 10, position: "relative", bottom: "-20px", zIndex: 2 }}>
+                    {hallPlaceRow("Runner Up", results.runnerUp, 64)}
+                    {hallPlaceRow("3rd place", results.thirdPlace, 52)}
+                    {hallPlaceRow("4th place", results.fourthPlace, 44)}
+                </div>
+            </button>
+        );
+    };
+
+    const renderHallManagerModals = () => {
+        const form = hallManagerForm;
+        const config = form ? getTournamentTypeConfig(form.type || "") : null;
+
+        const finalQuestion = () => {
+            if (hallManagerMode === "deleteAll") {
+                return (
+                    <>
+                        Are you sure you want to delete <b>ALL THE TOURNAMENTS</b> from the Hall of Fame? <br />
+                        <strong>You will NOT be able to revert this action!</strong>
+                    </>
+                );
+            }
+            if (hallManagerMode === "delete") {
+                return (
+                    <>
+                        Are you sure you want to delete <b>this tournament</b> from the Hall of Fame? <br />
+                        <strong>You will NOT be able to revert this action!</strong>
+                    </>
+                );
+            }
+            if (hallManagerMode === "edit") {
+                return <>Are you sure you want to edit <b>this tournament</b>?</>;
+            }
+            return <>Are you sure you want to create <b>this tournament</b>?</>;
+        };
+
+        return (
+            <>
+                {isHallManagerCodeModalOpen && (
+                    <div className={css.restart_modal}>
+                        <div style={{ width: "100%" }}>
+                            <label className={css.reset_label} htmlFor="hall-manager-code">
+                                Identification code
+                            </label>
+                            <input
+                                id="hall-manager-code"
+                                className={css.reset_input}
+                                type="password"
+                                value={hallManagerCode}
+                                onChange={(e) => setHallManagerCode(e.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={closeHallManagerModals}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleVerifyHallManagerPassword}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isHallManagerModeModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px" }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Tournament management
+                        </p>
+
+                        <select
+                            className={css.reset_input}
+                            style={{ width: "80%" }}
+                            value={hallManagerMode}
+                            onChange={(e) => setHallManagerMode(e.target.value)}
+                        >
+                            <option value=""></option>
+                            <option value="add">Add</option>
+                            {hallOfFame.length === 0 ? null : (
+                                <>
+                                    <option value="edit">Edit</option>
+                                    <option value="delete">Delete</option>
+                                    <option value="deleteAll">DELETE ALL</option>
+                                </>
+                            )}
+                        </select>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={closeHallManagerModals}>
+                                Cancel
+                            </button>
+                            <button
+                                className={`${css.confirm_button} ${!hallManagerMode ? css.locked : ""}`}
+                                disabled={!hallManagerMode}
+                                onClick={handleHallManagerModeConfirm}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isHallManagerSelectModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px" }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Which tournament?
+                        </p>
+
+                        <select
+                            className={css.reset_input}
+                            style={{ width: "80%" }}
+                            value={hallManagerTargetId}
+                            onChange={(e) => setHallManagerTargetId(e.target.value)}
+                        >
+                            <option value=""></option>
+                            {hallOfFame.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                    {getTournamentTypeConfig(item.type).label} #{item.number}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={closeHallManagerModals}>
+                                Cancel
+                            </button>
+                            <button
+                                className={`${css.confirm_button} ${!hallManagerTargetId ? css.locked : ""}`}
+                                disabled={!hallManagerTargetId}
+                                onClick={handleHallManagerSelectConfirm}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isHallManagerFormModalOpen && form && (
+                    <div
+                        className={css.restart_modal}
+                        style={{
+                            width: "620px",
+                            height: "360px",
+                            top: "20%",
+                            padding: 0,
+                            display: "flex",
+                            flexDirection: "column",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <div
+                            ref={hallManagerScrollRef}
+                            style={{
+                                flex: 1,
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                padding: "20px 24px 16px",
+                                width: "620px"
+                            }}
+                        >
+                            <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                                {hallManagerMode === "edit" ? "Edit tournament" : "Add tournament"}
+                            </p>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                                <label className={css.reset_label}>Tournament type</label>
+                                <select
+                                    className={css.reset_input}
+                                    style={{ marginBottom: 0 }}
+                                    value={form.type}
+                                    onChange={(e) => {
+                                        const nextType = e.target.value;
+                                        setHallManagerForm((prev) => ({
+                                            ...prev,
+                                            type: nextType,
+                                            number: hallManagerMode === "add" && nextType
+                                                ? String(getTypeNumber(nextType) + 1)
+                                                : (nextType ? prev.number : ""),
+                                            picks: emptyHallPicks(nextType),
+                                        }));
+                                        setHallPickerField("");
+                                    }}
+                                >
+                                    {hallManagerMode === "add" && <option value=""></option>}
+                                    {TOURNAMENT_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
+                                </select>
+                                {[
+                                    ["number", "Tournament number"],
+                                    ["needed", `Needed Pick'em points (min: ${MIN_NEEDED_PICKEM}/max: ${MAX_NEEDED_PICKEM})`],
+                                    ["achieved", "Achieved Pick'em points"],
+                                ].map(([key, label]) => {
+                                    const isUnlocked =
+                                        key === "number"
+                                            ? !!form.type
+                                            : key === "needed"
+                                                ? !!form.type && form.number !== ""
+                                                : !!form.type && form.number !== "" && hallNeededPointsIsValid(form.needed);
+                                    const isNeededInput = key === "needed";
+                                    return (
+                                        <React.Fragment key={key}>
+                                            <label
+                                                className={css.reset_label}
+                                                style={{ visibility: isUnlocked ? "visible" : "hidden" }}
+                                            >
+                                                {label}
+                                            </label>
+                                            <input
+                                                className={css.reset_input}
+                                                style={{
+                                                    marginBottom: 0,
+                                                    visibility: isUnlocked ? "visible" : "hidden",
+                                                    pointerEvents: isUnlocked ? "auto" : "none",
+                                                }}
+                                                disabled={!isUnlocked}
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                type="text"
+                                                value={form[key]}
+                                                onChange={(e) => {
+                                                    if (isNeededInput) {
+                                                        handleHallNeededPointsChange(e.target.value);
+                                                        return;
+                                                    }
+                                                    setHallManagerForm((prev) => ({
+                                                        ...prev,
+                                                        [key]: e.target.value.replace(/[^0-9]/g, ""),
+                                                    }));
+                                                }}
+                                                onBlur={isNeededInput ? handleHallNeededPointsBlur : undefined}
+                                            />
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </div>
+
+                            {config.fields.map((field, fieldIndex) => {
+                                const picked = form.picks?.[field.key] || [];
+                                const isUnlocked = hallFormFieldIsUnlocked(fieldIndex);
+                                const isOpen = isUnlocked && hallPickerField === field.key;
+
+                                return (
+                                    <div
+                                        key={field.key}
+                                        style={{
+                                            marginBottom: 12,
+                                            width: "100%",
+                                            visibility: isUnlocked ? "visible" : "hidden",
+                                        }}
+                                    >
+                                        <label className={css.reset_label}>
+                                            {field.label}
+                                            {field.exactCount ? ` (${picked.length}/${field.exactCount})` : ""}
+                                        </label>
+
+                                        <button
+                                            type="button"
+                                            className={css.reset_input}
+                                            style={{
+                                                marginBottom: 0,
+                                                textAlign: "left",
+                                                cursor: isUnlocked ? "pointer" : "default",
+                                                minHeight: 38,
+                                                pointerEvents: isUnlocked ? "auto" : "none",
+                                            }}
+                                            disabled={!isUnlocked}
+                                            onClick={() => setHallPickerField(isOpen ? "" : field.key)}
+                                        >
+                                            {picked.length === 0
+                                                ? "Choose team(s)…"
+                                                : picked
+                                                    .map((id) => hallTeamById(id)?.name)
+                                                    .filter(Boolean)
+                                                    .join(", ")}
+                                        </button>
+
+                                        {isOpen && (
+                                            <div
+                                                style={{
+                                                    overflowY: "auto",
+                                                    overflowX: "hidden",
+                                                    height: "180px",
+                                                    width: "100%",
+                                                    border: "1px solid #999",
+                                                    borderRadius: 8,
+                                                    padding: 12,
+                                                    marginTop: 8,
+                                                }}
+                                            >
+                                                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                                                    {sortHallTeams(allTeams).map((team) => {
+                                                        const isSelected = picked.includes(team.id);
+                                                        const access = getHallPickAccess(form, field.key, team.id);
+                                                        const disabled = access.locked || (!isSelected && !access.allowed);
+                                                        return (
+                                                            <button
+                                                                key={team.id}
+                                                                type="button"
+                                                                disabled={disabled}
+                                                                onClick={() => toggleHallPick(field.key, team.id)}
+                                                                className={css.team_circle_ro32}
+                                                                style={{
+                                                                    width: 37.2,
+                                                                    height: 37.2,
+                                                                    boxShadow: isSelected ? `0 0 12px ${team.unlitColor}` : "none",
+                                                                    border: isSelected ? `2px solid ${team.unlitColor}` : "2px solid #999",
+                                                                    background: team.color,
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    position: "relative",
+                                                                    overflow: "hidden",
+                                                                    opacity: disabled && !access.locked ? 0.4 : 1,
+                                                                    cursor: disabled ? "not-allowed" : "pointer",
+                                                                }}
+                                                                title={`Team ${team.name}${access.locked ? " (required)" : ""}`}
+                                                            >
+                                                                <span
+                                                                    style={{
+                                                                        color: "#ffffff",
+                                                                        fontSize: "12px",
+                                                                        textShadow: "0 0 4px #000"
+                                                                    }}
+                                                                    className={css.modal_team_rating}
+                                                                >
+                                                                    {hallTeamPickerValue(team)}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div
+                            style={{
+                                position: "sticky",
+                                bottom: 0,
+                                background: "#fff",
+                                borderTop: "1px solid #ddd",
+                                padding: "12px 24px",
+                            }}
+                        >
+                            <div className={css.restart_buttons} style={{ margin: 0 }}>
+                                <select
+                                    className={css.reset_input}
+                                    value={hallTeamSortMode}
+                                    onChange={(e) => setHallTeamSortMode(e.target.value)}
+                                    disabled={!form.type}
+                                    style={{
+                                        marginBottom: 0,
+                                        marginRight: "auto",
+                                        width: 180,
+                                        visibility: form.type ? "visible" : "hidden",
+                                        pointerEvents: form.type ? "auto" : "none",
+                                    }}
+                                >
+                                    <option value="colors">by COLORS</option>
+                                    <option value="points">by points</option>
+                                    <option value="placement">by placement</option>
+                                </select>
+                                <button className={css.cancel_button} onClick={closeHallManagerModals}>
+                                    Cancel
+                                </button>
+                                <button
+                                    className={`${css.confirm_button} ${!canConfirmHallForm() ? css.locked : ""}`}
+                                    disabled={!canConfirmHallForm()}
+                                    onClick={handleHallManagerFormConfirm}
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isHallManagerFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            {finalQuestion()}
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={closeHallManagerModals}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleHallManagerFinalConfirm}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    };
+
+    const renderArchivedPlayoffsBracket = (record) => {
+        const stages = [
+            ["ro16", "Round of 16", css.match_rect, css.columnRo16],
+            ["qf", "Quarterfinals", css.quarters_rect, css.columnQuarters],
+            ["sf", "Semifinals", css.semis_rect, css.columnSemis],
+            ["gf", "Grand Final", css.grandFinal_rect, css.columnGrandFinal],
+        ];
+
+        const naturalRo16Pairs = !record.custom
+            ? (() => {
+                const playoffTeams = record.qualifiers?.playoffs || [];
+                const stage3ById = new Map(
+                    (record.stages?.stage3?.teams || []).map((team) => [team.id, team])
+                );
+                const seededCandidates = playoffTeams.map((team) => stage3ById.get(team.id) || team);
+
+                if (seededCandidates.length !== 16) {
+                    return null;
+                }
+
+                const hasQualificationOrder = seededCandidates.every(
+                    (team) => Number.isFinite(Number(team?.qualifiedAt))
+                );
+                const seeded = hasQualificationOrder
+                    ? [...seededCandidates].sort(
+                        (a, b) =>
+                            Number(a.qualifiedAt) - Number(b.qualifiedAt) ||
+                            (a.seed ?? 0) - (b.seed ?? 0)
+                    )
+                    : seededCandidates.every((team) => typeof team?.qualifiedVia === "string")
+                        ? buildPlayoffSeeds(seededCandidates)
+                        : null;
+
+                if (!seeded) return null;
+
+                return bracketOrder.map(([leftSeed, rightSeed]) => [
+                    seeded[leftSeed],
+                    seeded[rightSeed],
+                ]);
+            })()
+            : null;
+
+        const archivedMatchForDisplay = (match, stage, index) => {
+            if (stage !== "ro16" || !naturalRo16Pairs?.[index]) return match;
+
+            const [slotA, slotB] = naturalRo16Pairs[index];
+            return { ...match, slotA, slotB };
+        };
+
+        const renderArchivedMatch = (match, stage, index, rectClass) => {
+            const displayMatch = archivedMatchForDisplay(match, stage, index);
+            if (!displayMatch) return null;
+
+            const isUserWin =
+                displayMatch.pickTeamId &&
+                displayMatch.winnerTeamId &&
+                displayMatch.pickTeamId === displayMatch.winnerTeamId;
+            
+            const shouldSwap =
+                !!displayMatch.pickTeamId &&
+                displayMatch.slotA &&
+                displayMatch.slotB &&
+                displayMatch.pickTeamId === displayMatch.slotB.id;
+
+            const leftTeam = shouldSwap ? displayMatch.slotB : displayMatch.slotA;
+            const rightTeam = shouldSwap ? displayMatch.slotA : displayMatch.slotB;
+            const displayScoreLeft = shouldSwap ? displayMatch.scoreRight : displayMatch.scoreLeft;
+            const displayScoreRight = shouldSwap ? displayMatch.scoreLeft : displayMatch.scoreRight;
+
+            const winnerIsLeft =
+                isUserWin &&
+                displayMatch.winnerTeamId &&
+                leftTeam &&
+                displayMatch.winnerTeamId === leftTeam.id;
+            return (
+                <div key={displayMatch.id || `${stage}-${index}`} className={rectClass === css.match_rect ? (index % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up) : rectClass === css.quarters_rect ? (index % 2 === 0 ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up) : rectClass === css.semis_rect ? (index % 2 === 0 ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up) : css.gfConnectorWrapper}>
+                    <button
+                        type="button"
+                        className={`${rectClass} ${winnerIsLeft ? css.playoffs_match_win : css.playoffs_match_loss}`}
+                        onClick={() => openArchivedHallMatchModal(record, stage, index, displayMatch)}
+                        style={{ cursor: "pointer", borderColor: winnerIsLeft ? "#2e7d32" : "#7d2e2e" }}
+                    >
+                        {isUserWin ?
+                            <div style={{}} className={css.hallOfFameSuccessPickemIndicator}>
+                                <FaCircle size={28} color="#37b737" />
+                                <FaCheck size={16} color="#fff" />
+                            </div>
+                            :
+                            <div className={css.hallOfFameSuccessPickemIndicator}>
+                                <FaCircle size={28} color="#be3939" />
+                                <FaXmark size={16} color="#fff" />
+                            </div>
+                        }
+                        <div style={{ padding: "4.2px 4px" }} className={`${stage === "thirdPlace" ? css.bo_thirdPlaceDecider_label : css.bo_playoffs_label} ${isUserWin ? css.playoffs_match_win_label : css.playoffs_match_loss_label}`}>
+                            BO{getBestOfForPlayoffs(stage)}
+                        </div>
+                        {stage !== "thirdPlace" && stage !== "gf" ? (
+                            <div style={{ padding: "4.2px 12px 4.2px 4px" }} className={`${css.no_playoffs_label} ${isUserWin ? css.playoffs_match_win_no_label : css.playoffs_match_loss_no_label}`}>
+                                #{index + 1}
+                            </div>
+                        ) : null}
+                        <div className={css.match_content}>
+                            {[leftTeam, rightTeam].map((team, side) => {
+                                const won = isUserWin
+                                    ? displayMatch.pickTeamId === team?.id
+                                    : displayMatch.pickTeamId !== team?.id;
+                                const score = side === 0 ? displayScoreLeft : displayScoreRight;
+                                return (
+                                    <React.Fragment key={team?.id || side}>
+                                        {side === 1 && <div className={css.vs_row}><div style={{ backgroundColor: isUserWin ? "#2e7d32" : "red" }} className={css.divider} /></div>}
+                                        <div className={css.team_row}>
+                                            <div className={css.team_cell}>{team ? <div className={css.team_circle} style={{ background: team.color }} title={`Team ${team.name}`} /> : <div className={css.placeholder_circle}>?</div>}</div>
+                                            <div style={{ color: won ? "#2e7d32" : "red", fontWeight: 700, fontSize: 16 }} className={css.team_name_placeholder}>{team ? `Team ${team.name}` : "TBD"}</div>
+                                            <span style={{ color: won ? "#2e7d32" : "red", fontWeight: 800, fontStyle: "italic", position: "absolute", left: side === 0 ? "85%" : "83%", zIndex: 1, fontSize: 72, opacity: won ? 1 : 0.4 }} className={won ? css.winnerScoreShadow : css.loserScoreShadow}>{score}</span>
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                    </button>
+                </div>
+            );
+        };
+        return (
+            <div className={css.bracket_container} style={{ transition: "none", marginLeft: 28, position: "relative" }}>
+                <div className={css.bracket_inner}>
+                    {stages.map(([stage, title, rectClass, columnClass]) => (
+                        <div className={css.column_container} key={stage}>
+                            <h4 className={css.column_title}>{title}</h4>
+                            <div className={columnClass}>{(record.playoffs?.[stage] || []).map((match, index) => renderArchivedMatch(match, stage, index, rectClass))}</div>
+                        </div>
+                    ))}
+                    {!!record.playoffs?.thirdPlace?.length && (
+                        <div className={css.thirdPlace_container} style={{ top: "76.1%", left: "78.3%" }}>
+                            <h4 style={{ width: "17ch" }} className={css.column_title}>Third Place Decider</h4>
+                            <div className={css.columnThirdPlace}>{record.playoffs.thirdPlace.map((match, index) => renderArchivedMatch(match, "thirdPlace", index, css.thirdPlace_rect))}</div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const HallOfFameSectionTitle = ({ text, marginTop = "48px", marginBottom = "48px" }) => (
+        <div style={{ marginTop, marginBottom, position: "relative" }}>
+            <div style={{ position: "absolute", top: "-22px", right: "50%", transform: "translateX(50%)" }}>
+                <h4
+                    className={css.game_title}
+                    style={{ fontSize: "30px", color: "#999", backgroundColor: "#fff", padding: "4px 6px" }}
+                >
+                    {text}
+                </h4>
+            </div>
+            <hr style={{ width: "1800px", margin: 0 }} className={css.dashed_divider} />
+        </div>
+    );
+
+    const renderHallOfFame = () => {
+        const record = selectedHallTournament;
+        const hallPickemWonCount = hallOfFame.filter((item) => item.pickemWon).length;
+        const hallPickemLostCount = hallOfFame.length - hallPickemWonCount;
+        const hallPickemScore = hallOfFame.reduce(
+            (score, item) => score + (Number(item.achievedPickemPoints) || 0) - (Number(item.neededPickemPoints) || 0),
+            0
+        );
+
+        const hallHeader = (
+            <Header
+                setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
+                setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
+                setIsScoreBoardOpen={closeHallOfFame}
+                setIsScoreBoard={() => setIsLeaderboardOpen(true)}
+                isIntroClosed={false}
+                isLeaderboardOpen={false}
+                isHallOfFameOpen
+                setIsHallOfFameClose={() => {
+                    setIsHallManagerButtonArmed(false);
+                    closeHallOfFame();
+                }}
+                isButtonLocked={isButtonLocked}
+                isScoreBoardButtonLocked={true}
+                isScoreBoardResetButtonLocked={true}
+                onInfoPage={() => navigate("/special-mode-info")}
+            />
+        );
+
+        const pickemCounters = (
+            <div style={{
+                position: "fixed",
+                top: "7%",
+                right: "3%",
+                zIndex: 6,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: 2,
+            }}>
+                <span style={{ color: "#2e2f42", fontWeight: 800 }}>
+                    Pick&apos;em points score: <i>{hallPickemScore >= 0 ? '+' : ''}{hallPickemScore}</i>
+                </span>
+                <span style={{ color: "#2e7d32", fontWeight: 800 }}>
+                    <span style={{ fontWeight: 900, textDecoration: "underline" }}><i>{hallPickemWonCount}</i></span> Pick&apos;em challenge{hallPickemWonCount !== 1 ? 's' : ''} won
+                </span>
+                <span style={{ color: "#be3939", fontWeight: 800 }}>
+                    <span style={{ fontWeight: 900, textDecoration: "underline" }}><i>{hallPickemLostCount}</i></span> Pick&apos;em challenge{hallPickemLostCount !== 1 ? 's' : ''} lost
+                </span>
+            </div>
+        );
+
+        const managerButton = (
+            <button
+                type="button"
+                className={css.gamble_button}
+                onClick={() => {
+                    if (!isHallManagerButtonArmed) {
+                        setIsHallManagerButtonArmed(true);
+                        return;
+                    }
+                    handleHallManagerClick();
+                }}
+                style={{
+                    position: "fixed",
+                    top: "7%",
+                    left: "2%",
+                    zIndex: 6,
+                    opacity: isHallManagerButtonArmed ? 1 : 0,
+                    pointerEvents: "auto",
+                    cursor: isHallManagerButtonArmed ? "pointer" : "default",
+                    transition: "none"
+                }}
+            >
+                Manage tournaments
+            </button>
+        );
+
+        if (!record) {
+            return (
+                <div
+                    style={{
+                        height: "100dvh",
+                        overflow: "hidden",
+                    }}
+                >
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", alignItems: "center", marginTop: "48px" }}
+                    >
+                        {managerButton}
+                        {pickemCounters}
+
+                        <div className={css.header_row}>
+                            <div
+                                className={css.game_title}
+                                style={{ fontSize: "40px", textShadow: "0 0 4px #000", textTransform: "none" }}
+                            >
+                                Hall of Fame
+                            </div>
+                        </div>
+
+                        <div
+                            ref={hallScrollRef}
+                            onWheel={handleHallWheel}
+                            onPointerDown={handleHallPointerDown}
+                            onPointerMove={handleHallPointerMove}
+                            onPointerUp={handleHallPointerUp}
+                            onPointerCancel={handleHallPointerUp}
+                            onClickCapture={handleHallClickCapture}
+                            onDragStart={(e) => e.preventDefault()}
+                            className={css.hidden_scrollbar}
+                            style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                overflowX: "auto",
+                                overflowY: "hidden",
+                                gap: 28,
+                                width: "100vw",
+                                padding: "24px 6vw 128px",
+                                cursor: "grab",
+                            }}
+                        >
+                            {hallOfFame.length === 0 ? (
+                                <div className={css.info_text} style={{ width: "100%", textAlign: "center" }}>
+                                    No finished tournaments yet. Finish a tournament and it will show up right here.
+                                </div>
+                            ) : hallOfFame.map(renderHallCard)}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </div>
+            );
+        }
+
+        const stage2Lineup = record.stages?.stage2?.teams?.length
+            ? record.stages.stage2.teams
+            : (record.qualifiers?.stage2 || []).concat(record.qualifiers?.stage1 || []);
+        const stage3Lineup = record.stages?.stage3?.teams || [];
+        const podium = record.results || {};
+        const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+
+        const qualificationOrder = [
+            0, 8, 12, 4,
+            6, 14, 10, 2,
+            3, 11, 15, 7,
+            5, 13, 9, 1
+        ];
+
+        const playoffsByQualificationOrder = qualificationOrder.map(
+            (seed) => record.qualifiers.playoffs[seed]
+        );
+
+        const placementColors = {
+            1: "gold",
+            2: "silver",
+            3: "#cd7f32",
+
+            4: "#4fc3f7",
+            5: "#40e0d0",
+            6: "#ba68c8",
+            7: "#ff5e2d",
+            8: "#81c784",
+            9: "#f9e4a1",
+            10: "#b0bec5",
+        };
+
+        return (
+            <>
+                {hallHeader}
+                <div
+                    className={css.page_container}
+                    style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                >
+                    <button
+                        type="button"
+                        className={css.gamble_button}
+                        onClick={() => setSelectedHallTournament(null)}
+                        style={{ position: "fixed", top: "7%", left: "2%", zIndex: 6 }}
+                    >
+                        Back to Hall of Fame
+                    </button>
+
+                    <h2 style={{ fontStyle: "oblique" }} className={css.game_title}>
+                        {renderTournamentLabelFor(record.type, record.number)}
+                    </h2>
+                    <div className={css.info_text} style={{ textAlign: "center", width: "max-content" }}>
+                        <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800, fontSize: "28px", display: "inline-block", marginBottom: "12px", marginTop: "6px" }}>
+                            {record.pickemWon ? "Challenge won" : "Challenge lost"}
+                        </span> <br />
+                        <i><span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span> needed Pick&apos;em points</i> <br />
+                        <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
+                        <i>
+                            <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
+                                {record.achievedPickemPoints}{" "}
+                            </span>
+                            achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? 's' : ''}
+                            <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
+                                ({record.achievedPickemPoints - record.neededPickemPoints > 0 && record.achievedPickemPoints - record.neededPickemPoints !== 0 ? '+' : ''}{record.achievedPickemPoints - record.neededPickemPoints})
+                            </span>
+                        </i> <br />
+                    </div>
+
+                    <HallOfFameSectionTitle text="Tournament start" />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content" }}>
+                        <div>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                Qualifiers for Stage I
+                            </h4>
+                            {renderHallTeamRow(record.qualifiers?.stage1)}
+                        </div>
+                        <div>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                Auto-qualifiers for Stage II
+                            </h4>
+                            {renderHallTeamRow(record.qualifiers?.stage2)}
+                        </div>
+                        <div>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                Auto-qualifiers for Stage III
+                            </h4>
+                            {renderHallTeamRow(record.qualifiers?.stage3)}
+                        </div>
+                    </div>
+
+                    <HallOfFameSectionTitle text="All teams to Stage II" />
+                    {renderHallTeamRow(stage2Lineup)}
+
+                    <HallOfFameSectionTitle text="All teams to Stage III" />
+                    {renderHallTeamRow(stage3Lineup)}
+
+                    <HallOfFameSectionTitle text="All 16 playoffs qualifiers" />
+                    {renderHallTeamRow(playoffsByQualificationOrder)}
+
+                    {Object.keys(record.playoffs || {}).length > 0 && (
+                        <>
+                            <HallOfFameSectionTitle text="Playoffs bracket" marginBottom="88px" />
+                            <div>
+                                {renderArchivedPlayoffsBracket(record)}
+                            </div>
+                        </>
+                    )}
+
+                    <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                    <div className={css.winnerPodium} style={{ height: "732px" }}>
+                        {podium.runnerUp && (
+                            <div className={css.podiumRow}>
+                                <div className={css.runnerUpLogo} style={{ backgroundColor: podium.runnerUp.color, boxShadow: podium.runnerUp.shadow }} />
+                                <span className={css.runnerUpMedal}>
+                                    🥈
+                                </span>
+                                <div className={css.secondPodium} style={{ height: "500px", marginBottom: "0px" }}>
+                                    <ReactFitty key={podium.runnerUp?.name} className={css.runnerUpName} maxSize={16} minSize={10}>
+                                        Team <b>{podium.runnerUp.name}</b>
+                                    </ReactFitty>
+                                    <span className={css.runnerUpLabel}>
+                                        RunnerUp
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                        {podium.winner && (
+                            <div className={css.podiumRow}>
+                                <div className={css.winnerLogo} style={{ backgroundColor: podium.winner.color, boxShadow: podium.winner.shadow }} />
+                                <span className={css.winnerMedal}>🥇</span>
+                                <span className={css.winnerTrophy}><FaTrophy /></span>
+                                <div className={css.firstPodium} style={{ height: "600px", marginBottom: "0px" }}>
+                                    <ReactFitty key={podium.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
+                                        Team <b>{podium.winner.name}</b>
+                                    </ReactFitty>
+                                    <span className={css.firstPlaceLabel}>Winner</span>
+                                </div>
+                            </div>
+                        )}
+                        {podium.thirdPlace && (
+                            <div className={css.podiumRow}>
+                                <div className={css.placeLogoThird} style={{ background: podium.thirdPlace.color }} />
+                                <span className={css.thirdPlaceMedal}>🥉</span>
+                                <div className={css.thirdPodium} style={{ height: "300px", marginBottom: "0px" }}>
+                                    <ReactFitty key={podium.thirdPlace?.name} className={css.thirdPlaceName} maxSize={16} minSize={10}>
+                                        Team <b>{podium.thirdPlace.name}</b>
+                                    </ReactFitty>
+                                    <span className={css.thirdPlaceLabel}>3rd</span>
+                                </div>
+                            </div>
+                        )}
+                        {podium.fourthPlace && (
+                            <div className={css.podiumRow}>
+                                <div className={css.placeLogoFourth} style={{ background: podium.fourthPlace.color }} />
+                                <span className={css.fourthPlaceMedal}>🏅</span>
+                                <div className={css.fourthPodium} style={{ height: "200px", marginBottom: "0px" }}>
+                                    <ReactFitty key={podium.fourthPlace?.name} className={css.fourthPlaceName} maxSize={16} minSize={10}>
+                                        Team <b>{podium.fourthPlace.name}</b>
+                                    </ReactFitty>
+                                    <span className={css.fourthPlaceLabel}>4th</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <HallOfFameSectionTitle text="5th - 16th places" marginTop="82px" />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                        {restPlaces.map((entry) => (
+                            <div
+                                key={`${entry.place}-${entry.team?.id}`}
+                                style={{ display: "flex", alignItems: "center", flexDirection: "column", gap: 4, color: "#2e2f42" }}
+                            >
+                                {hallTeamCircle(entry.team, 42)}
+                                <div>
+                                    <span className={css.leaderboard_rank} style={{ color: placementColors[entry.place] || "#2e2f42" }}>
+                                        {formatOrdinal(entry.place)}
+                                    </span>{" "}
+                                    <span style={{ fontWeight: "700" }}>Team {entry.team?.name}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {renderHallManagerModals()}
+                </div>
+            </>
+        );
     };
 
     const renderResultsNav = () => {
@@ -8033,7 +10080,9 @@ function SpecialModePage() {
         const stage = modalContext?.stageKey;
         const type = modalContext?.type;
         const net = modalContext?.net;
-        const index = (playoffs?.[modalContext.stage] || []).findIndex((m) => m.id === modalContext.matchId);
+        const index = modalContext?.isArchivedHallOfFame
+            ? (selectedHallMatch?.index ?? -1)
+            : (playoffs?.[modalContext.stage] || []).findIndex((m) => m.id === modalContext.matchId);
         const num = index >= 0 ? index + 1 : 1;
 
         let leftText = null;
@@ -8184,11 +10233,15 @@ function SpecialModePage() {
             return currentModalMatch?.matchNoInNet ?? 1;
         }
 
-        const matches = playoffs?.[modalContext.stage] ?? [];
-        const index = matches.findIndex((m) => m.id === modalContext.matchId);
+        const matches = modalContext.isArchivedHallOfFame
+            ? []
+            : (playoffs?.[modalContext.stage] ?? []);
+        const index = modalContext.isArchivedHallOfFame
+            ? selectedHallMatch?.index ?? -1
+            : matches.findIndex((m) => m.id === modalContext.matchId);
 
         return index >= 0 ? index + 1 : 1;
-    }, [modalContext, currentModalMatch, playoffs]);
+    }, [modalContext, currentModalMatch, playoffs, selectedHallMatch]);
 
     const breakdownPointLabel = useMemo(() => {
         if (!modalContext) return "MATCH POINT!!!";
@@ -8963,8 +11016,7 @@ function SpecialModePage() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 padding: "24px",
-                                background: "rgba(0,0,0,0.35)",
-                                backdropFilter: "blur(14px) saturate(240%)",
+                                backdropFilter: "blur(8px)",
                                 animation: "fade-in 0.4s ease-out",
                             }}
                         >
@@ -9301,7 +11353,9 @@ function SpecialModePage() {
                                                         justifyContent: "center",
                                                         gap: "0px",
                                                         width: '63.8px',
-                                                        textShadow: banner.shadow
+                                                        textShadow: banner.shadow,
+                                                        position: "relative",
+                                                        index: 9999
                                                     }}
                                                 >
                                                     {topHalf.map((char, index) => (
@@ -9385,7 +11439,7 @@ function SpecialModePage() {
                                         : seriesState.tiebreakerBigSymbol ? (
                                             <p
                                                 className={css.vs}
-                                                style={{ fontWeight: 700, fontSize: "32px", color: "#fff", marginBottom: activePhase === "playoffs" ? "-12px" : "0", }}
+                                                style={{ fontWeight: 700, fontSize: "32px", marginBottom: activePhase === "playoffs" ? "-12px" : "0", }}
                                             >
                                                 {seriesState.tiebreakerBigSymbol}
                                             </p>
@@ -9715,7 +11769,6 @@ function SpecialModePage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5 }}
                                     style={{
-                                        color: "#fff",
                                         textAlign: "center",
                                         maxWidth: "640px",
                                         fontSize: "16px",
@@ -9742,6 +11795,7 @@ function SpecialModePage() {
                                         gap: "8px",
                                         width: "100%",
                                         maxWidth: "640px",
+                                        height: "224.8px"
                                     }}
                                 >
                                     {revealedExtendedRounds.map((round) => {
@@ -9754,7 +11808,7 @@ function SpecialModePage() {
                                                 animate={{ opacity: 1 }}
                                                 transition={{ duration: 0.35 }}
                                                 style={{
-                                                    color: "#fff",
+                                                    color: "#2e2f42",
                                                     fontSize: "20px",
                                                     textAlign: "left",
                                                 }}
@@ -11208,7 +13262,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game? <br /> <strong>You will not be able to revert this action!</strong>
+                            Are you sure you want to restart the game? <br /> <strong>You will NOT be able to revert this action!</strong>
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -11285,6 +13339,2216 @@ function SpecialModePage() {
         );
     };
 
+    const modalIndicatorTop = {
+        1: "-5%",
+        2: "-3.6%",
+        3: "-3.3%",
+        4: "-2.6%",
+        5: "-2.4%",
+        6: "-2.1%",
+        7: "-1.8%",
+        8: "-1.7%",
+        9: "-1.45%",
+    };
+
+    const matchModalNode = (isMatchModalOpen && modalContext && currentModalMatch) ? (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className={css.match_modal_overlay}
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) {
+                    closeMatchModal();
+                }
+            }}
+        >
+            <div
+                ref={modalRef}
+                style={{
+                    position: "relative",
+                    transform: `scale(${modalScale})`,
+                    transformOrigin: "center center",
+                    transition: "none"
+                }}
+            >
+                {isPlayedModal && (
+                    didUserWin ? (
+                        <div
+                            className={css.modalSuccessPickemIndicator}
+                            style={{
+                                top: modalIndicatorTop[playedSets] ?? "-2.5%",
+                                left: playedSets === 9 ? "-3%" : "-3.1%",
+                            }}
+                        >
+                            <FaCircle size={32} color="#37b737" />
+                            <FaCheck size={20} color="#ffffff" />
+                        </div>
+                    ) : (
+                        <div
+                            className={css.modalSuccessPickemIndicator}
+                            style={{
+                                top: modalIndicatorTop[playedSets] ?? "-2.5%",
+                                left: playedSets === 9 ? "-3%" : "-3.1%",
+                            }}
+                        >
+                            <FaCircle size={32} color="#be3939" />
+                            <FaXmark size={20} color="#fff" />
+                        </div>
+                    )
+                )}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className={`
+                                        ${css.match_modal}
+                                        ${isPlayedModal
+                            ? didUserWin
+                                ? (isBo1Modal ? css.match_win_bo1 : css.match_win_modal)
+                                : (isBo1Modal ? css.match_loss_bo1 : css.match_loss_modal)
+                            : ""
+                        }
+                            `}
+                    onClick={(e) => e.stopPropagation()}
+                    style={
+                        isPlayedModal
+                            ? didUserWin
+                                ? {
+                                    border: "2px solid #006a32",
+                                    overflow: "hidden",
+                                }
+                                : {
+                                    border: "2px solid rgb(188, 108, 108)",
+                                    overflow: "hidden",
+                                }
+                            : {
+                                border: "2px solid #999",
+                            }
+                    }
+                >
+                    <div
+                        style={{ paddingTop: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <div className={css.match_modal_header}>
+                            <span className={css.match_modal_title} style={{
+                                fontSize: '16px',
+                                marginBottom: '-8px',
+                                color: isPlayedModal
+                                    ? didUserWin
+                                        ? '#fff'
+                                        : '#fff'
+                                    : "",
+                            }}>
+                                {modalContext.type !== "playoffs" ? modalStageSmallLabel : null}
+                            </span>
+                            <h3
+                                style={{
+                                    color: isPlayedModal
+                                        ? didUserWin
+                                            ? '#fff'
+                                            : '#fff'
+                                        : "",
+                                    margin: '0'
+                                }}
+                                className={css.match_modal_title}>
+                                {modalTitle}
+                                {modalContext.stage !== "gf" && modalContext.stage !== "thirdPlace" ? (
+                                    <div
+                                        style={{
+                                            marginLeft: "2px",
+                                            marginTop: "-2px",
+                                            padding: "4px 8px",
+                                            color: isPlayedModal ? "#fff" : "",
+                                            backgroundColor: isPlayedModal
+                                                ? didUserWin
+                                                    ? "#2e7d32"
+                                                    : "#7d2e2e"
+                                                : "",
+                                        }}
+                                        className={css.points}
+                                    >
+                                        #{modalMatchNumber}
+                                    </div>
+                                ) : null}
+                            </h3>
+                            <span
+                                style={{
+                                    color: isPlayedModal
+                                        ? didUserWin
+                                            ? '#fff'
+                                            : '#fff'
+                                        : "",
+                                    margin: '0',
+                                    fontSize: '18px',
+                                    marginTop: '-6px',
+                                }}
+                                className={css.match_modal_title}
+                            >
+                                Best of {modalBestOf}
+                            </span>
+
+                            {isPlayedModal && pickemLabelText && (
+                                <span
+                                    className={css.match_modal_pickem}
+                                    style={pickemLabelStyle}
+                                >
+                                    {pickemLabelText}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {!isPlayedModal && !modalContext.readOnly && (() => {
+                        const boSkewFactor = (bestOf) => {
+                            if (bestOf <= 1) return 0.7;
+                            if (bestOf <= 3) return 0.82;
+                            if (bestOf <= 5) return 0.92;
+                            if (bestOf <= 7) return 1.02;
+                            return 1.1;
+                        };
+
+                        const leftRating = teamRatings?.[modalLeftTeam?.id] ?? 0;
+                        const rightRating = teamRatings?.[modalRightTeam?.id] ?? 0;
+
+                        const leftPlacement = rankById[modalLeftTeam?.id] ?? 64;
+                        const rightPlacement = rankById[modalRightTeam?.id] ?? 64;
+
+                        const placementGap = rightPlacement - leftPlacement;
+
+                        const placementRatingShift = placementGap * 12;
+
+                        const adjustedLeftRating =
+                            leftRating + placementRatingShift;
+
+                        const adjustedRightRating =
+                            rightRating - placementRatingShift;
+
+                        const expectedScore = (ra, rb) =>
+                            1 / (1 + Math.pow(10, (rb - ra) / 850));
+
+                        const raw = expectedScore(
+                            adjustedLeftRating,
+                            adjustedRightRating
+                        );
+
+                        const boFactor = boSkewFactor(modalBestOf);
+
+                        const adjustedRaw =
+                            0.5 + (raw - 0.5) * boFactor;
+
+                        const curve = 1.12;
+
+                        const leftWinProb =
+                            Math.pow(adjustedRaw, curve) /
+                            (
+                                Math.pow(adjustedRaw, curve) +
+                                Math.pow(1 - adjustedRaw, curve)
+                            );
+
+                        const leftPct = Math.min(
+                            100,
+                            Math.max(0, leftWinProb * 100)
+                        );
+
+                        const rightPct = 100 - leftPct;
+
+                        const favoriteIsLeft = leftPct > rightPct;
+                        const favoritePct = Math.max(leftPct, rightPct);
+                        const diff = Math.abs(leftPct - rightPct);
+
+                        const favoriteTeam = favoriteIsLeft ? modalLeftTeam?.name : modalRightTeam?.name;
+
+                        const predictionLabel =
+                            diff <= 0
+                                ? "Absolute 50/50"
+                                : diff <= 5
+                                    ? "Too close to call"
+                                    : diff <= 10
+                                        ? "Barely separated"
+                                        : diff <= 18
+                                            ? `${favoriteTeam} has slight edge`
+                                            : diff <= 25
+                                                ? `${favoriteTeam} has modest advantage`
+                                                : diff <= 35
+                                                    ? `${favoriteTeam} has it in control`
+                                                    : diff <= 45
+                                                        ? `${favoriteTeam} has strong position`
+                                                        : diff <= 60
+                                                            ? `${favoriteTeam} has dominant position`
+                                                            : diff <= 75
+                                                                ? `${favoriteTeam} is overwhelming favorite`
+                                                                : diff <= 90
+                                                                    ? `${favoriteTeam} is very likely a winner`
+                                                                    : diff <= 99
+                                                                        ? `${favoriteTeam} is near-absolute favorite`
+                                                                        : `${favoriteTeam} is 100% winner!`;
+
+                        const offsetStrength = Math.min(
+                            35,
+                            ((favoritePct - 50) / 50) * 35
+                        );
+
+                        let predictionPositionPct = favoriteIsLeft
+                            ? 50 - offsetStrength
+                            : 50 + offsetStrength;
+
+                        const padding = predictionLabel.length > 25 ? 29 : 26;
+
+                        predictionPositionPct = Math.max(padding, Math.min(100 - padding, predictionPositionPct));
+
+                        const predictionPosition = `${predictionPositionPct}%`;
+
+                        const blend = 10;
+
+                        const start = Math.max(0, leftPct - blend);
+                        const end = Math.min(100, leftPct + blend);
+
+                        const barStyle = {
+                            background: `linear-gradient(
+                                        90deg,
+                                        ${modalLeftTeam?.color} 0%,
+                                        ${modalLeftTeam?.color} ${start}%,
+                                        ${modalRightTeam?.color} ${end}%,
+                                        ${modalRightTeam?.color} 100%
+                                    )`
+                        };
+
+                        const leftStats = teamPlacings?.[modalLeftTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                        const rightStats = teamPlacings?.[modalRightTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+                        const renderStats = (stats) => {
+                            const items = [];
+
+                            if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
+                            if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
+                            if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+
+                            if (items.length === 0) return null;
+
+                            return (
+                                <div
+                                    className={css.team_stats_badge}
+                                    style={{
+                                        position: "absolute",
+                                        top: "25%",
+                                        right: stats === leftStats ? "85%" : "auto",
+                                        left: stats === rightStats ? "84%" : "auto",
+                                    }}
+                                >
+                                    {items.map((i, idx) => (
+                                        <span key={idx} className={css.stat_item}>
+                                            {i.icon}: {i.value}
+                                        </span>
+                                    ))}
+                                </div>
+                            );
+                        };
+
+                        const boLabel = `BO${modalBestOf}`;
+
+                        let stageLabel = "Start Match";
+
+                        if (modalContext?.type === "playoffs") {
+                            stageLabel = `Start this ${boLabel} ${modalTitle}`;
+                        } else if (modalContext?.type === "swiss") {
+                            const net = modalContext?.net;
+
+                            const regularMatches = ["0:0", "1:0", "0:1", "1:1"];
+
+                            const progressionMatches = ["2:0", "2:1"];
+                            const eliminationMatches = ["0:2", "1:2"];
+                            const deciderMatches = ["2:2"];
+
+                            if (regularMatches.includes(net)) {
+                                stageLabel = `Start this ${net} Match`;
+                            } else if (progressionMatches.includes(net)) {
+                                stageLabel = `Start this ${net} Progression Match`;
+                            } else if (eliminationMatches.includes(net)) {
+                                stageLabel = `Start this ${net} Elimination Match`;
+                            } else if (deciderMatches.includes(net)) {
+                                stageLabel = `Start this ${net} Deciding Match`;
+                            }
+                        }
+
+                        const rsPrediction = getRsPrediction({
+                            ratings: teamRatings,
+                            teams: allTeams,
+
+                            leftTeam: modalLeftTeam,
+                            rightTeam: modalRightTeam,
+
+                            phase: modalContext?.type === "swiss"
+                                ? "swiss"
+                                : "playoffs",
+
+                            swissStageKey:
+                                modalContext?.type === "swiss"
+                                    ? modalContext?.stageKey ?? modalContext?.swissStageKey
+                                    : null,
+
+                            swissNet:
+                                modalContext?.type === "swiss"
+                                    ? modalContext?.net
+                                    : null,
+
+                            playoffsStage:
+                                modalContext?.type === "playoffs"
+                                    ? modalContext?.stage
+                                    : null,
+
+                            bestOf: modalBestOf,
+                            loserSetsWon: 0,
+
+                            playedAtMs: Date.now(),
+                        });
+
+                        const renderRsPrediction = (prediction, isWin, side = "left") => {
+                            if (!prediction) return null;
+
+                            const {
+                                points,
+                                beforeRank,
+                                afterRank,
+                            } = prediction;
+
+                            const deltaPlaces =
+                                beforeRank !== null && afterRank !== null
+                                    ? beforeRank - afterRank
+                                    : 0;
+
+                            const placementColor =
+                                placementColors[afterRank] || "#ffffff";
+
+                            return (
+                                <span
+                                    className={css.finished_modal_team_placing}
+                                    style={{
+                                        position: "absolute",
+                                        top:
+                                            side === "left"
+                                                ? (isWin ? "0%" : "86%")
+                                                : (isWin ? "86%" : "0%"),
+                                        right: side === "left" ? "0%" : "auto",
+                                        left: side === "right" ? "24%" : "auto",
+                                        zIndex: 3,
+                                        fontSize: "10px",
+                                        width: "70px",
+                                        minWidth: "max-content",
+                                        color: "#2e2f42"
+                                    }}
+                                >
+                                    <span style={{ position: "relative" }}>
+                                        <span
+                                            style={{
+                                                color: isWin
+                                                    ? "#2e7d32"
+                                                    : "#be3939",
+                                                fontWeight: 900,
+                                                marginRight: "5px",
+                                                position: "absolute",
+                                                right: isWin ? "110%" : !isWin ? "117%" : "auto",
+                                            }}
+                                        >
+                                            {isWin ? "W" : "L"}
+                                        </span>
+
+                                        {deltaPlaces !== 0 ? (
+                                            <span
+                                                style={{
+                                                    color:
+                                                        deltaPlaces > 0
+                                                            ? "#2e7d32"
+                                                            : "red",
+                                                    fontWeight: 900,
+                                                    marginRight: "0px",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "2px",
+                                                    width: 21,
+                                                }}
+                                            >
+                                                {deltaPlaces > 0 ? (
+                                                    <>
+                                                        <span style={{ marginRight: "-3px" }}>
+                                                            {deltaPlaces}
+                                                        </span>
+                                                        <MdOutlineKeyboardDoubleArrowUp />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span style={{ marginRight: "-3px" }}>
+                                                            {Math.abs(deltaPlaces)}
+                                                        </span>
+                                                        <MdOutlineKeyboardDoubleArrowDown />
+                                                    </>
+                                                )}
+                                            </span>
+                                        ) : (
+                                            <span
+                                                style={{
+                                                    color:
+                                                        deltaPlaces > 0
+                                                            ? "#2e7d32"
+                                                            : "red",
+                                                    fontWeight: 900,
+                                                    marginRight: "-2px",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "2px",
+                                                    userSelect: "none",
+                                                    width: 21
+                                                }}
+                                            >
+                                                {deltaPlaces > 0 ? (
+                                                    <>
+                                                        <span style={{ marginRight: "-4px" }}>
+                                                            &nbsp;
+                                                        </span>
+                                                        &nbsp;
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span style={{ marginRight: "-4px" }}>
+                                                            &nbsp;
+                                                        </span>
+                                                        &nbsp;
+                                                    </>
+                                                )}
+                                            </span>
+                                        )}
+
+                                        <span
+                                            style={{
+                                                color: placementColor,
+                                                textShadow: "0 0 4px #000"
+                                            }}
+                                        >
+                                            {formatOrdinal(afterRank)}
+                                        </span>
+
+                                        <span
+                                            style={{
+                                                color:
+                                                    points > 0
+                                                        ? "#2e7d32"
+                                                        : points < 0
+                                                            ? "red"
+                                                            : "#fff",
+                                                fontWeight: 900,
+                                                marginLeft: "4px"
+                                            }}
+                                        >
+                                            {points > 0
+                                                ? `+${points}p`
+                                                : `${points}p`}
+                                        </span>
+                                    </span>
+                                </span>
+                            );
+                        };
+
+                        return (
+                            <>
+                                <div className={css.match_modal_row}>
+                                    {renderStats(leftStats)}
+                                    <div
+                                        onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
+                                        onMouseLeave={() => setHoveredTeamId(null)}
+                                        style={{ cursor: hasChosen ? "default" : "pointer", marginLeft: '12px' }}
+                                        onClick={handleChooseLeft}
+                                        className={css.modal_team_btn}
+                                    >
+                                        {rsPrediction && (
+                                            <>
+                                                {renderRsPrediction(rsPrediction.left.win, true, "left")}
+                                            </>
+                                        )}
+                                        <button
+                                            type="button"
+                                            style={{
+                                                all: "unset",
+                                                borderRadius: "50%"
+                                            }}
+                                        >
+                                            <TeamCircle
+                                                team={modalLeftTeam}
+                                                showRating
+                                                ratingValue={leftRating}
+                                                specialStyle={{
+                                                    width: "64px",
+                                                    height: "64px",
+                                                    border:
+                                                        hasChosen
+                                                            ? "3px solid #0d6aff"
+                                                            : "3px solid #999",
+
+                                                    boxShadow:
+                                                        hasChosen
+                                                            ? "0 0 8px 2px #0d6aff"
+                                                            : hoveredTeamId === modalLeftTeam?.id
+                                                                ? "0 0 4px 1px #0d6aff"
+                                                                : "none",
+                                                    zIndex: 0
+                                                }}
+                                            />
+                                            <span
+                                                style={{
+                                                    color: "#fff",
+                                                    textShadow:
+                                                        hasChosen
+                                                            ? "0 0 8px #0d6aff"
+                                                            : hoveredTeamId === modalLeftTeam?.id
+                                                                ? "0 0 4px #0d6aff"
+                                                                : "0 0 4px #000",
+                                                    top: '12%'
+                                                }}
+                                                className={css.finished_modal_team_placing}
+                                            >
+                                                {rankLeftSticker()}
+                                            </span>
+
+                                            <span
+                                                style={{
+                                                    color: "#fff",
+                                                    textShadow:
+                                                        hasChosen
+                                                            ? "0 0 8px #0d6aff"
+                                                            : hoveredTeamId === modalLeftTeam?.id
+                                                                ? "0 0 4px #0d6aff"
+                                                                : "0 0 4px #000",
+                                                }}
+                                                className={css.modal_team_label}
+                                            >
+                                                {modalLeftTeam?.name}
+                                            </span>
+                                        </button>
+                                        {rsPrediction && (
+                                            <>
+                                                {renderRsPrediction(rsPrediction.left.loss, false, "left")}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <p
+                                        className={css.vs_text}
+                                        style={{
+                                            position: "static",
+                                            backgroundColor: "#fff",
+                                            fontSize: "24px",
+                                            textShadow: `
+                                                            1px 0 #d8d8d8,
+                                                            -1px 0 #d8d8d8,
+                                                            0 1px #d8d8d8,
+                                                            0 -1px #d8d8d8,
+                                                            1px 1px #d8d8d8,
+                                                            1px -1px #d8d8d8,
+                                                            -1px 1px #d8d8d8,
+                                                            -1px -1px #d8d8d8,
+                                                            1.5px 0 #5a5a5a,
+                                                            -1.5px 0 #5a5a5a,
+                                                            0 1.5px #5a5a5a,
+                                                            0 -1.5px #5a5a5a,
+                                                            1.5px 1.5px #5a5a5a,
+                                                            1.5px -1.5px #5a5a5a,
+                                                            -1.5px 1.5px #5a5a5a,
+                                                            -1.5px -1.5px #5a5a5a,
+                                                            1.5px 0 #5a5a5a,
+                                                            -1.5px 0 #5a5a5a
+                                                        `,
+                                        }}
+                                    >
+                                        VS
+                                    </p>
+
+                                    <div
+                                        onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
+                                        onMouseLeave={() => setHoveredTeamId(null)}
+                                        onClick={handleChooseRight}
+                                        className={css.modal_team_btn}
+                                        style={{ marginRight: '12px' }}
+                                    >
+                                        {rsPrediction && (
+                                            <>
+                                                {renderRsPrediction(rsPrediction.right.win, true, "right")}
+                                            </>
+                                        )}
+                                        <button
+                                            type="button"
+                                            style={{
+                                                all: "unset",
+                                                borderRadius: "50%"
+                                            }}
+                                        >
+                                            <TeamCircle
+                                                team={modalRightTeam}
+                                                showRating
+                                                ratingValue={rightRating}
+                                                specialStyle={{
+                                                    width: "64px",
+                                                    height: "64px",
+                                                    border: "3px solid #999",
+
+                                                    boxShadow:
+                                                        hoveredTeamId === modalRightTeam?.id
+                                                            ? "0 0 4px 1px #0d6aff"
+                                                            : "none",
+                                                    zIndex: 0
+                                                }}
+                                            />
+
+                                            <span
+                                                className={css.finished_modal_team_placing}
+                                                style={{
+                                                    color: "#ffffff",
+                                                    textShadow:
+                                                        hoveredTeamId === modalRightTeam?.id
+                                                            ? "0 0 4px #0d6aff"
+                                                            : "0 0 4px #000",
+                                                    top: '12%',
+                                                }}
+                                            >
+                                                {rankRightSticker()}
+                                            </span>
+
+                                            <span
+                                                className={css.modal_team_label}
+                                                style={{
+                                                    color: "#ffffff",
+                                                    textShadow:
+                                                        hoveredTeamId === modalRightTeam?.id
+                                                            ? "0 0 4px #0d6aff"
+                                                            : "0 0 4px #000",
+                                                }}
+                                            >
+                                                {modalRightTeam?.name}
+                                            </span>
+                                        </button>
+                                        {rsPrediction && (
+                                            <>
+                                                {renderRsPrediction(rsPrediction.right.loss, false, "right")}
+                                            </>
+                                        )}
+                                    </div>
+                                    {renderStats(rightStats)}
+                                </div>
+
+                                <div className={css.match_prediction_wrapper}>
+                                    <span className={css.match_prediction_pct}>
+                                        <CountUp
+                                            key={Math.round(leftPct)}
+                                            start={0}
+                                            end={Math.round(leftPct)}
+                                            duration={1.2}
+                                        />
+                                        %
+                                    </span>
+
+                                    <div
+                                        className={css.match_prediction_bar}
+                                        style={barStyle}
+                                    />
+
+                                    <span className={css.match_prediction_pct}>
+                                        <CountUp
+                                            key={Math.round(rightPct)}
+                                            start={0}
+                                            end={Math.round(rightPct)}
+                                            duration={1.2}
+                                        />
+                                        %
+                                    </span>
+                                </div>
+                                <ReactFitty
+                                    maxSize={16}
+                                    minSize={12}
+                                    className={css.prediction_label}
+                                    style={{
+                                        left: predictionPosition,
+                                        transform: "translateX(-50%)",
+                                    }}
+                                >
+                                    {predictionLabel}
+                                </ReactFitty>
+                                <div style={{ textAlign: "center" }}>
+                                    <button
+                                        className={`${css.gamble_button} ${!hasChosen ? css.locked : ""}`}
+                                        disabled={!hasChosen}
+                                        onClick={handleStartMatch}
+                                    >
+                                        {stageLabel}
+                                    </button>
+                                </div>
+                            </>
+                        );
+                    })()}
+
+                    {isPlayedModal &&
+                        (() => {
+                            const {
+                                leftTeam: modalPlayedLeft,
+                                rightTeam: modalPlayedRight,
+                                displayLeft: modalDisplayScoreLeft,
+                                displayRight: modalDisplayScoreRight,
+                                winnerIsLeft,
+                                winnerIsRight,
+                                leftIsLoser,
+                                rightIsLoser,
+                                leftIsPick,
+                                rightIsPick,
+                            } = getPickOrientedModalView(
+                                currentModalMatch,
+                                isBo1Modal
+                            );
+
+                            const {
+                                leftText: leftStakeText,
+                                rightText: rightStakeText,
+                            } = getMatchStakeText({
+                                modalContext,
+                                winnerIsLeft,
+                                winnerIsRight
+                            });
+
+                            const stage = modalContext?.stage;
+                            const isGrandFinal = stage === "gf";
+                            const isThirdPlace = stage === "thirdPlace";
+
+                            const getPlacementBadge = (isWinner, isLoser) => {
+                                if (isGrandFinal) {
+                                    if (isWinner) {
+                                        return (
+                                            <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <FaTrophy style={{ color: '#2e2f42' }} />+
+                                            </span>
+                                        );
+                                    }
+                                    if (isLoser) {
+                                        return (
+                                            <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
+                                                🥈+
+                                            </span>
+                                        );
+                                    }
+                                }
+
+                                if (isThirdPlace && isWinner) {
+                                    return (
+                                        <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
+                                            🥉+
+                                        </span>
+                                    );
+                                }
+
+                                return null;
+                            };
+
+                            const displayedLeftStats =
+                                teamPlacings?.[modalPlayedLeft?.id] ?? {
+                                    wins: 0,
+                                    seconds: 0,
+                                    thirds: 0,
+                                };
+
+                            const displayedRightStats =
+                                teamPlacings?.[modalPlayedRight?.id] ?? {
+                                    wins: 0,
+                                    seconds: 0,
+                                    thirds: 0,
+                                };
+
+                            const renderStats = (stats, side) => {
+                                const items = [];
+
+                                if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
+                                if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
+                                if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+
+                                if (!items.length) return null;
+
+                                return (
+                                    <div
+                                        className={css.team_stats_badge}
+                                        style={{
+                                            position: "absolute",
+                                            top: "20%",
+                                            zIndex: 2,
+                                            transition: "opacity 0.3s ease",
+                                            ...(side === "left"
+                                                ? { right: "90.5%" }
+                                                : { left: "90.5%" }),
+                                        }}
+                                    >
+                                        {items.map((i, idx) => (
+                                            <span key={idx} className={css.stat_item}>
+                                                {i.icon}: {i.value}
+                                            </span>
+                                        ))}
+                                    </div>
+                                );
+                            };
+
+                            return (
+                                <>
+                                    <div className={css.finishedMatchReview}>
+                                        <div
+                                            style={{ marginBottom: isBo1Modal ? 0 : "10px" }}
+                                            className={css.match_modal_row}
+                                        >
+                                            {renderStats(displayedLeftStats, "left")}
+                                            <div
+                                                style={{
+                                                    position: "absolute",
+                                                    top: "50%",
+                                                    right: "84.5%",
+                                                    width: 260,
+                                                    height: 120,
+                                                    borderRadius: "50%",
+                                                    transform: "translate(50%, -50%)",
+                                                    background: winnerIsLeft ? "#91ffc1" : "#ff9191",
+                                                    boxShadow: winnerIsLeft ? "0 0 32px 8px #91ffc1" : "0 0 32px 8px #ff9191",
+                                                    filter: "blur(42px)",
+                                                    opacity: 0.75,
+                                                    zIndex: 1,
+                                                    pointerEvents: "none",
+                                                }}
+                                            />
+                                            <div
+                                                className={css.modal_team_btn}
+                                                style={{
+                                                    flex: 1,
+                                                    pointerEvents: "none",
+                                                }}
+                                            >
+                                                <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                <span className={css.modal_team_label}>
+                                                    {(() => {
+                                                        const meta = currentModalMatch?.ratingMeta;
+                                                        const id = modalPlayedLeft?.id;
+                                                        const afterRank = meta?.after?.[id]?.rank ?? (rankById[id] ?? 64);
+                                                        const beforeRank = meta?.before?.[id]?.rank ?? afterRank;
+                                                        const deltaPlaces = beforeRank - afterRank;
+                                                        const afterPoints = meta?.after?.[id]?.points ?? (teamRatings[id] ?? 0);
+                                                        const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
+                                                        const deltaPoints = afterPoints - beforePoints;
+
+                                                        const placementColor = placementColors[afterRank] || "#ffffff";
+
+                                                        const rankSticker = () => {
+                                                            return (
+                                                                <span style={{ color: placementColor }}>
+                                                                    {formatOrdinal(afterRank)}
+                                                                </span>
+                                                            );
+                                                        };
+
+                                                        return (
+                                                            <>
+                                                                <span style={{ top: '-60px', right: "-6px", zIndex: 3, width: 'max-content' }} className={css.finished_modal_team_placing}>
+                                                                    {deltaPlaces !== 0 && (
+                                                                        <span
+                                                                            style={{
+                                                                                color: deltaPlaces > 0 ? "#2e7d32" : "red",
+                                                                                fontWeight: 900,
+                                                                                marginRight: "-2px",
+                                                                                display: "inline-flex",
+                                                                                alignItems: "center",
+                                                                                gap: "2px",
+                                                                            }}
+                                                                        >
+                                                                            {deltaPlaces > 0 ? (
+                                                                                <>
+                                                                                    <span style={{ marginRight: "-4px" }}>{deltaPlaces}</span>
+                                                                                    <MdOutlineKeyboardDoubleArrowUp />
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span style={{ marginRight: "-4px" }}>{Math.abs(deltaPlaces)}</span>
+                                                                                    <MdOutlineKeyboardDoubleArrowDown />
+                                                                                </>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                        {rankSticker()}
+                                                                    </span>
+                                                                </span>
+                                                                <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
+                                                                    {getPlacementBadge(winnerIsLeft, leftIsLoser)}
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                        {modalPlayedLeft?.name}
+                                                                        {leftStakeText === "path ends here, for now!" || leftStakeText === "second place is still wonderful!" ? "'s" : ""}
+                                                                    </span>
+                                                                    {deltaPoints !== 0 && (
+                                                                        <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
+                                                                            {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </span>
+                                            </div>
+
+                                            <div className={css.modal_vs}>
+                                                <span
+                                                    style={{
+                                                        color: winnerIsLeft
+                                                            ? "#2e7d32"
+                                                            : "red",
+                                                        fontWeight: 800,
+                                                        fontStyle: "italic",
+                                                        position: "absolute",
+                                                        display: "inline-block",
+                                                        paddingRight: "8px",
+                                                        right: "25px",
+                                                        top: "-18px",
+                                                        zIndex: 1,
+                                                        fontSize: 36,
+
+                                                        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
+                                                        maskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
+                                                    }}
+                                                    className={
+                                                        winnerIsLeft
+                                                            ? css.swissWinnerScoreShadow
+                                                            : css.swissLoserScoreShadow
+                                                    }
+                                                >
+                                                    {modalDisplayScoreLeft}
+                                                </span>
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                        alignItems: "center",
+                                                        gap: 2,
+                                                        marginTop: 2,
+                                                        marginLeft: 2
+                                                    }}
+                                                >
+                                                    <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                                    <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                                </div>
+                                                <span
+                                                    style={{
+                                                        color: winnerIsRight
+                                                            ? "#2e7d32"
+                                                            : "red",
+                                                        fontWeight: 800,
+                                                        fontStyle: "italic",
+                                                        position: "absolute",
+                                                        display: "inline-block",
+                                                        paddingLeft: "4px",
+                                                        left: "28px",
+                                                        top: "-18px",
+                                                        zIndex: 1,
+                                                        fontSize: 36,
+
+                                                        WebkitMaskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
+                                                        maskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
+                                                    }}
+                                                    className={
+                                                        winnerIsRight
+                                                            ? css.swissWinnerScoreShadow
+                                                            : css.swissLoserScoreShadow
+                                                    }
+                                                >
+                                                    {modalDisplayScoreRight}
+                                                </span>
+                                            </div>
+
+                                            <div
+                                                className={css.modal_team_btn}
+                                                style={{
+                                                    flex: 1,
+                                                    pointerEvents: "none",
+                                                }}
+                                            >
+                                                <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                <span>
+                                                    {(() => {
+                                                        const meta = currentModalMatch?.ratingMeta;
+                                                        const id = modalPlayedRight?.id;
+                                                        const afterRank = meta?.after?.[id]?.rank ?? (rankById[id] ?? 64);
+                                                        const beforeRank = meta?.before?.[id]?.rank ?? afterRank;
+                                                        const deltaPlaces = beforeRank - afterRank;
+                                                        const afterPoints = meta?.after?.[id]?.points ?? (teamRatings[id] ?? 0);
+                                                        const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
+                                                        const deltaPoints = afterPoints - beforePoints;
+
+                                                        const placementColor = placementColors[afterRank] || "#ffffff";
+
+                                                        const rankSticker = () => {
+                                                            return (
+                                                                <span style={{ color: placementColor }}>
+                                                                    {formatOrdinal(afterRank)}
+                                                                </span>
+                                                            );
+                                                        };
+
+                                                        return (
+                                                            <>
+                                                                <span style={{ top: '12%', zIndex: 3, width: 'max-content' }} className={css.finished_modal_team_placing}>
+                                                                    {deltaPlaces !== 0 && (
+                                                                        <span
+                                                                            style={{
+                                                                                color: deltaPlaces > 0 ? "#2e7d32" : "red",
+                                                                                fontWeight: 900,
+                                                                                marginRight: "-2px",
+                                                                                display: "inline-flex",
+                                                                                alignItems: "center",
+                                                                                gap: "2px",
+                                                                            }}
+                                                                        >
+                                                                            {deltaPlaces > 0 ? (
+                                                                                <>
+                                                                                    <span style={{ marginRight: "-4px" }}>{deltaPlaces}</span>
+                                                                                    <MdOutlineKeyboardDoubleArrowUp />
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span style={{ marginRight: "-4px" }}>{Math.abs(deltaPlaces)}</span>
+                                                                                    <MdOutlineKeyboardDoubleArrowDown />
+                                                                                </>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                        {rankSticker()}
+                                                                    </span>
+                                                                </span>
+                                                                <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
+                                                                    {getPlacementBadge(winnerIsRight, rightIsLoser)}
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                        {modalPlayedRight?.name}
+                                                                        {rightStakeText === "path ends here, for now!" || rightStakeText === "second place is still wonderful!" ? "'s" : ""}
+                                                                    </span>
+                                                                    {deltaPoints !== 0 && (
+                                                                        <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
+                                                                            {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </span>
+                                            </div>
+                                            {renderStats(displayedRightStats, "right")}
+                                            <div
+                                                style={{
+                                                    position: "absolute",
+                                                    top: "50%",
+                                                    left: "32.5%",
+                                                    width: 260,
+                                                    height: 120,
+                                                    borderRadius: "50%",
+                                                    transform: "translate(50%, -50%)",
+                                                    background: winnerIsRight ? "#91ffc1" : "#ff9191",
+                                                    boxShadow: winnerIsRight ? "0 0 32px 8px #91ffc1" : "0 0 32px 8px #ff9191",
+                                                    filter: "blur(42px)",
+                                                    opacity: 0.75,
+                                                    zIndex: 1,
+                                                    pointerEvents: "none",
+                                                }}
+                                            />
+                                        </div>
+                                        {leftStakeText && (
+                                            <div
+                                                style={{
+                                                    position: "relative",
+                                                    zIndex: 2,
+                                                    marginTop: "-24px",
+                                                    marginBottom: "8px",
+                                                    marginLeft: "48px",
+                                                    fontSize: "13px",
+                                                    fontWeight: 700,
+                                                    textShadow: `
+                                                                    0 0 3px ${modalPlayedLeft?.color},
+                                                                    0 0 7px ${modalPlayedLeft?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `,
+                                                    color: "#ffffff",
+                                                    width: '216.8px',
+                                                    height: 'auto',
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                {leftStakeText}
+                                            </div>
+                                        )}
+                                        {rightStakeText && (
+                                            <div
+                                                style={{
+                                                    position: "relative",
+                                                    zIndex: 2,
+                                                    marginTop: "-28px",
+                                                    marginBottom: "8px",
+                                                    marginLeft: "260px",
+                                                    fontSize: "13px",
+                                                    fontWeight: 700,
+                                                    textShadow: `
+                                                                    0 0 3px ${modalPlayedRight?.color},
+                                                                    0 0 7px ${modalPlayedRight?.color}66,
+                                                                    0 1px 3px rgba(0,0,0,0.4)
+                                                                `,
+                                                    color: "#ffffff",
+                                                    width: '216.8px',
+                                                    height: 'auto',
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                {rightStakeText}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <>
+                                        {(() => {
+                                            const historyMatch = currentModalMatch;
+                                            const history = historyMatch?.setHistory ?? [];
+                                            if (!history.length) {
+                                                return <p className={css.info_text}>No set history stored for this match.</p>;
+                                            }
+
+                                            const leftColor = modalPlayedLeft?.color || "#2e7d32";
+                                            const rightColor = modalPlayedRight?.color || "red";
+
+                                            const InfoIcon = ({
+                                                title,
+                                                children,
+                                                trigger = "hover",
+                                                customLeft = "50%"
+                                            }) => {
+                                                const [open, setOpen] = useState(false);
+
+                                                return (
+                                                    <div
+                                                        style={{
+                                                            position: "relative",
+                                                            display: "flex",
+                                                        }}
+                                                        onMouseEnter={
+                                                            trigger === "hover"
+                                                                ? () => setOpen(true)
+                                                                : undefined
+                                                        }
+                                                        onMouseLeave={
+                                                            trigger === "hover"
+                                                                ? () => setOpen(false)
+                                                                : undefined
+                                                        }
+                                                        onClick={
+                                                            trigger === "click"
+                                                                ? (e) => {
+                                                                    e.stopPropagation();
+                                                                    setOpen((prev) => !prev);
+                                                                }
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        <FaCircleInfo
+                                                            size={11}
+                                                            style={{
+                                                                color: "Highlight",
+                                                                cursor: trigger === "click" ? "pointer" : "default",
+                                                            }}
+                                                        />
+
+                                                        {open && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: 1 }}
+                                                                exit={{ opacity: 0 }}
+                                                                transition={{ duration: 0.15 }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    bottom: "calc(100% + 8px)",
+                                                                    left: customLeft,
+                                                                    transform: "translateX(-50%)",
+                                                                    background: "#fff",
+                                                                    color: "#2e2f42",
+                                                                    boxShadow: "0 2px 10px rgba(0,0,0,.2)",
+                                                                    padding: "6px 10px",
+                                                                    borderRadius: 6,
+                                                                    whiteSpace: "nowrap",
+                                                                    zIndex: 9999,
+                                                                    fontSize: 12,
+                                                                }}
+                                                            >
+                                                                {title && (
+                                                                    <>
+                                                                        <span>{title}</span>
+                                                                        <br />
+                                                                    </>
+                                                                )}
+
+                                                                {children}
+                                                            </motion.div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            };
+
+                                            return (
+                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
+                                                    <ul
+                                                        className={css.seriesSummaryList}
+                                                        style={{
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            gap: "6px",
+                                                        }}
+                                                    >
+                                                        {history.map(
+                                                            ({
+                                                                set,
+                                                                wins,
+                                                                losses,
+                                                                won,
+                                                                firstHalfLeft,
+                                                                firstHalfRight,
+                                                                extendedRounds = {
+                                                                    firstHalf: null,
+                                                                    secondHalf: null,
+                                                                    overtimes: [],
+                                                                },
+                                                            }) => {
+                                                                const isDecider = set === modalBestOf;
+                                                                const label = isDecider ? "Decider" : `Set ${set}`;
+
+                                                                const leftGlow = won;
+                                                                const rightGlow = !won;
+
+                                                                const leftOpacity = won ? 1 : 0.4;
+                                                                const rightOpacity = won ? 0.4 : 1;
+
+                                                                const isATie = wins === losses;
+
+                                                                const winnerCount = won ? wins : losses;
+
+                                                                const finalCount = isATie ? winnerCount + 1 : winnerCount;
+
+                                                                const overtimeCount = Math.max(
+                                                                    0,
+                                                                    Math.floor((finalCount - 13) / 3)
+                                                                );
+
+                                                                const hasOvertime = overtimeCount > 0;
+
+                                                                const leftAttempts = extendedRounds?.penalties?.leftResults.length ?? 0;
+                                                                const rightAttempts = extendedRounds?.penalties?.rightResults.length ?? 0;
+
+                                                                const leftOtExtendedRounds =
+                                                                    extendedRounds.overtimes.filter(
+                                                                        (x) => x.winner === "left"
+                                                                    );
+
+                                                                const rightOtExtendedRounds =
+                                                                    extendedRounds.overtimes.filter(
+                                                                        (x) => x.winner === "right"
+                                                                    );
+
+                                                                const leftOtLabels =
+                                                                    leftOtExtendedRounds.map((x) =>
+                                                                        getOvertimeShortLabel(x.overtime)
+                                                                    );
+
+                                                                const rightOtLabels =
+                                                                    rightOtExtendedRounds.map((x) =>
+                                                                        getOvertimeShortLabel(x.overtime)
+                                                                    );
+
+                                                                const showLeftCheck =
+                                                                    leftOtExtendedRounds.length === 1 &&
+                                                                    rightOtExtendedRounds.length === 0;
+
+                                                                const showLeftInfo =
+                                                                    !showLeftCheck &&
+                                                                    leftOtExtendedRounds.length > 0;
+
+                                                                const showRightCheck =
+                                                                    rightOtExtendedRounds.length === 1 &&
+                                                                    leftOtExtendedRounds.length === 0;
+
+                                                                const showRightInfo =
+                                                                    !showRightCheck &&
+                                                                    rightOtExtendedRounds.length > 0;
+
+                                                                const formatRoundsCount = () => {
+                                                                    const lastDigit = totalRounds % 10;
+
+                                                                    return lastDigit === 1 ? "Round" : "Rounds";
+                                                                };
+
+                                                                const otLeft = hasOvertime
+                                                                    ? Math.max(0, wins - 12)
+                                                                    : null;
+
+                                                                const otRight = hasOvertime
+                                                                    ? Math.max(0, losses - 12)
+                                                                    : null;
+
+                                                                const secondHalfLeft =
+                                                                    (hasOvertime ? wins - otLeft : wins) -
+                                                                    firstHalfLeft;
+
+                                                                const secondHalfRight =
+                                                                    (hasOvertime ? losses - otRight : losses) -
+                                                                    firstHalfRight;
+
+                                                                const extendedRoundLeftScore =
+                                                                    (extendedRounds.firstHalf === "left" ? 1 : 0) +
+                                                                    (extendedRounds.secondHalf === "left" ? 1 : 0) +
+                                                                    leftOtExtendedRounds.length;
+
+                                                                const extendedRoundRightScore =
+                                                                    (extendedRounds.firstHalf === "right" ? 1 : 0) +
+                                                                    (extendedRounds.secondHalf === "right" ? 1 : 0) +
+                                                                    rightOtExtendedRounds.length;
+
+                                                                const hasExtendedRounds = isATie &&
+                                                                    extendedRoundLeftScore + extendedRoundRightScore > 0;
+
+                                                                const totalRounds = wins + losses;
+
+                                                                const getHalfStyleLeft = (leftScore, rightScore) => {
+                                                                    if (leftScore === rightScore) {
+                                                                        return {
+                                                                            opacity: 1
+                                                                        };
+                                                                    }
+
+                                                                    return {
+                                                                        opacity: leftScore > rightScore ? 1 : 0.6,
+                                                                        textShadow:
+                                                                            leftScore > rightScore
+                                                                                ? `
+                                                                                                0 0 3px ${leftColor},
+                                                                                                0 0 6px ${leftColor}55
+                                                                                            `
+                                                                                : "none",
+                                                                    };
+                                                                };
+
+                                                                const getHalfStyleRight = (rightScore, leftScore) => {
+                                                                    if (rightScore === leftScore) {
+                                                                        return {
+                                                                            opacity: 1
+                                                                        };
+                                                                    }
+
+                                                                    return {
+                                                                        opacity: rightScore > leftScore ? 1 : 0.6,
+                                                                        textShadow:
+                                                                            rightScore > leftScore
+                                                                                ? `
+                                                                                                0 0 3px ${rightColor},
+                                                                                                0 0 6px ${rightColor}55
+                                                                                            `
+                                                                                : "none",
+                                                                    };
+                                                                };
+
+                                                                const erLeftStyle = hasExtendedRounds
+                                                                    ? getHalfStyleLeft(
+                                                                        extendedRoundLeftScore,
+                                                                        extendedRoundRightScore
+                                                                    )
+                                                                    : null;
+
+                                                                const erRightStyle = hasExtendedRounds
+                                                                    ? getHalfStyleRight(
+                                                                        extendedRoundRightScore,
+                                                                        extendedRoundLeftScore
+                                                                    )
+                                                                    : null;
+
+                                                                const firstHalfLeftStyle = getHalfStyleLeft(
+                                                                    firstHalfLeft,
+                                                                    firstHalfRight
+                                                                );
+
+                                                                const firstHalfRightStyle = getHalfStyleRight(
+                                                                    firstHalfRight,
+                                                                    firstHalfLeft
+                                                                );
+
+                                                                const secondHalfLeftStyle = getHalfStyleLeft(
+                                                                    secondHalfLeft,
+                                                                    secondHalfRight
+                                                                );
+
+                                                                const secondHalfRightStyle = getHalfStyleRight(
+                                                                    secondHalfRight,
+                                                                    secondHalfLeft
+                                                                );
+
+                                                                const otLeftStyle = hasOvertime
+                                                                    ? getHalfStyleLeft(otLeft, otRight)
+                                                                    : null;
+
+                                                                const otRightStyle = hasOvertime
+                                                                    ? getHalfStyleRight(otRight, otLeft)
+                                                                    : null;
+
+                                                                const completedSuddenDeathPairs = Math.min(
+                                                                    Math.max(0, leftAttempts - 5),
+                                                                    Math.max(0, rightAttempts - 5)
+                                                                );
+
+                                                                const totalAttempts = Math.min(leftAttempts, rightAttempts);
+
+                                                                const hasUnequalAttempts = leftAttempts !== rightAttempts;
+
+                                                                const leaderTeam =
+                                                                    leftAttempts > rightAttempts
+                                                                        ? modalPlayedLeft
+                                                                        : modalPlayedRight;
+
+                                                                const leaderAttempts = Math.max(leftAttempts, rightAttempts);
+
+                                                                const modalAttemptsToDisplay =
+                                                                    PENALTY_DISPLAY_CIRCLES + completedSuddenDeathPairs;
+
+                                                                const pensLeftStyle = extendedRounds?.penalties
+                                                                    ? getHalfStyleLeft(extendedRounds?.penalties.leftScore, extendedRounds?.penalties.rightScore)
+                                                                    : null;
+
+                                                                const pensRightStyle = extendedRounds?.penalties
+                                                                    ? getHalfStyleRight(extendedRounds?.penalties.rightScore, extendedRounds?.penalties.leftScore)
+                                                                    : null;
+
+                                                                const pensLeftWon =
+                                                                    extendedRounds?.penalties &&
+                                                                    extendedRounds.penalties.leftScore >
+                                                                    extendedRounds.penalties.rightScore;
+
+                                                                const pensRightWon =
+                                                                    extendedRounds?.penalties &&
+                                                                    extendedRounds.penalties.rightScore >
+                                                                    extendedRounds.penalties.leftScore;
+
+                                                                return (
+                                                                    <li
+                                                                        key={set}
+                                                                        className={css.seriesSummaryItem}
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            flexDirection: "row",
+                                                                            justifyContent: "center",
+                                                                            alignItems: "flex-start",
+                                                                            gap: "36px"
+                                                                        }}
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                flexDirection: "column",
+                                                                                alignItems: "center",
+                                                                                minWidth: "60px",
+                                                                            }}
+                                                                        >
+                                                                            {!isBo1Modal && (
+                                                                                <span
+                                                                                    className={css.round_text}
+                                                                                    style={{ opacity: leftOpacity, height: "42px", marginTop: "1px" }}
+                                                                                >
+                                                                                    <CountUp
+                                                                                        start={Math.max(wins - 1, 0)}
+                                                                                        end={wins}
+                                                                                        duration={1}
+                                                                                        style={{
+                                                                                            color: leftColor,
+                                                                                            fontSize: "36px",
+                                                                                            textShadow: leftGlow
+                                                                                                ? `
+                                                                                                            0 0 6px ${leftColor},
+                                                                                                            0 0 14px ${leftColor}66,
+                                                                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                                                                        `
+                                                                                                : "none",
+                                                                                        }}
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+
+                                                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
+                                                                                <span
+                                                                                    className={css.info_text}
+                                                                                    style={{
+                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                        color: leftColor,
+                                                                                        opacity: firstHalfLeftStyle.opacity,
+                                                                                        textShadow: firstHalfLeftStyle.textShadow,
+                                                                                        height: isBo1Modal ? "17px" : "16px"
+                                                                                    }}
+                                                                                >
+                                                                                    {firstHalfLeft}
+                                                                                </span>
+
+                                                                                <span
+                                                                                    className={css.info_text}
+                                                                                    style={{
+                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                        color: leftColor,
+                                                                                        opacity: secondHalfLeftStyle.opacity,
+                                                                                        textShadow: secondHalfLeftStyle.textShadow,
+                                                                                        height: isBo1Modal ? "17px" : "16px"
+                                                                                    }}
+                                                                                >
+                                                                                    {secondHalfLeft}
+                                                                                </span>
+
+                                                                                {hasOvertime && (
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{
+                                                                                            fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                            color: leftColor,
+                                                                                            opacity: otLeftStyle.opacity,
+                                                                                            textShadow: otLeftStyle.textShadow,
+                                                                                            height: isBo1Modal ? "17px" : "16px"
+                                                                                        }}
+                                                                                    >
+                                                                                        {otLeft}
+                                                                                    </span>
+                                                                                )}
+
+                                                                                {hasExtendedRounds && (
+                                                                                    <div className={css.dashed_divider} style={{ zIndex: 3, width: "200%", marginTop: "2px", marginBottom: "2px", opacity: 0 }} />
+                                                                                )}
+
+                                                                                {hasExtendedRounds && (
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{
+                                                                                            fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                            color: leftColor,
+                                                                                            opacity: erLeftStyle.opacity,
+                                                                                            textShadow: erLeftStyle.textShadow,
+                                                                                            height: isBo1Modal ? "17px" : "16px",
+                                                                                        }}
+                                                                                    >
+                                                                                        {extendedRoundLeftScore}
+                                                                                    </span>
+                                                                                )}
+
+                                                                                {extendedRounds?.penalties && (
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{
+                                                                                            fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                            color: leftColor,
+                                                                                            opacity: pensLeftStyle.opacity,
+                                                                                            textShadow: pensLeftStyle.textShadow,
+                                                                                            height: isBo1Modal ? "17px" : "16px"
+                                                                                        }}
+                                                                                    >
+                                                                                        {extendedRounds.penalties.leftScore}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                flexDirection: "column",
+                                                                                alignItems: "center",
+                                                                                minWidth: "160px",
+                                                                            }}
+                                                                        >
+                                                                            {!isBo1Modal && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className={css.gamble_button}
+                                                                                    style={{ fontSize: "inherit", lineHeight: 1.1, padding: "1px 1px" }}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setBreakdownSetIndex(set - 1);
+                                                                                    }}
+                                                                                >
+                                                                                    <span className={css.info_text} style={{ fontWeight: 600, color: "#ffffff" }}>
+                                                                                        {label}
+                                                                                    </span>
+                                                                                </button>
+                                                                            )}
+
+                                                                            {isBo1Modal ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className={css.gamble_button}
+                                                                                    style={{ fontSize: "inherit", lineHeight: 1.1, padding: "6px 12px", paddingBottom: "4.2px", marginTop: "-4px" }}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setBreakdownSetIndex(set - 1);
+                                                                                    }}
+                                                                                >
+                                                                                    <span style={{ fontSize: "18px", textAlign: "center", color: "#ffffff" }} className={css.vs}>
+                                                                                        {totalRounds} {formatRoundsCount()}
+                                                                                    </span>
+                                                                                </button>
+                                                                            ) : (
+                                                                                <span style={{ fontSize: "18px", textAlign: "center", marginTop: "-4px" }} className={css.vs}>
+                                                                                    {totalRounds} {formatRoundsCount()}
+                                                                                </span>
+                                                                            )}
+
+                                                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "0px", fontSize: isBo1Modal ? "12px" : "11px" }}>
+                                                                                <div
+                                                                                    style={{
+                                                                                        display: "flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: 4,
+                                                                                        position: "relative"
+                                                                                    }}
+                                                                                >
+                                                                                    <span style={{ position: 'absolute', right: "104%", top: "1px" }}>
+                                                                                        {extendedRounds?.firstHalf === "left" && (
+                                                                                            <FaCircleCheck
+                                                                                                size={10}
+                                                                                                color="#50ff50"
+                                                                                            />
+                                                                                        )}
+                                                                                    </span>
+
+                                                                                    <span className={css.info_text}>
+                                                                                        1st Half
+                                                                                    </span>
+
+                                                                                    <span style={{ position: 'absolute', left: "109%", top: "1px" }}>
+                                                                                        {extendedRounds?.firstHalf === "right" && (
+                                                                                            <FaCircleCheck
+                                                                                                size={10}
+                                                                                                color="#50ff50"
+                                                                                            />
+                                                                                        )}
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                <div
+                                                                                    style={{
+                                                                                        display: "flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: 4,
+                                                                                        position: "relative"
+                                                                                    }}
+                                                                                >
+                                                                                    <span style={{ position: 'absolute', right: "104%", top: "1px" }}>
+                                                                                        {extendedRounds?.secondHalf === "left" && (
+                                                                                            <FaCircleCheck
+                                                                                                size={10}
+                                                                                                color="#50ff50"
+                                                                                            />
+                                                                                        )}
+                                                                                    </span>
+
+                                                                                    <span className={css.info_text}>
+                                                                                        2nd Half
+                                                                                    </span>
+
+                                                                                    <span style={{ position: 'absolute', left: "107%", top: "1px" }}>
+                                                                                        {extendedRounds?.secondHalf === "right" && (
+                                                                                            <FaCircleCheck
+                                                                                                size={10}
+                                                                                                color="#50ff50"
+                                                                                            />
+                                                                                        )}
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                {hasOvertime && (
+                                                                                    <div
+                                                                                        style={{
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            gap: 4,
+                                                                                            position: "relative",
+                                                                                        }}
+                                                                                    >
+                                                                                        <span
+                                                                                            style={{
+                                                                                                position: "absolute",
+                                                                                                right: "107%",
+                                                                                                top: showLeftCheck ? "1px" : "2.5px",
+                                                                                            }}
+                                                                                        >
+                                                                                            {showLeftCheck ? (
+                                                                                                <FaCircleCheck
+                                                                                                    size={10}
+                                                                                                    color="#50ff50"
+                                                                                                />
+                                                                                            ) : showLeftInfo ? (
+                                                                                                <InfoIcon
+                                                                                                    title={`Extended OT Round${leftOtLabels.length === 1 ? "" : "s"} taken in`}
+                                                                                                >
+                                                                                                    {(() => {
+                                                                                                        const rows = [];
+
+                                                                                                        for (let i = 0; i < leftOtLabels.length; i += 5) {
+                                                                                                            rows.push(leftOtLabels.slice(i, i + 5));
+                                                                                                        }
+
+                                                                                                        return rows.map((row, rowIndex) => (
+                                                                                                            <React.Fragment key={rowIndex}>
+                                                                                                                {rowIndex > 0 && <br />}
+                                                                                                                {row.map((label, index) => {
+                                                                                                                    const lastRow = rowIndex === rows.length - 1;
+                                                                                                                    const last = lastRow && index === row.length - 1;
+                                                                                                                    const secondLast = lastRow && index === row.length - 2;
+
+                                                                                                                    return (
+                                                                                                                        <React.Fragment key={index}>
+                                                                                                                            {index > 0 && !last && ", "}
+                                                                                                                            <span style={{ fontWeight: 600 }}>
+                                                                                                                                {label}
+                                                                                                                            </span>
+                                                                                                                            {secondLast && (
+                                                                                                                                <span style={{ fontWeight: 500 }}>
+                                                                                                                                    {" "}
+                                                                                                                                    and{" "}
+                                                                                                                                </span>
+                                                                                                                            )}
+                                                                                                                        </React.Fragment>
+                                                                                                                    );
+                                                                                                                })}
+                                                                                                            </React.Fragment>
+                                                                                                        ));
+                                                                                                    })()}
+                                                                                                </InfoIcon>
+                                                                                            ) : null}
+                                                                                        </span>
+
+                                                                                        <span className={css.info_text}>
+                                                                                            {getOvertimeShortLabel(overtimeCount)}
+                                                                                        </span>
+
+                                                                                        <span
+                                                                                            style={{
+                                                                                                position: "absolute",
+                                                                                                left: "107%",
+                                                                                                top: showRightCheck ? "1px" : "2.5px",
+                                                                                            }}
+                                                                                        >
+                                                                                            {showRightCheck ? (
+                                                                                                <FaCircleCheck
+                                                                                                    size={10}
+                                                                                                    color="#50ff50"
+                                                                                                />
+                                                                                            ) : showRightInfo ? (
+                                                                                                <InfoIcon
+                                                                                                    title={`Extended OT Round${rightOtLabels.length === 1 ? "" : "s"} taken in`}
+                                                                                                >
+                                                                                                    {(() => {
+                                                                                                        const rows = [];
+
+                                                                                                        for (let i = 0; i < rightOtLabels.length; i += 5) {
+                                                                                                            rows.push(rightOtLabels.slice(i, i + 5));
+                                                                                                        }
+
+                                                                                                        return rows.map((row, rowIndex) => (
+                                                                                                            <React.Fragment key={rowIndex}>
+                                                                                                                {rowIndex > 0 && <br />}
+                                                                                                                {row.map((label, index) => {
+                                                                                                                    const lastRow = rowIndex === rows.length - 1;
+                                                                                                                    const last = lastRow && index === row.length - 1;
+                                                                                                                    const secondLast = lastRow && index === row.length - 2;
+
+                                                                                                                    return (
+                                                                                                                        <React.Fragment key={index}>
+                                                                                                                            {index > 0 && !last && ", "}
+                                                                                                                            <span style={{ fontWeight: 600 }}>
+                                                                                                                                {label}
+                                                                                                                            </span>
+                                                                                                                            {secondLast && (
+                                                                                                                                <span style={{ fontWeight: 500 }}>
+                                                                                                                                    {" "}
+                                                                                                                                    and{" "}
+                                                                                                                                </span>
+                                                                                                                            )}
+                                                                                                                        </React.Fragment>
+                                                                                                                    );
+                                                                                                                })}
+                                                                                                            </React.Fragment>
+                                                                                                        ));
+                                                                                                    })()}
+                                                                                                </InfoIcon>
+                                                                                            ) : null}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {hasExtendedRounds && (
+                                                                                    <div className={css.dashed_divider} style={{ zIndex: 3, width: "380%", marginTop: "2px", marginBottom: "2px", borderTop: "2px dashed #999" }} />
+                                                                                )}
+                                                                                {hasExtendedRounds && (
+                                                                                    <div
+                                                                                        style={{
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            gap: 4,
+                                                                                            position: "relative",
+                                                                                        }}
+                                                                                    >
+                                                                                        <span className={css.info_text}>
+                                                                                            Extended Rounds
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {extendedRounds?.penalties && (
+                                                                                    <div style={{ position: "relative" }}>
+                                                                                        {pensLeftWon && (
+                                                                                            <span
+                                                                                                style={{
+                                                                                                    position: "absolute",
+                                                                                                    right: "107%",
+                                                                                                    top: "2.5px",
+                                                                                                }}
+                                                                                            >
+                                                                                                <InfoIcon
+                                                                                                    title={
+                                                                                                        hasUnequalAttempts ? (
+                                                                                                            <>
+                                                                                                                <strong>{totalAttempts} full attempts</strong> taken by both teams,
+                                                                                                                <br />
+                                                                                                                <strong>{leaderAttempts}</strong> taken by{" "}
+                                                                                                                <span
+                                                                                                                    style={{
+                                                                                                                        color: leaderTeam.color,
+                                                                                                                        fontWeight: 700,
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    Team {leaderTeam.name}
+                                                                                                                </span>
+                                                                                                            </>
+                                                                                                        ) : (
+                                                                                                            <>
+                                                                                                                <strong>{totalAttempts} full attempts</strong> taken by both teams
+                                                                                                            </>
+                                                                                                        )
+                                                                                                    }
+                                                                                                    trigger="hover"
+                                                                                                >
+                                                                                                    <div
+                                                                                                        style={{
+                                                                                                            display: "flex",
+                                                                                                            flexDirection: "column",
+                                                                                                            alignItems: "start",
+                                                                                                            gap: 6,
+                                                                                                        }}
+                                                                                                    >
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                style={{
+                                                                                                                    color: modalPlayedLeft.color,
+                                                                                                                    fontWeight: 800,
+                                                                                                                    marginBottom: 4,
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                {modalPlayedLeft.name}
+                                                                                                            </span>
+                                                                                                            <PenaltyCircles
+                                                                                                                compact
+                                                                                                                resolved
+                                                                                                                team="right"
+                                                                                                                attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                results={extendedRounds.penalties.leftResults}
+                                                                                                            />
+                                                                                                        </div>
+
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                style={{
+                                                                                                                    color: modalPlayedRight.color,
+                                                                                                                    fontWeight: 800
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                {modalPlayedRight.name}
+                                                                                                            </span>
+                                                                                                            <PenaltyCircles
+                                                                                                                compact
+                                                                                                                resolved
+                                                                                                                team="right"
+                                                                                                                attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                results={extendedRounds.penalties.rightResults}
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </InfoIcon>
+                                                                                            </span>
+                                                                                        )}
+
+                                                                                        <span style={{ marginTop: !isBo1Modal ? "1px" : "0px", display: "inline-block" }} className={css.info_text}>
+                                                                                            Penalties
+                                                                                        </span>
+
+                                                                                        {pensRightWon && (
+                                                                                            <span
+                                                                                                style={{
+                                                                                                    position: "absolute",
+                                                                                                    left: "107%",
+                                                                                                    top: "2.5px",
+                                                                                                }}
+                                                                                            >
+                                                                                                <InfoIcon
+                                                                                                    title={
+                                                                                                        hasUnequalAttempts ? (
+                                                                                                            <>
+                                                                                                                <strong>{totalAttempts} full attempts</strong> taken by both teams,
+                                                                                                                <br />
+                                                                                                                <strong>{leaderAttempts}</strong> taken by{" "}
+                                                                                                                <span
+                                                                                                                    style={{
+                                                                                                                        color: leaderTeam.color,
+                                                                                                                        fontWeight: 700,
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    Team {leaderTeam.name}
+                                                                                                                </span>
+                                                                                                            </>
+                                                                                                        ) : (
+                                                                                                            <>
+                                                                                                                <strong>{totalAttempts} full attempts</strong> taken by both teams
+                                                                                                            </>
+                                                                                                        )
+                                                                                                    }
+                                                                                                    trigger="hover"
+                                                                                                >
+                                                                                                    <div
+                                                                                                        style={{
+                                                                                                            display: "flex",
+                                                                                                            flexDirection: "column",
+                                                                                                            alignItems: "start",
+                                                                                                            gap: 6,
+                                                                                                        }}
+                                                                                                    >
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                style={{
+                                                                                                                    color: modalPlayedLeft.color,
+                                                                                                                    fontWeight: 800
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                {modalPlayedLeft.name}
+                                                                                                            </span>
+                                                                                                            <PenaltyCircles
+                                                                                                                compact
+                                                                                                                resolved
+                                                                                                                team="right"
+                                                                                                                attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                results={extendedRounds.penalties.leftResults}
+                                                                                                            />
+                                                                                                        </div>
+
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                style={{
+                                                                                                                    color: modalPlayedRight.color,
+                                                                                                                    fontWeight: 800,
+                                                                                                                    marginBottom: 4,
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                {modalPlayedRight.name}
+                                                                                                            </span>
+                                                                                                            <PenaltyCircles
+                                                                                                                compact
+                                                                                                                resolved
+                                                                                                                team="right"
+                                                                                                                attemptsToDisplay={modalAttemptsToDisplay}
+                                                                                                                results={extendedRounds.penalties.rightResults}
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </InfoIcon>
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                flexDirection: "column",
+                                                                                alignItems: "center",
+                                                                                minWidth: "60px",
+                                                                            }}
+                                                                        >
+                                                                            {!isBo1Modal && (
+                                                                                <span
+                                                                                    className={css.round_text}
+                                                                                    style={{ opacity: rightOpacity, height: "42px", marginTop: "1px" }}
+                                                                                >
+                                                                                    <CountUp
+                                                                                        start={Math.max(losses - 1, 0)}
+                                                                                        end={losses}
+                                                                                        duration={1}
+                                                                                        style={{
+                                                                                            color: rightColor,
+                                                                                            fontSize: "36px",
+                                                                                            textShadow: rightGlow
+                                                                                                ? `
+                                                                                                            0 0 6px ${rightColor},
+                                                                                                            0 0 14px ${rightColor}66,
+                                                                                                            0 2px 6px rgba(0,0,0,0.4)
+                                                                                                        `
+                                                                                                : "none",
+                                                                                        }}
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+
+                                                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
+                                                                                <span
+                                                                                    className={css.info_text}
+                                                                                    style={{
+                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                        color: rightColor,
+                                                                                        opacity: firstHalfRightStyle.opacity,
+                                                                                        textShadow: firstHalfRightStyle.textShadow,
+                                                                                        height: isBo1Modal ? "17px" : "16px"
+                                                                                    }}
+                                                                                >
+                                                                                    {firstHalfRight}
+                                                                                </span>
+
+                                                                                <span
+                                                                                    className={css.info_text}
+                                                                                    style={{
+                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                        color: rightColor,
+                                                                                        opacity: secondHalfRightStyle.opacity,
+                                                                                        textShadow: secondHalfRightStyle.textShadow,
+                                                                                        height: isBo1Modal ? "17px" : "16px"
+                                                                                    }}
+                                                                                >
+                                                                                    {secondHalfRight}
+                                                                                </span>
+
+                                                                                {hasOvertime && (
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{
+                                                                                            fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                            color: rightColor,
+                                                                                            opacity: otRightStyle.opacity,
+                                                                                            textShadow: otRightStyle.textShadow,
+                                                                                            height: isBo1Modal ? "17px" : "16px"
+                                                                                        }}
+                                                                                    >
+                                                                                        {otRight}
+                                                                                    </span>
+                                                                                )}
+
+                                                                                {hasExtendedRounds && (
+                                                                                    <div className={css.dashed_divider} style={{ zIndex: 3, width: "200%", marginTop: "2px", marginBottom: "2px", opacity: 0 }} />
+                                                                                )}
+
+                                                                                {hasExtendedRounds && (
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{
+                                                                                            fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                            color: rightColor,
+                                                                                            opacity: erRightStyle.opacity,
+                                                                                            textShadow: erRightStyle.textShadow,
+                                                                                            height: isBo1Modal ? "17px" : "16px",
+                                                                                        }}
+                                                                                    >
+                                                                                        {extendedRoundRightScore}
+                                                                                    </span>
+                                                                                )}
+
+                                                                                {extendedRounds?.penalties && (
+                                                                                    <span
+                                                                                        className={css.info_text}
+                                                                                        style={{
+                                                                                            fontSize: isBo1Modal ? "14px" : "12px",
+                                                                                            color: rightColor,
+                                                                                            opacity: pensRightStyle.opacity,
+                                                                                            textShadow: pensRightStyle.textShadow,
+                                                                                            height: isBo1Modal ? "17px" : "16px"
+                                                                                        }}
+                                                                                    >
+                                                                                        {extendedRounds.penalties.rightScore}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </li>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </ul>
+                                                </motion.div>
+                                            );
+                                        })()}
+                                    </>
+                                </>
+                            );
+                        })()}
+                </motion.div>
+            </div>
+
+            <AnimatePresence>
+                {breakdownSetIndex !== null &&
+                    (() => {
+                        const {
+                            leftTeam: modalPlayedLeft,
+                            rightTeam: modalPlayedRight,
+                        } = getPickOrientedModalView(
+                            currentModalMatch,
+                            isBo1Modal
+                        );
+
+                        return (
+                            <SetBreakdownOverlay
+                                sets={currentModalMatch?.setHistory ?? []}
+                                index={breakdownSetIndex}
+                                onIndexChange={setBreakdownSetIndex}
+                                onClose={() => setBreakdownSetIndex(null)}
+                                leftTeam={modalPlayedLeft}
+                                rightTeam={modalPlayedRight}
+                                bestOf={modalBestOf}
+                                stageLabel={
+                                    modalContext.type !== "playoffs"
+                                        ? modalStageSmallLabel
+                                        : null
+                                }
+                                matchTitle={modalTitle}
+                                matchNumber={
+                                    modalContext.stage !== "gf" &&
+                                        modalContext.stage !== "thirdPlace"
+                                        ? modalMatchNumber
+                                        : null
+                                }
+                                isPlayoffs={modalContext.type === "playoffs"}
+                                pointLabelText={breakdownPointLabel}
+                            />
+                        );
+                    })()}
+            </AnimatePresence>
+        </motion.div>
+    ) : null;
+
+    // Render the Hall of Fame in one consistent place whether or not the archived match
+    // modal is open. Previously the modal forced this branch to be skipped, which moved the
+    // whole Hall of Fame tree into a different container and reset the scroll position.
+    if (isHallOfFameOpen) {
+        return (
+            <>
+                {renderHallOfFame()}
+                {matchModalNode}
+            </>
+        );
+    }
+
     if (isLeaderboardOpen) {
         return (
             <>
@@ -11308,7 +15572,12 @@ function SpecialModePage() {
                     hasAnyPlacings={hasAnyPlacings}
                     onInfoPage={() => navigate("/special-mode-info")}
                 />
-                <div className={css.page_container} style={{ position: "relative" }}>
+                <div
+                    className={css.page_container}
+                    style={{
+                        position: "relative"
+                    }}
+                >
                     <button
                         type="button"
                         className={css.gamble_button}
@@ -11534,7 +15803,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game? <br /> <strong>You will not be able to revert this action!</strong>
+                            Are you sure you want to restart the game? <br /> <strong>You will NOT be able to revert this action!</strong>
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -11602,6 +15871,42 @@ function SpecialModePage() {
                     </div>
                 )}
 
+                {isTournamentNumberTypeModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px" }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Which tournament type?
+                        </p>
+
+                        <select
+                            className={css.reset_input}
+                            style={{ width: "80%" }}
+                            value={tournamentNumberType}
+                            onChange={(e) => setTournamentNumberType(e.target.value)}
+                        >
+                            <option value=""></option>
+                            {TOURNAMENT_TYPES.map((type) => (
+                                <option key={type.id} value={type.id}>{type.label}</option>
+                            ))}
+                        </select>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={handleCloseTournamentNumberModals}>
+                                Cancel
+                            </button>
+                            <button
+                                className={`${css.confirm_button} ${!tournamentNumberType ? css.locked : ""}`}
+                                disabled={!tournamentNumberType}
+                                onClick={() => {
+                                    setIsTournamentNumberTypeModalOpen(false);
+                                    setIsTournamentNumberModalOpen(true);
+                                }}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {isTournamentNumberModalOpen && (
                     <div className={css.restart_modal} style={{ width: "520px", top: "10%" }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
@@ -11609,7 +15914,7 @@ function SpecialModePage() {
                         </p>
 
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
-                            Right now, it's Official <b>#{tournamentNumber}</b>
+                            Right now, it's {renderTournamentLabelFor(activeNumberType, getTypeNumber(activeNumberType))}
                         </p>
 
                         <div style={{ display: "flex", gap: 12, width: "80%", marginBottom: 4 }}>
@@ -11770,7 +16075,6 @@ function SpecialModePage() {
                             )}
                         </div>
                         <div
-                            className={css.hidden_scrollbar}
                             style={{
                                 overflowY: "auto",
                                 overflowX: "hidden",
@@ -11938,7 +16242,6 @@ function SpecialModePage() {
                             )}
                         </div>
                         <div
-                            className={css.hidden_scrollbar}
                             style={{
                                 overflowY: "auto",
                                 overflowX: "hidden",
@@ -12062,18 +16365,6 @@ function SpecialModePage() {
         );
     };
 
-    const modalIndicatorTop = {
-        1: "-5%",
-        2: "-3.6%",
-        3: "-3.3%",
-        4: "-2.6%",
-        5: "-2.4%",
-        6: "-2.1%",
-        7: "-1.8%",
-        8: "-1.7%",
-        9: "-1.45%",
-    };
-
     return (
         <>
             <Header
@@ -12163,6 +16454,18 @@ function SpecialModePage() {
                                 Back to Normal Gambling
                             </Link>
                         </footer>
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setIsHallOfFameOpen(true)}
+                            style={{
+                                position: "absolute",
+                                top: "6%",
+                                left: "49.2%",
+                            }}
+                        >
+                            Hall of Fame
+                        </button>
                     </>
                 ) : (
                     <>
@@ -12248,7 +16551,7 @@ function SpecialModePage() {
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
-                            Are you sure you want to restart the game? <br /> <strong>You will not be able to revert this action!</strong>
+                            Are you sure you want to restart the game? <br /> <strong>You will NOT be able to revert this action!</strong>
                         </p>
                         <div className={css.restart_buttons}>
                             <button
@@ -12390,7 +16693,6 @@ function SpecialModePage() {
                             )}
                         </div>
                         <div
-                            className={css.hidden_scrollbar}
                             style={{
                                 overflowY: "auto",
                                 overflowX: "hidden",
@@ -12558,7 +16860,6 @@ function SpecialModePage() {
                             )}
                         </div>
                         <div
-                            className={css.hidden_scrollbar}
                             style={{
                                 overflowY: "auto",
                                 overflowX: "hidden",
@@ -12678,2192 +16979,6 @@ function SpecialModePage() {
                         </div>
                     </div>
                 )}
-
-                {isMatchModalOpen && modalContext && currentModalMatch && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className={css.match_modal_overlay}
-                        onMouseDown={(e) => {
-                            if (e.target === e.currentTarget) {
-                                closeMatchModal();
-                            }
-                        }}
-                    >
-                        <div
-                            ref={modalRef}
-                            style={{
-                                position: "relative",
-                                transform: `scale(${modalScale})`,
-                                transformOrigin: "center center",
-                                transition: "none"
-                            }}
-                        >
-                            {isPlayedModal && (
-                                didUserWin ? (
-                                    <div
-                                        className={css.modalSuccessPickemIndicator}
-                                        style={{
-                                            top: modalIndicatorTop[playedSets] ?? "-2.5%",
-                                            left: playedSets === 9 ? "-3%" : "-3.1%",
-                                        }}
-                                    >
-                                        <FaCircle size={32} color="#37b737" />
-                                        <FaCheck size={20} color="#ffffff" />
-                                    </div>
-                                ) : (
-                                    <div
-                                        className={css.modalSuccessPickemIndicator}
-                                        style={{
-                                            top: modalIndicatorTop[playedSets] ?? "-2.5%",
-                                            left: playedSets === 9 ? "-3%" : "-3.1%",
-                                        }}
-                                    >
-                                        <FaCircle size={32} color="#be3939" />
-                                        <FaXmark size={20} color="#fff" />
-                                    </div>
-                                )
-                            )}
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.15 }}
-                                className={`
-                                        ${css.match_modal}
-                                        ${isPlayedModal
-                                        ? didUserWin
-                                            ? (isBo1Modal ? css.match_win_bo1 : css.match_win_modal)
-                                            : (isBo1Modal ? css.match_loss_bo1 : css.match_loss_modal)
-                                        : ""
-                                    }
-                            `}
-                                onClick={(e) => e.stopPropagation()}
-                                style={
-                                    isPlayedModal
-                                        ? didUserWin
-                                            ? {
-                                                border: "2px solid #006a32",
-                                                overflow: "hidden",
-                                            }
-                                            : {
-                                                border: "2px solid rgb(188, 108, 108)",
-                                                overflow: "hidden",
-                                            }
-                                        : {
-                                            border: "2px solid #999",
-                                        }
-                                }
-                            >
-                                <div
-                                    style={{ paddingTop: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                    <div className={css.match_modal_header}>
-                                        <span className={css.match_modal_title} style={{
-                                            fontSize: '16px',
-                                            marginBottom: '-8px',
-                                            color: isPlayedModal
-                                                ? didUserWin
-                                                    ? '#fff'
-                                                    : '#fff'
-                                                : "",
-                                        }}>
-                                            {modalContext.type !== "playoffs" ? modalStageSmallLabel : null}
-                                        </span>
-                                        <h3
-                                            style={{
-                                                color: isPlayedModal
-                                                    ? didUserWin
-                                                        ? '#fff'
-                                                        : '#fff'
-                                                    : "",
-                                                margin: '0'
-                                            }}
-                                            className={css.match_modal_title}>
-                                            {modalTitle}
-                                            {modalContext.stage !== "gf" && modalContext.stage !== "thirdPlace" ? (
-                                                <div
-                                                    style={{
-                                                        marginLeft: "2px",
-                                                        marginTop: "-2px",
-                                                        padding: "4px 8px",
-                                                        color: isPlayedModal ? "#fff" : "",
-                                                        backgroundColor: isPlayedModal
-                                                            ? didUserWin
-                                                                ? "#2e7d32"
-                                                                : "#7d2e2e"
-                                                            : "",
-                                                    }}
-                                                    className={css.points}
-                                                >
-                                                    #{modalMatchNumber}
-                                                </div>
-                                            ) : null}
-                                        </h3>
-                                        <span
-                                            style={{
-                                                color: isPlayedModal
-                                                    ? didUserWin
-                                                        ? '#fff'
-                                                        : '#fff'
-                                                    : "",
-                                                margin: '0',
-                                                fontSize: '18px',
-                                                marginTop: '-6px',
-                                            }}
-                                            className={css.match_modal_title}
-                                        >
-                                            Best of {modalBestOf}
-                                        </span>
-
-                                        {isPlayedModal && pickemLabelText && (
-                                            <span
-                                                className={css.match_modal_pickem}
-                                                style={pickemLabelStyle}
-                                            >
-                                                {pickemLabelText}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {!isPlayedModal && !modalContext.readOnly && (() => {
-                                    const boSkewFactor = (bestOf) => {
-                                        if (bestOf <= 1) return 0.7;
-                                        if (bestOf <= 3) return 0.82;
-                                        if (bestOf <= 5) return 0.92;
-                                        if (bestOf <= 7) return 1.02;
-                                        return 1.1;
-                                    };
-
-                                    const leftRating = teamRatings?.[modalLeftTeam?.id] ?? 0;
-                                    const rightRating = teamRatings?.[modalRightTeam?.id] ?? 0;
-
-                                    const leftPlacement = rankById[modalLeftTeam?.id] ?? 64;
-                                    const rightPlacement = rankById[modalRightTeam?.id] ?? 64;
-
-                                    const placementGap = rightPlacement - leftPlacement;
-
-                                    const placementRatingShift = placementGap * 12;
-
-                                    const adjustedLeftRating =
-                                        leftRating + placementRatingShift;
-
-                                    const adjustedRightRating =
-                                        rightRating - placementRatingShift;
-
-                                    const expectedScore = (ra, rb) =>
-                                        1 / (1 + Math.pow(10, (rb - ra) / 850));
-
-                                    const raw = expectedScore(
-                                        adjustedLeftRating,
-                                        adjustedRightRating
-                                    );
-
-                                    const boFactor = boSkewFactor(modalBestOf);
-
-                                    const adjustedRaw =
-                                        0.5 + (raw - 0.5) * boFactor;
-
-                                    const curve = 1.12;
-
-                                    const leftWinProb =
-                                        Math.pow(adjustedRaw, curve) /
-                                        (
-                                            Math.pow(adjustedRaw, curve) +
-                                            Math.pow(1 - adjustedRaw, curve)
-                                        );
-
-                                    const leftPct = Math.min(
-                                        100,
-                                        Math.max(0, leftWinProb * 100)
-                                    );
-
-                                    const rightPct = 100 - leftPct;
-
-                                    const favoriteIsLeft = leftPct > rightPct;
-                                    const favoritePct = Math.max(leftPct, rightPct);
-                                    const diff = Math.abs(leftPct - rightPct);
-
-                                    const favoriteTeam = favoriteIsLeft ? modalLeftTeam?.name : modalRightTeam?.name;
-
-                                    const predictionLabel =
-                                        diff <= 0
-                                            ? "Absolute 50/50"
-                                            : diff <= 5
-                                                ? "Too close to call"
-                                                : diff <= 10
-                                                    ? "Barely separated"
-                                                    : diff <= 18
-                                                        ? `${favoriteTeam} has slight edge`
-                                                        : diff <= 25
-                                                            ? `${favoriteTeam} has modest advantage`
-                                                            : diff <= 35
-                                                                ? `${favoriteTeam} has it in control`
-                                                                : diff <= 45
-                                                                    ? `${favoriteTeam} has strong position`
-                                                                    : diff <= 60
-                                                                        ? `${favoriteTeam} has dominant position`
-                                                                        : diff <= 75
-                                                                            ? `${favoriteTeam} is overwhelming favorite`
-                                                                            : diff <= 90
-                                                                                ? `${favoriteTeam} is very likely a winner`
-                                                                                : diff <= 99
-                                                                                    ? `${favoriteTeam} is near-absolute favorite`
-                                                                                    : `${favoriteTeam} is 100% winner!`;
-
-                                    const offsetStrength = Math.min(
-                                        35,
-                                        ((favoritePct - 50) / 50) * 35
-                                    );
-
-                                    let predictionPositionPct = favoriteIsLeft
-                                        ? 50 - offsetStrength
-                                        : 50 + offsetStrength;
-
-                                    const padding = predictionLabel.length > 25 ? 29 : 26;
-
-                                    predictionPositionPct = Math.max(padding, Math.min(100 - padding, predictionPositionPct));
-
-                                    const predictionPosition = `${predictionPositionPct}%`;
-
-                                    const blend = 10;
-
-                                    const start = Math.max(0, leftPct - blend);
-                                    const end = Math.min(100, leftPct + blend);
-
-                                    const barStyle = {
-                                        background: `linear-gradient(
-                                        90deg,
-                                        ${modalLeftTeam?.color} 0%,
-                                        ${modalLeftTeam?.color} ${start}%,
-                                        ${modalRightTeam?.color} ${end}%,
-                                        ${modalRightTeam?.color} 100%
-                                    )`
-                                    };
-
-                                    const leftStats = teamPlacings?.[modalLeftTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
-                                    const rightStats = teamPlacings?.[modalRightTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
-
-                                    const renderStats = (stats) => {
-                                        const items = [];
-
-                                        if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
-                                        if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
-                                        if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
-
-                                        if (items.length === 0) return null;
-
-                                        return (
-                                            <div
-                                                className={css.team_stats_badge}
-                                                style={{
-                                                    position: "absolute",
-                                                    top: "25%",
-                                                    right: stats === leftStats ? "85%" : "auto",
-                                                    left: stats === rightStats ? "84%" : "auto",
-                                                }}
-                                            >
-                                                {items.map((i, idx) => (
-                                                    <span key={idx} className={css.stat_item}>
-                                                        {i.icon}: {i.value}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        );
-                                    };
-
-                                    const boLabel = `BO${modalBestOf}`;
-
-                                    let stageLabel = "Start Match";
-
-                                    if (modalContext?.type === "playoffs") {
-                                        stageLabel = `Start this ${boLabel} ${modalTitle}`;
-                                    } else if (modalContext?.type === "swiss") {
-                                        const net = modalContext?.net;
-
-                                        const regularMatches = ["0:0", "1:0", "0:1", "1:1"];
-
-                                        const progressionMatches = ["2:0", "2:1"];
-                                        const eliminationMatches = ["0:2", "1:2"];
-                                        const deciderMatches = ["2:2"];
-
-                                        if (regularMatches.includes(net)) {
-                                            stageLabel = `Start this ${net} Match`;
-                                        } else if (progressionMatches.includes(net)) {
-                                            stageLabel = `Start this ${net} Progression Match`;
-                                        } else if (eliminationMatches.includes(net)) {
-                                            stageLabel = `Start this ${net} Elimination Match`;
-                                        } else if (deciderMatches.includes(net)) {
-                                            stageLabel = `Start this ${net} Deciding Match`;
-                                        }
-                                    }
-
-                                    const rsPrediction = getRsPrediction({
-                                        ratings: teamRatings,
-                                        teams: allTeams,
-
-                                        leftTeam: modalLeftTeam,
-                                        rightTeam: modalRightTeam,
-
-                                        phase: modalContext?.type === "swiss"
-                                            ? "swiss"
-                                            : "playoffs",
-
-                                        swissStageKey:
-                                            modalContext?.type === "swiss"
-                                                ? modalContext?.stageKey ?? modalContext?.swissStageKey
-                                                : null,
-
-                                        swissNet:
-                                            modalContext?.type === "swiss"
-                                                ? modalContext?.net
-                                                : null,
-
-                                        playoffsStage:
-                                            modalContext?.type === "playoffs"
-                                                ? modalContext?.stage
-                                                : null,
-
-                                        bestOf: modalBestOf,
-                                        loserSetsWon: 0,
-
-                                        playedAtMs: Date.now(),
-                                    });
-
-                                    const renderRsPrediction = (prediction, isWin, side = "left") => {
-                                        if (!prediction) return null;
-
-                                        const {
-                                            points,
-                                            beforeRank,
-                                            afterRank,
-                                        } = prediction;
-
-                                        const deltaPlaces =
-                                            beforeRank !== null && afterRank !== null
-                                                ? beforeRank - afterRank
-                                                : 0;
-
-                                        const placementColor =
-                                            placementColors[afterRank] || "#ffffff";
-
-                                        return (
-                                            <span
-                                                className={css.finished_modal_team_placing}
-                                                style={{
-                                                    position: "absolute",
-                                                    top:
-                                                        side === "left"
-                                                            ? (isWin ? "0%" : "86%")
-                                                            : (isWin ? "86%" : "0%"),
-                                                    right: side === "left" ? "0%" : "auto",
-                                                    left: side === "right" ? "24%" : "auto",
-                                                    zIndex: 3,
-                                                    fontSize: "10px",
-                                                    width: "70px",
-                                                    minWidth: "max-content",
-                                                    color: "#2e2f42"
-                                                }}
-                                            >
-                                                <span style={{ position: "relative" }}>
-                                                    <span
-                                                        style={{
-                                                            color: isWin
-                                                                ? "#2e7d32"
-                                                                : "#be3939",
-                                                            fontWeight: 900,
-                                                            marginRight: "5px",
-                                                            position: "absolute",
-                                                            right: isWin ? "110%" : !isWin ? "117%" : "auto",
-                                                        }}
-                                                    >
-                                                        {isWin ? "W" : "L"}
-                                                    </span>
-
-                                                    {deltaPlaces !== 0 ? (
-                                                        <span
-                                                            style={{
-                                                                color:
-                                                                    deltaPlaces > 0
-                                                                        ? "#2e7d32"
-                                                                        : "red",
-                                                                fontWeight: 900,
-                                                                marginRight: "0px",
-                                                                display: "inline-flex",
-                                                                alignItems: "center",
-                                                                gap: "2px",
-                                                                width: 21,
-                                                            }}
-                                                        >
-                                                            {deltaPlaces > 0 ? (
-                                                                <>
-                                                                    <span style={{ marginRight: "-3px" }}>
-                                                                        {deltaPlaces}
-                                                                    </span>
-                                                                    <MdOutlineKeyboardDoubleArrowUp />
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span style={{ marginRight: "-3px" }}>
-                                                                        {Math.abs(deltaPlaces)}
-                                                                    </span>
-                                                                    <MdOutlineKeyboardDoubleArrowDown />
-                                                                </>
-                                                            )}
-                                                        </span>
-                                                    ) : (
-                                                        <span
-                                                            style={{
-                                                                color:
-                                                                    deltaPlaces > 0
-                                                                        ? "#2e7d32"
-                                                                        : "red",
-                                                                fontWeight: 900,
-                                                                marginRight: "-2px",
-                                                                display: "inline-flex",
-                                                                alignItems: "center",
-                                                                gap: "2px",
-                                                                userSelect: "none",
-                                                                width: 21
-                                                            }}
-                                                        >
-                                                            {deltaPlaces > 0 ? (
-                                                                <>
-                                                                    <span style={{ marginRight: "-4px" }}>
-                                                                        &nbsp;
-                                                                    </span>
-                                                                    &nbsp;
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span style={{ marginRight: "-4px" }}>
-                                                                        &nbsp;
-                                                                    </span>
-                                                                    &nbsp;
-                                                                </>
-                                                            )}
-                                                        </span>
-                                                    )}
-
-                                                    <span
-                                                        style={{
-                                                            color: placementColor,
-                                                            textShadow: "0 0 4px #000"
-                                                        }}
-                                                    >
-                                                        {formatOrdinal(afterRank)}
-                                                    </span>
-
-                                                    <span
-                                                        style={{
-                                                            color:
-                                                                points > 0
-                                                                    ? "#2e7d32"
-                                                                    : points < 0
-                                                                        ? "red"
-                                                                        : "#fff",
-                                                            fontWeight: 900,
-                                                            marginLeft: "4px"
-                                                        }}
-                                                    >
-                                                        {points > 0
-                                                            ? `+${points}p`
-                                                            : `${points}p`}
-                                                    </span>
-                                                </span>
-                                            </span>
-                                        );
-                                    };
-
-                                    return (
-                                        <>
-                                            <div className={css.match_modal_row}>
-                                                {renderStats(leftStats)}
-                                                <div
-                                                    onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
-                                                    onMouseLeave={() => setHoveredTeamId(null)}
-                                                    style={{ cursor: hasChosen ? "default" : "pointer", marginLeft: '12px' }}
-                                                    onClick={handleChooseLeft}
-                                                    className={css.modal_team_btn}
-                                                >
-                                                    {rsPrediction && (
-                                                        <>
-                                                            {renderRsPrediction(rsPrediction.left.win, true, "left")}
-                                                        </>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        style={{
-                                                            all: "unset",
-                                                            borderRadius: "50%"
-                                                        }}
-                                                    >
-                                                        <TeamCircle
-                                                            team={modalLeftTeam}
-                                                            showRating
-                                                            ratingValue={leftRating}
-                                                            specialStyle={{
-                                                                width: "64px",
-                                                                height: "64px",
-                                                                border:
-                                                                    hasChosen
-                                                                        ? "3px solid #0d6aff"
-                                                                        : "3px solid #999",
-
-                                                                boxShadow:
-                                                                    hasChosen
-                                                                        ? "0 0 8px 2px #0d6aff"
-                                                                        : hoveredTeamId === modalLeftTeam?.id
-                                                                            ? "0 0 4px 1px #0d6aff"
-                                                                            : "none",
-                                                                zIndex: 0
-                                                            }}
-                                                        />
-                                                        <span
-                                                            style={{
-                                                                color: "#fff",
-                                                                textShadow:
-                                                                    hasChosen
-                                                                        ? "0 0 8px #0d6aff"
-                                                                        : hoveredTeamId === modalLeftTeam?.id
-                                                                            ? "0 0 4px #0d6aff"
-                                                                            : "0 0 4px #000",
-                                                                top: '12%'
-                                                            }}
-                                                            className={css.finished_modal_team_placing}
-                                                        >
-                                                            {rankLeftSticker()}
-                                                        </span>
-
-                                                        <span
-                                                            style={{
-                                                                color: "#fff",
-                                                                textShadow:
-                                                                    hasChosen
-                                                                        ? "0 0 8px #0d6aff"
-                                                                        : hoveredTeamId === modalLeftTeam?.id
-                                                                            ? "0 0 4px #0d6aff"
-                                                                            : "0 0 4px #000",
-                                                            }}
-                                                            className={css.modal_team_label}
-                                                        >
-                                                            {modalLeftTeam?.name}
-                                                        </span>
-                                                    </button>
-                                                    {rsPrediction && (
-                                                        <>
-                                                            {renderRsPrediction(rsPrediction.left.loss, false, "left")}
-                                                        </>
-                                                    )}
-                                                </div>
-
-                                                <p
-                                                    className={css.vs_text}
-                                                    style={{
-                                                        position: "static",
-                                                        backgroundColor: "#fff",
-                                                        fontSize: "24px",
-                                                        textShadow: `
-                                                            1px 0 #d8d8d8,
-                                                            -1px 0 #d8d8d8,
-                                                            0 1px #d8d8d8,
-                                                            0 -1px #d8d8d8,
-                                                            1px 1px #d8d8d8,
-                                                            1px -1px #d8d8d8,
-                                                            -1px 1px #d8d8d8,
-                                                            -1px -1px #d8d8d8,
-                                                            1.5px 0 #5a5a5a,
-                                                            -1.5px 0 #5a5a5a,
-                                                            0 1.5px #5a5a5a,
-                                                            0 -1.5px #5a5a5a,
-                                                            1.5px 1.5px #5a5a5a,
-                                                            1.5px -1.5px #5a5a5a,
-                                                            -1.5px 1.5px #5a5a5a,
-                                                            -1.5px -1.5px #5a5a5a,
-                                                            1.5px 0 #5a5a5a,
-                                                            -1.5px 0 #5a5a5a
-                                                        `,
-                                                    }}
-                                                >
-                                                    VS
-                                                </p>
-
-                                                <div
-                                                    onMouseEnter={() => setHoveredTeamId(modalRightTeam?.id)}
-                                                    onMouseLeave={() => setHoveredTeamId(null)}
-                                                    onClick={handleChooseRight}
-                                                    className={css.modal_team_btn}
-                                                    style={{ marginRight: '12px' }}
-                                                >
-                                                    {rsPrediction && (
-                                                        <>
-                                                            {renderRsPrediction(rsPrediction.right.win, true, "right")}
-                                                        </>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        style={{
-                                                            all: "unset",
-                                                            borderRadius: "50%"
-                                                        }}
-                                                    >
-                                                        <TeamCircle
-                                                            team={modalRightTeam}
-                                                            showRating
-                                                            ratingValue={rightRating}
-                                                            specialStyle={{
-                                                                width: "64px",
-                                                                height: "64px",
-                                                                border: "3px solid #999",
-
-                                                                boxShadow:
-                                                                    hoveredTeamId === modalRightTeam?.id
-                                                                        ? "0 0 4px 1px #0d6aff"
-                                                                        : "none",
-                                                                zIndex: 0
-                                                            }}
-                                                        />
-
-                                                        <span
-                                                            className={css.finished_modal_team_placing}
-                                                            style={{
-                                                                color: "#ffffff",
-                                                                textShadow:
-                                                                    hoveredTeamId === modalRightTeam?.id
-                                                                        ? "0 0 4px #0d6aff"
-                                                                        : "0 0 4px #000",
-                                                                top: '12%',
-                                                            }}
-                                                        >
-                                                            {rankRightSticker()}
-                                                        </span>
-
-                                                        <span
-                                                            className={css.modal_team_label}
-                                                            style={{
-                                                                color: "#ffffff",
-                                                                textShadow:
-                                                                    hoveredTeamId === modalRightTeam?.id
-                                                                        ? "0 0 4px #0d6aff"
-                                                                        : "0 0 4px #000",
-                                                            }}
-                                                        >
-                                                            {modalRightTeam?.name}
-                                                        </span>
-                                                    </button>
-                                                    {rsPrediction && (
-                                                        <>
-                                                            {renderRsPrediction(rsPrediction.right.loss, false, "right")}
-                                                        </>
-                                                    )}
-                                                </div>
-                                                {renderStats(rightStats)}
-                                            </div>
-
-                                            <div className={css.match_prediction_wrapper}>
-                                                <span className={css.match_prediction_pct}>
-                                                    <CountUp
-                                                        key={Math.round(leftPct)}
-                                                        start={0}
-                                                        end={Math.round(leftPct)}
-                                                        duration={1.2}
-                                                    />
-                                                    %
-                                                </span>
-
-                                                <div
-                                                    className={css.match_prediction_bar}
-                                                    style={barStyle}
-                                                />
-
-                                                <span className={css.match_prediction_pct}>
-                                                    <CountUp
-                                                        key={Math.round(rightPct)}
-                                                        start={0}
-                                                        end={Math.round(rightPct)}
-                                                        duration={1.2}
-                                                    />
-                                                    %
-                                                </span>
-                                            </div>
-                                            <ReactFitty
-                                                maxSize={16}
-                                                minSize={12}
-                                                className={css.prediction_label}
-                                                style={{
-                                                    left: predictionPosition,
-                                                    transform: "translateX(-50%)",
-                                                }}
-                                            >
-                                                {predictionLabel}
-                                            </ReactFitty>
-                                            <div style={{ textAlign: "center" }}>
-                                                <button
-                                                    className={`${css.gamble_button} ${!hasChosen ? css.locked : ""}`}
-                                                    disabled={!hasChosen}
-                                                    onClick={handleStartMatch}
-                                                >
-                                                    {stageLabel}
-                                                </button>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
-
-                                {isPlayedModal &&
-                                    (() => {
-                                        const {
-                                            leftTeam: modalPlayedLeft,
-                                            rightTeam: modalPlayedRight,
-                                            displayLeft: modalDisplayScoreLeft,
-                                            displayRight: modalDisplayScoreRight,
-                                            winnerIsLeft,
-                                            winnerIsRight,
-                                            leftIsLoser,
-                                            rightIsLoser,
-                                            leftIsPick,
-                                            rightIsPick,
-                                        } = getPickOrientedModalView(
-                                            currentModalMatch,
-                                            isBo1Modal
-                                        );
-
-                                        const {
-                                            leftText: leftStakeText,
-                                            rightText: rightStakeText,
-                                        } = getMatchStakeText({
-                                            modalContext,
-                                            winnerIsLeft,
-                                            winnerIsRight
-                                        });
-
-                                        const stage = modalContext?.stage;
-                                        const isGrandFinal = stage === "gf";
-                                        const isThirdPlace = stage === "thirdPlace";
-
-                                        const getPlacementBadge = (isWinner, isLoser) => {
-                                            if (isGrandFinal) {
-                                                if (isWinner) {
-                                                    return (
-                                                        <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
-                                                            <FaTrophy style={{ color: '#2e2f42' }} />+
-                                                        </span>
-                                                    );
-                                                }
-                                                if (isLoser) {
-                                                    return (
-                                                        <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                                            🥈+
-                                                        </span>
-                                                    );
-                                                }
-                                            }
-
-                                            if (isThirdPlace && isWinner) {
-                                                return (
-                                                    <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                                        🥉+
-                                                    </span>
-                                                );
-                                            }
-
-                                            return null;
-                                        };
-
-                                        const displayedLeftStats =
-                                            teamPlacings?.[modalPlayedLeft?.id] ?? {
-                                                wins: 0,
-                                                seconds: 0,
-                                                thirds: 0,
-                                            };
-
-                                        const displayedRightStats =
-                                            teamPlacings?.[modalPlayedRight?.id] ?? {
-                                                wins: 0,
-                                                seconds: 0,
-                                                thirds: 0,
-                                            };
-
-                                        const renderStats = (stats, side) => {
-                                            const items = [];
-
-                                            if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
-                                            if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
-                                            if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
-
-                                            if (!items.length) return null;
-
-                                            return (
-                                                <div
-                                                    className={css.team_stats_badge}
-                                                    style={{
-                                                        position: "absolute",
-                                                        top: "20%",
-                                                        zIndex: 2,
-                                                        transition: "opacity 0.3s ease",
-                                                        ...(side === "left"
-                                                            ? { right: "90.5%" }
-                                                            : { left: "90.5%" }),
-                                                    }}
-                                                >
-                                                    {items.map((i, idx) => (
-                                                        <span key={idx} className={css.stat_item}>
-                                                            {i.icon}: {i.value}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            );
-                                        };
-
-                                        return (
-                                            <>
-                                                <div className={css.finishedMatchReview}>
-                                                    <div
-                                                        style={{ marginBottom: isBo1Modal ? 0 : "10px" }}
-                                                        className={css.match_modal_row}
-                                                    >
-                                                        {renderStats(displayedLeftStats, "left")}
-                                                        <div
-                                                            style={{
-                                                                position: "absolute",
-                                                                top: "50%",
-                                                                right: "84.5%",
-                                                                width: 260,
-                                                                height: 120,
-                                                                borderRadius: "50%",
-                                                                transform: "translate(50%, -50%)",
-                                                                background: winnerIsLeft ? "#91ffc1" : "#ff9191",
-                                                                boxShadow: winnerIsLeft ? "0 0 32px 8px #91ffc1" : "0 0 32px 8px #ff9191",
-                                                                filter: "blur(42px)",
-                                                                opacity: 0.75,
-                                                                zIndex: 1,
-                                                                pointerEvents: "none",
-                                                            }}
-                                                        />
-                                                        <div
-                                                            className={css.modal_team_btn}
-                                                            style={{
-                                                                flex: 1,
-                                                                pointerEvents: "none",
-                                                            }}
-                                                        >
-                                                            <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
-                                                            <span className={css.modal_team_label}>
-                                                                {(() => {
-                                                                    const meta = currentModalMatch?.ratingMeta;
-                                                                    const id = modalPlayedLeft?.id;
-                                                                    const afterRank = meta?.after?.[id]?.rank ?? (rankById[id] ?? 64);
-                                                                    const beforeRank = meta?.before?.[id]?.rank ?? afterRank;
-                                                                    const deltaPlaces = beforeRank - afterRank;
-                                                                    const afterPoints = meta?.after?.[id]?.points ?? (teamRatings[id] ?? 0);
-                                                                    const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
-                                                                    const deltaPoints = afterPoints - beforePoints;
-
-                                                                    const placementColor = placementColors[afterRank] || "#ffffff";
-
-                                                                    const rankSticker = () => {
-                                                                        return (
-                                                                            <span style={{ color: placementColor }}>
-                                                                                {formatOrdinal(afterRank)}
-                                                                            </span>
-                                                                        );
-                                                                    };
-
-                                                                    return (
-                                                                        <>
-                                                                            <span style={{ top: '-60px', right: "-6px", zIndex: 3, width: 'max-content' }} className={css.finished_modal_team_placing}>
-                                                                                {deltaPlaces !== 0 && (
-                                                                                    <span
-                                                                                        style={{
-                                                                                            color: deltaPlaces > 0 ? "#2e7d32" : "red",
-                                                                                            fontWeight: 900,
-                                                                                            marginRight: "-2px",
-                                                                                            display: "inline-flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "2px",
-                                                                                        }}
-                                                                                    >
-                                                                                        {deltaPlaces > 0 ? (
-                                                                                            <>
-                                                                                                <span style={{ marginRight: "-4px" }}>{deltaPlaces}</span>
-                                                                                                <MdOutlineKeyboardDoubleArrowUp />
-                                                                                            </>
-                                                                                        ) : (
-                                                                                            <>
-                                                                                                <span style={{ marginRight: "-4px" }}>{Math.abs(deltaPlaces)}</span>
-                                                                                                <MdOutlineKeyboardDoubleArrowDown />
-                                                                                            </>
-                                                                                        )}
-                                                                                    </span>
-                                                                                )}
-                                                                                <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
-                                                                                    {rankSticker()}
-                                                                                </span>
-                                                                            </span>
-                                                                            <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
-                                                                                {getPlacementBadge(winnerIsLeft, leftIsLoser)}
-                                                                                <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
-                                                                                    {modalPlayedLeft?.name}
-                                                                                    {leftStakeText === "path ends here, for now!" || leftStakeText === "second place is still wonderful!" ? "'s" : ""}
-                                                                                </span>
-                                                                                {deltaPoints !== 0 && (
-                                                                                    <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
-                                                                                        {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
-                                                                                    </span>
-                                                                                )}
-                                                                            </span>
-                                                                        </>
-                                                                    );
-                                                                })()}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className={css.modal_vs}>
-                                                            <span
-                                                                style={{
-                                                                    color: winnerIsLeft
-                                                                        ? "#2e7d32"
-                                                                        : "red",
-                                                                    fontWeight: 800,
-                                                                    fontStyle: "italic",
-                                                                    position: "absolute",
-                                                                    display: "inline-block",
-                                                                    paddingRight: "8px",
-                                                                    right: "25px",
-                                                                    top: "-18px",
-                                                                    zIndex: 1,
-                                                                    fontSize: 36,
-
-                                                                    WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
-                                                                    maskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
-                                                                }}
-                                                                className={
-                                                                    winnerIsLeft
-                                                                        ? css.swissWinnerScoreShadow
-                                                                        : css.swissLoserScoreShadow
-                                                                }
-                                                            >
-                                                                {modalDisplayScoreLeft}
-                                                            </span>
-                                                            <div
-                                                                style={{
-                                                                    display: "flex",
-                                                                    flexDirection: "column",
-                                                                    justifyContent: "center",
-                                                                    alignItems: "center",
-                                                                    gap: 2,
-                                                                    marginTop: 2,
-                                                                    marginLeft: 2
-                                                                }}
-                                                            >
-                                                                <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
-                                                                <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
-                                                            </div>
-                                                            <span
-                                                                style={{
-                                                                    color: winnerIsRight
-                                                                        ? "#2e7d32"
-                                                                        : "red",
-                                                                    fontWeight: 800,
-                                                                    fontStyle: "italic",
-                                                                    position: "absolute",
-                                                                    display: "inline-block",
-                                                                    paddingLeft: "4px",
-                                                                    left: "28px",
-                                                                    top: "-18px",
-                                                                    zIndex: 1,
-                                                                    fontSize: 36,
-
-                                                                    WebkitMaskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
-                                                                    maskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
-                                                                }}
-                                                                className={
-                                                                    winnerIsRight
-                                                                        ? css.swissWinnerScoreShadow
-                                                                        : css.swissLoserScoreShadow
-                                                                }
-                                                            >
-                                                                {modalDisplayScoreRight}
-                                                            </span>
-                                                        </div>
-
-                                                        <div
-                                                            className={css.modal_team_btn}
-                                                            style={{
-                                                                flex: 1,
-                                                                pointerEvents: "none",
-                                                            }}
-                                                        >
-                                                            <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
-                                                            <span>
-                                                                {(() => {
-                                                                    const meta = currentModalMatch?.ratingMeta;
-                                                                    const id = modalPlayedRight?.id;
-                                                                    const afterRank = meta?.after?.[id]?.rank ?? (rankById[id] ?? 64);
-                                                                    const beforeRank = meta?.before?.[id]?.rank ?? afterRank;
-                                                                    const deltaPlaces = beforeRank - afterRank;
-                                                                    const afterPoints = meta?.after?.[id]?.points ?? (teamRatings[id] ?? 0);
-                                                                    const beforePoints = meta?.before?.[id]?.points ?? afterPoints;
-                                                                    const deltaPoints = afterPoints - beforePoints;
-
-                                                                    const placementColor = placementColors[afterRank] || "#ffffff";
-
-                                                                    const rankSticker = () => {
-                                                                        return (
-                                                                            <span style={{ color: placementColor }}>
-                                                                                {formatOrdinal(afterRank)}
-                                                                            </span>
-                                                                        );
-                                                                    };
-
-                                                                    return (
-                                                                        <>
-                                                                            <span style={{ top: '12%', zIndex: 3, width: 'max-content' }} className={css.finished_modal_team_placing}>
-                                                                                {deltaPlaces !== 0 && (
-                                                                                    <span
-                                                                                        style={{
-                                                                                            color: deltaPlaces > 0 ? "#2e7d32" : "red",
-                                                                                            fontWeight: 900,
-                                                                                            marginRight: "-2px",
-                                                                                            display: "inline-flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "2px",
-                                                                                        }}
-                                                                                    >
-                                                                                        {deltaPlaces > 0 ? (
-                                                                                            <>
-                                                                                                <span style={{ marginRight: "-4px" }}>{deltaPlaces}</span>
-                                                                                                <MdOutlineKeyboardDoubleArrowUp />
-                                                                                            </>
-                                                                                        ) : (
-                                                                                            <>
-                                                                                                <span style={{ marginRight: "-4px" }}>{Math.abs(deltaPlaces)}</span>
-                                                                                                <MdOutlineKeyboardDoubleArrowDown />
-                                                                                            </>
-                                                                                        )}
-                                                                                    </span>
-                                                                                )}
-                                                                                <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
-                                                                                    {rankSticker()}
-                                                                                </span>
-                                                                            </span>
-                                                                            <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
-                                                                                {getPlacementBadge(winnerIsRight, rightIsLoser)}
-                                                                                <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
-                                                                                    {modalPlayedRight?.name}
-                                                                                    {rightStakeText === "path ends here, for now!" || rightStakeText === "second place is still wonderful!" ? "'s" : ""}
-                                                                                </span>
-                                                                                {deltaPoints !== 0 && (
-                                                                                    <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
-                                                                                        {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
-                                                                                    </span>
-                                                                                )}
-                                                                            </span>
-                                                                        </>
-                                                                    );
-                                                                })()}
-                                                            </span>
-                                                        </div>
-                                                        {renderStats(displayedRightStats, "right")}
-                                                        <div
-                                                            style={{
-                                                                position: "absolute",
-                                                                top: "50%",
-                                                                left: "32.5%",
-                                                                width: 260,
-                                                                height: 120,
-                                                                borderRadius: "50%",
-                                                                transform: "translate(50%, -50%)",
-                                                                background: winnerIsRight ? "#91ffc1" : "#ff9191",
-                                                                boxShadow: winnerIsRight ? "0 0 32px 8px #91ffc1" : "0 0 32px 8px #ff9191",
-                                                                filter: "blur(42px)",
-                                                                opacity: 0.75,
-                                                                zIndex: 1,
-                                                                pointerEvents: "none",
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    {leftStakeText && (
-                                                        <div
-                                                            style={{
-                                                                position: "relative",
-                                                                zIndex: 2,
-                                                                marginTop: "-24px",
-                                                                marginBottom: "8px",
-                                                                marginLeft: "48px",
-                                                                fontSize: "13px",
-                                                                fontWeight: 700,
-                                                                textShadow: `
-                                                                    0 0 3px ${modalPlayedLeft?.color},
-                                                                    0 0 7px ${modalPlayedLeft?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `,
-                                                                color: "#ffffff",
-                                                                width: '216.8px',
-                                                                height: 'auto',
-                                                                textAlign: 'center',
-                                                            }}
-                                                        >
-                                                            {leftStakeText}
-                                                        </div>
-                                                    )}
-                                                    {rightStakeText && (
-                                                        <div
-                                                            style={{
-                                                                position: "relative",
-                                                                zIndex: 2,
-                                                                marginTop: "-28px",
-                                                                marginBottom: "8px",
-                                                                marginLeft: "260px",
-                                                                fontSize: "13px",
-                                                                fontWeight: 700,
-                                                                textShadow: `
-                                                                    0 0 3px ${modalPlayedRight?.color},
-                                                                    0 0 7px ${modalPlayedRight?.color}66,
-                                                                    0 1px 3px rgba(0,0,0,0.4)
-                                                                `,
-                                                                color: "#ffffff",
-                                                                width: '216.8px',
-                                                                height: 'auto',
-                                                                textAlign: 'center',
-                                                            }}
-                                                        >
-                                                            {rightStakeText}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <>
-                                                    {(() => {
-                                                        const historyMatch = currentModalMatch;
-                                                        const history = historyMatch?.setHistory ?? [];
-                                                        if (!history.length) {
-                                                            return <p className={css.info_text}>No set history stored for this match.</p>;
-                                                        }
-
-                                                        const leftColor = modalPlayedLeft?.color || "#2e7d32";
-                                                        const rightColor = modalPlayedRight?.color || "red";
-
-                                                        const InfoIcon = ({
-                                                            title,
-                                                            children,
-                                                            trigger = "hover",
-                                                            customLeft = "50%"
-                                                        }) => {
-                                                            const [open, setOpen] = useState(false);
-
-                                                            return (
-                                                                <div
-                                                                    style={{
-                                                                        position: "relative",
-                                                                        display: "flex",
-                                                                    }}
-                                                                    onMouseEnter={
-                                                                        trigger === "hover"
-                                                                            ? () => setOpen(true)
-                                                                            : undefined
-                                                                    }
-                                                                    onMouseLeave={
-                                                                        trigger === "hover"
-                                                                            ? () => setOpen(false)
-                                                                            : undefined
-                                                                    }
-                                                                    onClick={
-                                                                        trigger === "click"
-                                                                            ? (e) => {
-                                                                                e.stopPropagation();
-                                                                                setOpen((prev) => !prev);
-                                                                            }
-                                                                            : undefined
-                                                                    }
-                                                                >
-                                                                    <FaCircleInfo
-                                                                        size={11}
-                                                                        style={{
-                                                                            color: "Highlight",
-                                                                            cursor: trigger === "click" ? "pointer" : "default",
-                                                                        }}
-                                                                    />
-
-                                                                    {open && (
-                                                                        <motion.div
-                                                                            initial={{ opacity: 0 }}
-                                                                            animate={{ opacity: 1 }}
-                                                                            exit={{ opacity: 0 }}
-                                                                            transition={{ duration: 0.15 }}
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                            style={{
-                                                                                position: "absolute",
-                                                                                bottom: "calc(100% + 8px)",
-                                                                                left: customLeft,
-                                                                                transform: "translateX(-50%)",
-                                                                                background: "#fff",
-                                                                                color: "#2e2f42",
-                                                                                boxShadow: "0 2px 10px rgba(0,0,0,.2)",
-                                                                                padding: "6px 10px",
-                                                                                borderRadius: 6,
-                                                                                whiteSpace: "nowrap",
-                                                                                zIndex: 9999,
-                                                                                fontSize: 12,
-                                                                            }}
-                                                                        >
-                                                                            {title && (
-                                                                                <>
-                                                                                    <span>{title}</span>
-                                                                                    <br />
-                                                                                </>
-                                                                            )}
-
-                                                                            {children}
-                                                                        </motion.div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        };
-
-                                                        return (
-                                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className={css.seriesSummary} style={{ fontSize: 13, display: "flex", alignItems: "center", width: 'max-content', margin: '0 auto' }} >
-                                                                <ul
-                                                                    className={css.seriesSummaryList}
-                                                                    style={{
-                                                                        display: "flex",
-                                                                        flexDirection: "column",
-                                                                        gap: "6px",
-                                                                    }}
-                                                                >
-                                                                    {history.map(
-                                                                        ({
-                                                                            set,
-                                                                            wins,
-                                                                            losses,
-                                                                            won,
-                                                                            firstHalfLeft,
-                                                                            firstHalfRight,
-                                                                            extendedRounds = {
-                                                                                firstHalf: null,
-                                                                                secondHalf: null,
-                                                                                overtimes: [],
-                                                                            },
-                                                                        }) => {
-                                                                            const isDecider = set === modalBestOf;
-                                                                            const label = isDecider ? "Decider" : `Set ${set}`;
-
-                                                                            const leftGlow = won;
-                                                                            const rightGlow = !won;
-
-                                                                            const leftOpacity = won ? 1 : 0.4;
-                                                                            const rightOpacity = won ? 0.4 : 1;
-
-                                                                            const isATie = wins === losses;
-
-                                                                            const winnerCount = won ? wins : losses;
-
-                                                                            const finalCount = isATie ? winnerCount + 1 : winnerCount;
-
-                                                                            const overtimeCount = Math.max(
-                                                                                0,
-                                                                                Math.floor((finalCount - 13) / 3)
-                                                                            );
-
-                                                                            const hasOvertime = overtimeCount > 0;
-
-                                                                            const leftAttempts = extendedRounds?.penalties?.leftResults.length ?? 0;
-                                                                            const rightAttempts = extendedRounds?.penalties?.rightResults.length ?? 0;
-
-                                                                            const leftOtExtendedRounds =
-                                                                                extendedRounds.overtimes.filter(
-                                                                                    (x) => x.winner === "left"
-                                                                                );
-
-                                                                            const rightOtExtendedRounds =
-                                                                                extendedRounds.overtimes.filter(
-                                                                                    (x) => x.winner === "right"
-                                                                                );
-
-                                                                            const leftOtLabels =
-                                                                                leftOtExtendedRounds.map((x) =>
-                                                                                    getOvertimeShortLabel(x.overtime)
-                                                                                );
-
-                                                                            const rightOtLabels =
-                                                                                rightOtExtendedRounds.map((x) =>
-                                                                                    getOvertimeShortLabel(x.overtime)
-                                                                                );
-
-                                                                            const showLeftCheck =
-                                                                                leftOtExtendedRounds.length === 1 &&
-                                                                                rightOtExtendedRounds.length === 0;
-
-                                                                            const showLeftInfo =
-                                                                                !showLeftCheck &&
-                                                                                leftOtExtendedRounds.length > 0;
-
-                                                                            const showRightCheck =
-                                                                                rightOtExtendedRounds.length === 1 &&
-                                                                                leftOtExtendedRounds.length === 0;
-
-                                                                            const showRightInfo =
-                                                                                !showRightCheck &&
-                                                                                rightOtExtendedRounds.length > 0;
-
-                                                                            const formatRoundsCount = () => {
-                                                                                const lastDigit = totalRounds % 10;
-
-                                                                                return lastDigit === 1 ? "Round" : "Rounds";
-                                                                            };
-
-                                                                            const otLeft = hasOvertime
-                                                                                ? Math.max(0, wins - 12)
-                                                                                : null;
-
-                                                                            const otRight = hasOvertime
-                                                                                ? Math.max(0, losses - 12)
-                                                                                : null;
-
-                                                                            const secondHalfLeft =
-                                                                                (hasOvertime ? wins - otLeft : wins) -
-                                                                                firstHalfLeft;
-
-                                                                            const secondHalfRight =
-                                                                                (hasOvertime ? losses - otRight : losses) -
-                                                                                firstHalfRight;
-
-                                                                            const extendedRoundLeftScore =
-                                                                                (extendedRounds.firstHalf === "left" ? 1 : 0) +
-                                                                                (extendedRounds.secondHalf === "left" ? 1 : 0) +
-                                                                                leftOtExtendedRounds.length;
-
-                                                                            const extendedRoundRightScore =
-                                                                                (extendedRounds.firstHalf === "right" ? 1 : 0) +
-                                                                                (extendedRounds.secondHalf === "right" ? 1 : 0) +
-                                                                                rightOtExtendedRounds.length;
-
-                                                                            const hasExtendedRounds = isATie &&
-                                                                                extendedRoundLeftScore + extendedRoundRightScore > 0;
-
-                                                                            const totalRounds = wins + losses;
-
-                                                                            const getHalfStyleLeft = (leftScore, rightScore) => {
-                                                                                if (leftScore === rightScore) {
-                                                                                    return {
-                                                                                        opacity: 1
-                                                                                    };
-                                                                                }
-
-                                                                                return {
-                                                                                    opacity: leftScore > rightScore ? 1 : 0.6,
-                                                                                    textShadow:
-                                                                                        leftScore > rightScore
-                                                                                            ? `
-                                                                                                0 0 3px ${leftColor},
-                                                                                                0 0 6px ${leftColor}55
-                                                                                            `
-                                                                                            : "none",
-                                                                                };
-                                                                            };
-
-                                                                            const getHalfStyleRight = (rightScore, leftScore) => {
-                                                                                if (rightScore === leftScore) {
-                                                                                    return {
-                                                                                        opacity: 1
-                                                                                    };
-                                                                                }
-
-                                                                                return {
-                                                                                    opacity: rightScore > leftScore ? 1 : 0.6,
-                                                                                    textShadow:
-                                                                                        rightScore > leftScore
-                                                                                            ? `
-                                                                                                0 0 3px ${rightColor},
-                                                                                                0 0 6px ${rightColor}55
-                                                                                            `
-                                                                                            : "none",
-                                                                                };
-                                                                            };
-
-                                                                            const erLeftStyle = hasExtendedRounds
-                                                                                ? getHalfStyleLeft(
-                                                                                    extendedRoundLeftScore,
-                                                                                    extendedRoundRightScore
-                                                                                )
-                                                                                : null;
-
-                                                                            const erRightStyle = hasExtendedRounds
-                                                                                ? getHalfStyleRight(
-                                                                                    extendedRoundRightScore,
-                                                                                    extendedRoundLeftScore
-                                                                                )
-                                                                                : null;
-
-                                                                            const firstHalfLeftStyle = getHalfStyleLeft(
-                                                                                firstHalfLeft,
-                                                                                firstHalfRight
-                                                                            );
-
-                                                                            const firstHalfRightStyle = getHalfStyleRight(
-                                                                                firstHalfRight,
-                                                                                firstHalfLeft
-                                                                            );
-
-                                                                            const secondHalfLeftStyle = getHalfStyleLeft(
-                                                                                secondHalfLeft,
-                                                                                secondHalfRight
-                                                                            );
-
-                                                                            const secondHalfRightStyle = getHalfStyleRight(
-                                                                                secondHalfRight,
-                                                                                secondHalfLeft
-                                                                            );
-
-                                                                            const otLeftStyle = hasOvertime
-                                                                                ? getHalfStyleLeft(otLeft, otRight)
-                                                                                : null;
-
-                                                                            const otRightStyle = hasOvertime
-                                                                                ? getHalfStyleRight(otRight, otLeft)
-                                                                                : null;
-
-                                                                            const completedSuddenDeathPairs = Math.min(
-                                                                                Math.max(0, leftAttempts - 5),
-                                                                                Math.max(0, rightAttempts - 5)
-                                                                            );
-
-                                                                            const totalAttempts = Math.min(leftAttempts, rightAttempts);
-
-                                                                            const hasUnequalAttempts = leftAttempts !== rightAttempts;
-
-                                                                            const leaderTeam =
-                                                                                leftAttempts > rightAttempts
-                                                                                    ? modalPlayedLeft
-                                                                                    : modalPlayedRight;
-
-                                                                            const leaderAttempts = Math.max(leftAttempts, rightAttempts);
-
-                                                                            const modalAttemptsToDisplay =
-                                                                                PENALTY_DISPLAY_CIRCLES + completedSuddenDeathPairs;
-
-                                                                            const pensLeftStyle = extendedRounds?.penalties
-                                                                                ? getHalfStyleLeft(extendedRounds?.penalties.leftScore, extendedRounds?.penalties.rightScore)
-                                                                                : null;
-
-                                                                            const pensRightStyle = extendedRounds?.penalties
-                                                                                ? getHalfStyleRight(extendedRounds?.penalties.rightScore, extendedRounds?.penalties.leftScore)
-                                                                                : null;
-
-                                                                            const pensLeftWon =
-                                                                                extendedRounds?.penalties &&
-                                                                                extendedRounds.penalties.leftScore >
-                                                                                extendedRounds.penalties.rightScore;
-
-                                                                            const pensRightWon =
-                                                                                extendedRounds?.penalties &&
-                                                                                extendedRounds.penalties.rightScore >
-                                                                                extendedRounds.penalties.leftScore;
-
-                                                                            return (
-                                                                                <li
-                                                                                    key={set}
-                                                                                    className={css.seriesSummaryItem}
-                                                                                    style={{
-                                                                                        display: "flex",
-                                                                                        flexDirection: "row",
-                                                                                        justifyContent: "center",
-                                                                                        alignItems: "flex-start",
-                                                                                        gap: "36px"
-                                                                                    }}
-                                                                                >
-                                                                                    <div
-                                                                                        style={{
-                                                                                            display: "flex",
-                                                                                            flexDirection: "column",
-                                                                                            alignItems: "center",
-                                                                                            minWidth: "60px",
-                                                                                        }}
-                                                                                    >
-                                                                                        {!isBo1Modal && (
-                                                                                            <span
-                                                                                                className={css.round_text}
-                                                                                                style={{ opacity: leftOpacity, height: "42px", marginTop: "1px" }}
-                                                                                            >
-                                                                                                <CountUp
-                                                                                                    start={Math.max(wins - 1, 0)}
-                                                                                                    end={wins}
-                                                                                                    duration={1}
-                                                                                                    style={{
-                                                                                                        color: leftColor,
-                                                                                                        fontSize: "36px",
-                                                                                                        textShadow: leftGlow
-                                                                                                            ? `
-                                                                                                            0 0 6px ${leftColor},
-                                                                                                            0 0 14px ${leftColor}66,
-                                                                                                            0 2px 6px rgba(0,0,0,0.4)
-                                                                                                        `
-                                                                                                            : "none",
-                                                                                                    }}
-                                                                                                />
-                                                                                            </span>
-                                                                                        )}
-
-                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
-                                                                                            <span
-                                                                                                className={css.info_text}
-                                                                                                style={{
-                                                                                                    fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                    color: leftColor,
-                                                                                                    opacity: firstHalfLeftStyle.opacity,
-                                                                                                    textShadow: firstHalfLeftStyle.textShadow,
-                                                                                                    height: isBo1Modal ? "17px" : "16px"
-                                                                                                }}
-                                                                                            >
-                                                                                                {firstHalfLeft}
-                                                                                            </span>
-
-                                                                                            <span
-                                                                                                className={css.info_text}
-                                                                                                style={{
-                                                                                                    fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                    color: leftColor,
-                                                                                                    opacity: secondHalfLeftStyle.opacity,
-                                                                                                    textShadow: secondHalfLeftStyle.textShadow,
-                                                                                                    height: isBo1Modal ? "17px" : "16px"
-                                                                                                }}
-                                                                                            >
-                                                                                                {secondHalfLeft}
-                                                                                            </span>
-
-                                                                                            {hasOvertime && (
-                                                                                                <span
-                                                                                                    className={css.info_text}
-                                                                                                    style={{
-                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                        color: leftColor,
-                                                                                                        opacity: otLeftStyle.opacity,
-                                                                                                        textShadow: otLeftStyle.textShadow,
-                                                                                                        height: isBo1Modal ? "17px" : "16px"
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {otLeft}
-                                                                                                </span>
-                                                                                            )}
-
-                                                                                            {hasExtendedRounds && (
-                                                                                                <div className={css.dashed_divider} style={{ zIndex: 3, width: "200%", marginTop: "2px", marginBottom: "2px", opacity: 0 }} />
-                                                                                            )}
-
-                                                                                            {hasExtendedRounds && (
-                                                                                                <span
-                                                                                                    className={css.info_text}
-                                                                                                    style={{
-                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                        color: leftColor,
-                                                                                                        opacity: erLeftStyle.opacity,
-                                                                                                        textShadow: erLeftStyle.textShadow,
-                                                                                                        height: isBo1Modal ? "17px" : "16px",
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {extendedRoundLeftScore}
-                                                                                                </span>
-                                                                                            )}
-
-                                                                                            {extendedRounds?.penalties && (
-                                                                                                <span
-                                                                                                    className={css.info_text}
-                                                                                                    style={{
-                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                        color: leftColor,
-                                                                                                        opacity: pensLeftStyle.opacity,
-                                                                                                        textShadow: pensLeftStyle.textShadow,
-                                                                                                        height: isBo1Modal ? "17px" : "16px"
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {extendedRounds.penalties.leftScore}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    <div
-                                                                                        style={{
-                                                                                            display: "flex",
-                                                                                            flexDirection: "column",
-                                                                                            alignItems: "center",
-                                                                                            minWidth: "160px",
-                                                                                        }}
-                                                                                    >
-                                                                                        {!isBo1Modal && (
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                className={css.gamble_button}
-                                                                                                style={{ fontSize: "inherit", lineHeight: 1.1, padding: "1px 1px" }}
-                                                                                                onClick={(e) => {
-                                                                                                    e.stopPropagation();
-                                                                                                    setBreakdownSetIndex(set - 1);
-                                                                                                }}
-                                                                                            >
-                                                                                                <span className={css.info_text} style={{ fontWeight: 600, color: "#ffffff" }}>
-                                                                                                    {label}
-                                                                                                </span>
-                                                                                            </button>
-                                                                                        )}
-
-                                                                                        {isBo1Modal ? (
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                className={css.gamble_button}
-                                                                                                style={{ fontSize: "inherit", lineHeight: 1.1, padding: "6px 12px", paddingBottom: "4.2px", marginTop: "-4px" }}
-                                                                                                onClick={(e) => {
-                                                                                                    e.stopPropagation();
-                                                                                                    setBreakdownSetIndex(set - 1);
-                                                                                                }}
-                                                                                            >
-                                                                                                <span style={{ fontSize: "18px", textAlign: "center", color: "#ffffff" }} className={css.vs}>
-                                                                                                    {totalRounds} {formatRoundsCount()}
-                                                                                                </span>
-                                                                                            </button>
-                                                                                        ) : (
-                                                                                            <span style={{ fontSize: "18px", textAlign: "center", marginTop: "-4px" }} className={css.vs}>
-                                                                                                {totalRounds} {formatRoundsCount()}
-                                                                                            </span>
-                                                                                        )}
-
-                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "0px", fontSize: isBo1Modal ? "12px" : "11px" }}>
-                                                                                            <div
-                                                                                                style={{
-                                                                                                    display: "flex",
-                                                                                                    alignItems: "center",
-                                                                                                    gap: 4,
-                                                                                                    position: "relative"
-                                                                                                }}
-                                                                                            >
-                                                                                                <span style={{ position: 'absolute', right: "104%", top: "1px" }}>
-                                                                                                    {extendedRounds?.firstHalf === "left" && (
-                                                                                                        <FaCircleCheck
-                                                                                                            size={10}
-                                                                                                            color="#50ff50"
-                                                                                                        />
-                                                                                                    )}
-                                                                                                </span>
-
-                                                                                                <span className={css.info_text}>
-                                                                                                    1st Half
-                                                                                                </span>
-
-                                                                                                <span style={{ position: 'absolute', left: "109%", top: "1px" }}>
-                                                                                                    {extendedRounds?.firstHalf === "right" && (
-                                                                                                        <FaCircleCheck
-                                                                                                            size={10}
-                                                                                                            color="#50ff50"
-                                                                                                        />
-                                                                                                    )}
-                                                                                                </span>
-                                                                                            </div>
-
-                                                                                            <div
-                                                                                                style={{
-                                                                                                    display: "flex",
-                                                                                                    alignItems: "center",
-                                                                                                    gap: 4,
-                                                                                                    position: "relative"
-                                                                                                }}
-                                                                                            >
-                                                                                                <span style={{ position: 'absolute', right: "104%", top: "1px" }}>
-                                                                                                    {extendedRounds?.secondHalf === "left" && (
-                                                                                                        <FaCircleCheck
-                                                                                                            size={10}
-                                                                                                            color="#50ff50"
-                                                                                                        />
-                                                                                                    )}
-                                                                                                </span>
-
-                                                                                                <span className={css.info_text}>
-                                                                                                    2nd Half
-                                                                                                </span>
-
-                                                                                                <span style={{ position: 'absolute', left: "107%", top: "1px" }}>
-                                                                                                    {extendedRounds?.secondHalf === "right" && (
-                                                                                                        <FaCircleCheck
-                                                                                                            size={10}
-                                                                                                            color="#50ff50"
-                                                                                                        />
-                                                                                                    )}
-                                                                                                </span>
-                                                                                            </div>
-
-                                                                                            {hasOvertime && (
-                                                                                                <div
-                                                                                                    style={{
-                                                                                                        display: "flex",
-                                                                                                        alignItems: "center",
-                                                                                                        gap: 4,
-                                                                                                        position: "relative",
-                                                                                                    }}
-                                                                                                >
-                                                                                                    <span
-                                                                                                        style={{
-                                                                                                            position: "absolute",
-                                                                                                            right: "107%",
-                                                                                                            top: showLeftCheck ? "1px" : "2.5px",
-                                                                                                        }}
-                                                                                                    >
-                                                                                                        {showLeftCheck ? (
-                                                                                                            <FaCircleCheck
-                                                                                                                size={10}
-                                                                                                                color="#50ff50"
-                                                                                                            />
-                                                                                                        ) : showLeftInfo ? (
-                                                                                                            <InfoIcon
-                                                                                                                title={`Extended OT Round${leftOtLabels.length === 1 ? "" : "s"} taken in`}
-                                                                                                            >
-                                                                                                                {(() => {
-                                                                                                                    const rows = [];
-
-                                                                                                                    for (let i = 0; i < leftOtLabels.length; i += 5) {
-                                                                                                                        rows.push(leftOtLabels.slice(i, i + 5));
-                                                                                                                    }
-
-                                                                                                                    return rows.map((row, rowIndex) => (
-                                                                                                                        <React.Fragment key={rowIndex}>
-                                                                                                                            {rowIndex > 0 && <br />}
-                                                                                                                            {row.map((label, index) => {
-                                                                                                                                const lastRow = rowIndex === rows.length - 1;
-                                                                                                                                const last = lastRow && index === row.length - 1;
-                                                                                                                                const secondLast = lastRow && index === row.length - 2;
-
-                                                                                                                                return (
-                                                                                                                                    <React.Fragment key={index}>
-                                                                                                                                        {index > 0 && !last && ", "}
-                                                                                                                                        <span style={{ fontWeight: 600 }}>
-                                                                                                                                            {label}
-                                                                                                                                        </span>
-                                                                                                                                        {secondLast && (
-                                                                                                                                            <span style={{ fontWeight: 500 }}>
-                                                                                                                                                {" "}
-                                                                                                                                                and{" "}
-                                                                                                                                            </span>
-                                                                                                                                        )}
-                                                                                                                                    </React.Fragment>
-                                                                                                                                );
-                                                                                                                            })}
-                                                                                                                        </React.Fragment>
-                                                                                                                    ));
-                                                                                                                })()}
-                                                                                                            </InfoIcon>
-                                                                                                        ) : null}
-                                                                                                    </span>
-
-                                                                                                    <span className={css.info_text}>
-                                                                                                        {getOvertimeShortLabel(overtimeCount)}
-                                                                                                    </span>
-
-                                                                                                    <span
-                                                                                                        style={{
-                                                                                                            position: "absolute",
-                                                                                                            left: "107%",
-                                                                                                            top: showRightCheck ? "1px" : "2.5px",
-                                                                                                        }}
-                                                                                                    >
-                                                                                                        {showRightCheck ? (
-                                                                                                            <FaCircleCheck
-                                                                                                                size={10}
-                                                                                                                color="#50ff50"
-                                                                                                            />
-                                                                                                        ) : showRightInfo ? (
-                                                                                                            <InfoIcon
-                                                                                                                title={`Extended OT Round${rightOtLabels.length === 1 ? "" : "s"} taken in`}
-                                                                                                            >
-                                                                                                                {(() => {
-                                                                                                                    const rows = [];
-
-                                                                                                                    for (let i = 0; i < rightOtLabels.length; i += 5) {
-                                                                                                                        rows.push(rightOtLabels.slice(i, i + 5));
-                                                                                                                    }
-
-                                                                                                                    return rows.map((row, rowIndex) => (
-                                                                                                                        <React.Fragment key={rowIndex}>
-                                                                                                                            {rowIndex > 0 && <br />}
-                                                                                                                            {row.map((label, index) => {
-                                                                                                                                const lastRow = rowIndex === rows.length - 1;
-                                                                                                                                const last = lastRow && index === row.length - 1;
-                                                                                                                                const secondLast = lastRow && index === row.length - 2;
-
-                                                                                                                                return (
-                                                                                                                                    <React.Fragment key={index}>
-                                                                                                                                        {index > 0 && !last && ", "}
-                                                                                                                                        <span style={{ fontWeight: 600 }}>
-                                                                                                                                            {label}
-                                                                                                                                        </span>
-                                                                                                                                        {secondLast && (
-                                                                                                                                            <span style={{ fontWeight: 500 }}>
-                                                                                                                                                {" "}
-                                                                                                                                                and{" "}
-                                                                                                                                            </span>
-                                                                                                                                        )}
-                                                                                                                                    </React.Fragment>
-                                                                                                                                );
-                                                                                                                            })}
-                                                                                                                        </React.Fragment>
-                                                                                                                    ));
-                                                                                                                })()}
-                                                                                                            </InfoIcon>
-                                                                                                        ) : null}
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            )}
-                                                                                            {hasExtendedRounds && (
-                                                                                                <div className={css.dashed_divider} style={{ zIndex: 3, width: "380%", marginTop: "2px", marginBottom: "2px", borderTop: "2px dashed #999" }} />
-                                                                                            )}
-                                                                                            {hasExtendedRounds && (
-                                                                                                <div
-                                                                                                    style={{
-                                                                                                        display: "flex",
-                                                                                                        alignItems: "center",
-                                                                                                        gap: 4,
-                                                                                                        position: "relative",
-                                                                                                    }}
-                                                                                                >
-                                                                                                    <span className={css.info_text}>
-                                                                                                        Extended Rounds
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            )}
-                                                                                            {extendedRounds?.penalties && (
-                                                                                                <div style={{ position: "relative" }}>
-                                                                                                    {pensLeftWon && (
-                                                                                                        <span
-                                                                                                            style={{
-                                                                                                                position: "absolute",
-                                                                                                                right: "107%",
-                                                                                                                top: "2.5px",
-                                                                                                            }}
-                                                                                                        >
-                                                                                                            <InfoIcon
-                                                                                                                title={
-                                                                                                                    hasUnequalAttempts ? (
-                                                                                                                        <>
-                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams,
-                                                                                                                            <br />
-                                                                                                                            <strong>{leaderAttempts}</strong> taken by{" "}
-                                                                                                                            <span
-                                                                                                                                style={{
-                                                                                                                                    color: leaderTeam.color,
-                                                                                                                                    fontWeight: 700,
-                                                                                                                                }}
-                                                                                                                            >
-                                                                                                                                Team {leaderTeam.name}
-                                                                                                                            </span>
-                                                                                                                        </>
-                                                                                                                    ) : (
-                                                                                                                        <>
-                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams
-                                                                                                                        </>
-                                                                                                                    )
-                                                                                                                }
-                                                                                                                trigger="hover"
-                                                                                                            >
-                                                                                                                <div
-                                                                                                                    style={{
-                                                                                                                        display: "flex",
-                                                                                                                        flexDirection: "column",
-                                                                                                                        alignItems: "start",
-                                                                                                                        gap: 6,
-                                                                                                                    }}
-                                                                                                                >
-                                                                                                                    <div>
-                                                                                                                        <span
-                                                                                                                            style={{
-                                                                                                                                color: modalPlayedLeft.color,
-                                                                                                                                fontWeight: 800,
-                                                                                                                                marginBottom: 4,
-                                                                                                                            }}
-                                                                                                                        >
-                                                                                                                            {modalPlayedLeft.name}
-                                                                                                                        </span>
-                                                                                                                        <PenaltyCircles
-                                                                                                                            compact
-                                                                                                                            resolved
-                                                                                                                            team="right"
-                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
-                                                                                                                            results={extendedRounds.penalties.leftResults}
-                                                                                                                        />
-                                                                                                                    </div>
-
-                                                                                                                    <div>
-                                                                                                                        <span
-                                                                                                                            style={{
-                                                                                                                                color: modalPlayedRight.color,
-                                                                                                                                fontWeight: 800
-                                                                                                                            }}
-                                                                                                                        >
-                                                                                                                            {modalPlayedRight.name}
-                                                                                                                        </span>
-                                                                                                                        <PenaltyCircles
-                                                                                                                            compact
-                                                                                                                            resolved
-                                                                                                                            team="right"
-                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
-                                                                                                                            results={extendedRounds.penalties.rightResults}
-                                                                                                                        />
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </InfoIcon>
-                                                                                                        </span>
-                                                                                                    )}
-
-                                                                                                    <span style={{ marginTop: !isBo1Modal ? "1px" : "0px", display: "inline-block" }} className={css.info_text}>
-                                                                                                        Penalties
-                                                                                                    </span>
-
-                                                                                                    {pensRightWon && (
-                                                                                                        <span
-                                                                                                            style={{
-                                                                                                                position: "absolute",
-                                                                                                                left: "107%",
-                                                                                                                top: "2.5px",
-                                                                                                            }}
-                                                                                                        >
-                                                                                                            <InfoIcon
-                                                                                                                title={
-                                                                                                                    hasUnequalAttempts ? (
-                                                                                                                        <>
-                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams,
-                                                                                                                            <br />
-                                                                                                                            <strong>{leaderAttempts}</strong> taken by{" "}
-                                                                                                                            <span
-                                                                                                                                style={{
-                                                                                                                                    color: leaderTeam.color,
-                                                                                                                                    fontWeight: 700,
-                                                                                                                                }}
-                                                                                                                            >
-                                                                                                                                Team {leaderTeam.name}
-                                                                                                                            </span>
-                                                                                                                        </>
-                                                                                                                    ) : (
-                                                                                                                        <>
-                                                                                                                            <strong>{totalAttempts} full attempts</strong> taken by both teams
-                                                                                                                        </>
-                                                                                                                    )
-                                                                                                                }
-                                                                                                                trigger="hover"
-                                                                                                            >
-                                                                                                                <div
-                                                                                                                    style={{
-                                                                                                                        display: "flex",
-                                                                                                                        flexDirection: "column",
-                                                                                                                        alignItems: "start",
-                                                                                                                        gap: 6,
-                                                                                                                    }}
-                                                                                                                >
-                                                                                                                    <div>
-                                                                                                                        <span
-                                                                                                                            style={{
-                                                                                                                                color: modalPlayedLeft.color,
-                                                                                                                                fontWeight: 800
-                                                                                                                            }}
-                                                                                                                        >
-                                                                                                                            {modalPlayedLeft.name}
-                                                                                                                        </span>
-                                                                                                                        <PenaltyCircles
-                                                                                                                            compact
-                                                                                                                            resolved
-                                                                                                                            team="right"
-                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
-                                                                                                                            results={extendedRounds.penalties.leftResults}
-                                                                                                                        />
-                                                                                                                    </div>
-
-                                                                                                                    <div>
-                                                                                                                        <span
-                                                                                                                            style={{
-                                                                                                                                color: modalPlayedRight.color,
-                                                                                                                                fontWeight: 800,
-                                                                                                                                marginBottom: 4,
-                                                                                                                            }}
-                                                                                                                        >
-                                                                                                                            {modalPlayedRight.name}
-                                                                                                                        </span>
-                                                                                                                        <PenaltyCircles
-                                                                                                                            compact
-                                                                                                                            resolved
-                                                                                                                            team="right"
-                                                                                                                            attemptsToDisplay={modalAttemptsToDisplay}
-                                                                                                                            results={extendedRounds.penalties.rightResults}
-                                                                                                                        />
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </InfoIcon>
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div
-                                                                                        style={{
-                                                                                            display: "flex",
-                                                                                            flexDirection: "column",
-                                                                                            alignItems: "center",
-                                                                                            minWidth: "60px",
-                                                                                        }}
-                                                                                    >
-                                                                                        {!isBo1Modal && (
-                                                                                            <span
-                                                                                                className={css.round_text}
-                                                                                                style={{ opacity: rightOpacity, height: "42px", marginTop: "1px" }}
-                                                                                            >
-                                                                                                <CountUp
-                                                                                                    start={Math.max(losses - 1, 0)}
-                                                                                                    end={losses}
-                                                                                                    duration={1}
-                                                                                                    style={{
-                                                                                                        color: rightColor,
-                                                                                                        fontSize: "36px",
-                                                                                                        textShadow: rightGlow
-                                                                                                            ? `
-                                                                                                            0 0 6px ${rightColor},
-                                                                                                            0 0 14px ${rightColor}66,
-                                                                                                            0 2px 6px rgba(0,0,0,0.4)
-                                                                                                        `
-                                                                                                            : "none",
-                                                                                                    }}
-                                                                                                />
-                                                                                            </span>
-                                                                                        )}
-
-                                                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: isBo1Modal ? "26px" : "0px" }}>
-                                                                                            <span
-                                                                                                className={css.info_text}
-                                                                                                style={{
-                                                                                                    fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                    color: rightColor,
-                                                                                                    opacity: firstHalfRightStyle.opacity,
-                                                                                                    textShadow: firstHalfRightStyle.textShadow,
-                                                                                                    height: isBo1Modal ? "17px" : "16px"
-                                                                                                }}
-                                                                                            >
-                                                                                                {firstHalfRight}
-                                                                                            </span>
-
-                                                                                            <span
-                                                                                                className={css.info_text}
-                                                                                                style={{
-                                                                                                    fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                    color: rightColor,
-                                                                                                    opacity: secondHalfRightStyle.opacity,
-                                                                                                    textShadow: secondHalfRightStyle.textShadow,
-                                                                                                    height: isBo1Modal ? "17px" : "16px"
-                                                                                                }}
-                                                                                            >
-                                                                                                {secondHalfRight}
-                                                                                            </span>
-
-                                                                                            {hasOvertime && (
-                                                                                                <span
-                                                                                                    className={css.info_text}
-                                                                                                    style={{
-                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                        color: rightColor,
-                                                                                                        opacity: otRightStyle.opacity,
-                                                                                                        textShadow: otRightStyle.textShadow,
-                                                                                                        height: isBo1Modal ? "17px" : "16px"
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {otRight}
-                                                                                                </span>
-                                                                                            )}
-
-                                                                                            {hasExtendedRounds && (
-                                                                                                <div className={css.dashed_divider} style={{ zIndex: 3, width: "200%", marginTop: "2px", marginBottom: "2px", opacity: 0 }} />
-                                                                                            )}
-
-                                                                                            {hasExtendedRounds && (
-                                                                                                <span
-                                                                                                    className={css.info_text}
-                                                                                                    style={{
-                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                        color: rightColor,
-                                                                                                        opacity: erRightStyle.opacity,
-                                                                                                        textShadow: erRightStyle.textShadow,
-                                                                                                        height: isBo1Modal ? "17px" : "16px",
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {extendedRoundRightScore}
-                                                                                                </span>
-                                                                                            )}
-
-                                                                                            {extendedRounds?.penalties && (
-                                                                                                <span
-                                                                                                    className={css.info_text}
-                                                                                                    style={{
-                                                                                                        fontSize: isBo1Modal ? "14px" : "12px",
-                                                                                                        color: rightColor,
-                                                                                                        opacity: pensRightStyle.opacity,
-                                                                                                        textShadow: pensRightStyle.textShadow,
-                                                                                                        height: isBo1Modal ? "17px" : "16px"
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {extendedRounds.penalties.rightScore}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </li>
-                                                                            );
-                                                                        }
-                                                                    )}
-                                                                </ul>
-                                                            </motion.div>
-                                                        );
-                                                    })()}
-                                                </>
-                                            </>
-                                        );
-                                    })()}
-                            </motion.div>
-                        </div>
-
-                        <AnimatePresence>
-                            {breakdownSetIndex !== null &&
-                                (() => {
-                                    const {
-                                        leftTeam: modalPlayedLeft,
-                                        rightTeam: modalPlayedRight,
-                                    } = getPickOrientedModalView(
-                                        currentModalMatch,
-                                        isBo1Modal
-                                    );
-
-                                    return (
-                                        <SetBreakdownOverlay
-                                            sets={currentModalMatch?.setHistory ?? []}
-                                            index={breakdownSetIndex}
-                                            onIndexChange={setBreakdownSetIndex}
-                                            onClose={() => setBreakdownSetIndex(null)}
-                                            leftTeam={modalPlayedLeft}
-                                            rightTeam={modalPlayedRight}
-                                            bestOf={modalBestOf}
-                                            stageLabel={
-                                                modalContext.type !== "playoffs"
-                                                    ? modalStageSmallLabel
-                                                    : null
-                                            }
-                                            matchTitle={modalTitle}
-                                            matchNumber={
-                                                modalContext.stage !== "gf" &&
-                                                    modalContext.stage !== "thirdPlace"
-                                                    ? modalMatchNumber
-                                                    : null
-                                            }
-                                            isPlayoffs={modalContext.type === "playoffs"}
-                                            pointLabelText={breakdownPointLabel}
-                                        />
-                                    );
-                                })()}
-                        </AnimatePresence>
-                    </motion.div>
-                )}
                 {showTournamentIntro && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
@@ -14941,6 +17056,7 @@ function SpecialModePage() {
                     </div>
                 )}
             </div>
+            {matchModalNode}
         </>
     );
 }

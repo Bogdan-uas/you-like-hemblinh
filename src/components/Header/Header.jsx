@@ -10,6 +10,8 @@ const Header = ({
     setIsScoreBoardResetModalOpen,
     isIntroClosed = false,
     isLeaderboardOpen = false,
+    isHallOfFameOpen = false,
+    setIsHallOfFameClose,
     isButtonLocked = false,
     isScoreBoardButtonLocked,
     setIsAddTournamentPlacingsModalOpen,
@@ -19,9 +21,7 @@ const Header = ({
     onInfoPage,
 }) => {
     const armedStyle = { opacity: 1, pointerEvents: "auto" };
-
     const unarmedStyle = { opacity: 0, pointerEvents: "auto", cursor: "default" };
-
     const fullyHidden = { opacity: 0, pointerEvents: "none" };
 
     return (
@@ -35,6 +35,7 @@ const Header = ({
                 >
                     Restart the game?
                 </button>
+
                 <button
                     className={`${css.restart_button} ${isButtonLocked ? css.locked : ""}`}
                     onClick={setIsTerminateModalOpen}
@@ -43,7 +44,16 @@ const Header = ({
                 >
                     Terminate the game?
                 </button>
-                {isLeaderboardOpen ? (
+
+                {isHallOfFameOpen ? (
+                    <button
+                        className={css.gamble_button}
+                        onClick={setIsHallOfFameClose}
+                        style={{ pointerEvents: isGameWon ? "none" : "auto", marginLeft: "64px" }}
+                    >
+                        Close Hall of Fame
+                    </button>
+                ) : isLeaderboardOpen ? (
                     <div className={css.bottom_buttons}>
                         <button
                             className={`${css.gamble_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}
@@ -53,6 +63,7 @@ const Header = ({
                         >
                             Close leaderboard?
                         </button>
+
                         <button
                             className={`${css.restart_button} ${isScoreBoardResetButtonLocked ? css.locked : ""}`}
                             onClick={setIsScoreBoardResetModalOpen}
@@ -85,7 +96,7 @@ const Header = ({
                     </button>
                 ) : null}
 
-                {isLeaderboardOpen ? (
+                {isLeaderboardOpen && !isHallOfFameOpen ? (
                     <>
                         <button
                             className={`${css.restart_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}

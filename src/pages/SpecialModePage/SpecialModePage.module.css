@@ -1418,6 +1418,107 @@
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
 }
 
+.cardOfficial {
+    border: none;
+    outline: 2px solid #ffe02d;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.9);
+}
+
+*.cardOfficial:hover {
+    background: #b3b3b3;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+
+.cardPickemWin,
+.cardPickemWin {
+    position: relative;
+}
+
+.cardPickemWin::before,
+.cardPickemWin::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: all 500ms ease-in-out;
+    border-radius: 16px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cardPickemWin {
+    border: 2px solid #006a32;
+    background: linear-gradient(0deg, #80fdb6 0%, #ffffff 90%) !important;
+}
+
+.cardPickemWin {
+    border: 2px solid #006a32;
+    background: linear-gradient(180deg, #80fdb6 0%, #ffffff 90%) !important;
+}
+
+.cardPickemWin::before {
+    background: linear-gradient(0deg, #50ff9c 0%, #f8fffb 100%);
+}
+
+.cardPickemWin::before {
+    background: linear-gradient(180deg, #50ff9c 0%, #f8fffb 100%);
+}
+
+.cardPickemWin:hover::before,
+.cardPickemWin:hover::before {
+    opacity: 1;
+}
+
+.cardPickemWin>*,
+.cardPickemWin>* {
+    z-index: 1;
+}
+
+.cardPickemLoss,
+.cardPickemLoss {
+    position: relative;
+}
+
+.cardPickemLoss::before,
+.cardPickemLoss::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: all 500ms ease-in-out;
+    border-radius: 16px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cardPickemLoss {
+    border: 2px solid rgb(188, 108, 108);
+    background: linear-gradient(0deg, #ffbfbf 0%, #ffffff 90%) !important;
+}
+
+.cardPickemLoss {
+    border: 2px solid rgb(188, 108, 108);
+    background: linear-gradient(180deg, #ffbfbf 0%, #ffffff 90%) !important;
+}
+
+.cardPickemLoss::before {
+    background: linear-gradient(0deg, #fd8080 0%, #fff8f8 100%);
+}
+
+.cardPickemLoss::before {
+    background: linear-gradient(180deg, #fd8080 0%, #fff8f8 100%);
+}
+
+.cardPickemLoss:hover::before,
+.cardPickemLoss:hover::before {
+    opacity: 1;
+}
+
+.cardPickemLoss>*,
+.cardPickemLoss>* {
+    z-index: 1;
+}
+
 .match_rect.match_current,
 .quarters_rect.match_current,
 .semis_rect.match_current,
@@ -2466,6 +2567,26 @@
     transform: translate(-50%, -50%);
 }
 
+.hallOfFameSuccessPickemIndicator {
+    position: absolute;
+    top: -12%;
+    left: 94%;
+    z-index: 4;
+    opacity: 1;
+}
+
+.hallOfFameSuccessPickemIndicator svg:first-child {
+    filter:
+        drop-shadow(0 0 1px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+}
+
+.hallOfFameSuccessPickemIndicator svg:last-child {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    transform: translate(-50%, -50%);
+}
+
 .modalSuccessPickemIndicator {
     position: absolute;
     top: -2.5%;
@@ -2701,4 +2822,13 @@
 
 .arrowToAnotherSet:hover {
     color: #505050;
+}
+
+.hidden_scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hidden_scrollbar::-webkit-scrollbar {
+    display: none;
 }
