@@ -2832,3 +2832,20 @@
 .hidden_scrollbar::-webkit-scrollbar {
     display: none;
 }
+
+.second_header {
+    position: sticky;
+    top: 5vh;
+    width: 200%;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(255, 255, 255, 0.92) 80%,
+            rgba(255, 255, 255, 0.55) 90%,
+            rgba(255, 255, 255, 0) 100%);
+}

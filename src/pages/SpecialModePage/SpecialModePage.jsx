@@ -3773,6 +3773,7 @@ function SpecialModePage() {
     const [hallManagerCode, setHallManagerCode] = useState("");
     const [hallManagerMode, setHallManagerMode] = useState("");
     const [hallManagerTargetId, setHallManagerTargetId] = useState("");
+    const [hallManagerTargetIds, setHallManagerTargetIds] = useState([]);
     const [hallManagerForm, setHallManagerForm] = useState(null);
     const [hallPickerField, setHallPickerField] = useState("");
     const [hallTeamSortMode, setHallTeamSortModeState] = useState(() => {
@@ -3837,10 +3838,6 @@ function SpecialModePage() {
     const hallScrollTargetRef = useRef(0);
     const hallScrollFrameRef = useRef(null);
 
-    // --- Drag-to-scroll ("grab and pull", like on a phone) -------------------
-    // Added alongside the Lenis-style smooth wheel scrolling below, not instead of it.
-    // Mouse and pen only: real touch devices already do this natively, and hijacking
-    // touch here would fight the browser's own momentum scrolling.
     const hallDragRef = useRef({
         isDown: false,
         isDragging: false,
@@ -3854,7 +3851,6 @@ function SpecialModePage() {
     const hallMomentumFrameRef = useRef(null);
     const hallSuppressClickRef = useRef(false);
 
-    // How far the cursor has to travel before it counts as a pull instead of a click.
     const HALL_DRAG_THRESHOLD = 4;
 
     const stopHallMomentum = () => {
@@ -3871,12 +3867,10 @@ function SpecialModePage() {
         }
     };
 
-    // Throw the list based on how hard the pointer was moving when it was released.
     const startHallMomentum = (releaseVelocity) => {
         const container = hallScrollRef.current;
         if (!container) return;
 
-        // releaseVelocity is px per millisecond; turn it into px per frame.
         let velocity = releaseVelocity * 16;
 
         if (Math.abs(velocity) < 0.4) {
@@ -3921,7 +3915,6 @@ function SpecialModePage() {
         if (e.pointerType === "touch") return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
 
-        // A fresh grab always takes over from whatever was still gliding.
         stopHallMomentum();
         stopHallWheelGlide();
 
@@ -3951,7 +3944,6 @@ function SpecialModePage() {
             if (Math.abs(travelled) < HALL_DRAG_THRESHOLD) return;
 
             drag.isDragging = true;
-            // Swallow the click that would otherwise open a card at the end of the pull.
             hallSuppressClickRef.current = true;
             container.style.cursor = "grabbing";
             container.style.userSelect = "none";
@@ -3959,7 +3951,7 @@ function SpecialModePage() {
             try {
                 container.setPointerCapture(e.pointerId);
             } catch {
-                // Pointer capture is a nicety, not a requirement.
+                // ignore
             }
         }
 
@@ -3978,7 +3970,6 @@ function SpecialModePage() {
         const elapsed = now - drag.lastTime;
 
         if (elapsed > 0) {
-            // Positive velocity means the content is moving the same way scrollLeft grows.
             const instant = (drag.lastX - e.clientX) / elapsed;
             drag.velocity = drag.velocity * 0.7 + instant * 0.3;
             drag.lastX = e.clientX;
@@ -4001,7 +3992,7 @@ function SpecialModePage() {
                     container.releasePointerCapture(drag.pointerId);
                 }
             } catch {
-                // Nothing to release.
+                // ignore
             }
         }
 
@@ -4013,7 +4004,6 @@ function SpecialModePage() {
         drag.pointerId = null;
         drag.velocity = 0;
 
-        // If the pointer went idle before release, don't throw the list.
         const wentStale = performance.now() - drag.lastTime > 90;
 
         if (!wasDragging || !container) return;
@@ -4025,7 +4015,6 @@ function SpecialModePage() {
         startHallMomentum(releaseVelocity);
     };
 
-    // A pull ends with a click on whichever card was under the cursor, so eat that one.
     const handleHallClickCapture = (e) => {
         if (!hallSuppressClickRef.current) return;
 
@@ -4038,7 +4027,6 @@ function SpecialModePage() {
         const container = hallScrollRef.current;
         if (!container) return;
 
-        // A wheel nudge interrupts an in-flight throw rather than fighting it.
         if (hallMomentumFrameRef.current) {
             stopHallMomentum();
             hallScrollTargetRef.current = container.scrollLeft;
@@ -4881,6 +4869,7 @@ function SpecialModePage() {
         setHallManagerCode("");
         setHallManagerMode("");
         setHallManagerTargetId("");
+        setHallManagerTargetIds([]);
         setHallManagerForm(null);
         setHallPickerField("");
     };
@@ -4933,13 +4922,17 @@ function SpecialModePage() {
     };
 
     const handleHallManagerSelectConfirm = () => {
-        if (!hallManagerTargetId) return;
-        setIsHallManagerSelectModalOpen(false);
-
         if (hallManagerMode === "delete") {
+            if (hallManagerTargetIds.length === 0) return;
+
+            setIsHallManagerSelectModalOpen(false);
             setIsHallManagerFinalModalOpen(true);
             return;
         }
+
+        if (!hallManagerTargetId) return;
+
+        setIsHallManagerSelectModalOpen(false);
 
         const record = hallOfFame.find((item) => item.id === hallManagerTargetId);
         setHallManagerForm(hallRecordToForm(record));
@@ -4947,7 +4940,6 @@ function SpecialModePage() {
     };
 
     const HALL_PLACEMENT_KEYS = ["winner", "second", "third", "fourth", "rest"];
-    // A team starts the tournament at exactly one stage, so these three lists never overlap.
     const HALL_SEED_KEYS = ["stage1", "stage2Auto", "stage3Auto"];
 
     const getHallPickAccess = (form, fieldKey, teamId) => {
@@ -5228,14 +5220,29 @@ function SpecialModePage() {
         }
 
         if (hallManagerMode === "delete") {
-            const id = hallManagerTargetId;
-            deleteHallTournament(id)
+            const ids = [...hallManagerTargetIds];
+            const idSet = new Set(ids);
+
+            Promise.all(ids.map((id) => deleteHallTournament(id)))
                 .then(() => {
-                    setHallOfFame((prev) => prev.filter((item) => item.id !== id));
-                    setSelectedHallTournament((prev) => (prev?.id === id ? null : prev));
-                    toast.success("Tournament deleted from the Hall of Fame.");
+                    setHallOfFame((prev) =>
+                        prev.filter((item) => !idSet.has(item.id))
+                    );
+
+                    setSelectedHallTournament((prev) =>
+                        prev && idSet.has(prev.id) ? null : prev
+                    );
+
+                    toast.success(
+                        ids.length === 1
+                            ? "Tournament deleted from the Hall of Fame."
+                            : `${ids.length} tournaments deleted from the Hall of Fame.`
+                    );
                 })
-                .catch(() => toast.error("Couldn't delete this tournament."));
+                .catch(() =>
+                    toast.error("Couldn't delete the selected tournaments.")
+                );
+
             closeHallManagerModals();
             return;
         }
@@ -8345,9 +8352,17 @@ function SpecialModePage() {
                 );
             }
             if (hallManagerMode === "delete") {
+                const count = hallManagerTargetIds.length;
+
                 return (
                     <>
-                        Are you sure you want to delete <b>this tournament</b> from the Hall of Fame? <br />
+                        Are you sure you want to delete{" "}
+                        <b>
+                            {count === 1
+                                ? "this tournament"
+                                : `these ${count} tournaments`}
+                        </b>{" "}
+                        from the Hall of Fame? <br />
                         <strong>You will NOT be able to revert this action!</strong>
                     </>
                 );
@@ -8426,32 +8441,97 @@ function SpecialModePage() {
                 )}
 
                 {isHallManagerSelectModalOpen && (
-                    <div className={css.restart_modal} style={{ width: "520px" }}>
+                    <div className={css.restart_modal} style={{ width: "520px", top: hallManagerMode === "delete" ? "12%" : "" }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
-                            Which tournament?
+                            {hallManagerMode === "delete" ? "Which tournaments?" : "Which tournament?"}
                         </p>
 
-                        <select
-                            className={css.reset_input}
-                            style={{ width: "80%" }}
-                            value={hallManagerTargetId}
-                            onChange={(e) => setHallManagerTargetId(e.target.value)}
-                        >
-                            <option value=""></option>
-                            {hallOfFame.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                    {getTournamentTypeConfig(item.type).label} #{item.number}
-                                </option>
-                            ))}
-                        </select>
+                        {hallManagerMode === "delete" ? (
+                            <div
+                                ref={hallManagerScrollRef}
+                                className={css.hidden_scrollbar}
+                                style={{
+                                    width: "80%",
+                                    height: "120px",
+                                    overflowY: "auto",
+                                    overflowX: "hidden",
+                                    border: "1px solid #999",
+                                    borderRadius: 8,
+                                    padding: "8px 10px",
+                                    marginBottom: "8px",
+                                    boxSizing: "border-box",
+                                }}
+                            >
+                                {hallOfFame.map((item) => {
+                                    const checked = hallManagerTargetIds.includes(item.id);
+
+                                    return (
+                                        <label
+                                            key={item.id}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 10,
+                                                padding: "8px 4px",
+                                                cursor: "pointer",
+                                                userSelect: "none",
+                                            }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() => {
+                                                    setHallManagerTargetIds((prev) =>
+                                                        checked
+                                                            ? prev.filter((id) => id !== item.id)
+                                                            : [...prev, item.id]
+                                                    );
+                                                }}
+                                            />
+
+                                            <span>
+                                                {getTournamentTypeConfig(item.type).label} #{item.number}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <select
+                                className={css.reset_input}
+                                style={{ width: "80%" }}
+                                value={hallManagerTargetId}
+                                onChange={(e) => setHallManagerTargetId(e.target.value)}
+                            >
+                                <option value=""></option>
+                                {hallOfFame.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {getTournamentTypeConfig(item.type).label} #{item.number}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
 
                         <div className={css.restart_buttons}>
-                            <button className={css.cancel_button} onClick={closeHallManagerModals}>
+                            <button
+                                className={css.cancel_button}
+                                onClick={closeHallManagerModals}
+                            >
                                 Cancel
                             </button>
+
                             <button
-                                className={`${css.confirm_button} ${!hallManagerTargetId ? css.locked : ""}`}
-                                disabled={!hallManagerTargetId}
+                                className={`${css.confirm_button} ${(hallManagerMode === "delete"
+                                        ? hallManagerTargetIds.length === 0
+                                        : !hallManagerTargetId)
+                                        ? css.locked
+                                        : ""
+                                    }`}
+                                disabled={
+                                    hallManagerMode === "delete"
+                                        ? hallManagerTargetIds.length === 0
+                                        : !hallManagerTargetId
+                                }
                                 onClick={handleHallManagerSelectConfirm}
                             >
                                 Confirm
@@ -9061,29 +9141,82 @@ function SpecialModePage() {
                         type="button"
                         className={css.gamble_button}
                         onClick={() => setSelectedHallTournament(null)}
-                        style={{ position: "fixed", top: "7%", left: "2%", zIndex: 6 }}
+                        style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                     >
                         Back to Hall of Fame
                     </button>
 
-                    <h2 style={{ fontStyle: "oblique" }} className={css.game_title}>
-                        {renderTournamentLabelFor(record.type, record.number)}
-                    </h2>
-                    <div className={css.info_text} style={{ textAlign: "center", width: "max-content" }}>
-                        <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800, fontSize: "28px", display: "inline-block", marginBottom: "12px", marginTop: "6px" }}>
-                            {record.pickemWon ? "Challenge won" : "Challenge lost"}
-                        </span> <br />
-                        <i><span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span> needed Pick&apos;em points</i> <br />
-                        <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
-                        <i>
-                            <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
-                                {record.achievedPickemPoints}{" "}
+                    <div className={css.second_header}>
+                        <h2 style={{ fontStyle: "oblique" }} className={css.game_title}>
+                            {renderTournamentLabelFor(record.type, record.number)}
+                        </h2>
+                        <div
+                            className={css.info_text}
+                            style={{
+                                textAlign: "center",
+                                width: "max-content",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                    fontWeight: 800,
+                                    fontSize: "28px",
+                                    display: "inline-block",
+                                    marginBottom: "12px",
+                                    marginTop: "6px",
+                                }}
+                            >
+                                {record.pickemWon ? "Challenge won" : "Challenge lost"}
                             </span>
-                            achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? 's' : ''}
-                            <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
-                                ({record.achievedPickemPoints - record.neededPickemPoints > 0 && record.achievedPickemPoints - record.neededPickemPoints !== 0 ? '+' : ''}{record.achievedPickemPoints - record.neededPickemPoints})
-                            </span>
-                        </i> <br />
+                            <br />
+                            <i>
+                                <span style={{ fontWeight: 900 }}>
+                                    {record.neededPickemPoints}
+                                </span>{" "}
+                                needed Pick&apos;em points
+                            </i>
+                            <br />
+                            <hr
+                                style={{
+                                    margin: "0",
+                                    marginTop: "2px",
+                                }}
+                                className={css.divider}
+                            />
+                            <i>
+                                <span
+                                    style={{
+                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                        fontWeight: 900,
+                                    }}
+                                >
+                                    {record.achievedPickemPoints}{" "}
+                                </span>
+                                achieved Pick&apos;em point
+                                {record.achievedPickemPoints !== 1 ? "s" : ""}
+                                <span
+                                    style={{
+                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    (
+                                    {record.achievedPickemPoints -
+                                        record.neededPickemPoints >
+                                        0 &&
+                                        record.achievedPickemPoints -
+                                        record.neededPickemPoints !==
+                                        0
+                                        ? "+"
+                                        : ""}
+                                    {record.achievedPickemPoints -
+                                        record.neededPickemPoints}
+                                    )
+                                </span>
+                            </i>
+                            <br />
+                        </div>
                     </div>
 
                     <HallOfFameSectionTitle text="Tournament start" />
@@ -15621,9 +15754,6 @@ function SpecialModePage() {
         </motion.div>
     ) : null;
 
-    // Render the Hall of Fame in one consistent place whether or not the archived match
-    // modal is open. Previously the modal forced this branch to be skipped, which moved the
-    // whole Hall of Fame tree into a different container and reset the scroll position.
     if (isHallOfFameOpen) {
         return (
             <>
@@ -17145,4 +17275,4 @@ function SpecialModePage() {
     );
 }
 
-export default SpecialModePage; 
+export default SpecialModePage;
