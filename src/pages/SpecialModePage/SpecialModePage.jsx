@@ -8285,7 +8285,7 @@ function SpecialModePage() {
                         fontStyle: "oblique"
                     }}
                 >
-                    <span style={{ position: "absolute", width: "max-content", transform: "translateX(-50%)", left: "50%", bottom: "42px" }}>{renderTournamentLabelFor(item.type, item.number)}</span>
+                    <span style={{ position: "absolute", width: "300px", textAlign: "center", transform: "translateX(-50%)", left: "50%", bottom: "42px" }}>{renderTournamentLabelFor(item.type, item.number)}</span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14, position: "relative" }}>
