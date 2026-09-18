@@ -8299,7 +8299,15 @@ function SpecialModePage() {
                     </span>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14, position: "relative" }}>
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        marginTop: 14,
+                        position: "relative"
+                    }}
+                >
                     <span
                         className={css.finished_modal_team_label}
                         style={{
@@ -8533,10 +8541,10 @@ function SpecialModePage() {
 
                             <button
                                 className={`${css.confirm_button} ${(hallManagerMode === "delete"
-                                        ? hallManagerTargetIds.length === 0
-                                        : !hallManagerTargetId)
-                                        ? css.locked
-                                        : ""
+                                    ? hallManagerTargetIds.length === 0
+                                    : !hallManagerTargetId)
+                                    ? css.locked
+                                    : ""
                                     }`}
                                 disabled={
                                     hallManagerMode === "delete"
