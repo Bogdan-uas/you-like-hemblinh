@@ -25,6 +25,11 @@ import GradientDiamond from "../../components/GradientIcon/GradientDiamond.jsx";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Lenis from "lenis";
 
+const { usage, quota } = await navigator.storage.estimate();
+
+console.log(`Used: ${(usage / 1024 / 1024).toFixed(2)} MB`);
+console.log(`Quota: ${(quota / 1024 / 1024 / 1024).toFixed(2)} GB`);
+
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
 const STORAGE_KEY = "specialPageState_swiss_v2";
@@ -4476,7 +4481,7 @@ function SpecialModePage() {
         isTournamentNumberModalOpen ||
         isTournamentNumberFinalModalOpen ||
         isLocked;
-    
+
     const isScoreBoardResetButtonLocked =
         (isScoreboardAlreadyDefault && isTournamentNumberAlreadyDefault) ||
         isTerminateModalOpen ||
@@ -8880,7 +8885,7 @@ function SpecialModePage() {
                 displayMatch.pickTeamId &&
                 displayMatch.winnerTeamId &&
                 displayMatch.pickTeamId === displayMatch.winnerTeamId;
-            
+
             const shouldSwap =
                 !!displayMatch.pickTeamId &&
                 displayMatch.slotA &&
