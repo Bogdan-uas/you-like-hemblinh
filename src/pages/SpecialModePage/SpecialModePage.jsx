@@ -4,7 +4,7 @@ import CountUp from "react-countup";
 import css from "./SpecialModePage.module.css";
 import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import toast from "react-hot-toast";
 import { FaTrophy } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
@@ -3647,6 +3647,141 @@ const ANNIVERSARY_THEMES = [
     },
 ];
 
+const PICKEM_PLAYOFF_KEYS = ["ro16", "qf", "sf", "tpd", "gf"];
+const PICKEM_STEP_MS = 1000;
+const PICKEM_INTRO_SCALE = 8;
+const PICKEM_INTRO_HOLD_S = 0.5;
+const PICKEM_INTRO_MOVE_S = 1.4;
+const PICKEM_WIN_COUNT_MS = 30000;
+const PICKEM_LOSS_COUNT_MS = 10000;
+const PICKEM_SLOWDOWN = 4;
+const PICKEM_SNAP_DELAY_MS = 500;
+
+const PickemAchievedCounter = ({ run, instant, finalPoints, neededPoints, onSettled, className, style }) => {
+    const anchorRef = useRef(null);
+    const controls = useAnimation();
+    const onSettledRef = useRef(onSettled);
+    const [display, setDisplay] = useState(() => (instant ? finalPoints : 0));
+
+    useEffect(() => {
+        onSettledRef.current = onSettled;
+    });
+
+    useEffect(() => {
+        if (!run) {
+            setDisplay(0);
+            controls.set({ opacity: 0, x: 0, y: 0, scale: 1 });
+            return undefined;
+        }
+
+        if (instant) {
+            controls.set({ opacity: 1, x: 0, y: 0, scale: 1 });
+            setDisplay(finalPoints);
+            onSettledRef.current?.();
+            return undefined;
+        }
+
+        let cancelled = false;
+        let rafId = 0;
+        let snapTimer = 0;
+
+        const needed = neededPoints;
+        const final = finalPoints;
+        const won = final >= needed;
+        const endValue = won ? needed : final;
+        const duration = won ? PICKEM_WIN_COUNT_MS : PICKEM_LOSS_COUNT_MS;
+        const qEnd = endValue > 0 && needed > 0
+            ? 1 - Math.pow(1 - endValue / needed, 1 / PICKEM_SLOWDOWN)
+            : 0;
+        const valueAt = (t) => {
+            const q = qEnd * Math.min(t / duration, 1);
+            return needed * (1 - Math.pow(1 - q, PICKEM_SLOWDOWN));
+        };
+
+        const finish = () => {
+            if (won) {
+                snapTimer = setTimeout(() => {
+                    if (cancelled) return;
+                    setDisplay(final);
+                    onSettledRef.current?.();
+                }, PICKEM_SNAP_DELAY_MS);
+            } else {
+                onSettledRef.current?.();
+            }
+        };
+
+        const startCounting = () => {
+            if (qEnd === 0) {
+                setDisplay(final);
+                finish();
+                return;
+            }
+            const startTime = performance.now();
+            let last = -1;
+            const tick = (now) => {
+                if (cancelled) return;
+                const t = now - startTime;
+                const done = t >= duration;
+                const value = done ? endValue : Math.floor(valueAt(t) + 1e-6);
+                if (value !== last) {
+                    last = value;
+                    setDisplay(value);
+                }
+                if (done) finish();
+                else rafId = requestAnimationFrame(tick);
+            };
+            rafId = requestAnimationFrame(tick);
+        };
+
+        const playIntro = async () => {
+            const rect = anchorRef.current.getBoundingClientRect();
+            const dx = window.innerWidth / 2 - (rect.left + rect.width / 2);
+            const dy = window.innerHeight / 2 - (rect.top + rect.height / 2);
+
+            controls.set({ opacity: 0, x: dx, y: dy, scale: PICKEM_INTRO_SCALE });
+            await controls.start({ opacity: 1, transition: { duration: 0.4 } });
+            if (cancelled) return;
+            await controls.start({
+                x: 0,
+                y: 0,
+                scale: 1,
+                transition: { delay: PICKEM_INTRO_HOLD_S, duration: PICKEM_INTRO_MOVE_S, ease: [0.22, 1, 0.36, 1] },
+            });
+            if (cancelled) return;
+            startCounting();
+        };
+        playIntro();
+
+        return () => {
+            cancelled = true;
+            cancelAnimationFrame(rafId);
+            clearTimeout(snapTimer);
+            controls.stop();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [run]);
+
+    return (
+        <span ref={anchorRef} style={{ display: "inline-block" }}>
+            <motion.span
+                animate={controls}
+                initial={{ opacity: instant ? 1 : 0, x: 0, y: 0, scale: 1 }}
+                className={className}
+                style={{
+                    display: "inline-block",
+                    position: "relative",
+                    zIndex: 1000,
+                    fontVariantNumeric: "tabular-nums",
+                    minWidth: `${String(finalPoints).length}ch`,
+                    ...style,
+                }}
+            >
+                {display}
+            </motion.span>
+        </span>
+    );
+};
+
 function SpecialModePage() {
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
@@ -3790,6 +3925,12 @@ function SpecialModePage() {
         }
     });
     const [selectedHallMatch, setSelectedHallMatch] = useState(null);
+
+    const [pickemSentenceStep, setPickemSentenceStep] = useState(0);
+    const [showPickemAchieved, setShowPickemAchieved] = useState(false);
+    const [pickemCountSettled, setPickemCountSettled] = useState(false);
+    const [showPickemButtons, setShowPickemButtons] = useState(false);
+    const [pickemSummarySeen, setPickemSummarySeen] = useState(false);
 
     useEffect(() => {
         readHallOfFame()
@@ -4541,6 +4682,7 @@ function SpecialModePage() {
             setShowPickemSummary(parsed.showPickemSummary ?? false);
             setShowPickemLine2(parsed.showPickemLine2 ?? false);
             setShowPickemResult(parsed.showPickemResult ?? false);
+            setPickemSummarySeen(parsed.pickemSummarySeen ?? (parsed.showPickemResult ?? false));
 
             setShowWinnersScreen(parsed.showWinnersScreen ?? false);
             setTournamentResults(parsed.tournamentResults ?? null);
@@ -4580,6 +4722,7 @@ function SpecialModePage() {
             showPickemSummary,
             showPickemLine2,
             showPickemResult,
+            pickemSummarySeen,
             showWinnersScreen,
             tournamentResults,
             showWinnerText,
@@ -4614,6 +4757,7 @@ function SpecialModePage() {
         showPickemSummary,
         showPickemLine2,
         showPickemResult,
+        pickemSummarySeen,
         showWinnersScreen,
         tournamentResults,
         showWinnerText,
@@ -5317,6 +5461,7 @@ function SpecialModePage() {
         setShowPickemSummary(false);
         setShowPickemLine2(false);
         setShowPickemResult(false);
+        setPickemSummarySeen(false);
 
         setShowWinnersScreen(false);
         setTournamentResults(null);
@@ -5400,6 +5545,7 @@ function SpecialModePage() {
         setShowPickemSummary(false);
         setShowPickemLine2(false);
         setShowPickemResult(false);
+        setPickemSummarySeen(false);
 
         setShowWinnersScreen(false);
         setTournamentResults(null);
@@ -7856,7 +8002,7 @@ function SpecialModePage() {
         }, 4200);
         return () => clearTimeout(t);
     }, [seriesState.active, seriesState.tiebreakerPhase, seriesState.tiebreakerBigSymbol]);
-
+    
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
 
@@ -7908,54 +8054,72 @@ function SpecialModePage() {
     ]);
 
     useEffect(() => {
-        if (!showPickemSummary) return;
+        if (!showPickemSummary || pickemSummarySeen) return;
+
+        const timers = [];
+        const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
         setShowPickemLine2(false);
         setShowPickemResult(false);
+        setShowPickemAchieved(false);
+        setPickemCountSettled(false);
+        setShowPickemButtons(false);
+        setPickemSentenceStep(0);
 
-        const t1 = setTimeout(() => setShowPickemLine2(true), 1200);
-        const t2 = setTimeout(() => setShowPickemResult(true), 2500);
+        const partsCount = 4 + PICKEM_PLAYOFF_KEYS.filter((key) => (guessedCounts?.[key] ?? 0) > 0).length;
+        const hasLossLine = (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0) !== 0;
+        const stepsCount = partsCount + (hasLossLine ? 1 : 0);
 
-        return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-        };
+        for (let step = 1; step <= stepsCount; step++) {
+            later(() => setPickemSentenceStep(step), 200 + (step - 1) * PICKEM_STEP_MS);
+        }
+        const sentenceDoneAt = 200 + (stepsCount - 1) * PICKEM_STEP_MS;
+
+        later(() => setShowPickemLine2(true), sentenceDoneAt + 1200);
+        later(() => setShowPickemAchieved(true), sentenceDoneAt + 1200 + 2400);
+
+        return () => timers.forEach(clearTimeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showPickemSummary]);
 
     useEffect(() => {
-        if (!showPickemSummary) return;
+        if (!showPickemSummary || !pickemCountSettled || pickemSummarySeen) return;
 
-        setShowPickemLine2(false);
-        setShowPickemResult(false);
-
-        const t1 = setTimeout(() => setShowPickemLine2(true), 1500);
-        const t2 = setTimeout(() => setShowPickemResult(true), 3000);
-
-        if (neededPickemPoints !== 67 && finalPickemPoints === 67 ||
-            neededPickemPoints !== 167 && finalPickemPoints === 167 ||
-            neededPickemPoints !== 267 && finalPickemPoints === 267 ||
-            neededPickemPoints !== 367 && finalPickemPoints === 367) {
-            setTimeout(() => {
-                toast("67?!...", {
-                    duration: 4000,
-                    icon: "🤯"
-                });
-            }, 3000);
-            setTimeout(() => {
-                setNeededPickemPoints(67);
-                toast("67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67...", {
-                    duration: 8000,
-                    icon: "6️⃣7️⃣"
-                });
-            }, 9000);
-        }
+        const t1 = setTimeout(() => setShowPickemResult(true), 2000);
+        const t2 = setTimeout(() => {
+            setShowPickemButtons(true);
+            setPickemSummarySeen(true);
+        }, 2000 + 5000);
 
         return () => {
             clearTimeout(t1);
             clearTimeout(t2);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showPickemSummary]);
+    }, [showPickemSummary, pickemCountSettled]);
+
+    useEffect(() => {
+        if (!showPickemSummary || !showPickemResult || !pickemCountSettled || pickemSummarySeen) return;
+
+        const isSixtySeven =
+            (neededPickemPoints !== 67 && finalPickemPoints === 67) ||
+            (neededPickemPoints !== 167 && finalPickemPoints === 167) ||
+            (neededPickemPoints !== 267 && finalPickemPoints === 267) ||
+            (neededPickemPoints !== 367 && finalPickemPoints === 367);
+        if (!isSixtySeven) return;
+
+        toast("67?!...", { duration: 4000, icon: "🤯" });
+        const t = setTimeout(() => {
+            setNeededPickemPoints(67);
+            toast("67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67...", {
+                duration: 8000,
+                icon: "6️⃣7️⃣",
+            });
+        }, 4000);
+
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showPickemSummary, showPickemResult]);
 
     const isPickemWin = finalPickemPoints >= neededPickemPoints;
 
@@ -7973,103 +8137,89 @@ function SpecialModePage() {
         navigate("/gambling");
     };
 
-    const buildPlayoffsSummaryNode = () => {
-        const chunks = [];
+    const buildPickemSentenceParts = () => {
+        const green = "#2e7d32";
+        const playoffKeys = PICKEM_PLAYOFF_KEYS.filter((key) => (guessedCounts?.[key] ?? 0) > 0);
+        const roundDefs = {
+            ro16: { total: 8, label: "Rounds of 16", awfulMax: 2 },
+            qf: { total: 4, label: "Quarterfinals", awfulMax: 1 },
+            sf: { total: 2, label: "Semifinals" },
+        };
+        const stageDefs = [
+            ["stage1", "Stage I"],
+            ["stage2", "Stage II"],
+            ["stage3", "Stage III"],
+        ];
 
-        const push = (node) => node && chunks.push(node);
+        const parts = [<>YOU guessed{" "}</>];
 
-        if (guessedCounts.ro16 > 0) {
-            const isPerfect = guessedCounts.ro16 === 8;
-            const isAwful = guessedCounts.ro16 <= 2;
-            push(
+        stageDefs.forEach(([key, label], idx) => {
+            const value = guessedCounts[key];
+            const isPerfect = value === 66;
+            const isAwful = value <= 13;
+            const needsComma = idx < stageDefs.length - 1 || playoffKeys.length > 0;
+            parts.push(
                 <>
-                    <span style={{ fontWeight: 900, color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined }}>
-                        {guessedCounts.ro16}/8
+                    <span style={{ fontWeight: 900, color: isPerfect ? green : isAwful ? "red" : undefined }}>
+                        {value}/66
                     </span>{" "}
-                    Rounds of 16
+                    matches in {label}{needsComma ? "," : ""}{" "}
                 </>
             );
-        }
-        if (guessedCounts.qf > 0) {
-            const isPerfect = guessedCounts.qf === 4;
-            const isAwful = guessedCounts.qf <= 1;
-            push(
+        });
+
+        playoffKeys.forEach((key, idx) => {
+            const isLast = idx === playoffKeys.length - 1;
+            const isSecondLast = idx === playoffKeys.length - 2;
+            const value = guessedCounts[key];
+
+            let node;
+            if (key === "tpd") {
+                node = <span style={{ fontWeight: 900, color: green }}>the Third Place Decider</span>;
+            } else if (key === "gf") {
+                node = <span style={{ fontWeight: 900, color: green }}>the Grand Final</span>;
+            } else {
+                const { total, label, awfulMax } = roundDefs[key];
+                node = (
+                    <>
+                        <span style={{ fontWeight: 900, color: value === total ? green : awfulMax !== undefined && value <= awfulMax ? "red" : undefined }}>
+                            {value}/{total}
+                        </span>{" "}
+                        {label}
+                    </>
+                );
+            }
+
+            parts.push(
                 <>
-                    <span style={{ fontWeight: 900, color: isPerfect ? "#2e7d32" : isAwful ? "red" : undefined }}>
-                        {guessedCounts.qf}/4
-                    </span>{" "}
-                    Quarterfinals
+                    {isLast && playoffKeys.length > 1 ? "and " : ""}
+                    {node}
+                    {!isLast && !isSecondLast ? ", " : " "}
                 </>
             );
-        }
-        if (guessedCounts.sf > 0) {
-            const isPerfect = guessedCounts.sf === 2;
-            push(
-                <>
-                    <span style={{ fontWeight: 900, color: isPerfect ? "#2e7d32" : undefined }}>
-                        {guessedCounts.sf}/2
-                    </span>{" "}
-                    Semifinals
-                </>
-            );
-        }
-        if (guessedCounts.tpd > 0) {
-            push(<span style={{ fontWeight: 900, color: "#2e7d32" }}>the Third Place Decider</span>);
-        }
-        if (guessedCounts.gf > 0) {
-            push(<span style={{ fontWeight: 900, color: "#2e7d32" }}>the Grand Final</span>);
-        }
+        });
 
-        if (chunks.length === 0) return null;
-
-        return (
-            <>
-                {chunks.map((node, idx) => {
-                    const isLast = idx === chunks.length - 1;
-                    const isSecondLast = idx === chunks.length - 2;
-                    return (
-                        <React.Fragment key={idx}>
-                            {isLast && chunks.length > 1 ? "and " : ""}
-                            {node}
-                            {!isLast && !isSecondLast ? ", " : " "}
-                        </React.Fragment>
-                    );
-                })}
-            </>
-        );
+        return parts;
     };
-
-    const buildPickemSentence = () => {
-        const s1Awful = guessedCounts.stage1 <= 13;
-        const s2Awful = guessedCounts.stage2 <= 13;
-        const s3Awful = guessedCounts.stage3 <= 13;
-
-        const s1Perfect = guessedCounts.stage1 === 66;
-        const s2Perfect = guessedCounts.stage2 === 66;
-        const s3Perfect = guessedCounts.stage3 === 66;
-
-        return (
-            <>
-                YOU guessed{" "}
-                <span style={{ fontWeight: 900, color: s1Perfect ? "#2e7d32" : s1Awful ? "red" : undefined }}>
-                    {guessedCounts.stage1}/66
-                </span>{" "}
-                matches in Stage I,{" "}
-                <span style={{ fontWeight: 900, color: s2Perfect ? "#2e7d32" : s2Awful ? "red" : undefined }}>
-                    {guessedCounts.stage2}/66
-                </span>{" "}
-                matches in Stage II,{" "}
-                <span style={{ fontWeight: 900, color: s3Perfect ? "#2e7d32" : s3Awful ? "red" : undefined }}>
-                    {guessedCounts.stage3}/66
-                </span>{" "}
-                matches in Stage III,{" "}
-                {buildPlayoffsSummaryNode()}
-            </>
-        );
-    };
+    
+    const buildPickemSentence = () =>
+        buildPickemSentenceParts().map((part, idx) => (
+            <span
+                key={idx}
+                style={{ opacity: pickemSummarySeen || pickemSentenceStep > idx ? 1 : 0, transition: "opacity 0.8s ease" }}
+            >
+                {part}
+            </span>
+        ));
 
     const handleProceed = () => {
         recomputePickemTotals();
+        if (!pickemSummarySeen) {
+            setPickemSentenceStep(0);
+            setShowPickemAchieved(false);
+            setPickemCountSettled(false);
+            setShowPickemButtons(false);
+        }
         setShowPickemSummary(true);
     };
 
@@ -8836,50 +8986,10 @@ function SpecialModePage() {
             ["gf", "Grand Final", css.grandFinal_rect, css.columnGrandFinal],
         ];
 
-        const naturalRo16Pairs = !record.custom
-            ? (() => {
-                const playoffTeams = record.qualifiers?.playoffs || [];
-                const stage3ById = new Map(
-                    (record.stages?.stage3?.teams || []).map((team) => [team.id, team])
-                );
-                const seededCandidates = playoffTeams.map((team) => stage3ById.get(team.id) || team);
-
-                if (seededCandidates.length !== 16) {
-                    return null;
-                }
-
-                const hasQualificationOrder = seededCandidates.every(
-                    (team) => Number.isFinite(Number(team?.qualifiedAt))
-                );
-                const seeded = hasQualificationOrder
-                    ? [...seededCandidates].sort(
-                        (a, b) =>
-                            Number(a.qualifiedAt) - Number(b.qualifiedAt) ||
-                            (a.seed ?? 0) - (b.seed ?? 0)
-                    )
-                    : seededCandidates.every((team) => typeof team?.qualifiedVia === "string")
-                        ? buildPlayoffSeeds(seededCandidates)
-                        : null;
-
-                if (!seeded) return null;
-
-                return bracketOrder.map(([leftSeed, rightSeed]) => [
-                    seeded[leftSeed],
-                    seeded[rightSeed],
-                ]);
-            })()
-            : null;
-
-        const archivedMatchForDisplay = (match, stage, index) => {
-            if (stage !== "ro16" || !naturalRo16Pairs?.[index]) return match;
-
-            const [slotA, slotB] = naturalRo16Pairs[index];
-            return { ...match, slotA, slotB };
-        };
-
         const renderArchivedMatch = (match, stage, index, rectClass) => {
-            const displayMatch = archivedMatchForDisplay(match, stage, index);
-            if (!displayMatch) return null;
+            if (!match) return null;
+
+            const displayMatch = match;
 
             const isUserWin =
                 displayMatch.pickTeamId &&
@@ -8902,46 +9012,112 @@ function SpecialModePage() {
                 displayMatch.winnerTeamId &&
                 leftTeam &&
                 displayMatch.winnerTeamId === leftTeam.id;
+
             return (
-                <div key={displayMatch.id || `${stage}-${index}`} className={rectClass === css.match_rect ? (index % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up) : rectClass === css.quarters_rect ? (index % 2 === 0 ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up) : rectClass === css.semis_rect ? (index % 2 === 0 ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up) : css.gfConnectorWrapper}>
+                <div
+                    key={displayMatch.id || `${stage}-${index}`}
+                    className={
+                        rectClass === css.match_rect
+                            ? (index % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up)
+                            : rectClass === css.quarters_rect
+                                ? (index % 2 === 0 ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up)
+                                : rectClass === css.semis_rect
+                                    ? (index % 2 === 0 ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up)
+                                    : css.gfConnectorWrapper
+                    }
+                >
                     <button
                         type="button"
                         className={`${rectClass} ${winnerIsLeft ? css.playoffs_match_win : css.playoffs_match_loss}`}
                         onClick={() => openArchivedHallMatchModal(record, stage, index, displayMatch)}
                         style={{ cursor: "pointer", borderColor: winnerIsLeft ? "#2e7d32" : "#7d2e2e" }}
                     >
-                        {isUserWin ?
-                            <div style={{}} className={css.hallOfFameSuccessPickemIndicator}>
+                        {isUserWin ? (
+                            <div className={css.hallOfFameSuccessPickemIndicator}>
                                 <FaCircle size={28} color="#37b737" />
                                 <FaCheck size={16} color="#fff" />
                             </div>
-                            :
+                        ) : (
                             <div className={css.hallOfFameSuccessPickemIndicator}>
                                 <FaCircle size={28} color="#be3939" />
                                 <FaXmark size={16} color="#fff" />
                             </div>
-                        }
-                        <div style={{ padding: "4.2px 4px" }} className={`${stage === "thirdPlace" ? css.bo_thirdPlaceDecider_label : css.bo_playoffs_label} ${isUserWin ? css.playoffs_match_win_label : css.playoffs_match_loss_label}`}>
+                        )}
+
+                        <div
+                            style={{ padding: "4.2px 4px" }}
+                            className={`${stage === "thirdPlace" ? css.bo_thirdPlaceDecider_label : css.bo_playoffs_label} ${isUserWin ? css.playoffs_match_win_label : css.playoffs_match_loss_label}`}
+                        >
                             BO{getBestOfForPlayoffs(stage)}
                         </div>
+
                         {stage !== "thirdPlace" && stage !== "gf" ? (
-                            <div style={{ padding: "4.2px 12px 4.2px 4px" }} className={`${css.no_playoffs_label} ${isUserWin ? css.playoffs_match_win_no_label : css.playoffs_match_loss_no_label}`}>
+                            <div
+                                style={{ padding: "4.2px 12px 4.2px 4px" }}
+                                className={`${css.no_playoffs_label} ${isUserWin ? css.playoffs_match_win_no_label : css.playoffs_match_loss_no_label}`}
+                            >
                                 #{index + 1}
                             </div>
                         ) : null}
+
                         <div className={css.match_content}>
                             {[leftTeam, rightTeam].map((team, side) => {
                                 const won = isUserWin
                                     ? displayMatch.pickTeamId === team?.id
                                     : displayMatch.pickTeamId !== team?.id;
+
                                 const score = side === 0 ? displayScoreLeft : displayScoreRight;
+
                                 return (
                                     <React.Fragment key={team?.id || side}>
-                                        {side === 1 && <div className={css.vs_row}><div style={{ backgroundColor: isUserWin ? "#2e7d32" : "red" }} className={css.divider} /></div>}
+                                        {side === 1 && (
+                                            <div className={css.vs_row}>
+                                                <div
+                                                    style={{ backgroundColor: isUserWin ? "#2e7d32" : "red" }}
+                                                    className={css.divider}
+                                                />
+                                            </div>
+                                        )}
+
                                         <div className={css.team_row}>
-                                            <div className={css.team_cell}>{team ? <div className={css.team_circle} style={{ background: team.color }} title={`Team ${team.name}`} /> : <div className={css.placeholder_circle}>?</div>}</div>
-                                            <div style={{ color: won ? "#2e7d32" : "red", fontWeight: 700, fontSize: 16 }} className={css.team_name_placeholder}>{team ? `Team ${team.name}` : "TBD"}</div>
-                                            <span style={{ color: won ? "#2e7d32" : "red", fontWeight: 800, fontStyle: "italic", position: "absolute", left: side === 0 ? "85%" : "83%", zIndex: 1, fontSize: 72, opacity: won ? 1 : 0.4 }} className={won ? css.winnerScoreShadow : css.loserScoreShadow}>{score}</span>
+                                            <div className={css.team_cell}>
+                                                {team ? (
+                                                    <div
+                                                        className={css.team_circle}
+                                                        style={{ background: team.color }}
+                                                        title={`Team ${team.name}`}
+                                                    />
+                                                ) : (
+                                                    <div className={css.placeholder_circle}>?</div>
+                                                )}
+                                            </div>
+
+                                            <div
+                                                style={{
+                                                    color: won ? "#2e7d32" : "red",
+                                                    fontWeight: 700,
+                                                    fontSize: 16
+                                                }}
+                                                className={css.team_name_placeholder}
+                                            >
+                                                {team ? `Team ${team.name}` : "TBD"}
+                                            </div>
+
+                                            <span
+                                                style={{
+                                                    color: won ? "#2e7d32" : "red",
+                                                    fontWeight: 800,
+                                                    fontStyle: "italic",
+                                                    position: "absolute",
+                                                    left: side === 0 ? "85%" : "83%",
+                                                    zIndex: 1,
+                                                    fontSize: 72,
+                                                    opacity: won ? 1 : 0.4
+                                                }}
+                                                className={won ? css.winnerScoreShadow : css.loserScoreShadow}
+                                            >
+                                                {score}
+                                            </span>
                                         </div>
                                     </React.Fragment>
                                 );
@@ -10869,97 +11045,136 @@ function SpecialModePage() {
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
     if (showPickemSummary) {
+        const seen = pickemSummarySeen;
+        const showNeeded = seen || showPickemLine2;
+        const showAchieved = seen || showPickemAchieved;
+        const settled = seen || pickemCountSettled;
+        const showResult = seen || showPickemResult;
+        const showButtons = seen || showPickemButtons;
+        const labelStyle = { fontSize: "32px", fontWeight: 700, textAlign: "center" };
+
+        const showLossLine = seen || pickemSentenceStep > buildPickemSentenceParts().length;
         return (
             <div className={css.page_wrapper}>
                 <div className={css.game_container}>
-                    <p className={css.info_text} style={{ marginBottom: "24px", fontSize: '32px', fontWeight: '700', textAlign: 'center', width: '680px' }}>
+                    <p
+                        className={css.info_text}
+                        style={{ marginBottom: "24px", fontSize: "32px", fontWeight: "700", textAlign: "center", width: "min(1240px, 94vw)" }}
+                    >
                         {buildPickemSentence()} <br />
                         {lossBasedPoints !== 0 && (
-                            <span style={{ color: "#d4cebaff", fontWeight: "700" }}>
-                                <span style={{ fontWeight: '800' }}>+{lossBasedPoints}</span> {' '}
-                                Pick&apos;em point{lossBasedPoints === 1 ? '' : 's'} from correctly guessed sets in not guessed matches
+                            <span
+                                style={{
+                                    color: "#d4cebaff",
+                                    fontWeight: "700",
+                                    opacity: showLossLine ? 1 : 0,
+                                    transition: "opacity 0.8s ease",
+                                }}
+                            >
+                                <span style={{ fontWeight: "800" }}>+{lossBasedPoints}</span> {" "}
+                                Pick&apos;em point{lossBasedPoints === 1 ? "" : "s"} from correctly guessed sets in not guessed matches
                             </span>
                         )}
                     </p>
 
-                    {showPickemLine2 && (
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: "64px", marginBottom: "12px" }}>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: showNeeded ? 1 : 0, y: showNeeded ? 0 : 14 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}
+                        >
+                            <span className={css.info_text} style={labelStyle}>Needed Pick&apos;em points</span>
+                            <span className={css.points}>
+                                {showNeeded && !seen
+                                    ? <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                                    : neededPickemPoints}
+                            </span>
+                        </motion.div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                            <motion.span
+                                initial={false}
+                                animate={{ opacity: showAchieved ? 1 : 0 }}
+                                transition={{ duration: 0.8 }}
+                                className={css.info_text}
+                                style={labelStyle}
+                            >
+                                Achieved Pick&apos;em points
+                            </motion.span>
+                            <PickemAchievedCounter
+                                run={showAchieved}
+                                instant={seen}
+                                finalPoints={finalPickemPoints}
+                                neededPoints={neededPickemPoints}
+                                onSettled={() => setPickemCountSettled(true)}
+                                className={css.points}
+                                style={{
+                                    fontWeight: 700,
+                                    backgroundColor: settled ? (isPickemWin ? "#2e7d32" : "red") : undefined,
+                                    color: settled ? "#fff" : undefined,
+                                    transition: "background-color 0.6s ease, color 0.6s ease",
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: showResult ? 1 : 0 }}
+                        transition={{ duration: 0.8 }}
+                    >
                         <p
                             className={css.info_text}
-                            style={{ marginBottom: "12px", fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}
+                            style={{ marginBottom: "8px", fontSize: "32px", fontWeight: "bold", textAlign: "center" }}
                         >
-                            That's why, you received <br />
-                            <span
-                                style={{
-                                    backgroundColor:
-                                        finalPickemPoints >= neededPickemPoints
-                                            ? "#2e7d32"
-                                            : "red",
-                                    fontWeight: 700,
-                                    color:
-                                        finalPickemPoints >= neededPickemPoints
-                                            ? "#fff"
-                                            : "#fff",
-                                    margin: '8px auto'
-                                }}
-                                className={css.points}
-                            >
-                                <CountUp start={0} duration={1.2} end={finalPickemPoints} key={finalPickemPoints} />
-                            </span>{" "}
-                            <span style={{ fontWeight: '800' }}>Pick&apos;em points</span>, when needed:{" "}
-                            <span style={{ margin: 'auto' }} className={css.points}>
-                                <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
-                            </span>
+                            and that's why:
                         </p>
-                    )}
 
-                    {showPickemResult && (
-                        <>
-                            <p
-                                className={css.info_text}
-                                style={{ marginBottom: "8px", fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}
-                            >
-                                and because of that,
-                            </p>
+                        <h1
+                            className={css.game_title}
+                            style={{
+                                color: isPickemWin ? "#00ff7f" : "#ff4c4c",
+                                textShadow: isPickemWin
+                                    ? "0 0 5px rgba(0,255,127,0.8)"
+                                    : "0 0 5px rgba(255,76,76,0.8)",
+                                fontSize: "52px"
+                            }}
+                        >
+                            {isPickemWin ? "You Won! 🎉" : "You Lost! 😢"}
+                        </h1>
+                    </motion.div>
 
-                            <h1
-                                className={css.game_title}
-                                style={{
-                                    color: isPickemWin ? "#00ff7f" : "#ff4c4c",
-                                    textShadow: isPickemWin
-                                        ? "0 0 5px rgba(0,255,127,0.8)"
-                                        : "0 0 5px rgba(255,76,76,0.8)",
-                                }}
-                            >
-                                {isPickemWin ? "You Won! 🎉" : "You Lost! 😢"}
-                            </h1>
-
-                            <div
-                                style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: "16px",
-                                    justifyContent: "center",
-                                    marginTop: "16px",
-                                }}
-                            >
-                                <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => {
-                                    setShowPickemSummary(false);
-                                    setShowWinnersScreen(false);
-                                }}>
-                                    To the bracket
-                                </button>
-                                <button className={css.gamble_button} onClick={resetSpecialModeState}>
-                                    Back to the start of Special Mode
-                                </button>
-                                <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/gambling"); }}>
-                                    Back to normal Gambling
-                                </button>
-                                <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/"); }}>
-                                    To Home Page
-                                </button>
-                            </div>
-                        </>
-                    )}
+                    <motion.div
+                        initial={false}
+                        animate={{ opacity: showButtons ? 1 : 0 }}
+                        transition={{ duration: 0.8 }}
+                        aria-hidden={!showButtons}
+                        style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "16px",
+                            justifyContent: "center",
+                            marginTop: "16px",
+                            pointerEvents: showButtons ? "auto" : "none",
+                        }}
+                    >
+                        <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => {
+                            setShowPickemSummary(false);
+                            setShowWinnersScreen(false);
+                        }}>
+                            To the bracket
+                        </button>
+                        <button className={css.gamble_button} onClick={resetSpecialModeState}>
+                            Back to the start of Special Mode
+                        </button>
+                        <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/gambling"); }}>
+                            Back to normal Gambling
+                        </button>
+                        <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/"); }}>
+                            To Home Page
+                        </button>
+                    </motion.div>
                 </div>
             </div>
         );
@@ -12004,7 +12219,7 @@ function SpecialModePage() {
                                 </div>
                             </div>
 
-                            {seriesState.tiebreakerPhase === "extended" && seriesState.extRoundCommentaryShown && (
+                            {seriesState.tiebreakerPhase === "extended" && seriesState.extRoundCommentaryShown ? (
                                 <motion.p
                                     initial={{ opacity: 0, y: 12 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -12014,7 +12229,29 @@ function SpecialModePage() {
                                         maxWidth: "640px",
                                         fontSize: "16px",
                                         lineHeight: 1.5,
-                                        marginTop: 16
+                                        marginTop: 16,
+                                        height: "120px"
+                                    }}
+                                    className={css.info_text}
+                                >
+                                    The winner of this set could not be determined even after Quadruple Overtime.
+                                    Therefore, the system will compare every Extended Round winner.
+                                    There were six Extended Rounds in total: the 1st Half, the 2nd Half and four Overtimes, that's why 4+ Extended Rounds are required to win, 3 to tie again.
+                                    We'll reveal them one by one:
+                                </motion.p>
+                            ) : (
+                                <motion.p
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    style={{
+                                        textAlign: "center",
+                                        maxWidth: "640px",
+                                        fontSize: "16px",
+                                        lineHeight: 1.5,
+                                        marginTop: 16,
+                                        height: "120px",
+                                        opacity: 0
                                     }}
                                     className={css.info_text}
                                 >
@@ -12024,7 +12261,7 @@ function SpecialModePage() {
                                     We'll reveal them one by one:
                                 </motion.p>
                             )}
-                            {seriesState.extRoundCommentaryShown && (
+                            {seriesState.extRoundCommentaryShown ? (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -12037,6 +12274,47 @@ function SpecialModePage() {
                                         width: "100%",
                                         maxWidth: "640px",
                                         height: "224.8px"
+                                    }}
+                                >
+                                    {revealedExtendedRounds.map((round) => {
+                                        const isLeft = round.winner === "left";
+
+                                        return (
+                                            <motion.div
+                                                key={round.label}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ duration: 0.35 }}
+                                                style={{
+                                                    color: "#2e2f42",
+                                                    fontSize: "20px",
+                                                    textAlign: "left",
+                                                }}
+                                            >
+                                                <strong>{round.label}</strong> Extended Round winner is{" "}
+                                                {renderTeamLabel(
+                                                    isLeft
+                                                        ? seriesState.leftTeam
+                                                        : seriesState.rightTeam
+                                                )}
+                                            </motion.div>
+                                        );
+                                    })}
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0.4 }}
+                                    style={{
+                                        marginTop: "20px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "8px",
+                                        width: "100%",
+                                        maxWidth: "640px",
+                                        height: "224.8px",
+                                        opacity: 0
                                     }}
                                 >
                                     {revealedExtendedRounds.map((round) => {
