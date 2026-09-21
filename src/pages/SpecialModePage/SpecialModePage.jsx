@@ -2633,7 +2633,7 @@ const SetBreakdownOverlay = ({
                                                 rightGlow={extDecisive && !won}
                                                 ggBanner={
                                                     isMatchDecidingExtendedRound
-                                                        ? { team: winnerTeam }
+                                                        ? { team: won ? leftTeam : rightTeam }
                                                         : null
                                                 }
                                                 {...(extDecisive
