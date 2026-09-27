@@ -3818,7 +3818,6 @@ function SpecialModePage() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
 
-    // forceWinner: null (fair) | "left" | "right" - the forced side always rolls higher than its opponent
     const [forceWinner, setForceWinner] = useState(null);
     // eslint-disable-next-line no-unused-vars
     const [cheatMode, setCheatMode] = useState(0);
