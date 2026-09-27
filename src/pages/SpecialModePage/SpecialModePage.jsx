@@ -205,8 +205,8 @@ const AnimatedCrossIcon = (props) => (
     </svg>
 );
 
-const MULTIPLIER_MIN = -2.0;
-const MULTIPLIER_MAX = 2.0;
+const MULTIPLIER_MIN = 0.0;
+const MULTIPLIER_MAX = 5.0;
 
 const MIN_NEEDED_PICKEM = 351;
 const MAX_NEEDED_PICKEM = 576;
@@ -3035,8 +3035,9 @@ const defaultSeriesState = {
         overtimes: [],
     },
 
-    lastMultiplier: null,
-    lastResult: "",
+    lastMultiplierLeft: null,
+    lastMultiplierRight: null,
+    lastPenaltyAttacker: null,
 
     roundWins: 0,
     roundLosses: 0,
@@ -3817,8 +3818,8 @@ function SpecialModePage() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
 
-    const [multiplierMin, setMultiplierMin] = useState(MULTIPLIER_MIN);
-    const [multiplierMax, setMultiplierMax] = useState(MULTIPLIER_MAX);
+    // forceWinner: null (fair) | "left" | "right" - the forced side always rolls higher than its opponent
+    const [forceWinner, setForceWinner] = useState(null);
     // eslint-disable-next-line no-unused-vars
     const [cheatMode, setCheatMode] = useState(0);
 
@@ -6392,8 +6393,7 @@ function SpecialModePage() {
             const next = (prev + 1) % 3;
 
             if (next === 1) {
-                setMultiplierMin(MULTIPLIER_MAX);
-                setMultiplierMax(MULTIPLIER_MAX);
+                setForceWinner("left");
                 toast.dismiss(SECRET_TOAST_ID);
                 toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
                 toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
@@ -6405,8 +6405,7 @@ function SpecialModePage() {
             }
 
             if (next === 2) {
-                setMultiplierMin(MULTIPLIER_MIN);
-                setMultiplierMax(MULTIPLIER_MIN);
+                setForceWinner("right");
                 toast.dismiss(SECRET_TOAST_ID);
                 toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
                 toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
@@ -6418,8 +6417,7 @@ function SpecialModePage() {
             }
 
             if (next === 0) {
-                setMultiplierMin(MULTIPLIER_MIN);
-                setMultiplierMax(MULTIPLIER_MAX);
+                setForceWinner(null);
                 toast.dismiss(SECRET_TOAST_ID);
                 toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
                 toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
@@ -6692,35 +6690,16 @@ function SpecialModePage() {
         });
     };
 
-    const getMultiplierClass = (mult) => {
-        if (mult == null) return "";
+    const getMultiplierClass = (mine, other) => {
+        if (mine == null || other == null) return "";
 
-        if (mult > 0) return seriesState.leftTeam.gradient;
-        if (mult < 0) return seriesState.rightTeam.gradient;
-
-        return "linear-gradient(180deg,#9c9c9c 0%,#757575 45%,#555555 100%)";
-    };
-
-    const getPensMultiplierClass = (mult) => {
-        if (mult == null) return "";
+        if (mine === other) {
+            return "linear-gradient(180deg,#9c9c9c 0%,#757575 45%,#555555 100%)";
+        }
 
         const successColor = "#54CC54";
         const failColor = "#983333";
-
-        const color =
-            mult > 0
-                ? seriesState.penaltyTurn === "left"
-                    ? failColor
-                    : successColor
-                : mult < 0
-                    ? seriesState.penaltyTurn === "right"
-                        ? failColor
-                        : successColor
-                    : null;
-
-        if (!color) {
-            return "linear-gradient(180deg,#9c9c9c 0%,#757575 45%,#555555 100%)";
-        }
+        const color = mine > other ? successColor : failColor;
 
         return `linear-gradient(
         180deg,
@@ -6728,6 +6707,26 @@ function SpecialModePage() {
         ${color} 45%,
         ${darkenHex(color, 0.35)} 100%
     )`;
+    };
+
+    const rollPair = () => {
+        const a = round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN));
+        const b = round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN));
+
+        if (!forceWinner) return { left: a, right: b };
+
+        const hi = Math.max(a, b);
+        let lo = Math.min(a, b);
+        if (hi === lo) lo = round2(Math.max(MULTIPLIER_MIN, hi - 0.01));
+
+        return forceWinner === "left" ? { left: hi, right: lo } : { left: lo, right: hi };
+    };
+
+    const getPenaltyMessage = (isAttacker, attackerSucceeded) => {
+        if (isAttacker) {
+            return attackerSucceeded ? "gets a successful attempt!" : "has been prevented!";
+        }
+        return attackerSucceeded ? "lets a successful attempt happen!" : "prevents a successful attempt!";
     };
 
     const renderTeamLabel = (team, seriesWon = false) => {
@@ -6782,7 +6781,7 @@ function SpecialModePage() {
         if (seriesState.tiebreakerPhase !== "penalties") return;
         if (seriesState.penaltyResolved) return;
 
-        const mult = round2(multiplierMin + Math.random() * (multiplierMax - multiplierMin));
+        const { left: leftMult, right: rightMult } = rollPair();
         setIsCalculating(true);
 
         setSeriesState((prev) => {
@@ -6790,25 +6789,20 @@ function SpecialModePage() {
 
             let pendingAction = null;
 
-            const isNeutral = mult === 0;
+            const isNeutral = leftMult === rightMult;
+            const turnMult = turn === "left" ? leftMult : rightMult;
+            const oppMult = turn === "left" ? rightMult : leftMult;
 
-            const success = isNeutral
-                ? null
-                : turn === "left"
-                    ? mult > 0
-                    : mult < 0;
+            const success = isNeutral ? null : turnMult > oppMult;
 
             if (isNeutral) {
                 setIsCalculating(false);
 
                 return {
                     ...prev,
-                    lastMultiplier: mult,
-                    lastResult:
-                        (turn === "left"
-                            ? `Team ${prev.leftTeam.name}`
-                            : `Team ${prev.rightTeam.name}`) +
-                        " must retake the penalty!",
+                    lastMultiplierLeft: leftMult,
+                    lastMultiplierRight: rightMult,
+                    lastPenaltyAttacker: turn,
                 };
             }
 
@@ -6959,12 +6953,9 @@ function SpecialModePage() {
             setIsCalculating(false);
             return {
                 ...prev,
-                lastMultiplier: mult,
-                lastResult:
-                    (turn === "left"
-                        ? `Team ${prev.leftTeam.name}`
-                        : `Team ${prev.rightTeam.name}`) +
-                    (success ? " scores!" : " misses!"),
+                lastMultiplierLeft: leftMult,
+                lastMultiplierRight: rightMult,
+                lastPenaltyAttacker: turn,
                 penaltyLeftResults: nextLeftResults,
                 penaltyRightResults: nextRightResults,
                 penaltyLeftScore: nextLeftScore,
@@ -6981,7 +6972,7 @@ function SpecialModePage() {
     const handleSeriesGamble = () => {
         if (!seriesState.active || seriesState.banner) return;
 
-        const mult = round2(multiplierMin + Math.random() * (multiplierMax - multiplierMin));
+        const { left: leftMult, right: rightMult } = rollPair();
 
         setIsCalculating(true);
 
@@ -6990,13 +6981,8 @@ function SpecialModePage() {
 
             let pendingAction = null;
 
-            const playerWonMini = mult > 0;
-            const playerLostMini = mult < 0;
-
-            let resultText;
-            if (mult > 0) resultText = `Team ${prev.leftTeam.name} wins the mini-round!`;
-            else if (mult < 0) resultText = `Team ${prev.rightTeam.name} wins the mini-round!`;
-            else resultText = "No one wins this mini-round.";
+            const playerWonMini = leftMult > rightMult;
+            const playerLostMini = rightMult > leftMult;
 
             let {
                 playerWonSets,
@@ -7043,8 +7029,8 @@ function SpecialModePage() {
                     setIsCalculating(false);
                     return {
                         ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
+                        lastMultiplierLeft: leftMult,
+                        lastMultiplierRight: rightMult,
                         miniWins: nextMiniWins,
                         miniLosses: nextMiniLosses,
                     };
@@ -7170,8 +7156,8 @@ function SpecialModePage() {
 
                     return {
                         ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
+                        lastMultiplierLeft: leftMult,
+                        lastMultiplierRight: rightMult,
                         playerWonSets,
                         playerLostSets,
                         extendedRounds,
@@ -7206,8 +7192,8 @@ function SpecialModePage() {
                         setIsCalculating(false);
                         return {
                             ...prev,
-                            lastMultiplier: mult,
-                            lastResult: resultText,
+                            lastMultiplierLeft: leftMult,
+                            lastMultiplierRight: rightMult,
                             playerWonSets,
                             playerLostSets,
                             extendedRounds,
@@ -7244,8 +7230,8 @@ function SpecialModePage() {
 
                     return {
                         ...prev,
-                        lastMultiplier: mult,
-                        lastResult: resultText,
+                        lastMultiplierLeft: leftMult,
+                        lastMultiplierRight: rightMult,
                         playerWonSets,
                         playerLostSets,
                         extendedRounds,
@@ -7268,8 +7254,8 @@ function SpecialModePage() {
 
                 return {
                     ...prev,
-                    lastMultiplier: mult,
-                    lastResult: resultText,
+                    lastMultiplierLeft: leftMult,
+                    lastMultiplierRight: rightMult,
                     playerWonSets,
                     playerLostSets,
                     extendedRounds,
@@ -7301,8 +7287,8 @@ function SpecialModePage() {
                 setIsCalculating(false);
                 return {
                     ...prev,
-                    lastMultiplier: mult,
-                    lastResult: resultText,
+                    lastMultiplierLeft: leftMult,
+                    lastMultiplierRight: rightMult,
                     miniWins: nextMiniWins,
                     miniLosses: nextMiniLosses,
                 };
@@ -7405,8 +7391,8 @@ function SpecialModePage() {
 
                 return {
                     ...prev,
-                    lastMultiplier: mult,
-                    lastResult: resultText,
+                    lastMultiplierLeft: leftMult,
+                    lastMultiplierRight: rightMult,
                     playerWonSets,
                     playerLostSets,
                     extendedRounds,
@@ -7495,8 +7481,8 @@ function SpecialModePage() {
 
             return {
                 ...prev,
-                lastMultiplier: mult,
-                lastResult: resultText,
+                lastMultiplierLeft: leftMult,
+                lastMultiplierRight: rightMult,
                 playerWonSets,
                 playerLostSets,
                 extendedRounds,
@@ -7983,8 +7969,9 @@ function SpecialModePage() {
                 if (curr.tiebreakerBigSymbol !== "=") return curr;
                 return {
                     ...curr,
-                    lastMultiplier: null,
-                    lastResult: "",
+                    lastMultiplierLeft: null,
+                    lastMultiplierRight: null,
+                    lastPenaltyAttacker: null,
                     tiebreakerPhase: "penalties",
                     penaltyPreScore: { left: curr.roundWins, right: curr.roundLosses },
                     roundWins: 0,
@@ -7993,7 +7980,7 @@ function SpecialModePage() {
                     penaltyRightResults: [],
                     penaltyLeftScore: 0,
                     penaltyRightScore: 0,
-                    penaltyTurn: "left",
+                    penaltyTurn: Math.random() < 0.5 ? "left" : "right",
                     penaltyResolved: false,
                     tiebreakerBigSymbol: "VS",
                 };
@@ -10312,7 +10299,7 @@ function SpecialModePage() {
                             </div>
 
                             <div className={css.vs_row}>
-                                <div style={{ backgroundColor: isPlayed ? (isUserWin ? "#2e7d32" : "red") : "" }} className={css.divider} />
+                                <div style={{ backgroundColor: isPlayed ? (isUserWin ? "#2e7d32" : "red") : "rgb(90, 90, 90)" }} className={css.divider} />
                                 {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
                                     <span
                                         style={{
@@ -13730,36 +13717,141 @@ function SpecialModePage() {
                     )}
 
                     <div className={css.seriesGambleMessage}>
-                        {!banner && seriesState.lastResult && (
-                            <>
-                                <p className={css.seriesResultMessage}>
-                                    {seriesState.lastResult}
-                                </p>
+                        {!banner &&
+                            seriesState.lastMultiplierLeft != null &&
+                            seriesState.lastMultiplierRight != null && (
+                                <>
+                                    {seriesState.lastMultiplierLeft === seriesState.lastMultiplierRight ? (
+                                        <p className={css.seriesResultMessage} style={{ textAlign: "center", fontWeight: seriesState.tiebreakerPhase === "penalties" ? "700" : "" }}>
+                                            {seriesState.tiebreakerPhase === "penalties"
+                                                ? "The same attempt should be retaken"
+                                                : "No one gets this mini-round!"}
+                                        </p>
+                                    ) : seriesState.tiebreakerPhase === "penalties" ? (
+                                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                            <p
+                                                className={css.seriesResultMessage}
+                                                style={{ flex: 1, fontSize: "16px", textAlign: "center", margin: 0, width: '520px', marginRight: "-16px" }}
+                                            >
+                                                <span style={{ color: seriesState.leftTeam?.color || "#2e2f42", fontWeight: 900 }}>
+                                                    Team {seriesState.leftTeam?.name}
+                                                </span>{" "}
+                                                <strong>
+                                                    {getPenaltyMessage(
+                                                        seriesState.lastPenaltyAttacker === "left",
+                                                        seriesState.lastPenaltyAttacker === "left"
+                                                            ? seriesState.lastMultiplierLeft > seriesState.lastMultiplierRight
+                                                            : seriesState.lastMultiplierRight > seriesState.lastMultiplierLeft
+                                                    )}
+                                                </strong>
+                                            </p>
 
-                                <span
-                                    className={css.seriesMultiplier}
-                                    style={{
-                                        display: "inline-block",
+                                            <p
+                                                className={css.seriesResultMessage}
+                                                style={{ flex: 1, fontSize: "16px", textAlign: "center", margin: 0, width: '520px', marginLeft: "-16px" }}
+                                            >
+                                                <span style={{ color: seriesState.rightTeam?.color || "#2e2f42", fontWeight: 900 }}>
+                                                    Team {seriesState.rightTeam?.name}
+                                                </span>{" "}
+                                                <strong>
+                                                    {getPenaltyMessage(
+                                                        seriesState.lastPenaltyAttacker === "right",
+                                                        seriesState.lastPenaltyAttacker === "left"
+                                                            ? seriesState.lastMultiplierLeft > seriesState.lastMultiplierRight
+                                                            : seriesState.lastMultiplierRight > seriesState.lastMultiplierLeft
+                                                    )}
+                                                </strong>
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                            <p
+                                                className={css.seriesResultMessage}
+                                                style={{ flex: 1, fontSize: "16px", textAlign: "center", margin: 0, width: '440px', marginRight: "-16px" }}
+                                            >
+                                                <span style={{ color: seriesState.leftTeam?.color || "#2e2f42", fontWeight: 900 }}>
+                                                    Team {seriesState.leftTeam?.name}
+                                                </span>{" "}
+                                                <strong>
+                                                    {seriesState.lastMultiplierLeft > seriesState.lastMultiplierRight
+                                                        ? "gets"
+                                                        : "doesn't get"}
+                                                </strong>{" "}
+                                                this mini-round!
+                                            </p>
 
-                                        backgroundImage:
-                                            seriesState.tiebreakerPhase === "penalties"
-                                                ? getPensMultiplierClass(seriesState.lastMultiplier)
-                                                : getMultiplierClass(seriesState.lastMultiplier),
+                                            <p
+                                                className={css.seriesResultMessage}
+                                                style={{ flex: 1, fontSize: "16px", textAlign: "center", margin: 0, width: '440px', marginLeft: "-16px" }}
+                                            >
+                                                <span style={{ color: seriesState.rightTeam?.color || "#2e2f42", fontWeight: 900 }}>
+                                                    Team {seriesState.rightTeam?.name}
+                                                </span>{" "}
+                                                <strong>
+                                                    {seriesState.lastMultiplierRight > seriesState.lastMultiplierLeft
+                                                        ? "gets"
+                                                        : "doesn't get"}
+                                                </strong>{" "}
+                                                this mini-round!
+                                            </p>
+                                        </div>
+                                    )}
 
-                                        backgroundRepeat: "no-repeat",
-                                        backgroundSize: "100% 100%",
+                                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                        <span
+                                            className={css.seriesMultiplier}
+                                            style={{
+                                                display: "inline-block",
 
-                                        WebkitBackgroundClip: "text",
-                                        backgroundClip: "text",
+                                                backgroundImage: getMultiplierClass(
+                                                    seriesState.lastMultiplierLeft,
+                                                    seriesState.lastMultiplierRight
+                                                ),
 
-                                        WebkitTextFillColor: "transparent",
-                                        color: "transparent",
-                                    }}
-                                >
-                                    {seriesState.lastMultiplier.toFixed(2)}x
-                                </span>
-                            </>
-                        )}
+                                                backgroundRepeat: "no-repeat",
+                                                backgroundSize: "100% 100%",
+
+                                                WebkitBackgroundClip: "text",
+                                                backgroundClip: "text",
+
+                                                WebkitTextFillColor: "transparent",
+                                                color: "transparent",
+                                                width: seriesState.tiebreakerPhase === "penalties" ? '520px' : '440px',
+                                                textAlign: 'center',
+                                                marginRight: "-16px"
+                                            }}
+                                        >
+                                            {seriesState.lastMultiplierLeft.toFixed(2)}
+                                        </span>
+
+                                        <span
+                                            className={css.seriesMultiplier}
+                                            style={{
+                                                display: "inline-block",
+
+                                                backgroundImage: getMultiplierClass(
+                                                    seriesState.lastMultiplierRight,
+                                                    seriesState.lastMultiplierLeft
+                                                ),
+
+                                                backgroundRepeat: "no-repeat",
+                                                backgroundSize: "100% 100%",
+
+                                                WebkitBackgroundClip: "text",
+                                                backgroundClip: "text",
+
+                                                WebkitTextFillColor: "transparent",
+                                                color: "transparent",
+                                                width: seriesState.tiebreakerPhase === "penalties" ? '520px' : '440px',
+                                                textAlign: 'center',
+                                                marginLeft: "-16px"
+                                            }}
+                                        >
+                                            {seriesState.lastMultiplierRight.toFixed(2)}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                     </div>
 
                     {!banner && (
