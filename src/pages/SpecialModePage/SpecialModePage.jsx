@@ -5581,15 +5581,19 @@ const LostStreakFire = ({ value, size = 26, style = {} }) => {
             <motion.span
                 initial={reduceMotion ? STREAK_ASH_STYLE : STREAK_LIT_STYLE}
                 animate={STREAK_ASH_STYLE}
-                transition={{ delay: 0.35, duration: 0.2, ease: "easeOut" }}
+                transition={{ delay: 0.35, duration: 0.2, ease: "easeInOut" }}
                 style={{ display: "inline-flex" }}
             >
                 <FaFire style={{ fontSize: `${size}px` }} />
             </motion.span>
             <motion.span
-                initial={{ scaleX: reduceMotion ? 1 : 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.75, duration: 0.05, ease: "easeOut" }}
+                initial={{
+                    clipPath: reduceMotion
+                        ? "inset(-3px -3px -3px -3px)"
+                        : "inset(-3px 0px -3px 100%)",
+                }}
+                animate={{ clipPath: "inset(-3px -3px -3px -3px)" }}
+                transition={{ delay: 0.75, duration: 0.5, ease: "easeInOut" }}
                 style={{
                     position: "absolute",
                     left: "50%",
