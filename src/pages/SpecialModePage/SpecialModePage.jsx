@@ -4,9 +4,9 @@ import CountUp from "react-countup";
 import css from "./SpecialModePage.module.css";
 import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
 import toast from "react-hot-toast";
-import { FaTrophy } from "react-icons/fa";
+import { FaTrophy, FaFire } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import {
     FaCircleCheck,
@@ -38,9 +38,23 @@ const ROUND_LOG_LS_KEY = "specialMode_currentRoundLog_v1";
 const TEAM_RATINGS_SNAPSHOT_LS_KEY = "specialMode_teamRatings_snapshot_v1";
 const TEAM_PLACINGS_LS_KEY = "specialMode_teamPlacings_v1";
 const TOURNAMENT_NUMBER_LS_KEY = "specialMode_tournamentNumber_v1";
+const STATS_PANELS_LS_KEY = "specialMode_statsPanels_v1";
+const STATS_PANELS_MAX_ENTRIES = 300;
+const DEFAULT_STATS_PANELS_STATE = { left: true, right: true };
 const BREAKDOWN_HIDDEN_LS_KEY = "specialMode_breakdownModalHidden_v1";
 const TOURNAMENT_NUMBERS_LS_KEY = "specialMode_tournamentNumbers_v1";
 const HALL_TEAM_SORT_LS_KEY = "specialMode_hallTeamSort_v1";
+const TEAM_STATS_LS_KEY = "specialMode_teamStats_v1";
+
+const isNativeScrollArea = (node) => {
+    if (!(node instanceof HTMLElement)) return false;
+    if (node === document.body || node === document.documentElement) return false;
+
+    const { overflowY } = window.getComputedStyle(node);
+    if (overflowY !== "auto" && overflowY !== "scroll") return false;
+
+    return node.scrollHeight > node.clientHeight + 1;
+};
 
 const TOURNAMENT_TYPES = [
     {
@@ -277,6 +291,1598 @@ const darkenHex = (hex, amount = 0.68) => {
     return `#${[dr, dg, db]
         .map((x) => x.toString(16).padStart(2, "0"))
         .join("")}`;
+};
+
+const STAT_KEYS = [
+    "clutch",
+    "composure",
+    "bigStage",
+    "otStamina",
+    "upsetPedigree",
+    "bounceBack",
+    "antiTilt",
+    "finisher",
+    "elimNerve",
+    "unbeatenNerve",
+    "battleTested",
+    "topSeed",
+    "streakBreaker",
+    "unbeatenStreakBreaker",
+];
+
+const ALL_STAT_KEYS = [...STAT_KEYS, "momentum", "unbeatenStreak", "battleXp"];
+
+const STAT_DEFINITIONS = [
+    { key: "clutch", label: "Clutch Factor", max: 100 },
+    { key: "composure", label: "Composure", max: 100 },
+    { key: "bigStage", label: "Big-Stage Pedigree", max: 100 },
+    { key: "otStamina", label: "Overtime Stamina", max: 100 },
+    { key: "upsetPedigree", label: "Upset Pedigree", max: 100 },
+    { key: "bounceBack", label: "Bounce-Back", max: 100 },
+    { key: "antiTilt", label: "Anti-Tilt", max: 100 },
+    { key: "finisher", label: "Finisher", max: 100 },
+    { key: "elimNerve", label: "Elimination Nerve", max: 100 },
+    { key: "unbeatenNerve", label: "Unbeaten Nerve", max: 100 },
+    { key: "battleTested", label: "Battle-Tested", max: 100 },
+    { key: "topSeed", label: "Top-Seed Pressure", max: 100 },
+    { key: "streakBreaker", label: "Streak Breaker", max: 100 },
+    { key: "unbeatenStreakBreaker", label: "Unbeaten Streak Breaker", max: 100 },
+];
+
+const STATS_PER_TAB = 7;
+
+const STAT_TABS = Array.from(
+    { length: Math.max(1, Math.ceil(STAT_DEFINITIONS.length / STATS_PER_TAB)) },
+    (_, i) => STAT_DEFINITIONS.slice(i * STATS_PER_TAB, (i + 1) * STATS_PER_TAB)
+);
+
+const UNBEATEN_STREAK_DEFINITION = { key: "unbeatenStreak", label: "Unbeaten Streak", max: 999, integer: true };
+
+const MANAGE_STAT_DEFINITIONS = [...STAT_DEFINITIONS, UNBEATEN_STREAK_DEFINITION];
+
+const DEFAULT_TEAM_STAT_VALUES = {
+    clutch: 50,
+    composure: 50,
+    bigStage: 0,
+    otStamina: 50,
+    upsetPedigree: 0,
+    bounceBack: 50,
+    antiTilt: 50,
+    finisher: 50,
+    elimNerve: 50,
+    unbeatenNerve: 50,
+    battleTested: 0,
+    topSeed: 50,
+    streakBreaker: 50,
+    unbeatenStreakBreaker: 50,
+    momentum: 0,
+    unbeatenStreak: 0,
+    battleXp: 0,
+};
+
+const clampStat = (n, min = 0, max = 100) =>
+    Math.max(min, Math.min(max, Number.isFinite(n) ? n : min));
+
+const buildDefaultTeamStats = (teams) => {
+    const out = {};
+    teams.forEach((t) => {
+        out[t.id] = { ...DEFAULT_TEAM_STAT_VALUES };
+    });
+    return out;
+};
+
+const loadTeamStats = (teams) => {
+    try {
+        const raw = localStorage.getItem(TEAM_STATS_LS_KEY);
+        const out = buildDefaultTeamStats(teams);
+        if (!raw) return out;
+        const parsed = JSON.parse(raw);
+        teams.forEach((t) => {
+            const v = parsed?.[t.id];
+            if (v && typeof v === "object") {
+                const merged = { ...DEFAULT_TEAM_STAT_VALUES };
+                ALL_STAT_KEYS.forEach((k) => {
+                    if (typeof v[k] === "number" && Number.isFinite(v[k])) {
+                        merged[k] = v[k];
+                    }
+                });
+                out[t.id] = merged;
+            }
+        });
+        return out;
+    } catch {
+        return buildDefaultTeamStats(teams);
+    }
+};
+
+const saveTeamStats = (stats) => {
+    try {
+        localStorage.setItem(TEAM_STATS_LS_KEY, JSON.stringify(stats));
+    } catch {
+        console.error("Couldn't save teams' stats");
+    }
+};
+
+const TEAM_STATS_SNAPSHOT_LS_KEY = "specialMode_teamStats_snapshot_v1";
+
+const saveStatsSnapshot = (stats) => {
+    try {
+        localStorage.setItem(TEAM_STATS_SNAPSHOT_LS_KEY, JSON.stringify(stats));
+    } catch {
+        console.error("Couldn't set teams' stats snapshot");
+    }
+};
+
+const loadStatsSnapshot = () => {
+    try {
+        const raw = localStorage.getItem(TEAM_STATS_SNAPSHOT_LS_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const clearStatsSnapshot = () => {
+    try {
+        localStorage.removeItem(TEAM_STATS_SNAPSHOT_LS_KEY);
+    } catch {
+        console.error("Couldn't remove teams' stats snapshot");
+    }
+};
+
+const normalizeTeamStats = (teams, source) => {
+    const out = buildDefaultTeamStats(teams);
+    teams.forEach((t) => {
+        const v = source?.[t.id];
+        if (v && typeof v === "object") {
+            const merged = { ...DEFAULT_TEAM_STAT_VALUES };
+            ALL_STAT_KEYS.forEach((k) => {
+                if (typeof v[k] === "number" && Number.isFinite(v[k])) {
+                    merged[k] = v[k];
+                }
+            });
+            out[t.id] = { ...merged, momentum: 0 };
+        }
+    });
+    return out;
+};
+
+const statToInputString = (value) =>
+    String(Math.round((Number(value) || 0) * 100) / 100);
+
+const sanitizeStatInput = (raw) => {
+    let s = String(raw ?? "").replace(",", ".").replace(/[^0-9.]/g, "");
+    const dot = s.indexOf(".");
+    if (dot !== -1) {
+        s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+    }
+    if (/^0\d/.test(s)) s = s.replace(/^0+(?=\d)/, "");
+    return s;
+};
+
+const parseStatInput = (value) => {
+    if (value === "" || value === "." || value == null) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+};
+
+const clutchRollEffect = (value) => ((value - 50) / 50) * 0.5;
+
+const composureRollEffect = (roll, value) =>
+    (2.5 - roll) * ((value / 100) * 0.4);
+
+const bigStageRollEffect = (value, active) => {
+    if (!active) return 0;
+    return (value / 100) * 0.45;
+};
+
+const momentumRollEffect = (streak) => {
+    if (!streak || streak < 5) return 0;
+    return Math.min((streak - 4) * 0.05, 0.4);
+};
+
+const otStaminaRollEffect = (value, { active, depth }) => {
+    if (!active || !depth) return 0;
+    const raw = ((value - 50) / 50) * 0.08 * depth;
+    return Math.max(-0.4, Math.min(0.4, raw));
+};
+
+const upsetPedigreeRollEffect = (value, active) => {
+    if (!active) return 0;
+    return (value / 100) * 0.3;
+};
+
+const bounceBackRollEffect = (value, active) => {
+    if (!active) return 0;
+    return ((value - 50) / 50) * 0.25;
+};
+
+const antiTiltRollEffect = (value, active) => {
+    if (!active) return 0;
+    return ((value - 50) / 50) * 0.15;
+};
+
+const finisherRollEffect = (value, active) => {
+    if (!active) return 0;
+    return ((value - 50) / 50) * 0.2;
+};
+
+const elimNerveRollEffect = (value, active) => {
+    if (!active) return 0;
+    return ((value - 50) / 50) * 0.35;
+};
+
+const unbeatenNerveRollEffect = (value, active) => {
+    if (!active) return 0;
+    return ((value - 50) / 50) * 0.25;
+};
+
+const battleTestedRollEffect = (value) => (value / 100) * 0.3;
+
+const topSeedRollEffect = (value, active) => {
+    if (!active) return 0;
+    return ((value - 50) / 50) * 0.2;
+};
+
+const streakBreakerRollEffect = (value, active) => {
+    if (!active) return 0;
+    return (value / 100) * 0.25;
+};
+
+const unbeatenStreakBreakerRollEffect = (value, active) => {
+    if (!active) return 0;
+    return (value / 100) * 0.25;
+};
+
+const UNBEATEN_BREAKER_STREAK_CAP = 14;
+
+const unbeatenBreakerWinGain = (streak) =>
+    Math.min(15, 1 + Math.max(1, Math.floor(streak)));
+
+const unbeatenBreakerLossAmount = (streak) => {
+    const s = Math.min(UNBEATEN_BREAKER_STREAK_CAP, Math.max(1, Math.floor(streak)));
+    return 1 + 4 * ((s - 1) / (UNBEATEN_BREAKER_STREAK_CAP - 1));
+};
+
+const computeRollBonus = (side, rawRoll, ctx) => {
+    const stat = { ...DEFAULT_TEAM_STAT_VALUES, ...(ctx.liveStats?.[side] ?? {}) };
+    const matchCtx = ctx.matchCtx;
+    const active = matchCtx?.active?.[side] ?? {};
+    const foe = otherSide(side);
+
+    let bonus = 0;
+    bonus += clutchRollEffect(stat.clutch);
+    bonus += composureRollEffect(rawRoll, stat.composure);
+    bonus += bigStageRollEffect(stat.bigStage, !!active.bigStage);
+    bonus += momentumRollEffect(stat.momentum);
+    bonus += otStaminaRollEffect(stat.otStamina, ctx.otContext);
+    bonus += upsetPedigreeRollEffect(
+        matchCtx?.upsetValue?.[side] ?? stat.upsetPedigree,
+        !!active.upsetPedigree && matchCtx?.upsetUnderdogSide === side
+    );
+    bonus += bounceBackRollEffect(stat.bounceBack, ctx.bounceBackArmedSide === side);
+    bonus += antiTiltRollEffect(stat.antiTilt, ctx.lastRoundLoserSide === side);
+
+    bonus += finisherRollEffect(stat.finisher, ctx.finisherActive);
+    bonus += elimNerveRollEffect(stat.elimNerve, !!active.elimNerve);
+    bonus += unbeatenNerveRollEffect(stat.unbeatenNerve, !!active.unbeatenNerve);
+    bonus += battleTestedRollEffect(stat.battleTested);
+    bonus += topSeedRollEffect(stat.topSeed, !!active.topSeed);
+    bonus += streakBreakerRollEffect(
+        stat.streakBreaker,
+        (ctx.liveStats?.[foe]?.momentum ?? 0) >= 5
+    );
+    bonus += unbeatenStreakBreakerRollEffect(
+        stat.unbeatenStreakBreaker,
+        !!active.unbeatenStreakBreaker
+    );
+
+    return bonus;
+};
+
+const relativeRatingsGap = (ratingA, ratingB) => {
+    const a = Number.isFinite(ratingA) ? ratingA : 0;
+    const b = Number.isFinite(ratingB) ? ratingB : 0;
+    const avg = (a + b) / 2;
+    if (avg <= 0) return 0;
+    return Math.abs(a - b) / avg;
+};
+
+const upsetPedigreeSetGain = (gapPct) => {
+    const t = Math.max(0, Math.min(1, (gapPct - 0.15) / 0.35));
+    return {
+        underdogGain: 2 + t * 2,
+        favoriteLoss: 1 + t * 1,
+    };
+};
+
+const percentToRedYellowGreenHex = (pct) => {
+    const p = Math.max(0, Math.min(100, pct));
+    let r, g, b = 0;
+    if (p <= 50) {
+        const t = p / 50;
+        r = 0xcc;
+        g = Math.round(0x33 + (0xcc - 0x33) * t);
+        b = 0x33;
+    } else {
+        const t = (p - 50) / 50;
+        r = Math.round(0xcc - (0xcc - 0x33) * t);
+        g = 0xcc;
+        b = 0x33;
+    }
+    return `#${[r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+};
+
+const otherSide = (side) => (side === "left" ? "right" : "left");
+
+const COMEBACK = {
+    mini: {
+        max: 0.3,
+        minShare: 0.6,
+        failClutchShare: 0.2,
+    },
+    round: {
+        max: 0.5,
+        minDeficit: 5,
+        pointDeficit: 3,
+        otBase: 0.6,
+        otStep: 0.25,
+        failClutchShare: 0.25,
+    },
+    set: {
+        max: 1.5,
+        boStep: 0.25,
+        gapStep: 0.75,
+        failClutchShare: 0.5,
+    },
+    closeCallFloor: 0.1,
+    closeCallPower: 2,
+};
+
+const clampShare = (n) => Math.max(0, Math.min(1, n));
+
+const stepComebackTracker = (tracker, leftScore, rightScore, rule) => {
+    const next = {};
+    for (const side of ["left", "right"]) {
+        const prev = tracker?.[side] ?? { hit: false, peak: 0, low: 0 };
+        const mine = side === "left" ? leftScore : rightScore;
+        const theirs = side === "left" ? rightScore : leftScore;
+        const deficit = theirs - mine;
+        const qualifies =
+            deficit >= rule.minDeficit ||
+            (rule.pointScore != null &&
+                theirs >= rule.pointScore &&
+                deficit >= rule.pointDeficit);
+
+        let { hit, peak, low } = prev;
+        if (!hit) {
+            if (qualifies) {
+                hit = true;
+                peak = deficit;
+                low = deficit;
+            }
+        } else if (deficit > peak) {
+            peak = deficit;
+            low = deficit;
+        } else if (deficit < low) {
+            low = deficit;
+        }
+        next[side] = { hit, peak, low };
+    }
+    return next;
+};
+
+const miniMinDeficit = (target) =>
+    Math.max(2, Math.ceil(target * COMEBACK.mini.minShare));
+
+const miniAmountOf = (target) => (peak) => {
+    const lo = miniMinDeficit(target);
+    const hi = Math.max(lo, target - 1);
+    return COMEBACK.mini.max * clampShare((peak - lo + 1) / (hi - lo + 1));
+};
+
+const roundRule = (target) => ({
+    minDeficit: COMEBACK.round.minDeficit,
+    pointScore: target - 1,
+    pointDeficit: COMEBACK.round.pointDeficit,
+});
+
+const roundAmountOf = ({ target, inOvertime, overtimeBlock }) => (peak) => {
+    if (inOvertime) {
+        const depth =
+            1 + COMEBACK.round.otStep * Math.max(0, (overtimeBlock || 1) - 1);
+        return COMEBACK.round.max * COMEBACK.round.otBase * depth;
+    }
+    const floor = COMEBACK.round.pointDeficit;
+    const maxDeficit = target - 1;
+    const size =
+        maxDeficit <= floor
+            ? 1
+            : clampShare(0.3 + (0.7 * (peak - floor)) / (maxDeficit - floor));
+    return COMEBACK.round.max * size;
+};
+
+const SET_COMEBACK_RULE = { minDeficit: 1 };
+
+const setAmountOf = (setsToWin) => (peak) =>
+    COMEBACK.set.max *
+    (1 + COMEBACK.set.boStep * Math.max(0, setsToWin - 2)) *
+    (1 + COMEBACK.set.gapStep * Math.max(0, peak - 1));
+
+const computeClutchRoundFlag = (
+    prevTracker,
+    miniLeftScore,
+    miniRightScore,
+    roundTarget = Infinity
+) => {
+    if (miniLeftScore >= roundTarget || miniRightScore >= roundTarget) {
+        return prevTracker ?? null;
+    }
+    return stepComebackTracker(prevTracker, miniLeftScore, miniRightScore, {
+        minDeficit: miniMinDeficit(roundTarget),
+    });
+};
+
+const normalizeLiveStats = (liveStats) => ({
+    left: { ...DEFAULT_TEAM_STAT_VALUES, ...(liveStats?.left ?? {}) },
+    right: { ...DEFAULT_TEAM_STAT_VALUES, ...(liveStats?.right ?? {}) },
+});
+
+const bumpStat = (liveStats, side, key, delta, min = 0, max = 100) => {
+    const base = liveStats?.[side] ?? DEFAULT_TEAM_STAT_VALUES;
+    const raw = (base[key] ?? DEFAULT_TEAM_STAT_VALUES[key]) + delta;
+    return {
+        ...liveStats,
+        [side]: {
+            ...base,
+            [key]: Math.round(clampStat(raw, min, max) * 100) / 100,
+        },
+    };
+};
+
+const settleComebacks = (liveStats, tracker, outcomes, amountOf, failClutchShare) => {
+    let stats = liveStats;
+    for (const side of ["left", "right"]) {
+        const episode = tracker?.[side];
+        if (!episode?.hit || !(episode.peak > 0)) continue;
+
+        const foe = otherSide(side);
+        const amount = amountOf(episode.peak);
+
+        if (outcomes[side] !== "lost") {
+            stats = bumpStat(stats, side, "clutch", amount);
+            stats = bumpStat(stats, foe, "composure", -amount);
+        } else {
+            const pulledBack = clampShare(
+                (episode.peak - Math.max(0, episode.low)) / episode.peak
+            );
+            const tightness =
+                COMEBACK.closeCallFloor +
+                (1 - COMEBACK.closeCallFloor) *
+                    Math.pow(1 - pulledBack, COMEBACK.closeCallPower);
+            stats = bumpStat(stats, foe, "composure", amount * tightness);
+            stats = bumpStat(stats, side, "clutch", -amount * tightness * failClutchShare);
+        }
+    }
+    return stats;
+};
+
+const resolveRoundConclusion = ({
+    liveStats,
+    winnerSide,
+    clutchRoundFlag,
+    lastRoundLoserSide,
+    bounceBackArmedSide,
+    isFirstRoundOfSet,
+    miniTarget = 5,
+    roundComebackTracker = null,
+    setContest = null,
+}) => {
+    let stats = normalizeLiveStats(liveStats);
+    const loserSide = otherSide(winnerSide);
+
+    const prevWinnerStreak = stats?.[winnerSide]?.momentum ?? 0;
+    const prevLoserStreak = stats?.[loserSide]?.momentum ?? 0;
+    const nextWinnerStreak = prevWinnerStreak + 1;
+    stats = {
+        ...stats,
+        [winnerSide]: { ...stats[winnerSide], momentum: nextWinnerStreak },
+        [loserSide]: { ...stats[loserSide], momentum: 0 },
+    };
+
+    if (prevLoserStreak >= 5) {
+        stats = bumpStat(stats, winnerSide, "streakBreaker", 2);
+    }
+    if (prevWinnerStreak >= 5) {
+        stats = bumpStat(stats, loserSide, "streakBreaker", -0.5);
+    }
+
+    stats = settleComebacks(
+        stats,
+        clutchRoundFlag,
+        { [winnerSide]: "won", [loserSide]: "lost" },
+        miniAmountOf(miniTarget),
+        COMEBACK.mini.failClutchShare
+    );
+
+    let nextRoundComebackTracker = roundComebackTracker ?? null;
+    if (setContest) {
+        const { left, right, target, inOvertime = false, overtimeBlock = 0 } = setContest;
+        
+        if (left >= target || right >= target) {
+            const decidedBy = left >= target ? "left" : "right";
+
+            stats = settleComebacks(
+                stats,
+                roundComebackTracker,
+                { [decidedBy]: "won", [otherSide(decidedBy)]: "lost" },
+                roundAmountOf({ target, inOvertime, overtimeBlock }),
+                COMEBACK.round.failClutchShare
+            );
+
+            nextRoundComebackTracker = null;
+        } else {
+            nextRoundComebackTracker = stepComebackTracker(
+                roundComebackTracker,
+                left,
+                right,
+                roundRule(target)
+            );
+        }
+    }
+
+    if (lastRoundLoserSide) {
+        stats = bumpStat(
+            stats,
+            lastRoundLoserSide,
+            "antiTilt",
+            winnerSide === lastRoundLoserSide ? 0.5 : -0.5
+        );
+    }
+
+    if (isFirstRoundOfSet && bounceBackArmedSide) {
+        stats = bumpStat(
+            stats,
+            bounceBackArmedSide,
+            "bounceBack",
+            winnerSide === bounceBackArmedSide ? 2 : -1
+        );
+    }
+
+    return {
+        liveStats: stats,
+        nextLastRoundLoserSide: loserSide,
+        nextBounceBackArmedSide: isFirstRoundOfSet ? null : bounceBackArmedSide,
+        momentumSide: winnerSide,
+        momentumValue: nextWinnerStreak,
+        roundComebackTracker: nextRoundComebackTracker,
+    };
+};
+
+const applyOtStaminaRoundResult = (liveStats, winnerSide) => {
+    const loserSide = otherSide(winnerSide);
+    let stats = bumpStat(normalizeLiveStats(liveStats), winnerSide, "otStamina", 1);
+    stats = bumpStat(stats, loserSide, "otStamina", -1);
+    return stats;
+};
+
+const applyOtStaminaPenaltyAttempt = (liveStats, attackerSide, attackerSucceeded) =>
+    bumpStat(normalizeLiveStats(liveStats), attackerSide, "otStamina", attackerSucceeded ? 1 : -1);
+
+const ELIMINATION_NETS = ["0:2", "1:2", "2:2"];
+const PLAYOFF_ROUND_INDEX = { ro16: 0, qf: 1, sf: 2, gf: 3 };
+
+const UPSET_GAP_THRESHOLD = 0.15;
+const TOP_SEED_RANK_LIMIT = 10;
+
+const STAT_NOT_ACTIVATED_NOTE = "Not activated";
+
+const CONDITIONAL_STAT_KEYS = [
+    "bigStage",
+    "upsetPedigree",
+    "bounceBack",
+    "finisher",
+    "elimNerve",
+    "unbeatenNerve",
+    "topSeed",
+    "unbeatenStreakBreaker",
+];
+
+const STAT_ACTIVATION_VERSION = 2;
+
+const BATTLE_XP_FULL = 30;
+const BATTLE_SWISS_STAKES = { stage1: 0.15, stage2: 0.3, stage3: 0.45 };
+const BATTLE_DECISIVE_NET_STAKES = 0.15;
+const BATTLE_PLAYOFF_STAKES = { ro16: 0.65, qf: 0.75, sf: 0.85, thirdPlace: 0.7, gf: 1 };
+
+const readOptionalNumber = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+};
+
+const readBattleXp = (stats) => {
+    const n = readOptionalNumber(stats?.battleXp);
+    return n === null ? null : Math.max(0, n);
+};
+
+const battleStakesOf = ({ kind, swissStageKey, net, playoffsStage }) => {
+    if (kind === "playoffs") return BATTLE_PLAYOFF_STAKES[playoffsStage] ?? BATTLE_PLAYOFF_STAKES.ro16;
+    const base = BATTLE_SWISS_STAKES[swissStageKey] ?? BATTLE_SWISS_STAKES.stage1;
+    return clampShare(base + (isProgressionOrEliminationNet(net) ? BATTLE_DECISIVE_NET_STAKES : 0));
+};
+
+const battleDifficulty = ({ ownRating, oppRating, oppRank, fieldSize, stakes }) => {
+    const oppWinOdds = expectedScore(oppRating, ownRating);
+    const oppStanding =
+        fieldSize > 1 && Number.isFinite(oppRank)
+            ? clampShare(1 - (oppRank - 1) / (fieldSize - 1))
+            : 0.5;
+    return clampShare(0.4 * oppWinOdds + 0.3 * oppStanding + 0.3 * stakes);
+};
+
+const battleXpGain = (setsPlayed, difficulty) =>
+    Math.max(1, setsPlayed) * (0.5 + clampShare(difficulty));
+
+const battleTestedDelta = ({ won, difficulty, experience }) => {
+    const d = clampShare(difficulty);
+    const weight = 0.6 + 0.4 * clampShare(experience / BATTLE_XP_FULL);
+    return won ? 1 + 5 * d * weight : -(1 + 4 * (1 - d) * weight);
+};
+
+const resetBattleExperience = (teamStats) => {
+    const out = {};
+    Object.entries(teamStats ?? {}).forEach(([id, stats]) => {
+        out[id] = { ...stats, battleXp: 0 };
+    });
+    return out;
+};
+
+const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, rating, rank, values }) => {
+    const isSwiss = kind === "swiss";
+    const isThirdPlace = !isSwiss && playoffsStage === "thirdPlace";
+    const [winsInStage, lossesInStage] = isSwiss
+        ? String(net ?? "").split(":").map((n) => Number(n) || 0)
+        : [0, 0];
+    const unbeatenEligible = !isThirdPlace && (!isSwiss || lossesInStage === 0);
+
+    const multiSet = Number.isFinite(bestOf) ? calcSetsToWin(bestOf) > 1 : null;
+    const elimNerve = isSwiss ? ELIMINATION_NETS.includes(net) : !isThirdPlace;
+
+    const bigStageCanRise = isSwiss ? winsInStage === 2 : true;
+    const bigStageCanFall = isSwiss && lossesInStage === 2;
+
+    const ratingsKnown = Number.isFinite(rating?.left) && Number.isFinite(rating?.right);
+    const gapActive = ratingsKnown
+        ? relativeRatingsGap(rating.left, rating.right) >= UPSET_GAP_THRESHOLD
+        : null;
+    const underdogSide = ratingsKnown ? (rating.left < rating.right ? "left" : "right") : null;
+
+    const isFloored = (side, key) => {
+        const v = values?.[side]?.[key];
+        return Number.isFinite(v) && v <= 0;
+    };
+
+    const sideOf = (side) => {
+        const ownStreak = streak?.[side] ?? null;
+        const foeStreak = streak?.[otherSide(side)] ?? null;
+        const ownRank = rank?.[side] ?? null;
+
+        const bigStage =
+            bigStageCanRise || (bigStageCanFall && !isFloored(side, "bigStage"));
+        const upsetPedigree =
+            gapActive === null
+                ? null
+                : gapActive && (underdogSide === side || !isFloored(side, "upsetPedigree"));
+
+        return {
+            bigStage,
+            upsetPedigree,
+            bounceBack: multiSet,
+            finisher: multiSet,
+            elimNerve,
+            unbeatenNerve: ownStreak === null ? null : unbeatenEligible && ownStreak >= 1,
+            battleTested: true,
+            topSeed: ownRank === null ? null : ownRank >= 1 && ownRank <= TOP_SEED_RANK_LIMIT,
+            unbeatenStreakBreaker: foeStreak === null ? null : foeStreak >= 1,
+        };
+    };
+
+    return { left: sideOf("left"), right: sideOf("right") };
+};
+
+const buildStatRowNotes = (activation) => {
+    if (!activation) return null;
+    const notes = {};
+    CONDITIONAL_STAT_KEYS.forEach((key) => {
+        if (activation[key] === false) notes[key] = STAT_NOT_ACTIVATED_NOTE;
+    });
+    return notes;
+};
+
+const getFinishedMatchStatActivation = ({ match, modalContext, bestOf, leftTeam, rightTeam }) => {
+    const leftId = leftTeam?.id;
+    const rightId = rightTeam?.id;
+    if (!match || !leftId || !rightId) return null;
+
+    const stored = match.statsMeta?.statActivation;
+    if (
+        stored?.version === STAT_ACTIVATION_VERSION &&
+        stored.byTeam?.[leftId] &&
+        stored.byTeam?.[rightId]
+    ) {
+        return { left: stored.byTeam[leftId], right: stored.byTeam[rightId] };
+    }
+
+    const before = match.statsMeta?.before;
+    const ratingsBefore = match.ratingMeta?.before;
+    const streakOf = (id) => {
+        const n = readOptionalNumber(before?.[id]?.unbeatenStreak);
+        return n === null ? null : Math.max(0, Math.floor(n));
+    };
+
+    return deriveStatActivation({
+        kind: modalContext?.type === "swiss" ? "swiss" : "playoffs",
+        net: modalContext?.net ?? null,
+        playoffsStage: modalContext?.stage ?? null,
+        bestOf,
+        streak: { left: streakOf(leftId), right: streakOf(rightId) },
+        values: {
+            left: {
+                bigStage: readOptionalNumber(before?.[leftId]?.bigStage),
+                upsetPedigree: readOptionalNumber(before?.[leftId]?.upsetPedigree),
+            },
+            right: {
+                bigStage: readOptionalNumber(before?.[rightId]?.bigStage),
+                upsetPedigree: readOptionalNumber(before?.[rightId]?.upsetPedigree),
+            },
+        },
+        rating: {
+            left: readOptionalNumber(ratingsBefore?.[leftId]?.points),
+            right: readOptionalNumber(ratingsBefore?.[rightId]?.points),
+        },
+        rank: {
+            left: readOptionalNumber(ratingsBefore?.[leftId]?.rank),
+            right: readOptionalNumber(ratingsBefore?.[rightId]?.rank),
+        },
+    });
+};
+
+const finisherSweepAmount = (setsToWin) => 2 + Math.max(0, setsToWin - 2);
+
+const applyFinisherResult = (liveStats, { seriesWinner, setsToWin, winnerTrailed, loserSets }) => {
+    if (!(setsToWin > 1)) return liveStats;
+
+    const amount = finisherSweepAmount(setsToWin);
+    let stats = liveStats;
+
+    if (!winnerTrailed && loserSets < 2) {
+        stats = bumpStat(stats, seriesWinner, "finisher", amount);
+    }
+    if (loserSets === 0) {
+        stats = bumpStat(stats, otherSide(seriesWinner), "finisher", -amount);
+    }
+    return stats;
+};
+
+const seriesSeverity = (winnerSets, loserSets) => {
+    const w = Math.max(1, Number(winnerSets) || 0);
+    const l = Math.max(0, Number(loserSets) || 0);
+    return Math.max(0.25, Math.min(1, (w - l) / w));
+};
+
+const buildMatchStatContext = ({
+    kind,
+    net = null,
+    swissStageKey = null,
+    playoffsStage = null,
+    bestOf,
+    leftTeam,
+    rightTeam,
+    seededStats,
+    ratings,
+    teams,
+}) => {
+    const isSwiss = kind === "swiss";
+    const isThirdPlace = !isSwiss && playoffsStage === "thirdPlace";
+    const lossesInStage = isSwiss ? Number(String(net ?? "").split(":")[1]) || 0 : 0;
+
+    const unbeatenEligible = !isThirdPlace && (!isSwiss || lossesInStage === 0);
+    const streakOf = (side) =>
+        Math.max(0, Math.floor(Number(seededStats?.[side]?.unbeatenStreak) || 0));
+
+    const { rankById } = buildLeaderboard(teams, ratings);
+    const ratingOf = (team) => Number(ratings?.[team?.id]) || 0;
+    const rankOf = (team) => rankById?.[team?.id] ?? null;
+
+    const active = deriveStatActivation({
+        kind: isSwiss ? "swiss" : "playoffs",
+        net,
+        playoffsStage,
+        bestOf,
+        streak: { left: streakOf("left"), right: streakOf("right") },
+        values: { left: seededStats?.left, right: seededStats?.right },
+        rating: { left: ratingOf(leftTeam), right: ratingOf(rightTeam) },
+        rank: { left: rankOf(leftTeam), right: rankOf(rightTeam) },
+    });
+
+    const stakes = battleStakesOf({
+        kind: isSwiss ? "swiss" : "playoffs",
+        swissStageKey,
+        net,
+        playoffsStage,
+    });
+    const fieldSize = teams?.length ?? 0;
+    const difficultyFor = (own, opponent) =>
+        battleDifficulty({
+            ownRating: ratingOf(own),
+            oppRating: ratingOf(opponent),
+            oppRank: rankOf(opponent),
+            fieldSize,
+            stakes,
+        });
+
+    return {
+        kind: isSwiss ? "swiss" : "playoffs",
+        isBo1: bestOf === 1,
+        elimNerveActive: active.left.elimNerve,
+        unbeatenExempt: isThirdPlace,
+        unbeatenRoundIndex: PLAYOFF_ROUND_INDEX[playoffsStage] ?? 0,
+        unbeaten: {
+            left: { eligible: unbeatenEligible, active: active.left.unbeatenNerve },
+            right: { eligible: unbeatenEligible, active: active.right.unbeatenNerve },
+        },
+        battle: {
+            left: { difficulty: difficultyFor(leftTeam, rightTeam) },
+            right: { difficulty: difficultyFor(rightTeam, leftTeam) },
+        },
+        unbeatenBreaker: {
+            left: { active: active.left.unbeatenStreakBreaker, streak: streakOf("right") },
+            right: { active: active.right.unbeatenStreakBreaker, streak: streakOf("left") },
+        },
+        topSeedRank: { left: rankOf(leftTeam), right: rankOf(rightTeam) },
+        upsetUnderdogSide: ratingOf(leftTeam) < ratingOf(rightTeam) ? "left" : "right",
+        upsetValue: {
+            left: Number(seededStats?.left?.upsetPedigree) || 0,
+            right: Number(seededStats?.right?.upsetPedigree) || 0,
+        },
+        active,
+    };
+};
+
+const getPreMatchStatActivation = ({
+    modalContext,
+    bestOf,
+    leftTeam,
+    rightTeam,
+    leftStats,
+    rightStats,
+    ratings,
+    teams,
+}) => {
+    if (!modalContext || !leftTeam || !rightTeam) return null;
+    const isSwiss = modalContext.type === "swiss";
+
+    return buildMatchStatContext({
+        kind: isSwiss ? "swiss" : "playoffs",
+        net: isSwiss ? modalContext.net ?? null : null,
+        swissStageKey: isSwiss ? modalContext.stageKey ?? null : null,
+        playoffsStage: isSwiss ? null : modalContext.stage ?? null,
+        bestOf,
+        leftTeam,
+        rightTeam,
+        seededStats: {
+            left: { ...DEFAULT_TEAM_STAT_VALUES, ...(leftStats ?? {}) },
+            right: { ...DEFAULT_TEAM_STAT_VALUES, ...(rightStats ?? {}) },
+        },
+        ratings,
+        teams,
+    }).active;
+};
+
+const resolveSeriesEndStats = ({ liveStats, winnerSide, ctx, winnerSets, loserSets }) => {
+    let stats = normalizeLiveStats(liveStats);
+    if (!ctx) return stats;
+
+    const loserSide = otherSide(winnerSide);
+
+    if (ctx.elimNerveActive) {
+        const severity = seriesSeverity(winnerSets, loserSets);
+        stats = bumpStat(stats, winnerSide, "elimNerve", 3 * severity);
+        stats = bumpStat(stats, loserSide, "elimNerve", -3 * severity);
+    }
+
+    const setsPlayed = Math.max(1, (Number(winnerSets) || 0) + (Number(loserSets) || 0));
+
+    for (const side of ["left", "right"]) {
+        const won = side === winnerSide;
+
+        const difficulty = ctx.battle?.[side]?.difficulty;
+        if (Number.isFinite(difficulty)) {
+            const experience =
+                (readBattleXp(stats[side]) ?? 0) + battleXpGain(setsPlayed, difficulty);
+            stats = bumpStat(
+                stats,
+                side,
+                "battleTested",
+                battleTestedDelta({ won, difficulty, experience })
+            );
+            stats = {
+                ...stats,
+                [side]: { ...stats[side], battleXp: Math.round(experience * 100) / 100 },
+            };
+        }
+
+        const rank = ctx.topSeedRank?.[side];
+        if (Number.isFinite(rank) && rank >= 1 && rank <= 10) {
+            const k = rank === 1 ? 1 : 0.5;
+            stats = bumpStat(stats, side, "topSeed", won ? k : -3 * k);
+        }
+
+        const breaker = ctx.unbeatenBreaker?.[side];
+        if (breaker?.active) {
+            const streak = Math.max(1, breaker.streak ?? 1);
+            stats = bumpStat(
+                stats,
+                side,
+                "unbeatenStreakBreaker",
+                won ? unbeatenBreakerWinGain(streak) : -unbeatenBreakerLossAmount(streak)
+            );
+        }
+    }
+
+    if (!ctx.unbeatenExempt) {
+        for (const side of ["left", "right"]) {
+            const u = ctx.unbeaten?.[side];
+            if (!u) continue;
+
+            const won = side === winnerSide;
+            const streak = Math.max(0, Math.floor(Number(stats[side].unbeatenStreak) || 0));
+
+            if (won) {
+                if (u.active) {
+                    const gain = ctx.kind === "playoffs" ? 3 + (ctx.unbeatenRoundIndex ?? 0) : 1;
+                    stats = bumpStat(stats, side, "unbeatenNerve", gain);
+                }
+                if (u.eligible) {
+                    stats = {
+                        ...stats,
+                        [side]: {
+                            ...stats[side],
+                            unbeatenStreak: Math.min(UNBEATEN_STREAK_DEFINITION.max, streak + 1),
+                        },
+                    };
+                }
+            } else {
+                if (u.active) {
+                    stats = bumpStat(stats, side, "unbeatenNerve", ctx.kind === "playoffs" ? -5 : -3);
+                }
+                stats = { ...stats, [side]: { ...stats[side], unbeatenStreak: 0 } };
+            }
+        }
+    }
+
+    return stats;
+};
+
+const PREDICTION_TEXT_TIERS = [
+    {
+        max: 0.3,
+        texts: [
+            "Absolute 50/50",
+            "A perfect coin flip",
+            "Dead even, no edge at all",
+            "Not a single point between them",
+            "Pure toss-up",
+        ],
+    },
+    {
+        max: 1,
+        texts: [
+            "Razor-thin margin",
+            "Basically a coin flip",
+            "Too close to call",
+            "Separated by a hair",
+            "Almost perfectly balanced",
+        ],
+    },
+    {
+        max: 2.5,
+        texts: [
+            "{fav} by a whisker",
+            "{fav} has the faintest edge",
+            "Barely any daylight between them",
+            "Only a sliver separates them",
+            "Practically even, {fav} leaning",
+        ],
+    },
+    {
+        max: 4.5,
+        texts: [
+            "{fav} is a hair ahead",
+            "Tiny edge for {fav}",
+            "A whisper of advantage for {fav}",
+            "{fav} nudges slightly ahead",
+            "Very slight lean towards {fav}",
+        ],
+    },
+    {
+        max: 7,
+        texts: [
+            "{fav} has the smallest lead",
+            "Slight advantage for {fav}",
+            "{fav} edges it on paper",
+            "A narrow edge to {fav}",
+            "{fav} is marginally ahead",
+        ],
+    },
+    {
+        max: 10,
+        texts: [
+            "{fav} has a slight edge",
+            "{fav} is a touch ahead",
+            "Small but real edge for {fav}",
+            "Barely separated, {fav} ahead",
+            "{fav} holds a small advantage",
+        ],
+    },
+    {
+        max: 14,
+        texts: [
+            "{fav} has a modest edge",
+            "{fav} is slightly favored",
+            "Lean {fav}, but it's open",
+            "{fav} has the upper hand, barely",
+            "A clear but small edge for {fav}",
+        ],
+    },
+    {
+        max: 18,
+        texts: [
+            "{fav} is a modest favorite",
+            "{fav} looks a step ahead",
+            "The edge belongs to {fav}",
+            "{fav} has a noticeable edge",
+            "{dog} still has a real shot",
+        ],
+    },
+    {
+        max: 23,
+        texts: [
+            "{fav} has the advantage",
+            "{fav} is the clear lean",
+            "{fav} favored, but not safe",
+            "{fav} holds the better odds",
+            "Advantage {fav}, no doubt",
+        ],
+    },
+    {
+        max: 28,
+        texts: [
+            "{fav} has it in control",
+            "{fav} is a solid favorite",
+            "{fav} should have the upper hand",
+            "{dog} needs a lucky break",
+            "{fav} is comfortably ahead",
+        ],
+    },
+    {
+        max: 34,
+        texts: [
+            "{fav} is a strong favorite",
+            "{fav} has a firm grip",
+            "{fav} looks well in front",
+            "{dog} is up against it",
+            "Odds clearly favor {fav}",
+        ],
+    },
+    {
+        max: 40,
+        texts: [
+            "{fav} has a strong position",
+            "{fav} is the heavy lean",
+            "{dog} faces an uphill climb",
+            "{fav} is firmly ahead",
+            "Big advantage for {fav}",
+        ],
+    },
+    {
+        max: 47,
+        texts: [
+            "{fav} has a commanding position",
+            "{fav} is a big favorite",
+            "{dog} needs a real upset",
+            "{fav} holds a big advantage",
+            "The numbers back {fav} heavily",
+        ],
+    },
+    {
+        max: 54,
+        texts: [
+            "{fav} has a dominant position",
+            "{fav} is the team to beat",
+            "{dog} needs a big surprise",
+            "{fav} looks dominant here",
+            "{fav} is far ahead on paper",
+        ],
+    },
+    {
+        max: 61,
+        texts: [
+            "{fav} is the dominant side",
+            "{dog} is a clear underdog",
+            "{fav} has a huge edge",
+            "It's {fav}'s match to lose",
+            "{fav} is well clear",
+        ],
+    },
+    {
+        max: 68,
+        texts: [
+            "{fav} is a heavy favorite",
+            "{dog} is in serious trouble",
+            "{fav} should win without trouble",
+            "{fav} is miles ahead",
+            "{fav} is the clear pick",
+        ],
+    },
+    {
+        max: 74,
+        texts: [
+            "{fav} is overwhelming favorite",
+            "{dog} needs a big upset",
+            "Heavy edge for {fav}",
+            "{dog} has little room for error",
+            "{fav} should control this",
+        ],
+    },
+    {
+        max: 80,
+        texts: [
+            "{fav} is very likely a winner",
+            "{dog} is a long shot here",
+            "{fav} looks like the winner",
+            "Everything points to {fav}",
+            "{fav} has this firmly in hand",
+        ],
+    },
+    {
+        max: 85,
+        texts: [
+            "{fav} is a big, big favorite",
+            "{dog} is a major long shot",
+            "{fav} is expected to cruise",
+            "{fav} should win comfortably",
+            "A one-sided look, favoring {fav}",
+        ],
+    },
+    {
+        max: 89,
+        texts: [
+            "{fav} is a very safe pick",
+            "{dog} faces very long odds",
+            "{fav} is rarely beaten here",
+            "A lopsided match towards {fav}",
+            "{fav} is the near-certain pick",
+        ],
+    },
+    {
+        max: 92.5,
+        texts: [
+            "{fav} is near-absolute favorite",
+            "{dog} needs a rare upset",
+            "{fav} is almost untouchable here",
+            "A shock is needed to stop {fav}",
+            "{fav} is all but certain",
+        ],
+    },
+    {
+        max: 95,
+        texts: [
+            "{fav} is almost certain to win",
+            "{dog} is up against huge odds",
+            "Only a shock stops {fav}",
+            "{fav} is a near-certainty",
+            "{dog} would need a stunner",
+        ],
+    },
+    {
+        max: 97,
+        texts: [
+            "{fav} is virtually unbeatable",
+            "{dog} needs something miraculous",
+            "{fav} should win with ease",
+            "A mismatch in {fav}'s favor",
+            "{dog} is deep in upset territory",
+        ],
+    },
+    {
+        max: 98.5,
+        texts: [
+            "{fav} is practically a lock",
+            "{dog} has almost no chance",
+            "A near-total mismatch",
+            "{fav} should steamroll them",
+            "{dog} needs a miracle",
+        ],
+    },
+    {
+        max: 99.4,
+        texts: [
+            "{fav} is a virtual lock",
+            "{dog} is hanging by a thread",
+            "{dog} needs a true miracle",
+            "A landslide expected for {fav}",
+            "Practically guaranteed for {fav}",
+        ],
+    },
+    {
+        max: Infinity,
+        texts: [
+            "{fav} is as good as guaranteed",
+            "{dog} has no realistic path",
+            "Mission impossible for {dog}",
+            "{fav} is a sure thing",
+            "{dog} would need a cosmic upset",
+        ],
+    },
+];
+
+const hashString = (value) => {
+    let h = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+        h ^= value.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+};
+
+const pickPredictionText = ({ diff, favorite, underdog, seed }) => {
+    const found = PREDICTION_TEXT_TIERS.findIndex((tier) => diff < tier.max);
+    const tierIndex = found === -1 ? PREDICTION_TEXT_TIERS.length - 1 : found;
+    const { texts } = PREDICTION_TEXT_TIERS[tierIndex];
+    const text = texts[hashString(`${seed}|${tierIndex}`) % texts.length];
+
+    return text.split("{fav}").join(favorite ?? "").split("{dog}").join(underdog ?? "");
+};
+
+const toDisplayedPercent = (probability) =>
+    Math.round(Math.min(99.9, Math.max(0.1, probability * 100)) * 10) / 10;
+
+const PREDICTION_STREAK_CAP = 12;
+const PREDICTION_MINI_SAMPLES = 240;
+const PREDICTION_CACHE_MAX = 80;
+const predictionCache = new Map();
+
+const raceWinProbability = (q, target) => {
+    if (q <= 0) return 0;
+    if (q >= 1) return 1;
+
+    let term = Math.pow(q, target);
+    let sum = term;
+    for (let j = 1; j < target; j++) {
+        term = (term * (1 - q) * (target - 1 + j)) / j;
+        sum += term;
+    }
+    return Math.min(1, sum);
+};
+
+const miniBeatProbability = (loA, widthA, loB, widthB) => {
+    let sum = 0;
+    for (let i = 0; i < PREDICTION_MINI_SAMPLES; i++) {
+        const x = Math.max(
+            MULTIPLIER_MIN,
+            Math.min(MULTIPLIER_MAX, loA + (widthA * (i + 0.5)) / PREDICTION_MINI_SAMPLES)
+        );
+        if (x <= MULTIPLIER_MIN) continue;
+        sum += Math.max(0, Math.min(1, (x - loB) / widthB));
+    }
+    return sum / PREDICTION_MINI_SAMPLES;
+};
+
+const predictRoundWin = (env, { streakSide, streakLen, lastLoser, armed, otBlock, target }) => {
+    const key = `${streakSide ?? "-"}${streakLen}|${lastLoser ?? "-"}|${armed ?? "-"}|${otBlock}|${target}`;
+    const cached = env.cache.get(key);
+    if (cached !== undefined) return cached;
+
+    const ctx = {
+        liveStats: {
+            left: { ...env.leftStats, momentum: streakSide === "left" ? streakLen : 0 },
+            right: { ...env.rightStats, momentum: streakSide === "right" ? streakLen : 0 },
+        },
+        otContext: { active: otBlock > 0, depth: otBlock },
+        bounceBackArmedSide: armed,
+        lastRoundLoserSide: lastLoser,
+        matchCtx: env.matchCtx,
+        finisherActive: env.finisherActive,
+    };
+
+    const bounds = (side) => {
+        const lo = MULTIPLIER_MIN + computeRollBonus(side, MULTIPLIER_MIN, ctx);
+        const hi = MULTIPLIER_MAX + computeRollBonus(side, MULTIPLIER_MAX, ctx);
+        return { lo, width: Math.max(0.5, hi - lo) };
+    };
+    const left = bounds("left");
+    const right = bounds("right");
+
+    const pLeft = miniBeatProbability(left.lo, left.width, right.lo, right.width);
+    const pRight = miniBeatProbability(right.lo, right.width, left.lo, left.width);
+    const q = pLeft + pRight > 0 ? pLeft / (pLeft + pRight) : 0.5;
+
+    const result = raceWinProbability(q, target);
+    env.cache.set(key, result);
+    return result;
+};
+
+const predictSetWin = (env, prevLoser) => {
+    const CAP = PREDICTION_STREAK_CAP;
+    const NS = 1 + 2 * CAP;
+    const W = BASE_ROUNDS_TO_WIN;
+    const O = OT_ROUNDS_TO_WIN;
+
+    const stateOf = (side, len) => (side === "left" ? len : CAP + len);
+    const decode = (s) =>
+        s === 0
+            ? { side: null, len: 0 }
+            : s <= CAP
+                ? { side: "left", len: s }
+                : { side: "right", len: s - CAP };
+    const advance = (s, winner) => {
+        const d = decode(s);
+        return stateOf(winner, d.side === winner ? Math.min(CAP, d.len + 1) : 1);
+    };
+
+    let leftWins = 0;
+    const overtimeStart = new Float64Array(NS);
+
+    const regular = new Float64Array(W * W * NS);
+    const at = (a, b, s) => (a * W + b) * NS + s;
+    regular[at(0, 0, 0)] = 1;
+
+    for (let total = 0; total < BASE_MAX_ROUNDS; total++) {
+        const roundIndex = total + 1;
+        const target = roundIndex === 1 || roundIndex === 13 ? 10 : 5;
+
+        for (let a = Math.max(0, total - (W - 1)); a <= Math.min(W - 1, total); a++) {
+            const b = total - a;
+
+            for (let s = 0; s < NS; s++) {
+                const mass = regular[at(a, b, s)];
+                if (!mass) continue;
+
+                const d = decode(s);
+                const pLeft = predictRoundWin(env, {
+                    streakSide: d.side,
+                    streakLen: d.len,
+                    lastLoser: d.side ? otherSide(d.side) : prevLoser,
+                    armed: total === 0 ? prevLoser : null,
+                    otBlock: 0,
+                    target,
+                });
+
+                const leftState = advance(s, "left");
+                if (a + 1 === W) leftWins += mass * pLeft;
+                else if (a + 1 + b === BASE_MAX_ROUNDS) overtimeStart[leftState] += mass * pLeft;
+                else regular[at(a + 1, b, leftState)] += mass * pLeft;
+
+                const rightState = advance(s, "right");
+                if (b + 1 === W) continue;
+                if (a + b + 1 === BASE_MAX_ROUNDS) overtimeStart[rightState] += mass * (1 - pLeft);
+                else regular[at(a, b + 1, rightState)] += mass * (1 - pLeft);
+            }
+        }
+    }
+
+    let carry = overtimeStart;
+    for (let block = 1; block <= OT_MAX_BLOCK; block++) {
+        const ot = new Float64Array(O * O * NS);
+        const atOt = (a, b, s) => (a * O + b) * NS + s;
+        for (let s = 0; s < NS; s++) ot[atOt(0, 0, s)] = carry[s];
+        const nextCarry = new Float64Array(NS);
+
+        for (let total = 0; total < 2 * (O - 1); total++) {
+            const target = total === 0 ? 10 : 5;
+
+            for (let a = Math.max(0, total - (O - 1)); a <= Math.min(O - 1, total); a++) {
+                const b = total - a;
+
+                for (let s = 0; s < NS; s++) {
+                    const mass = ot[atOt(a, b, s)];
+                    if (!mass) continue;
+
+                    const d = decode(s);
+                    const pLeft = predictRoundWin(env, {
+                        streakSide: d.side,
+                        streakLen: d.len,
+                        lastLoser: d.side ? otherSide(d.side) : null,
+                        armed: null,
+                        otBlock: block,
+                        target,
+                    });
+
+                    const leftState = advance(s, "left");
+                    if (a + 1 === O) leftWins += mass * pLeft;
+                    else if (a + 1 + b === 2 * (O - 1)) nextCarry[leftState] += mass * pLeft;
+                    else ot[atOt(a + 1, b, leftState)] += mass * pLeft;
+
+                    const rightState = advance(s, "right");
+                    if (b + 1 === O) continue;
+                    if (a + b + 1 === 2 * (O - 1)) nextCarry[rightState] += mass * (1 - pLeft);
+                    else ot[atOt(a, b + 1, rightState)] += mass * (1 - pLeft);
+                }
+            }
+        }
+        carry = nextCarry;
+    }
+
+    let stillTied = 0;
+    for (let s = 0; s < NS; s++) stillTied += carry[s];
+    if (stillTied > 0) {
+        const p = predictRoundWin(env, {
+            streakSide: null,
+            streakLen: 0,
+            lastLoser: null,
+            armed: null,
+            otBlock: OT_MAX_BLOCK,
+            target: 10,
+        });
+        const q = 1 - p;
+        let majority = 0;
+        for (let k = 4; k <= 6; k++) {
+            majority += (factorialOf(6) / (factorialOf(k) * factorialOf(6 - k))) * Math.pow(p, k) * Math.pow(q, 6 - k);
+        }
+        majority += 0.5 * 20 * Math.pow(p, 3) * Math.pow(q, 3);
+        leftWins += stillTied * majority;
+    }
+
+    return Math.min(1, Math.max(0, leftWins));
+};
+
+const factorialOf = (n) => (n <= 1 ? 1 : n * factorialOf(n - 1));
+
+const predictSeriesWin = (env, setsToWin) => {
+    const setProbability = {};
+    const pSet = (prevLoser) => {
+        const key = prevLoser ?? "none";
+        if (setProbability[key] === undefined) setProbability[key] = predictSetWin(env, prevLoser);
+        return setProbability[key];
+    };
+
+    const memo = new Map();
+    const walk = (leftSets, rightSets, prevLoser) => {
+        if (leftSets >= setsToWin) return 1;
+        if (rightSets >= setsToWin) return 0;
+
+        const key = `${leftSets}-${rightSets}-${prevLoser ?? "n"}`;
+        if (memo.has(key)) return memo.get(key);
+
+        const p = pSet(prevLoser);
+        const value = p * walk(leftSets + 1, rightSets, "right") + (1 - p) * walk(leftSets, rightSets + 1, "left");
+        memo.set(key, value);
+        return value;
+    };
+
+    return walk(0, 0, null);
+};
+
+const getMatchWinPrediction = ({
+    leftTeam,
+    rightTeam,
+    leftStats,
+    rightStats,
+    ratings,
+    teams,
+    matchContext,
+    bestOf,
+}) => {
+    const seeded = {
+        left: { ...DEFAULT_TEAM_STAT_VALUES, ...(leftStats ?? {}), momentum: 0 },
+        right: { ...DEFAULT_TEAM_STAT_VALUES, ...(rightStats ?? {}), momentum: 0 },
+    };
+
+    const isSwiss = matchContext?.type === "swiss";
+    const matchCtx = buildMatchStatContext({
+        kind: isSwiss ? "swiss" : "playoffs",
+        net: isSwiss ? matchContext?.net ?? null : null,
+        swissStageKey: isSwiss ? matchContext?.stageKey ?? null : null,
+        playoffsStage: isSwiss ? null : matchContext?.stage ?? null,
+        bestOf,
+        leftTeam,
+        rightTeam,
+        seededStats: seeded,
+        ratings,
+        teams,
+    });
+
+    const setsToWin = calcSetsToWin(bestOf);
+
+    const cacheKey = JSON.stringify([seeded, matchCtx, setsToWin]);
+    const cached = predictionCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    const env = {
+        leftStats: seeded.left,
+        rightStats: seeded.right,
+        matchCtx,
+        finisherActive: setsToWin > 1,
+        cache: new Map(),
+    };
+
+    const result = { leftWinProbability: predictSeriesWin(env, setsToWin) };
+
+    if (predictionCache.size >= PREDICTION_CACHE_MAX) {
+        predictionCache.delete(predictionCache.keys().next().value);
+    }
+    predictionCache.set(cacheKey, result);
+    return result;
+};
+
+const resolveSetConclusion = ({
+    liveStats,
+    setWinnerSide,
+    enteringLeftSets,
+    enteringRightSets,
+    setsToWin,
+    leftRating,
+    rightRating,
+    setComebackTracker = null,
+}) => {
+    let stats = normalizeLiveStats(liveStats);
+    const setLoserSide = otherSide(setWinnerSide);
+    let nextSetComebackTracker = setComebackTracker ?? null;
+
+    if (setsToWin > 1) {
+        const leftSets = enteringLeftSets + (setWinnerSide === "left" ? 1 : 0);
+        const rightSets = enteringRightSets + (setWinnerSide === "right" ? 1 : 0);
+        const seriesWinner =
+            leftSets >= setsToWin ? "left" : rightSets >= setsToWin ? "right" : null;
+
+        if (seriesWinner) {
+            stats = settleComebacks(
+                stats,
+                setComebackTracker,
+                { [seriesWinner]: "won", [otherSide(seriesWinner)]: "lost" },
+                setAmountOf(setsToWin),
+                COMEBACK.set.failClutchShare
+            );
+            stats = applyFinisherResult(stats, {
+                seriesWinner,
+                setsToWin,
+                winnerTrailed: !!setComebackTracker?.[seriesWinner]?.hit,
+                loserSets: seriesWinner === "left" ? rightSets : leftSets,
+            });
+            nextSetComebackTracker = null;
+        } else {
+            nextSetComebackTracker = stepComebackTracker(
+                setComebackTracker,
+                leftSets,
+                rightSets,
+                SET_COMEBACK_RULE
+            );
+        }
+    }
+
+    const gapPct = relativeRatingsGap(leftRating, rightRating);
+    if (gapPct >= 0.15) {
+        const underdogSide = leftRating < rightRating ? "left" : "right";
+        const favoriteSide = otherSide(underdogSide);
+
+        if (setWinnerSide === underdogSide) {
+            const { underdogGain, favoriteLoss } = upsetPedigreeSetGain(gapPct);
+            stats = bumpStat(stats, underdogSide, "upsetPedigree", underdogGain);
+            stats = bumpStat(stats, favoriteSide, "upsetPedigree", -favoriteLoss);
+        }
+    }
+
+    return {
+        liveStats: {
+            ...stats,
+            left: { ...stats.left, momentum: 0 },
+            right: { ...stats.right, momentum: 0 },
+        },
+        bounceBackArmedSide: setLoserSide,
+        setComebackTracker: nextSetComebackTracker,
+    };
 };
 
 const makeColor = (
@@ -584,6 +2190,50 @@ const loadTeamRatings = (teams) => {
     }
 };
 
+const buildModalStatsKey = ({ modalContext, currentModalMatch, hallRecordId, tournamentNumber, isPlayed }) => {
+    if (!modalContext || !currentModalMatch) return null;
+
+    const teamsPart = `${currentModalMatch.slotA?.id ?? "?"}-${currentModalMatch.slotB?.id ?? "?"}`;
+    const placePart =
+        modalContext.type === "swiss"
+            ? `${modalContext.stageKey}:${modalContext.net}`
+            : `playoffs:${modalContext.stage}`;
+    const originPart = modalContext.isArchivedHallOfFame
+        ? `hall:${hallRecordId ?? ""}:`
+        : `t${tournamentNumber}:`;
+
+    return `${originPart}${placePart}:${modalContext.matchId}:${teamsPart}:${isPlayed ? "finished" : "pre"}`;
+};
+
+const toggleStatsPanelEntry = (memory, key, side) => {
+    const { [key]: current, ...rest } = memory;
+    const base = current ?? DEFAULT_STATS_PANELS_STATE;
+    return { ...rest, [key]: { ...base, [side]: !base[side] } };
+};
+
+const loadStatsPanelMemory = () => {
+    try {
+        const raw = localStorage.getItem(STATS_PANELS_LS_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+        return {};
+    }
+};
+
+const saveStatsPanelMemory = (memory) => {
+    try {
+        const keys = Object.keys(memory);
+        const trimmed =
+            keys.length > STATS_PANELS_MAX_ENTRIES
+                ? Object.fromEntries(keys.slice(-STATS_PANELS_MAX_ENTRIES).map((k) => [k, memory[k]]))
+                : memory;
+        localStorage.setItem(STATS_PANELS_LS_KEY, JSON.stringify(trimmed));
+    } catch {
+        console.error("Couldn't save the stats panels state");
+    }
+};
+
 const loadTournamentNumber = () => {
     try {
         const raw = localStorage.getItem(TOURNAMENT_NUMBER_LS_KEY);
@@ -672,13 +2322,6 @@ const formatOrdinal = (n) => {
         case 3: return `${n}rd`;
         default: return `${n}th`;
     }
-};
-
-const BASE_RATING = 1000;
-
-const areRatingsAtDefault = (teams, ratings) => {
-    const def = buildDefaultTeamRatings(teams);
-    return teams.every((t) => (ratings?.[t.id] ?? 0) === def[t.id]);
 };
 
 const expectedScore = (ratingA, ratingB) => {
@@ -1668,6 +3311,8 @@ const BreakdownScoreRow = ({
     isInModal = false,
     isModalHidden,
     ggBanner = null,
+    leftMomentumStreak = null,
+    rightMomentumStreak = null,
 }) => {
     const momentum =
         leftScore > rightScore
@@ -1771,6 +3416,10 @@ const BreakdownScoreRow = ({
                                 orientation="horizontal"
                             />
                         )}
+
+                        <MomentumStreakBadge
+                            value={side === "left" ? leftMomentumStreak : rightMomentumStreak}
+                        />
                     </div>
 
                     {hasPens ? (
@@ -2324,6 +3973,9 @@ const SetBreakdownOverlay = ({
             !plan.hasExtended &&
             !plan.penalties;
 
+        const isLastRoundOfSet =
+            !!plan.lastLogged && round.key === plan.lastLogged.key;
+
         const threshold = 12 + 3 * (round.overtimeBlock ?? 0);
         const leftAtPoint =
             round.scoreLeft === threshold && round.scoreRight < threshold;
@@ -2425,6 +4077,8 @@ const SetBreakdownOverlay = ({
                     showLabels
                     leftLabel={leftLabel}
                     rightLabel={rightLabel}
+                    leftMomentumStreak={!isLastRoundOfSet && round.momentumSide === "left" ? round.momentumValue : null}
+                    rightMomentumStreak={!isLastRoundOfSet && round.momentumSide === "right" ? round.momentumValue : null}
                     ggBanner={
                         isMatchDecidingRound
                             ? { team: won ? leftTeam : rightTeam }
@@ -3069,6 +4723,15 @@ const defaultSeriesState = {
 
     swissMatchNumber: 1,
     playoffsMatchNumber: 1,
+
+    initialStats: null,
+    liveStats: null,
+    matchCtx: null,
+    clutchRoundFlag: null,
+    roundComebackTracker: null,
+    setComebackTracker: null,
+    lastRoundLoserSide: null,
+    bounceBackArmedSide: null,
 
     pendingAction: null,
 };
@@ -3783,6 +5446,962 @@ const PickemAchievedCounter = ({ run, instant, finalPoints, neededPoints, onSett
     );
 };
 
+const MomentumStreakBadge = ({ value, size = 15, animated = false }) => {
+    if (!value || value < 5) return null;
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "3px",
+                pointerEvents: "none",
+            }}
+        >
+            <motion.div
+                initial={animated ? { opacity: 0, scale: 0.4 } : false}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <FaFire
+                    style={{
+                        fontSize: `${size + 11}px`,
+                        color: "#ff8a00",
+                        filter: "drop-shadow(0 0 3px rgba(255,138,0,0.85))",
+                    }}
+                />
+                <span
+                    style={{
+                        position: "absolute",
+                        fontSize: `${size - 3}px`,
+                        fontWeight: 800,
+                        color: "#fff",
+                        textShadow: "0 1px 2px rgba(0,0,0,0.85)",
+                        marginTop: "2px",
+                    }}
+                >
+                    {value}
+                </span>
+            </motion.div>
+        </div>
+    );
+};
+
+const UnbeatenStreakFire = ({ value, size = 26, showZero = false, style = {} }) => {
+    const n = Math.max(0, Math.floor(Number(value) || 0));
+    if (n === 0 && !showZero) return null;
+
+    const text = String(n);
+    const digitRatio = text.length >= 3 ? 0.34 : text.length === 2 ? 0.43 : 0.5;
+
+    return (
+        <span
+            aria-label={`Unbeaten streak: ${n}`}
+            style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: `${size}px`,
+                height: `${size}px`,
+                flexShrink: 0,
+                pointerEvents: "none",
+                ...style,
+            }}
+        >
+            <FaFire
+                style={{
+                    fontSize: `${size}px`,
+                    color: "#ff8a00",
+                    filter: "drop-shadow(0 0 3px rgba(255,138,0,0.85))",
+                }}
+            />
+            <span
+                style={{
+                    position: "absolute",
+                    fontSize: `${Math.max(8, Math.round(size * digitRatio))}px`,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    color: "#fff",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.85)",
+                    marginTop: `${Math.max(1, Math.round(size * 0.1))}px`,
+                }}
+            >
+                {text}
+            </span>
+        </span>
+    );
+};
+
+const STREAK_LIT_STYLE = {
+    color: "#ff8a00",
+    filter: "drop-shadow(0 0 3px rgba(255,138,0,0.85))",
+    scale: 1,
+};
+
+const STREAK_ASH_STYLE = {
+    color: "#a7a9b4",
+    filter: "drop-shadow(0 0 0px rgba(255,138,0,0))",
+    scale: 0.92,
+};
+
+const LostStreakFire = ({ value, size = 26, style = {} }) => {
+    const reduceMotion = useReducedMotion();
+    const n = Math.max(0, Math.floor(Number(value) || 0));
+    if (n === 0) return null;
+
+    const text = String(n);
+    const digitRatio = text.length >= 3 ? 0.34 : text.length === 2 ? 0.43 : 0.5;
+
+    return (
+        <span
+            role="img"
+            aria-label={`Unbeaten streak of ${n} lost`}
+            style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: `${size}px`,
+                height: `${size}px`,
+                flexShrink: 0,
+                pointerEvents: "none",
+                ...style,
+            }}
+        >
+            <motion.span
+                initial={reduceMotion ? STREAK_ASH_STYLE : STREAK_LIT_STYLE}
+                animate={STREAK_ASH_STYLE}
+                transition={{ delay: 0.35, duration: 0.2, ease: "easeOut" }}
+                style={{ display: "inline-flex" }}
+            >
+                <FaFire style={{ fontSize: `${size}px` }} />
+            </motion.span>
+            <motion.span
+                initial={{ scaleX: reduceMotion ? 1 : 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.75, duration: 0.05, ease: "easeOut" }}
+                style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    width: `${Math.round(size * 1.2)}px`,
+                    height: "3px",
+                    x: "-50%",
+                    y: "-50%",
+                    rotate: -45,
+                    borderRadius: "2px",
+                    background: "#e53935",
+                    boxShadow: "0 0 0 1.5px #fff",
+                }}
+            />
+            <span
+                style={{
+                    position: "absolute",
+                    fontSize: `${Math.max(8, Math.round(size * digitRatio))}px`,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    color: "#fff",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.85)",
+                    marginTop: `${Math.max(1, Math.round(size * 0.1))}px`,
+                }}
+            >
+                {text}
+            </span>
+        </span>
+    );
+};
+
+const StatScaleBar = ({ value, max = 100, height = 9, animated = true }) => {
+    const pct = Math.max(0, Math.min(100, (Number(value) || 0) / max * 100));
+    const mainColor = percentToRedYellowGreenHex(pct);
+    const litGradient = `linear-gradient(180deg, ${lightenHex(mainColor, 0.24)} 0%, ${mainColor} 45%, ${darkenHex(mainColor, 0.24)} 100%)`;
+
+    return (
+        <div
+            style={{
+                position: "relative",
+                width: "100%",
+                height: `${height}px`,
+                borderRadius: `${height / 2}px`,
+                overflow: "hidden",
+                background: "#14151f",
+            }}
+        >
+            <div style={{ position: "absolute", inset: 0, background: litGradient, opacity: 0.26 }} />
+            <div
+                style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: `${pct}%`,
+                    background: litGradient,
+                    transition: animated ? "width 0.6s ease" : "none",
+                }}
+            />
+            {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((tick) => (
+                <div
+                    key={tick}
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        bottom: 0,
+                        left: `${tick}%`,
+                        width: "1px",
+                        background: "rgba(255,255,255,0.75)",
+                    }}
+                />
+            ))}
+        </div>
+    );
+};
+
+const STAT_ROW_FONT_PX = 12.5;
+const STAT_ROW_MIN_FONT_PX = 9.5;
+const STAT_ROW_NOTE_COLOR = "#8a8d99";
+
+const fitStatRowFont = (natural, available) =>
+    Math.floor(STAT_ROW_FONT_PX * (available / natural) * 10) / 10;
+
+const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "13px", note = null }) => {
+    const rounded = Math.round((Number(value) || 0) * 10) / 10;
+    const roundedDiff = diff == null ? null : Math.round(diff * 10) / 10;
+    const rowRef = useRef(null);
+    const labelRef = useRef(null);
+    const inlineNoteRef = useRef(null);
+    const barNoteRef = useRef(null);
+
+    useLayoutEffect(() => {
+        const rowEl = rowRef.current;
+        const labelEl = labelRef.current;
+        if (!rowEl || !labelEl) return;
+
+        const inlineNoteEl = inlineNoteRef.current;
+        const barNoteEl = barNoteRef.current;
+
+        labelEl.style.fontSize = "";
+        if (inlineNoteEl) inlineNoteEl.style.display = "";
+        if (barNoteEl) barNoteEl.style.display = "none";
+
+        const diffEl = rowEl.querySelector("[data-stat-diff]");
+        const diffWidth = diffEl ? diffEl.getBoundingClientRect().width + 4 : 0;
+        const available = rowEl.clientWidth - diffWidth;
+        if (!(available > 0)) return;
+
+        let natural = labelEl.getBoundingClientRect().width;
+        if (natural <= available) return;
+
+        if (inlineNoteEl && barNoteEl && fitStatRowFont(natural, available) < STAT_ROW_MIN_FONT_PX) {
+            inlineNoteEl.style.display = "none";
+            barNoteEl.style.display = "";
+            natural = labelEl.getBoundingClientRect().width;
+            if (natural <= available) return;
+        }
+
+        labelEl.style.fontSize = `${Math.max(STAT_ROW_MIN_FONT_PX, fitStatRowFont(natural, available))}px`;
+    });
+
+    return (
+        <div style={{ marginBottom }}>
+            <div
+                ref={rowRef}
+                style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    justifyContent: "space-between",
+                    fontSize: `${STAT_ROW_FONT_PX}px`,
+                    fontWeight: 600,
+                    gap: "4px",
+                }}
+            >
+                <span ref={labelRef} style={{ transition: "none" }}>
+                    {label}: {rounded}/{max}
+                    {note && (
+                        <span
+                            ref={inlineNoteRef}
+                            style={{
+                                marginLeft: "6px",
+                                color: STAT_ROW_NOTE_COLOR,
+                                fontWeight: 600,
+                                fontSize: "0.88em",
+                                transition: "none"
+                            }}
+                        >
+                            {note}
+                        </span>
+                    )}
+                </span>
+                {roundedDiff != null && roundedDiff !== 0 && (
+                    <span
+                        data-stat-diff
+                        style={{
+                            color: roundedDiff > 0 ? "#4caf50" : "#e53935",
+                            fontSize: "11.5px",
+                            fontWeight: 800,
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {roundedDiff > 0 ? "+" : ""}{roundedDiff}
+                    </span>
+                )}
+            </div>
+            {note ? (
+                <div style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <StatScaleBar value={rounded} max={max} />
+                    </div>
+                    <span
+                        ref={barNoteRef}
+                        style={{
+                            display: "none",
+                            marginLeft: "6px",
+                            color: STAT_ROW_NOTE_COLOR,
+                            fontWeight: 600,
+                            fontSize: "10.5px",
+                            lineHeight: "9px",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {note}
+                    </span>
+                </div>
+            ) : (
+                <StatScaleBar value={rounded} max={max} />
+            )}
+        </div>
+    );
+};
+
+const STATS_TAB_LINK_COLOR = "#8a8d99";
+
+const STREAK_FIRE_MODAL_SIZE = 30;
+const STREAK_FIRE_SHIFT_PX = STREAK_FIRE_MODAL_SIZE + 8;
+
+const readUnbeatenStreak = (stats) =>
+    Math.max(0, Math.floor(Number(stats?.unbeatenStreak) || 0));
+
+const StatsTabLink = ({ side, tab, total, onClick, interactive = true }) => {
+    if (!(total > 1)) return null;
+
+    const isLast = tab >= total - 1;
+    const Arrow = side === "left" ? IoIosArrowBack : IoIosArrowForward;
+    const arrowFirst = side === "left" ? !isLast : isLast;
+
+    const arrow = (
+        <Arrow
+            size={13}
+            style={{
+                flexShrink: 0,
+                transform: `rotate(${isLast ? 180 : 0}deg)`,
+                transition: "transform 0.3s ease",
+            }}
+        />
+    );
+    const counter = (
+        <span style={{ fontWeight: 700 }}>
+            {tab + 1}/{total}
+        </span>
+    );
+
+    const sharedStyle = {
+        position: "absolute",
+        top: "6px",
+        [side === "left" ? "left" : "right"]: "10px",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "2px",
+        fontSize: "11px",
+        lineHeight: 1,
+        color: STATS_TAB_LINK_COLOR,
+        userSelect: "none",
+        whiteSpace: "nowrap",
+        zIndex: 2,
+    };
+
+    const content = arrowFirst ? (
+        <>
+            {arrow}
+            {counter}
+        </>
+    ) : (
+        <>
+            {counter}
+            {arrow}
+        </>
+    );
+
+    if (!interactive) {
+        return <span style={{ ...sharedStyle, pointerEvents: "none" }}>{content}</span>;
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-label={`Show stats tab ${((tab + 1) % total) + 1} of ${total}`}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#5b5e6e";
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.color = STATS_TAB_LINK_COLOR;
+            }}
+            style={{
+                ...sharedStyle,
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                transition: "color 0.15s ease",
+            }}
+        >
+            {content}
+        </button>
+    );
+};
+
+const StatsFactorPanelBody = ({ team, statsNow, statsBefore, tab = 0 }) => {
+    const defs = STAT_TABS[Math.max(0, Math.min(tab, STAT_TABS.length - 1))] ?? [];
+
+    return (
+        <>
+            <div
+                style={{
+                    fontWeight: 800,
+                    fontSize: "13px",
+                    marginBottom: "10px",
+                    textAlign: "center",
+                    opacity: 0.85,
+                    color: team?.color ?? "#2e2f42",
+                }}
+            >
+                Team {team?.name}
+            </div>
+            {defs.map((def) => {
+                const val = statsNow?.[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key];
+                const beforeVal = statsBefore
+                    ? statsBefore?.[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]
+                    : null;
+                const diff = statsBefore ? val - beforeVal : null;
+
+                return (
+                    <StatFactorRow
+                        key={def.key}
+                        label={def.label}
+                        value={val}
+                        max={def.max}
+                        diff={diff}
+                    />
+                );
+            })}
+        </>
+    );
+};
+
+const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes = null }) => {
+    const anchorProp = side === "left" ? "right" : "left";
+    const [tab, setTab] = useState(0);
+    const defs = STAT_TABS[Math.max(0, Math.min(tab, STAT_TABS.length - 1))] ?? [];
+
+    return (
+        <motion.div
+            initial={false}
+            animate={{
+                x: open ? (side === "left" ? -262 : 262) : 0,
+                opacity: open ? 1 : 0,
+            }}
+            transition={{ type: "spring", duration: 0.0000001 }}
+            style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                minHeight: "307.2px",
+                width: "230px",
+                [anchorProp]: "50%",
+                zIndex: -1,
+                pointerEvents: open ? "auto" : "none",
+                transform: "translateX(-50%)",
+                background: "#fff",
+                color: "#2e2f42",
+                boxShadow: "0 2px 10px rgba(0,0,0,.2)",
+                border: "2px solid #999",
+                padding: "6px 10px",
+                borderRadius: 12,
+                fontSize: 10,
+                whiteSpace: "nowrap",
+                display: "flex",
+                flexDirection: "column",
+            }}
+        >
+            <StatsTabLink
+                side={side}
+                tab={tab}
+                total={STAT_TABS.length}
+                onClick={() => setTab((t) => (t + 1) % STAT_TABS.length)}
+            />
+
+            <div
+                style={{
+                    fontWeight: 800,
+                    fontSize: "13px",
+                    textAlign: "center",
+                    opacity: 0.85,
+                    color: team?.color ?? "#2e2f42",
+                }}
+            >
+                Team {team?.name}
+            </div>
+
+            <div
+                style={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    paddingTop: "10px",
+                    paddingBottom: "4px",
+                }}
+            >
+                {defs.map((def, i) => {
+                    const val = statsNow?.[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key];
+                    const beforeVal = statsBefore
+                        ? statsBefore?.[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]
+                        : null;
+                    const diff = statsBefore ? val - beforeVal : null;
+
+                    return (
+                        <StatFactorRow
+                            key={def.key}
+                            label={def.label}
+                            value={val}
+                            max={def.max}
+                            diff={diff}
+                            note={rowNotes?.[def.key] ?? null}
+                            marginBottom={i === defs.length - 1 ? "0px" : "13px"}
+                        />
+                    );
+                })}
+            </div>
+        </motion.div>
+    );
+};
+
+const StatScaleSlider = ({ value, max = 100, onChange, height = 9, handleSize = 18 }) => {
+    const trackRef = useRef(null);
+    const dragRef = useRef(null);
+    const [dragging, setDragging] = useState(false);
+    const [focusVisible, setFocusVisible] = useState(false);
+
+    const numeric = Number(value) || 0;
+    const pct = Math.max(0, Math.min(100, (numeric / max) * 100));
+
+    const valueFromPointer = (clientX) => {
+        const rect = trackRef.current?.getBoundingClientRect();
+        if (!rect || rect.width <= 0) return null;
+        const x = clientX - (dragRef.current?.grabOffset ?? 0) - rect.left;
+        return Math.round(Math.max(0, Math.min(1, x / rect.width)) * max);
+    };
+
+    const handlePointerDown = (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        const rect = trackRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        e.currentTarget.focus?.({ preventScroll: true });
+
+        dragRef.current = {
+            grabOffset: e.clientX - (rect.left + (pct / 100) * rect.width),
+            last: numeric,
+        };
+        setDragging(true);
+    };
+
+    const handlePointerMove = (e) => {
+        if (!dragRef.current) return;
+        const next = valueFromPointer(e.clientX);
+        if (next === null || next === dragRef.current.last) return;
+        dragRef.current.last = next;
+        onChange?.(next);
+    };
+
+    const endDrag = (e) => {
+        if (!dragRef.current) return;
+        dragRef.current = null;
+        setDragging(false);
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+    };
+
+    const handleKeyDown = (e) => {
+        const step = e.shiftKey ? 10 : 1;
+        let next = null;
+        if (e.key === "ArrowLeft" || e.key === "ArrowDown") next = numeric - step;
+        else if (e.key === "ArrowRight" || e.key === "ArrowUp") next = numeric + step;
+        else if (e.key === "Home") next = 0;
+        else if (e.key === "End") next = max;
+        if (next === null) return;
+        e.preventDefault();
+        onChange?.(Math.max(0, Math.min(max, next)));
+    };
+
+    return (
+        <div
+            style={{
+                position: "relative",
+                width: "100%",
+                height: `${handleSize}px`,
+                display: "flex",
+                alignItems: "center",
+                userSelect: "none",
+            }}
+        >
+            <div ref={trackRef} style={{ width: "100%" }}>
+                <StatScaleBar value={numeric} max={max} height={height} animated={false} />
+            </div>
+            <div
+                role="slider"
+                tabIndex={0}
+                aria-valuemin={0}
+                aria-valuemax={max}
+                aria-valuenow={Math.round(numeric * 100) / 100}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onKeyDown={handleKeyDown}
+                onFocus={(e) => setFocusVisible(e.currentTarget.matches(":focus-visible"))}
+                onBlur={() => setFocusVisible(false)}
+                style={{
+                    position: "absolute",
+                    left: `${pct}%`,
+                    top: "50%",
+                    width: `${handleSize}px`,
+                    height: `${handleSize}px`,
+                    borderRadius: "50%",
+                    background: "#fff",
+                    boxShadow: focusVisible
+                        ? "0 0 0 3px rgba(13,106,255,0.45), 0 2px 5px rgba(0,0,0,0.4)"
+                        : dragging
+                            ? "0 0 0 1px rgba(0,0,0,0.25), 0 3px 8px rgba(0,0,0,0.5)"
+                            : "0 0 0 1px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.4)",
+                    transform: `translate(-50%, -50%) scale(${dragging ? 1.12 : 1})`,
+                    transition: "transform 0.12s ease, box-shadow 0.12s ease",
+                    cursor: dragging ? "grabbing" : "grab",
+                    touchAction: "none",
+                    outline: "none",
+                    zIndex: 2,
+                }}
+            />
+        </div>
+    );
+};
+
+const ManageStatRow = ({
+    def,
+    currentValue,
+    inputValue,
+    isEditing,
+    onStartEdit,
+    onInputChange,
+    onInputCommit,
+    onSlide,
+}) => {
+    const typed = parseStatInput(inputValue);
+    const effective = typed === null ? currentValue : clampStat(typed, 0, def.max);
+    const differs =
+        typed !== null &&
+        Math.abs(Math.round(effective * 100) / 100 - Math.round(currentValue * 100) / 100) > 0.0001;
+
+    return (
+        <div>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "10px",
+                    minHeight: "28px",
+                }}
+            >
+                <div
+                    className={css.reset_label}
+                    style={{ margin: 0, display: "flex", alignItems: "center", gap: "5px" }}
+                >
+                    <span>{def.label}:</span>
+                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                    {isEditing ? (
+                        <motion.input
+                            key="edit"
+                            autoFocus
+                            type="text"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            value={inputValue ?? ""}
+                            onChange={(e) => onInputChange(def.key, e.target.value)}
+                            onFocus={(e) => e.target.select()}
+                            onBlur={() => onInputCommit(def.key)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === "Escape") e.currentTarget.blur();
+                            }}
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.12 }}
+                            style={{
+                                width: "32px",
+                                height: "24px",
+                                boxSizing: "border-box",
+                                padding: "0 6px",
+                                border: "1px solid #0d6aff",
+                                borderRadius: "6px",
+                                outline: "none",
+                                background: "#fff",
+                                color: "#2e2f42",
+                                font: "inherit",
+                                fontWeight: 700,
+                                textAlign: "center",
+                                boxShadow: "0 0 0 2px rgba(13,106,255,0.18)",
+                            }}
+                        />
+                    ) : (
+                        <motion.button
+                            key="text"
+                            type="button"
+                            onClick={() => onStartEdit(def.key)}
+                            title="Click to type a value manually"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.12 }}
+                            style={{
+                                all: "unset",
+                                cursor: "text",
+                                borderBottom: "1px dashed #8a8d99",
+                                padding: "0 2px",
+                                fontWeight: 700,
+                                minWidth: "14px",
+                                textAlign: "center",
+                            }}
+                        >
+                            {statToInputString(effective)}
+                        </motion.button>
+                    )}
+                    <span>/{def.max}</span>
+                    </span>
+                </div>
+
+                {differs && (
+                    <motion.span
+                        initial={{ opacity: 0, x: 6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.15 }}
+                        style={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: "#777",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        Current: {statToInputString(currentValue)}
+                    </motion.span>
+                )}
+            </div>
+
+            <StatScaleSlider
+                value={effective}
+                max={def.max}
+                onChange={(v) => onSlide(def.key, v)}
+            />
+        </div>
+    );
+};
+
+const MATCH_STATS_TOGGLE_CIRCLE_STYLE = {
+    width: "38px",
+    height: "38px",
+    borderRadius: "50%",
+    background: "#fff",
+    border: "none",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 6px 14px rgba(0,0,0,0.4), 0 2px 5px rgba(0,0,0,0.3)",
+    cursor: "pointer",
+    zIndex: 5,
+};
+
+const MatchStatsOverlay = ({
+    leftTeam,
+    rightTeam,
+    leftNow,
+    rightNow,
+    leftBefore,
+    rightBefore,
+    showDiff,
+    leftOpen = true,
+    rightOpen = true,
+    onToggleLeft,
+    onToggleRight,
+    leftRowNotes = null,
+    rightRowNotes = null,
+}) => {
+    if (!leftTeam || !rightTeam) return null;
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => onToggleLeft?.()}
+                aria-label="Toggle left team factors"
+                style={{
+                    ...MATCH_STATS_TOGGLE_CIRCLE_STYLE,
+                    position: "absolute",
+                    top: "50%",
+                    left: 0,
+                    transform: `translate(-50%, -50%) rotate(${leftOpen ? 180 : 0}deg)`,
+                    transition: "transform 0.4s ease",
+                }}
+            >
+                <IoIosArrowBack size={18} color="#2e2f42" />
+            </button>
+
+            <button
+                type="button"
+                onClick={() => onToggleRight?.()}
+                aria-label="Toggle right team factors"
+                style={{
+                    ...MATCH_STATS_TOGGLE_CIRCLE_STYLE,
+                    position: "absolute",
+                    top: "50%",
+                    right: 0,
+                    transform: `translate(50%, -50%) rotate(${rightOpen ? 180 : 0}deg)`,
+                    transition: "transform 0.4s ease",
+                }}
+            >
+                <IoIosArrowForward size={18} color="#2e2f42" />
+            </button>
+
+            <MatchStatsSidePanel
+                side="left"
+                team={leftTeam}
+                open={leftOpen}
+                statsNow={leftNow}
+                statsBefore={showDiff ? leftBefore : null}
+                rowNotes={leftRowNotes}
+            />
+            <MatchStatsSidePanel
+                side="right"
+                team={rightTeam}
+                open={rightOpen}
+                statsNow={rightNow}
+                statsBefore={showDiff ? rightBefore : null}
+                rowNotes={rightRowNotes}
+            />
+        </>
+    );
+};
+
+const POPOVER_CURSOR_OFFSET_X = 16;
+const POPOVER_CURSOR_OFFSET_Y = 20;
+const POPOVER_VIEWPORT_MARGIN = 8;
+const POPOVER_WIDTH_PX = 230;
+
+const snapToDevicePixel = (value) => {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.round(value * dpr) / dpr;
+};
+
+const TeamStatsHoverPopover = ({ team, cursorRef, statsNow, tab = 0 }) => {
+    const wrapperRef = useRef(null);
+
+    const placeAtCursor = useCallback(() => {
+        const node = wrapperRef.current;
+        if (!node) return;
+
+        const { x, y } = cursorRef?.current ?? { x: 0, y: 0 };
+        const { width, height } = node.getBoundingClientRect();
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+        const margin = POPOVER_VIEWPORT_MARGIN;
+
+        let left = x + POPOVER_CURSOR_OFFSET_X;
+        let top = y + POPOVER_CURSOR_OFFSET_Y;
+
+        if (left + width > viewportWidth - margin) left -= width;
+        if (top + height > viewportHeight - margin) top -= height;
+
+        left = Math.max(margin, Math.min(left, viewportWidth - margin - width));
+        top = Math.max(margin, Math.min(top, viewportHeight - margin - height));
+
+        node.style.left = `${snapToDevicePixel(left)}px`;
+        node.style.top = `${snapToDevicePixel(top)}px`;
+    }, [cursorRef]);
+
+    useLayoutEffect(() => {
+        if (team) placeAtCursor();
+    }, [team, statsNow, tab, placeAtCursor]);
+
+    useEffect(() => {
+        if (!team) return undefined;
+
+        const handleMouseMove = (e) => {
+            cursorRef.current = { x: e.clientX, y: e.clientY };
+            placeAtCursor();
+        };
+
+        window.addEventListener("mousemove", handleMouseMove, { passive: true });
+        return () => window.removeEventListener("mousemove", handleMouseMove);
+    }, [team, cursorRef, placeAtCursor]);
+
+    if (!team) return null;
+
+    return (
+        <div
+            ref={wrapperRef}
+            style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: `${snapToDevicePixel(POPOVER_WIDTH_PX)}px`,
+                zIndex: 9999,
+                pointerEvents: "none",
+                transition: "none",
+            }}
+        >
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    position: "relative",
+                    background: "#fff",
+                    color: "#2e2f42",
+                    boxShadow: "0 2px 10px rgba(0,0,0,.2)",
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    whiteSpace: "nowrap",
+                    fontSize: 12,
+                    maxHeight: "calc(100vh - 16px)",
+                    overflowY: "auto",
+                }}
+            >
+                <StatsTabLink side="right" tab={tab} total={STAT_TABS.length} interactive={false} />
+                <StatsFactorPanelBody team={team} statsNow={statsNow} statsBefore={null} tab={tab} />
+            </motion.div>
+        </div>
+    );
+};
+
 function SpecialModePage() {
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
@@ -3809,6 +6428,7 @@ function SpecialModePage() {
 
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
     const [modalContext, setModalContext] = useState(null);
+    const [statsPanelMemory, setStatsPanelMemory] = useState(() => loadStatsPanelMemory());
     const [modalLeftTeam, setModalLeftTeam] = useState(null);
     const [modalRightTeam, setModalRightTeam] = useState(null);
     const [hasChosen, setHasChosen] = useState(false);
@@ -3858,19 +6478,43 @@ function SpecialModePage() {
         teamRatingsRef.current = teamRatings;
     }, [teamRatings]);
 
+    const [teamStats, setTeamStats] = useState(() => loadTeamStats(allTeams));
+    const teamStatsRef = useRef(teamStats);
+
+    useEffect(() => {
+        teamStatsRef.current = teamStats;
+    }, [teamStats]);
+
     const leaderboard = useMemo(() => buildLeaderboard(allTeams, teamRatings), [allTeams, teamRatings]);
     const { rankById } = leaderboard;
 
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const [hoveredLeaderboardTeam, setHoveredLeaderboardTeam] = useState(null);
+    const [leaderboardStatsTab, setLeaderboardStatsTab] = useState(0);
+
+    const cycleLeaderboardStatsTab = (direction) => {
+        setLeaderboardStatsTab((cur) => (cur + direction + STAT_TABS.length) % STAT_TABS.length);
+    };
+    const leaderboardCursorRef = useRef({ x: 0, y: 0 });
     const [isHallOfFameOpen, setIsHallOfFameOpen] = useState(false);
     const [hallOfFame, setHallOfFame] = useState([]);
     const [selectedHallTournament, setSelectedHallTournament] = useState(null);
     const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
+    const statsSnapshotRef = useRef(loadStatsSnapshot());
 
     const [isScoreBoardResetModalOpen, setIsScoreBoardResetModalOpen] = useState(false);
     const [isScoreBoardResetConfirmModalOpen, setIsScoreBoardResetConfirmModalOpen] = useState(false);
 
     const [scoreboardResetCode, setScoreboardResetCode] = useState("");
+
+    const [isScoreBoardResetModeModalOpen, setIsScoreBoardResetModeModalOpen] = useState(false);
+    const [scoreboardResetMode, setScoreboardResetMode] = useState("");
+    const [isManageStatsModalOpen, setIsManageStatsModalOpen] = useState(false);
+    const [isManageStatsFinalModalOpen, setIsManageStatsFinalModalOpen] = useState(false);
+    const [isManageStatsPickerOpen, setIsManageStatsPickerOpen] = useState(false);
+    const [manageStatsTeamId, setManageStatsTeamId] = useState("");
+    const [manageStatsValues, setManageStatsValues] = useState({});
+    const [manageStatsEditingKey, setManageStatsEditingKey] = useState(null);
 
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
     const teamPlacingsRef = useRef(teamPlacings);
@@ -3892,6 +6536,10 @@ function SpecialModePage() {
     const [placingsAdminCode, setPlacingsAdminCode] = useState("");
 
     const [tournamentNumber, setTournamentNumber] = useState(() => loadTournamentNumber());
+
+    useEffect(() => {
+        saveStatsPanelMemory(statsPanelMemory);
+    }, [statsPanelMemory]);
 
     const [isTournamentNumberCodeModalOpen, setIsTournamentNumberCodeModalOpen] = useState(false);
     const [isTournamentNumberModalOpen, setIsTournamentNumberModalOpen] = useState(false);
@@ -3959,7 +6607,7 @@ function SpecialModePage() {
         const lenis = new Lenis({
             duration: 1.8,
             smoothWheel: true,
-            prevent: (node) => node === hallManagerScrollRef.current,
+            prevent: (node) => node === hallManagerScrollRef.current || isNativeScrollArea(node),
         });
 
         lenisRef.current = lenis;
@@ -4520,7 +7168,10 @@ function SpecialModePage() {
     const [arePlacingButtonsArmed, setArePlacingButtonsArmed] = useState(false);
 
     useEffect(() => {
-        if (!isLeaderboardOpen) setArePlacingButtonsArmed(false);
+        if (!isLeaderboardOpen) {
+            setArePlacingButtonsArmed(false);
+            setLeaderboardStatsTab(0);
+        }
     }, [isLeaderboardOpen]);
 
     const handleAddPlacingsClick = () => {
@@ -4542,13 +7193,10 @@ function SpecialModePage() {
 
     const isSeriesActive = seriesState.active;
 
-    const isScoreboardAlreadyDefault = useMemo(() => {
-        return areRatingsAtDefault(allTeams, teamRatings);
-    }, [allTeams, teamRatings]);
-
-    const isTournamentNumberAlreadyDefault = useMemo(() => {
-        return tournamentNumber === 0;
-    }, [tournamentNumber]);
+    const isStatsAdminModalOpen =
+        isScoreBoardResetModeModalOpen ||
+        isManageStatsModalOpen ||
+        isManageStatsFinalModalOpen;
 
     const isButtonLocked =
         isCalculating ||
@@ -4556,6 +7204,7 @@ function SpecialModePage() {
         isTerminateModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isStatsAdminModalOpen ||
         isAddPlacingsCodeModalOpen ||
         isAddPlacingsModalOpen ||
         isAddPlacingsFinalModalOpen ||
@@ -4575,6 +7224,7 @@ function SpecialModePage() {
         isTerminateModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isStatsAdminModalOpen ||
         isAddPlacingsCodeModalOpen ||
         isAddPlacingsModalOpen ||
         isAddPlacingsFinalModalOpen ||
@@ -4593,6 +7243,7 @@ function SpecialModePage() {
         isTerminateModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isStatsAdminModalOpen ||
         isAddPlacingsCodeModalOpen ||
         isAddPlacingsModalOpen ||
         isAddPlacingsFinalModalOpen ||
@@ -4611,6 +7262,7 @@ function SpecialModePage() {
         isRestartModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isStatsAdminModalOpen ||
         isAddPlacingsCodeModalOpen ||
         isAddPlacingsModalOpen ||
         isAddPlacingsFinalModalOpen ||
@@ -4624,11 +7276,11 @@ function SpecialModePage() {
         isLocked;
 
     const isScoreBoardResetButtonLocked =
-        (isScoreboardAlreadyDefault && isTournamentNumberAlreadyDefault) ||
         isTerminateModalOpen ||
         isRestartModalOpen ||
         isScoreBoardResetModalOpen ||
         isScoreBoardResetConfirmModalOpen ||
+        isStatsAdminModalOpen ||
         isAddPlacingsCodeModalOpen ||
         isAddPlacingsModalOpen ||
         isAddPlacingsFinalModalOpen ||
@@ -5438,6 +8090,16 @@ function SpecialModePage() {
             clearRatingsSnapshot();
         }
 
+        if (statsSnapshotRef.current) {
+            const restoredStats = normalizeTeamStats(allTeams, statsSnapshotRef.current);
+            setTeamStats(restoredStats);
+            teamStatsRef.current = restoredStats;
+            saveTeamStats(restoredStats);
+
+            statsSnapshotRef.current = null;
+            clearStatsSnapshot();
+        }
+
         const seeds = classifyTeamsForStages(allTeams, teamRatingsRef.current);
         tournamentSeedsRef.current = seeds;
 
@@ -5502,7 +8164,8 @@ function SpecialModePage() {
         toast.success("Password correct!!!");
         setIsScoreBoardResetModalOpen(false);
         setScoreboardResetCode("");
-        setIsScoreBoardResetConfirmModalOpen(true);
+        setScoreboardResetMode("");
+        setIsScoreBoardResetModeModalOpen(true);
     };
 
     const allTeamIds = allTeams.map(t => t.id);
@@ -5555,11 +8218,17 @@ function SpecialModePage() {
     };
 
     const ensureRatingsSnapshot = () => {
-        if (ratingsSnapshotRef.current) return;
+        if (!ratingsSnapshotRef.current) {
+            const snap = { ...teamRatingsRef.current };
+            ratingsSnapshotRef.current = snap;
+            saveRatingsSnapshot(snap);
+        }
 
-        const snap = { ...teamRatingsRef.current };
-        ratingsSnapshotRef.current = snap;
-        saveRatingsSnapshot(snap);
+        if (!statsSnapshotRef.current) {
+            const statsSnap = normalizeTeamStats(allTeams, teamStatsRef.current);
+            statsSnapshotRef.current = statsSnap;
+            saveStatsSnapshot(statsSnap);
+        }
     };
 
     const handleFinalScoreboardReset = () => {
@@ -5569,13 +8238,25 @@ function SpecialModePage() {
         teamRatingsRef.current = defaults;
         saveTeamRatings(defaults);
 
+        const defaultPlacings = buildDefaultTeamPlacings(allTeams);
+        setTeamPlacings(defaultPlacings);
+        teamPlacingsRef.current = defaultPlacings;
+        saveTeamPlacings(defaultPlacings);
+
+        const defaultStats = buildDefaultTeamStats(allTeams);
+        setTeamStats(defaultStats);
+        teamStatsRef.current = defaultStats;
+        saveTeamStats(defaultStats);
+
         setTournamentNumber(0);
-        saveTournamentNumber(tournamentNumber);
+        saveTournamentNumber(0);
 
         const seeded = classifyTeamsForStages(allTeams, defaults);
 
         ratingsSnapshotRef.current = null;
         clearRatingsSnapshot();
+        statsSnapshotRef.current = null;
+        clearStatsSnapshot();
 
         resetTournamentStateWithSeeds(seeded.stage1Seeds);
 
@@ -5587,8 +8268,153 @@ function SpecialModePage() {
         setIsScoreBoardResetConfirmModalOpen(false);
     };
 
+    const closeStatsAdminModals = () => {
+        setIsScoreBoardResetModeModalOpen(false);
+        setScoreboardResetMode("");
+        setIsManageStatsModalOpen(false);
+        setIsManageStatsFinalModalOpen(false);
+        setIsManageStatsPickerOpen(false);
+        setManageStatsTeamId("");
+        setManageStatsValues({});
+        setManageStatsEditingKey(null);
+    };
+
+    const handleScoreboardResetModeConfirm = () => {
+        if (scoreboardResetMode === "reset") {
+            setIsScoreBoardResetModeModalOpen(false);
+            setScoreboardResetMode("");
+            setIsScoreBoardResetConfirmModalOpen(true);
+            return;
+        }
+
+        if (scoreboardResetMode === "stats") {
+            setIsScoreBoardResetModeModalOpen(false);
+            setScoreboardResetMode("");
+            setManageStatsTeamId("");
+            setManageStatsValues({});
+            setIsManageStatsPickerOpen(false);
+            setIsManageStatsModalOpen(true);
+        }
+    };
+
+    const manageStatsTeam = manageStatsTeamId
+        ? allTeams.find((t) => t.id === manageStatsTeamId) ?? null
+        : null;
+
+    const manageStatsCurrent = manageStatsTeam
+        ? teamStats?.[manageStatsTeam.id] ?? DEFAULT_TEAM_STAT_VALUES
+        : DEFAULT_TEAM_STAT_VALUES;
+
+    const roundManageStatValue = (def, typed) =>
+        def.integer
+            ? Math.round(clampStat(typed, 0, def.max))
+            : Math.round(clampStat(typed, 0, def.max) * 100) / 100;
+
+    const manageStatsChanges = manageStatsTeam
+        ? MANAGE_STAT_DEFINITIONS.filter((def) => {
+            const typed = parseStatInput(manageStatsValues[def.key]);
+            if (typed === null) return false;
+            const next = roundManageStatValue(def, typed);
+            const current = manageStatsCurrent[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key];
+            return Math.abs(next - current) > 0.0001;
+        }).map((def) => def.key)
+        : [];
+
+    const canConfirmManageStats = manageStatsChanges.length > 0;
+
+    const buildManageStatsValues = (teamId) => {
+        const current = teamStatsRef.current?.[teamId] ?? DEFAULT_TEAM_STAT_VALUES;
+        return Object.fromEntries(
+            MANAGE_STAT_DEFINITIONS.map((def) => [
+                def.key,
+                statToInputString(current[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]),
+            ])
+        );
+    };
+
+    const handleManageStatsPickTeam = (teamId) => {
+        if (manageStatsTeamId === teamId) {
+            setManageStatsTeamId("");
+            setManageStatsValues({});
+        } else {
+            setManageStatsTeamId(teamId);
+            setManageStatsValues(buildManageStatsValues(teamId));
+        }
+        setManageStatsEditingKey(null);
+        setIsManageStatsPickerOpen(false);
+    };
+
+    const handleManageStatsInputChange = (key, rawValue) => {
+        const def = MANAGE_STAT_DEFINITIONS.find((d) => d.key === key);
+        if (!def) return;
+
+        let cleaned = sanitizeStatInput(rawValue);
+        if (def.integer) cleaned = cleaned.replace(/\..*$/, "");
+        const typed = parseStatInput(cleaned);
+
+        if (typed !== null && typed > def.max) {
+            toast.error("This is higher than the limit", { id: "manage-stats-limit" });
+            return;
+        }
+
+        setManageStatsValues((prev) => ({ ...prev, [key]: cleaned }));
+    };
+
+    const handleManageStatsSlide = (key, value) => {
+        const def = MANAGE_STAT_DEFINITIONS.find((d) => d.key === key);
+        if (!def) return;
+        setManageStatsValues((prev) => ({
+            ...prev,
+            [key]: statToInputString(clampStat(value, 0, def.max)),
+        }));
+    };
+
+    const handleManageStatsInputBlur = (key) => {
+        setManageStatsEditingKey((cur) => (cur === key ? null : cur));
+        setManageStatsValues((prev) => {
+            const typed = parseStatInput(prev[key]);
+            if (typed !== null) return { ...prev, [key]: statToInputString(typed) };
+
+            const current = teamStatsRef.current?.[manageStatsTeamId] ?? DEFAULT_TEAM_STAT_VALUES;
+            return { ...prev, [key]: statToInputString(current[key] ?? DEFAULT_TEAM_STAT_VALUES[key]) };
+        });
+    };
+
+    const handleManageStatsFormConfirm = () => {
+        if (!canConfirmManageStats) return;
+        setIsManageStatsPickerOpen(false);
+        setIsManageStatsModalOpen(false);
+        setIsManageStatsFinalModalOpen(true);
+    };
+
+    const handleManageStatsFinalConfirm = () => {
+        if (!manageStatsTeamId || !canConfirmManageStats) {
+            closeStatsAdminModals();
+            return;
+        }
+
+        const base = teamStatsRef.current ?? teamStats ?? {};
+        const nextTeamStats = { ...(base[manageStatsTeamId] ?? DEFAULT_TEAM_STAT_VALUES) };
+
+        manageStatsChanges.forEach((key) => {
+            const def = MANAGE_STAT_DEFINITIONS.find((d) => d.key === key);
+            const typed = parseStatInput(manageStatsValues[key]);
+            if (!def || typed === null) return;
+            nextTeamStats[key] = roundManageStatValue(def, typed);
+        });
+
+        const nextStats = { ...base, [manageStatsTeamId]: nextTeamStats };
+        setTeamStats(nextStats);
+        teamStatsRef.current = nextStats;
+        saveTeamStats(nextStats);
+
+        toast.success(manageStatsChanges.length === 1 ? "Stat has been updated." : "Stats have been updated.");
+        closeStatsAdminModals();
+    };
+
     useEffect(() => {
         if (!showIntro) ensureRatingsSnapshot();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showIntro]);
 
     const clearPlacingsAdminState = () => {
@@ -5810,6 +8636,11 @@ function SpecialModePage() {
 
     const handleTournamentStart = () => {
         tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+
+        const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
+        setTeamStats(statsWithFreshExperience);
+        teamStatsRef.current = statsWithFreshExperience;
+        saveTeamStats(statsWithFreshExperience);
 
         setTournamentNumber((prev) => {
             const next = prev + 1;
@@ -6131,18 +8962,38 @@ function SpecialModePage() {
 
             clearRoundLog();
 
-            setSeriesState({
-                ...defaultSeriesState,
-                active: true,
-                phase: stageKey,
-                swissStageKey: stageKey,
-                swissNet: net,
-                swissMatchId: matchId,
-                leftTeam: modalLeftTeam,
-                rightTeam: modalRightTeam,
-                swissMatchNumber: swissMatchNumber,
-                setsToWin: calcSetsToWin(bestOf),
-            });
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: stageKey,
+                    swissStageKey: stageKey,
+                    swissNet: net,
+                    swissMatchId: matchId,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    swissMatchNumber: swissMatchNumber,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "swiss",
+                        net,
+                        swissStageKey: stageKey,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
 
             closeMatchModal();
             return;
@@ -6172,17 +9023,36 @@ function SpecialModePage() {
 
             clearRoundLog();
 
-            setSeriesState({
-                ...defaultSeriesState,
-                active: true,
-                phase: "playoffs",
-                playoffsStage: stage,
-                playoffsMatchId: matchId,
-                playoffsMatchNumber,
-                leftTeam: modalLeftTeam,
-                rightTeam: modalRightTeam,
-                setsToWin: calcSetsToWin(bestOf),
-            });
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: "playoffs",
+                    playoffsStage: stage,
+                    playoffsMatchId: matchId,
+                    playoffsMatchNumber,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "playoffs",
+                        playoffsStage: stage,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
 
             closeMatchModal();
         }
@@ -6708,14 +9578,51 @@ function SpecialModePage() {
     )`;
     };
 
+    const buildRollContext = () => {
+        const s = seriesState;
+        const liveStats = s.liveStats ?? {
+            left: { ...DEFAULT_TEAM_STAT_VALUES },
+            right: { ...DEFAULT_TEAM_STAT_VALUES },
+        };
+
+        const inPens = s.tiebreakerPhase === "penalties";
+        const otActive =
+            !inPens &&
+            s.tiebreakerPhase !== "extended" &&
+            s.isOvertime &&
+            s.overtimeBlock > 0;
+
+        const otContext = inPens
+            ? { active: true, depth: (s.penaltyLeftScore ?? 0) + (s.penaltyRightScore ?? 0) }
+            : { active: otActive, depth: s.overtimeBlock };
+
+        return {
+            liveStats,
+            otContext,
+            bounceBackArmedSide: inPens ? null : s.bounceBackArmedSide,
+            lastRoundLoserSide: inPens ? null : s.lastRoundLoserSide,
+            matchCtx: s.matchCtx ?? null,
+            finisherActive: (s.setsToWin ?? 2) > 1,
+        };
+    };
+
+    const computeSideRollBonus = (side, rawRoll, ctx) => computeRollBonus(side, rawRoll, ctx);
+
     const rollPair = () => {
         const a = round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN));
         const b = round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN));
 
-        if (!forceWinner) return { left: a, right: b };
+        const ctx = buildRollContext();
+        const leftBonus = computeSideRollBonus("left", a, ctx);
+        const rightBonus = computeSideRollBonus("right", b, ctx);
 
-        const hi = Math.max(a, b);
-        let lo = Math.min(a, b);
+        const a2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, a + leftBonus)));
+        const b2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, b + rightBonus)));
+
+        if (!forceWinner) return { left: a2, right: b2 };
+
+        const hi = Math.max(a2, b2);
+        let lo = Math.min(a2, b2);
         if (hi === lo) lo = round2(Math.max(MULTIPLIER_MIN, hi - 0.01));
 
         return forceWinner === "left" ? { left: hi, right: lo } : { left: lo, right: hi };
@@ -6810,6 +9717,12 @@ function SpecialModePage() {
             if (turn === "left") nextLeftResults.push(success ? "success" : "fail");
             else nextRightResults.push(success ? "success" : "fail");
 
+            const liveStatsAfterAttempt = applyOtStaminaPenaltyAttempt(
+                prev.liveStats,
+                turn,
+                success
+            );
+
             const nextLeftScore = prev.penaltyLeftScore + (turn === "left" && success ? 1 : 0);
             const nextRightScore = prev.penaltyRightScore + (turn === "right" && success ? 1 : 0);
 
@@ -6873,6 +9786,7 @@ function SpecialModePage() {
 
             let banner = prev.banner;
             let extraState = {};
+            let liveStatsAfterPens = liveStatsAfterAttempt;
 
             if (resolved && winnerTeam) {
                 const playerWonSet = winnerTeam === prev.leftTeam;
@@ -6900,6 +9814,18 @@ function SpecialModePage() {
                 const newLost = prev.playerLostSets + (playerWonSet ? 0 : 1);
                 const seriesOver = newWon >= prev.setsToWin || newLost >= prev.setsToWin;
 
+                const pensSetConclusion = resolveSetConclusion({
+                    setComebackTracker: prev.setComebackTracker,
+                    liveStats: liveStatsAfterAttempt,
+                    setWinnerSide: playerWonSet ? "left" : "right",
+                    enteringLeftSets: prev.playerWonSets,
+                    enteringRightSets: prev.playerLostSets,
+                    setsToWin: prev.setsToWin,
+                    leftRating: teamRatingsRef.current?.[prev.leftTeam?.id] ?? 0,
+                    rightRating: teamRatingsRef.current?.[prev.rightTeam?.id] ?? 0,
+                });
+                liveStatsAfterPens = pensSetConclusion.liveStats;
+
                 if (seriesOver) {
                     toast.dismiss();
                     toast(<span>{renderTeamLabel(winnerTeam, true)}</span>, {
@@ -6920,6 +9846,8 @@ function SpecialModePage() {
                         playerLostSets: newLost,
                         banner,
                         penaltyResolved: true,
+                        bounceBackArmedSide: pensSetConclusion.bounceBackArmedSide,
+                        setComebackTracker: pensSetConclusion.setComebackTracker,
                     };
                 } else {
                     toast.dismiss();
@@ -6945,6 +9873,8 @@ function SpecialModePage() {
                         playerWonSets: newWon,
                         playerLostSets: newLost,
                         penaltyResolved: true,
+                        bounceBackArmedSide: pensSetConclusion.bounceBackArmedSide,
+                        setComebackTracker: pensSetConclusion.setComebackTracker,
                     };
                 }
             }
@@ -6962,6 +9892,7 @@ function SpecialModePage() {
                 penaltyTurn: resolved ? prev.penaltyTurn : nextTurn,
                 roundWins: nextLeftScore,
                 roundLosses: nextRightScore,
+                liveStats: liveStatsAfterPens,
                 ...extraState,
                 pendingAction: pendingAction ?? prev.pendingAction ?? null,
             };
@@ -7021,6 +9952,13 @@ function SpecialModePage() {
                 if (playerWonMini) nextMiniWins += 1;
                 else if (playerLostMini) nextMiniLosses += 1;
 
+                const nextClutchRoundFlag = computeClutchRoundFlag(
+                    prev.clutchRoundFlag,
+                    nextMiniWins,
+                    nextMiniLosses,
+                    miniWinsToWinRound
+                );
+
                 if (
                     nextMiniWins < miniWinsToWinRound &&
                     nextMiniLosses < miniWinsToWinRound
@@ -7032,10 +9970,38 @@ function SpecialModePage() {
                         lastMultiplierRight: rightMult,
                         miniWins: nextMiniWins,
                         miniLosses: nextMiniLosses,
+                        clutchRoundFlag: nextClutchRoundFlag,
                     };
                 }
 
                 const wonOtRound = nextMiniWins >= miniWinsToWinRound;
+
+                const otRoundWinnerSide = wonOtRound ? "left" : "right";
+                const otRoundConclusion = resolveRoundConclusion({
+                    miniTarget: miniWinsToWinRound,
+                    roundComebackTracker: prev.roundComebackTracker,
+                    setContest: {
+                        left: otWins + (wonOtRound ? 1 : 0),
+                        right: otLosses + (wonOtRound ? 0 : 1),
+                        target: OT_ROUNDS_TO_WIN,
+                        inOvertime: true,
+                        overtimeBlock,
+                    },
+                    liveStats: prev.liveStats,
+                    winnerSide: otRoundWinnerSide,
+                    clutchRoundFlag: nextClutchRoundFlag,
+                    lastRoundLoserSide: prev.lastRoundLoserSide,
+                    bounceBackArmedSide: prev.bounceBackArmedSide,
+                    isFirstRoundOfSet: roundWins === 0 && roundLosses === 0,
+                });
+                const liveStatsAfterRound = applyOtStaminaRoundResult(
+                    otRoundConclusion.liveStats,
+                    otRoundWinnerSide
+                );
+                const nextLastRoundLoserSide = otRoundConclusion.nextLastRoundLoserSide;
+                const nextBounceBackArmedSide = otRoundConclusion.nextBounceBackArmedSide;
+                const roundMomentumSide = otRoundConclusion.momentumSide;
+                const roundMomentumValue = otRoundConclusion.momentumValue;
 
                 if (
                     miniWinsToWinRound === 10 &&
@@ -7073,6 +10039,8 @@ function SpecialModePage() {
                     overtimeBlock,
                     roundNumber: prev.roundWins + prev.roundLosses + 1,
                     squares: miniWinsToWinRound,
+                    momentumSide: roundMomentumValue >= 5 ? roundMomentumSide : null,
+                    momentumValue: roundMomentumValue >= 5 ? roundMomentumValue : null,
                     miniLeft: nextMiniWins,
                     miniRight: nextMiniLosses,
                     scoreLeft: updatedRoundWins,
@@ -7102,8 +10070,24 @@ function SpecialModePage() {
                         extendedRounds
                     );
 
+                    const enteringLeftSetsOt = playerWonSets;
+                    const enteringRightSetsOt = playerLostSets;
+
                     playerWonSets += playerWonSet ? 1 : 0;
                     playerLostSets += playerWonSet ? 0 : 1;
+
+                    const otSetConclusion = resolveSetConclusion({
+                        setComebackTracker: prev.setComebackTracker,
+                        liveStats: liveStatsAfterRound,
+                        setWinnerSide: playerWonSet ? "left" : "right",
+                        enteringLeftSets: enteringLeftSetsOt,
+                        enteringRightSets: enteringRightSetsOt,
+                        setsToWin: toWin,
+                        leftRating: teamRatingsRef.current?.[prev.leftTeam?.id] ?? 0,
+                        rightRating: teamRatingsRef.current?.[prev.rightTeam?.id] ?? 0,
+                    });
+                    const liveStatsAfterOtSet = otSetConclusion.liveStats;
+                    const bounceBackArmedAfterOtSet = otSetConclusion.bounceBackArmedSide;
 
                     const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
 
@@ -7171,6 +10155,12 @@ function SpecialModePage() {
                         otWins,
                         otLosses,
                         banner,
+                        liveStats: liveStatsAfterOtSet,
+                        setComebackTracker: otSetConclusion.setComebackTracker,
+                        clutchRoundFlag: null,
+                        roundComebackTracker: otRoundConclusion.roundComebackTracker,
+                        lastRoundLoserSide: nextLastRoundLoserSide,
+                        bounceBackArmedSide: bounceBackArmedAfterOtSet,
                         pendingAction: pendingAction ?? prev.pendingAction ?? null,
                     };
                 }
@@ -7207,6 +10197,11 @@ function SpecialModePage() {
                             otWins,
                             otLosses,
                             banner,
+                            liveStats: liveStatsAfterRound,
+                            clutchRoundFlag: null,
+                            roundComebackTracker: otRoundConclusion.roundComebackTracker,
+                            lastRoundLoserSide: nextLastRoundLoserSide,
+                            bounceBackArmedSide: nextBounceBackArmedSide,
                             pendingAction: pendingAction ?? prev.pendingAction ?? null,
                         };
                     }
@@ -7245,6 +10240,11 @@ function SpecialModePage() {
                         otWins,
                         otLosses,
                         banner,
+                        liveStats: liveStatsAfterRound,
+                        clutchRoundFlag: null,
+                        roundComebackTracker: otRoundConclusion.roundComebackTracker,
+                        lastRoundLoserSide: nextLastRoundLoserSide,
+                        bounceBackArmedSide: nextBounceBackArmedSide,
                         pendingAction: pendingAction ?? prev.pendingAction ?? null,
                     };
                 }
@@ -7269,6 +10269,11 @@ function SpecialModePage() {
                     otWins,
                     otLosses,
                     banner,
+                    liveStats: liveStatsAfterRound,
+                    clutchRoundFlag: null,
+                    roundComebackTracker: otRoundConclusion.roundComebackTracker,
+                    lastRoundLoserSide: nextLastRoundLoserSide,
+                    bounceBackArmedSide: nextBounceBackArmedSide,
                     pendingAction: pendingAction ?? prev.pendingAction ?? null,
                 };
             }
@@ -7278,6 +10283,13 @@ function SpecialModePage() {
 
             if (playerWonMini) nextMiniWins += 1;
             else if (playerLostMini) nextMiniLosses += 1;
+
+            const nextClutchRoundFlagReg = computeClutchRoundFlag(
+                prev.clutchRoundFlag,
+                nextMiniWins,
+                nextMiniLosses,
+                miniWinsToWinRound
+            );
 
             if (
                 nextMiniWins < miniWinsToWinRound &&
@@ -7290,10 +10302,34 @@ function SpecialModePage() {
                     lastMultiplierRight: rightMult,
                     miniWins: nextMiniWins,
                     miniLosses: nextMiniLosses,
+                    clutchRoundFlag: nextClutchRoundFlagReg,
                 };
             }
 
             const playerWonRound = nextMiniWins >= miniWinsToWinRound;
+            const regRoundWinnerSide = playerWonRound ? "left" : "right";
+            const regRoundConclusion = resolveRoundConclusion({
+                miniTarget: miniWinsToWinRound,
+                roundComebackTracker: prev.roundComebackTracker,
+                setContest: {
+                    left: roundWins + (playerWonRound ? 1 : 0),
+                    right: roundLosses + (playerWonRound ? 0 : 1),
+                    target: BASE_ROUNDS_TO_WIN,
+                    inOvertime: false,
+                    overtimeBlock: 0,
+                },
+                liveStats: prev.liveStats,
+                winnerSide: regRoundWinnerSide,
+                clutchRoundFlag: nextClutchRoundFlagReg,
+                lastRoundLoserSide: prev.lastRoundLoserSide,
+                bounceBackArmedSide: prev.bounceBackArmedSide,
+                isFirstRoundOfSet: roundWins === 0 && roundLosses === 0,
+            });
+            const liveStatsAfterRegRound = regRoundConclusion.liveStats;
+            const nextLastRoundLoserSideReg = regRoundConclusion.nextLastRoundLoserSide;
+            const nextBounceBackArmedSideReg = regRoundConclusion.nextBounceBackArmedSide;
+            const regRoundMomentumSide = regRoundConclusion.momentumSide;
+            const regRoundMomentumValue = regRoundConclusion.momentumValue;
 
             if (miniWinsToWinRound === 10) {
                 const winner = playerWonRound
@@ -7362,6 +10398,8 @@ function SpecialModePage() {
                 part: prev.roundNumber <= 12 ? "firstHalf" : "secondHalf",
                 roundNumber: prev.roundWins + prev.roundLosses + 1,
                 squares: miniWinsToWinRound,
+                momentumSide: regRoundMomentumValue >= 5 ? regRoundMomentumSide : null,
+                momentumValue: regRoundMomentumValue >= 5 ? regRoundMomentumValue : null,
                 miniLeft: nextMiniWins,
                 miniRight: nextMiniLosses,
                 scoreLeft: roundWins,
@@ -7405,6 +10443,11 @@ function SpecialModePage() {
                     otWins,
                     otLosses,
                     banner,
+                    liveStats: liveStatsAfterRegRound,
+                    clutchRoundFlag: null,
+                    roundComebackTracker: regRoundConclusion.roundComebackTracker,
+                    lastRoundLoserSide: nextLastRoundLoserSideReg,
+                    bounceBackArmedSide: nextBounceBackArmedSideReg,
                     pendingAction: pendingAction ?? prev.pendingAction ?? null,
                 };
             }
@@ -7413,6 +10456,10 @@ function SpecialModePage() {
                 roundWins >= BASE_ROUNDS_TO_WIN ||
                 roundLosses >= BASE_ROUNDS_TO_WIN ||
                 roundWins + roundLosses >= BASE_MAX_ROUNDS;
+
+            let liveStatsAfterRegSet = liveStatsAfterRegRound;
+            let bounceBackArmedAfterRegSet = nextBounceBackArmedSideReg;
+            let setTrackerAfterRegSet = prev.setComebackTracker ?? null;
 
             if (setShouldEnd) {
                 const playerWonSet = roundWins > roundLosses;
@@ -7426,8 +10473,25 @@ function SpecialModePage() {
                     extendedRounds
                 );
 
+                const enteringLeftSetsReg = playerWonSets;
+                const enteringRightSetsReg = playerLostSets;
+
                 playerWonSets += playerWonSet ? 1 : 0;
                 playerLostSets += playerWonSet ? 0 : 1;
+
+                const regSetConclusion = resolveSetConclusion({
+                    setComebackTracker: prev.setComebackTracker,
+                    liveStats: liveStatsAfterRegRound,
+                    setWinnerSide: playerWonSet ? "left" : "right",
+                    enteringLeftSets: enteringLeftSetsReg,
+                    enteringRightSets: enteringRightSetsReg,
+                    setsToWin: toWin,
+                    leftRating: teamRatingsRef.current?.[prev.leftTeam?.id] ?? 0,
+                    rightRating: teamRatingsRef.current?.[prev.rightTeam?.id] ?? 0,
+                });
+                liveStatsAfterRegSet = regSetConclusion.liveStats;
+                bounceBackArmedAfterRegSet = regSetConclusion.bounceBackArmedSide;
+                setTrackerAfterRegSet = regSetConclusion.setComebackTracker;
 
                 const seriesOver = playerWonSets >= toWin || playerLostSets >= toWin;
 
@@ -7498,6 +10562,12 @@ function SpecialModePage() {
                 otWins,
                 otLosses,
                 banner,
+                liveStats: liveStatsAfterRegSet,
+                setComebackTracker: setTrackerAfterRegSet,
+                clutchRoundFlag: null,
+                roundComebackTracker: regRoundConclusion.roundComebackTracker,
+                lastRoundLoserSide: nextLastRoundLoserSideReg,
+                bounceBackArmedSide: bounceBackArmedAfterRegSet,
                 pendingAction: pendingAction ?? prev.pendingAction ?? null,
             };
         });
@@ -7601,6 +10671,91 @@ function SpecialModePage() {
                     teamRatingsRef.current = applied.nextRatings;
                     saveTeamRatings(applied.nextRatings);
 
+                    const winnerSideKey = winner.id === leftTeam.id ? "left" : "right";
+                    const loserSideKey = otherSide(winnerSideKey);
+
+                    let liveStatsAfterBigStage =
+                        seriesState.liveStats ?? {
+                            left: { ...DEFAULT_TEAM_STAT_VALUES },
+                            right: { ...DEFAULT_TEAM_STAT_VALUES },
+                        };
+
+                    if (
+                        playoffsStage === "ro16" ||
+                        playoffsStage === "qf" ||
+                        playoffsStage === "sf"
+                    ) {
+                        liveStatsAfterBigStage = bumpStat(
+                            liveStatsAfterBigStage,
+                            winnerSideKey,
+                            "bigStage",
+                            5
+                        );
+                    } else if (playoffsStage === "thirdPlace") {
+                        liveStatsAfterBigStage = bumpStat(
+                            liveStatsAfterBigStage,
+                            winnerSideKey,
+                            "bigStage",
+                            8
+                        );
+                        liveStatsAfterBigStage = bumpStat(
+                            liveStatsAfterBigStage,
+                            loserSideKey,
+                            "bigStage",
+                            7
+                        );
+                    } else if (playoffsStage === "gf") {
+                        liveStatsAfterBigStage = bumpStat(
+                            liveStatsAfterBigStage,
+                            winnerSideKey,
+                            "bigStage",
+                            10
+                        );
+                        liveStatsAfterBigStage = bumpStat(
+                            liveStatsAfterBigStage,
+                            loserSideKey,
+                            "bigStage",
+                            8
+                        );
+                    }
+
+                    liveStatsAfterBigStage = resolveSeriesEndStats({
+                        liveStats: liveStatsAfterBigStage,
+                        winnerSide: winnerSideKey,
+                        ctx: seriesState.matchCtx,
+                        winnerSets: winnerSideKey === "left" ? seriesLeftSets : seriesRightSets,
+                        loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
+                    });
+
+                    m.statsMeta = {
+                        before: {
+                            [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                            [rightTeam.id]: seriesState.initialStats?.right ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                        },
+                        after: {
+                            [leftTeam.id]: liveStatsAfterBigStage.left,
+                            [rightTeam.id]: liveStatsAfterBigStage.right,
+                        },
+                        statActivation: seriesState.matchCtx?.active
+                            ? {
+                                version: STAT_ACTIVATION_VERSION,
+                                byTeam: {
+                                    [leftTeam.id]: seriesState.matchCtx.active.left,
+                                    [rightTeam.id]: seriesState.matchCtx.active.right,
+                                },
+                            }
+                            : null,
+                    };
+
+                    const nextTeamStatsPlayoffs = {
+                        ...teamStatsRef.current,
+                        [leftTeam.id]: { ...liveStatsAfterBigStage.left, momentum: 0 },
+                        [rightTeam.id]: { ...liveStatsAfterBigStage.right, momentum: 0 },
+                    };
+                    setTeamStats(nextTeamStatsPlayoffs);
+                    teamStatsRef.current = nextTeamStatsPlayoffs;
+                    saveTeamStats(nextTeamStatsPlayoffs);
+
                     arr[idx] = m;
                     copy[playoffsStage] = arr;
 
@@ -7669,6 +10824,8 @@ function SpecialModePage() {
                         setShowWinnersScreen(true);
                         ratingsSnapshotRef.current = null;
                         clearRatingsSnapshot();
+                        statsSnapshotRef.current = null;
+                        clearStatsSnapshot();
                     }
 
                     return copy;
@@ -7713,8 +10870,21 @@ function SpecialModePage() {
                 match.winnerTeamId = winner.id;
                 match.loserTeamId = loser.id;
 
+                const winnerPoolBefore = copy.teams.find((t) => t.id === winner.id);
+                const loserPoolBefore = copy.teams.find((t) => t.id === loser.id);
+                const winnerWasAtDecider =
+                    winnerPoolBefore?.wins === 2 && winnerPoolBefore?.losses === 2;
+                const winnerWasQualified = !!winnerPoolBefore?.qualified;
+                const loserWasEliminated = !!loserPoolBefore?.eliminated;
+
                 resolveSwissMatchResult(copy, match, winner.id, scoreLeft, scoreRight);
                 calculateBuchholz(copy);
+
+                const winnerPoolAfter = copy.teams.find((t) => t.id === winner.id);
+                const loserPoolAfter = copy.teams.find((t) => t.id === loser.id);
+                const winnerNewlyQualified = !winnerWasQualified && !!winnerPoolAfter?.qualified;
+                const loserNewlyEliminated = !loserWasEliminated && !!loserPoolAfter?.eliminated;
+
                 const loserSetsWon = Math.min(scoreLeft, scoreRight);
                 const applied = applyRatings({
                     ratings: teamRatingsRef.current,
@@ -7735,6 +10905,81 @@ function SpecialModePage() {
                 setTeamRatings(applied.nextRatings);
                 teamRatingsRef.current = applied.nextRatings;
                 saveTeamRatings(applied.nextRatings);
+
+                const winnerSideKey = winner.id === leftTeam.id ? "left" : "right";
+                const loserSideKey = otherSide(winnerSideKey);
+
+                let liveStatsAfterBigStage =
+                    seriesState.liveStats ?? {
+                        left: { ...DEFAULT_TEAM_STAT_VALUES },
+                        right: { ...DEFAULT_TEAM_STAT_VALUES },
+                    };
+
+                if (winnerWasAtDecider) {
+                    liveStatsAfterBigStage = bumpStat(
+                        liveStatsAfterBigStage,
+                        winnerSideKey,
+                        "bigStage",
+                        1
+                    );
+                }
+
+                if (winnerNewlyQualified) {
+                    const clearGain =
+                        copy.stageKey === "stage1" ? 2 : copy.stageKey === "stage2" ? 3 : 4;
+                    liveStatsAfterBigStage = bumpStat(
+                        liveStatsAfterBigStage,
+                        winnerSideKey,
+                        "bigStage",
+                        clearGain
+                    );
+                }
+
+                if (loserNewlyEliminated) {
+                    liveStatsAfterBigStage = bumpStat(
+                        liveStatsAfterBigStage,
+                        loserSideKey,
+                        "bigStage",
+                        -3
+                    );
+                }
+
+                liveStatsAfterBigStage = resolveSeriesEndStats({
+                    liveStats: liveStatsAfterBigStage,
+                    winnerSide: winnerSideKey,
+                    ctx: seriesState.matchCtx,
+                    winnerSets: winnerSideKey === "left" ? seriesLeftSets : seriesRightSets,
+                    loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
+                });
+
+                match.statsMeta = {
+                    before: {
+                        [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                        [rightTeam.id]: seriesState.initialStats?.right ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                    },
+                    after: {
+                        [leftTeam.id]: liveStatsAfterBigStage.left,
+                        [rightTeam.id]: liveStatsAfterBigStage.right,
+                    },
+                    statActivation: seriesState.matchCtx?.active
+                        ? {
+                            version: STAT_ACTIVATION_VERSION,
+                            byTeam: {
+                                [leftTeam.id]: seriesState.matchCtx.active.left,
+                                [rightTeam.id]: seriesState.matchCtx.active.right,
+                            },
+                        }
+                        : null,
+                };
+
+                const nextTeamStatsSwiss = {
+                    ...teamStatsRef.current,
+                    [leftTeam.id]: { ...liveStatsAfterBigStage.left, momentum: 0 },
+                    [rightTeam.id]: { ...liveStatsAfterBigStage.right, momentum: 0 },
+                };
+                setTeamStats(nextTeamStatsSwiss);
+                teamStatsRef.current = nextTeamStatsSwiss;
+                saveTeamStats(nextTeamStatsSwiss);
 
                 arr[idx] = match;
                 copy.matchesByNet[swissNet] = arr;
@@ -7854,6 +11099,17 @@ function SpecialModePage() {
                     const newLost = curr.playerLostSets + (playerWonSet ? 0 : 1);
                     const seriesOver = newWon >= curr.setsToWin || newLost >= curr.setsToWin;
 
+                    const extSetConclusion = resolveSetConclusion({
+                        setComebackTracker: curr.setComebackTracker,
+                        liveStats: curr.liveStats,
+                        setWinnerSide: playerWonSet ? "left" : "right",
+                        enteringLeftSets: curr.playerWonSets,
+                        enteringRightSets: curr.playerLostSets,
+                        setsToWin: curr.setsToWin,
+                        leftRating: teamRatingsRef.current?.[curr.leftTeam?.id] ?? 0,
+                        rightRating: teamRatingsRef.current?.[curr.rightTeam?.id] ?? 0,
+                    });
+
                     if (seriesOver) {
                         const winner = playerWonSet ? curr.leftTeam : curr.rightTeam;
                         toast.dismiss();
@@ -7867,6 +11123,9 @@ function SpecialModePage() {
                             playerWonSets: newWon,
                             playerLostSets: newLost,
                             tiebreakerBigSymbol: "GG",
+                            liveStats: extSetConclusion.liveStats,
+                            setComebackTracker: extSetConclusion.setComebackTracker,
+                            bounceBackArmedSide: extSetConclusion.bounceBackArmedSide,
                             banner: {
                                 text: "GG",
                                 shadow: `
@@ -7936,7 +11195,10 @@ function SpecialModePage() {
                     return {
                         ...curr,
                         playerWonSets: newWon,
-                        playerLostSets: newLost
+                        playerLostSets: newLost,
+                        liveStats: extSetConclusion.liveStats,
+                        setComebackTracker: extSetConclusion.setComebackTracker,
+                        bounceBackArmedSide: extSetConclusion.bounceBackArmedSide,
                     };
                 }
 
@@ -9750,6 +13012,22 @@ function SpecialModePage() {
     };
 
     const isPlayedModal = !!currentModalMatch?.played;
+
+    const modalStatsKey = buildModalStatsKey({
+        modalContext,
+        currentModalMatch,
+        hallRecordId: selectedHallMatch?.record?.id,
+        tournamentNumber,
+        isPlayed: isPlayedModal,
+    });
+
+    const modalStatsPanels = (modalStatsKey && statsPanelMemory[modalStatsKey]) || DEFAULT_STATS_PANELS_STATE;
+
+    const toggleModalStatsPanel = (side) => {
+        if (!modalStatsKey) return;
+
+        setStatsPanelMemory((prev) => toggleStatsPanelEntry(prev, modalStatsKey, side));
+    };
 
     const {
         setsToWin,
@@ -12453,7 +15731,7 @@ function SpecialModePage() {
                                     position: 'relative'
                                 }}
                             >
-                                <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px' }}>
+                                <div style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '50.1px', position: 'relative' }}>
                                     <motion.span
                                         key={roundWins}
                                         initial={{ scale: 1.05, opacity: 0.3 }}
@@ -12589,6 +15867,9 @@ function SpecialModePage() {
                                             </div>
                                         ) : null}
                                     </div>
+                                    {seriesState.tiebreakerPhase === "idle" && (
+                                        <MomentumStreakBadge value={seriesState.liveStats?.left?.momentum} animated />
+                                    )}
                                 </div>
                                 {seriesState.tiebreakerPhase === "penalties" ? (
                                     <PenaltyCircles
@@ -13210,7 +16491,8 @@ function SpecialModePage() {
                                         display: "flex",
                                         alignItems: "center",
                                         flexDirection: 'column',
-                                        width: '50.1px'
+                                        width: '50.1px',
+                                        position: 'relative'
                                     }}
                                 >
                                     <motion.span
@@ -13348,6 +16630,9 @@ function SpecialModePage() {
                                             </div>
                                         ) : null}
                                     </div>
+                                    {seriesState.tiebreakerPhase === "idle" && (
+                                        <MomentumStreakBadge value={seriesState.liveStats?.right?.momentum} animated />
+                                    )}
                                 </div>
                                 {seriesState.tiebreakerPhase === "penalties" ? (
                                     <PenaltyCircles
@@ -14112,89 +17397,36 @@ function SpecialModePage() {
                     </div>
 
                     {!isPlayedModal && !modalContext.readOnly && (() => {
-                        const boSkewFactor = (bestOf) => {
-                            if (bestOf <= 1) return 0.7;
-                            if (bestOf <= 3) return 0.82;
-                            if (bestOf <= 5) return 0.92;
-                            if (bestOf <= 7) return 1.02;
-                            return 1.1;
-                        };
-
                         const leftRating = teamRatings?.[modalLeftTeam?.id] ?? 0;
                         const rightRating = teamRatings?.[modalRightTeam?.id] ?? 0;
 
-                        const leftPlacement = rankById[modalLeftTeam?.id] ?? 64;
-                        const rightPlacement = rankById[modalRightTeam?.id] ?? 64;
+                        const prediction = getMatchWinPrediction({
+                            leftTeam: modalLeftTeam,
+                            rightTeam: modalRightTeam,
+                            leftStats: teamStats?.[modalLeftTeam?.id],
+                            rightStats: teamStats?.[modalRightTeam?.id],
+                            ratings: teamRatings,
+                            teams: allTeams,
+                            matchContext: modalContext,
+                            bestOf: modalBestOf,
+                        });
 
-                        const placementGap = rightPlacement - leftPlacement;
-
-                        const placementRatingShift = placementGap * 12;
-
-                        const adjustedLeftRating =
-                            leftRating + placementRatingShift;
-
-                        const adjustedRightRating =
-                            rightRating - placementRatingShift;
-
-                        const expectedScore = (ra, rb) =>
-                            1 / (1 + Math.pow(10, (rb - ra) / 850));
-
-                        const raw = expectedScore(
-                            adjustedLeftRating,
-                            adjustedRightRating
-                        );
-
-                        const boFactor = boSkewFactor(modalBestOf);
-
-                        const adjustedRaw =
-                            0.5 + (raw - 0.5) * boFactor;
-
-                        const curve = 1.12;
-
-                        const leftWinProb =
-                            Math.pow(adjustedRaw, curve) /
-                            (
-                                Math.pow(adjustedRaw, curve) +
-                                Math.pow(1 - adjustedRaw, curve)
-                            );
-
-                        const leftPct = Math.min(
-                            100,
-                            Math.max(0, leftWinProb * 100)
-                        );
-
-                        const rightPct = 100 - leftPct;
+                        const leftPct = toDisplayedPercent(prediction.leftWinProbability);
+                        const rightPct = Math.round((100 - leftPct) * 10) / 10;
 
                         const favoriteIsLeft = leftPct > rightPct;
                         const favoritePct = Math.max(leftPct, rightPct);
                         const diff = Math.abs(leftPct - rightPct);
 
                         const favoriteTeam = favoriteIsLeft ? modalLeftTeam?.name : modalRightTeam?.name;
+                        const underdogTeam = favoriteIsLeft ? modalRightTeam?.name : modalLeftTeam?.name;
 
-                        const predictionLabel =
-                            diff <= 0
-                                ? "Absolute 50/50"
-                                : diff <= 5
-                                    ? "Too close to call"
-                                    : diff <= 10
-                                        ? "Barely separated"
-                                        : diff <= 18
-                                            ? `${favoriteTeam} has slight edge`
-                                            : diff <= 25
-                                                ? `${favoriteTeam} has modest advantage`
-                                                : diff <= 35
-                                                    ? `${favoriteTeam} has it in control`
-                                                    : diff <= 45
-                                                        ? `${favoriteTeam} has strong position`
-                                                        : diff <= 60
-                                                            ? `${favoriteTeam} has dominant position`
-                                                            : diff <= 75
-                                                                ? `${favoriteTeam} is overwhelming favorite`
-                                                                : diff <= 90
-                                                                    ? `${favoriteTeam} is very likely a winner`
-                                                                    : diff <= 99
-                                                                        ? `${favoriteTeam} is near-absolute favorite`
-                                                                        : `${favoriteTeam} is 100% winner!`;
+                        const predictionLabel = pickPredictionText({
+                            diff,
+                            favorite: favoriteTeam,
+                            underdog: underdogTeam,
+                            seed: `${modalContext?.matchId ?? ""}|${modalLeftTeam?.id}|${modalRightTeam?.id}`,
+                        });
 
                         const offsetStrength = Math.min(
                             35,
@@ -14228,6 +17460,29 @@ function SpecialModePage() {
 
                         const leftStats = teamPlacings?.[modalLeftTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
                         const rightStats = teamPlacings?.[modalRightTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+
+                        const leftStreak = readUnbeatenStreak(teamStats?.[modalLeftTeam?.id]);
+                        const rightStreak = readUnbeatenStreak(teamStats?.[modalRightTeam?.id]);
+
+                        const renderStreakFire = (side) => {
+                            const value = side === "left" ? leftStreak : rightStreak;
+                            if (!(value > 0)) return null;
+
+                            return (
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        zIndex: 2,
+                                        pointerEvents: "none",
+                                        ...(side === "left" ? { right: "75%" } : { left: "75%" }),
+                                    }}
+                                >
+                                    <UnbeatenStreakFire value={value} size={STREAK_FIRE_MODAL_SIZE} />
+                                </div>
+                            );
+                        };
 
                         const renderStats = (stats) => {
                             const items = [];
@@ -14464,6 +17719,7 @@ function SpecialModePage() {
                             <>
                                 <div className={css.match_modal_row}>
                                     {renderStats(leftStats)}
+                                    {renderStreakFire("left")}
                                     <div
                                         onMouseEnter={() => setHoveredTeamId(modalLeftTeam?.id)}
                                         onMouseLeave={() => setHoveredTeamId(null)}
@@ -14643,14 +17899,16 @@ function SpecialModePage() {
                                         )}
                                     </div>
                                     {renderStats(rightStats)}
+                                    {renderStreakFire("right")}
                                 </div>
 
                                 <div className={css.match_prediction_wrapper}>
                                     <span className={css.match_prediction_pct}>
                                         <CountUp
-                                            key={Math.round(leftPct)}
+                                            key={leftPct}
                                             start={0}
-                                            end={Math.round(leftPct)}
+                                            end={leftPct}
+                                            decimals={Number.isInteger(leftPct) ? 0 : 1}
                                             duration={1.2}
                                         />
                                         %
@@ -14663,9 +17921,10 @@ function SpecialModePage() {
 
                                     <span className={css.match_prediction_pct}>
                                         <CountUp
-                                            key={Math.round(rightPct)}
+                                            key={rightPct}
                                             start={0}
-                                            end={Math.round(rightPct)}
+                                            end={rightPct}
+                                            decimals={Number.isInteger(rightPct) ? 0 : 1}
                                             duration={1.2}
                                         />
                                         %
@@ -14769,6 +18028,45 @@ function SpecialModePage() {
                                     thirds: 0,
                                 };
 
+                            const leftStreakAfter = readUnbeatenStreak(
+                                currentModalMatch?.statsMeta?.after?.[modalPlayedLeft?.id]
+                            );
+                            const rightStreakAfter = readUnbeatenStreak(
+                                currentModalMatch?.statsMeta?.after?.[modalPlayedRight?.id]
+                            );
+                            const leftStreakBefore = readUnbeatenStreak(
+                                currentModalMatch?.statsMeta?.before?.[modalPlayedLeft?.id]
+                            );
+                            const rightStreakBefore = readUnbeatenStreak(
+                                currentModalMatch?.statsMeta?.before?.[modalPlayedRight?.id]
+                            );
+
+                            const renderStreakFire = (side) => {
+                                const value = side === "left" ? leftStreakAfter : rightStreakAfter;
+                                const before = side === "left" ? leftStreakBefore : rightStreakBefore;
+                                const lost = !(value > 0) && before > 0;
+                                if (!(value > 0) && !lost) return null;
+
+                                return (
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            zIndex: 2,
+                                            pointerEvents: "none",
+                                            ...(side === "left" ? { right: "77%" } : { left: "77%" }),
+                                        }}
+                                    >
+                                        {lost ? (
+                                            <LostStreakFire value={before} size={STREAK_FIRE_MODAL_SIZE} />
+                                        ) : (
+                                            <UnbeatenStreakFire value={value} size={STREAK_FIRE_MODAL_SIZE} />
+                                        )}
+                                    </div>
+                                );
+                            };
+
                             const renderStats = (stats, side) => {
                                 const items = [];
 
@@ -14787,8 +18085,8 @@ function SpecialModePage() {
                                             zIndex: 2,
                                             transition: "opacity 0.3s ease",
                                             ...(side === "left"
-                                                ? { right: "90.5%" }
-                                                : { left: "90.5%" }),
+                                                ? { right: "88.5%" }
+                                                : { left: "88.5%" }),
                                         }}
                                     >
                                         {items.map((i, idx) => (
@@ -14808,6 +18106,7 @@ function SpecialModePage() {
                                             className={css.match_modal_row}
                                         >
                                             {renderStats(displayedLeftStats, "left")}
+                                            {renderStreakFire("left")}
                                             <div
                                                 style={{
                                                     position: "absolute",
@@ -14936,13 +18235,13 @@ function SpecialModePage() {
                                                         flexDirection: "column",
                                                         justifyContent: "center",
                                                         alignItems: "center",
-                                                        gap: 2,
-                                                        marginTop: 2,
+                                                        gap: 4,
+                                                        marginTop: -1.5,
                                                         marginLeft: 2
                                                     }}
                                                 >
-                                                    <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
-                                                    <div style={{ width: 6, height: 5.6, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                                    <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
+                                                    <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
                                                 </div>
                                                 <span
                                                     style={{
@@ -15050,6 +18349,7 @@ function SpecialModePage() {
                                                 </span>
                                             </div>
                                             {renderStats(displayedRightStats, "right")}
+                                            {renderStreakFire("right")}
                                             <div
                                                 style={{
                                                     position: "absolute",
@@ -16104,6 +19404,59 @@ function SpecialModePage() {
                             );
                         })()}
                 </motion.div>
+
+                {(() => {
+                    const orientedView = isPlayedModal
+                        ? getPickOrientedModalView(currentModalMatch, isBo1Modal)
+                        : null;
+                    const statsLeftTeam = orientedView?.leftTeam ?? modalLeftTeam;
+                    const statsRightTeam = orientedView?.rightTeam ?? modalRightTeam;
+
+                    const statActivation = isPlayedModal
+                        ? getFinishedMatchStatActivation({
+                            match: currentModalMatch,
+                            modalContext,
+                            bestOf: modalBestOf,
+                            leftTeam: statsLeftTeam,
+                            rightTeam: statsRightTeam,
+                        })
+                        : getPreMatchStatActivation({
+                            modalContext,
+                            bestOf: modalBestOf,
+                            leftTeam: statsLeftTeam,
+                            rightTeam: statsRightTeam,
+                            leftStats: teamStats?.[statsLeftTeam?.id],
+                            rightStats: teamStats?.[statsRightTeam?.id],
+                            ratings: teamRatings,
+                            teams: allTeams,
+                        });
+
+                    return (
+                        <MatchStatsOverlay
+                            leftTeam={statsLeftTeam}
+                            rightTeam={statsRightTeam}
+                            showDiff={isPlayedModal}
+                            leftNow={
+                                isPlayedModal
+                                    ? currentModalMatch?.statsMeta?.after?.[statsLeftTeam?.id]
+                                    : teamStats?.[statsLeftTeam?.id]
+                            }
+                            rightNow={
+                                isPlayedModal
+                                    ? currentModalMatch?.statsMeta?.after?.[statsRightTeam?.id]
+                                    : teamStats?.[statsRightTeam?.id]
+                            }
+                            leftBefore={currentModalMatch?.statsMeta?.before?.[statsLeftTeam?.id]}
+                            rightBefore={currentModalMatch?.statsMeta?.before?.[statsRightTeam?.id]}
+                            leftOpen={modalStatsPanels.left}
+                            rightOpen={modalStatsPanels.right}
+                            onToggleLeft={() => toggleModalStatsPanel("left")}
+                            onToggleRight={() => toggleModalStatsPanel("right")}
+                            leftRowNotes={buildStatRowNotes(statActivation?.left)}
+                            rightRowNotes={buildStatRowNotes(statActivation?.right)}
+                        />
+                    );
+                })()}
             </div>
 
             <AnimatePresence>
@@ -16279,6 +19632,11 @@ function SpecialModePage() {
                             const isCountMode = trophyDisplay?.mode === "count";
                             const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
+                            const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
+                            const trophyIconSize = rank <= 3 ? 32 : 16;
+                            const streakFireSize = rank <= 3 ? 34 : 24;
+                            const streakFireOverhang = Math.max(0, (streakFireSize - trophyIconSize) / 2);
+
                             return (
                                 <React.Fragment key={t.id}>
                                     {rank === 17 && (
@@ -16321,7 +19679,21 @@ function SpecialModePage() {
                                         </div>
                                     )}
 
-                                    <div key={t.id} className={css.leaderboard_row} style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static', gap: rank === 3 ? "0px" : "" }}>
+                                    <div
+                                        key={t.id}
+                                        className={css.leaderboard_row}
+                                        style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static', gap: rank === 3 ? "0px" : "", userSelect: "none" }}
+                                        onMouseEnter={(e) => {
+                                            leaderboardCursorRef.current = { x: e.clientX, y: e.clientY };
+                                            setHoveredLeaderboardTeam(t);
+                                        }}
+                                        onMouseLeave={() => setHoveredLeaderboardTeam(null)}
+                                        onClick={() => cycleLeaderboardStatsTab(-1)}
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            cycleLeaderboardStatsTab(1);
+                                        }}
+                                    >
                                         <div
                                             className={circleClass}
                                             style={{
@@ -16334,7 +19706,6 @@ function SpecialModePage() {
                                                 border: "3px solid #999",
                                                 marginLeft: rank > 10 ? "210px" : "0",
                                             }}
-                                            title={`Team ${t.name}`}
                                         >
                                             <span
                                                 style={{
@@ -16349,7 +19720,7 @@ function SpecialModePage() {
                                         </div>
 
                                         <div style={{ position: rank <= 10 ? 'relative' : 'static' }}>
-                                            {trophyDisplay && (
+                                            {(trophyDisplay || unbeatenStreak > 0) && (
                                                 <span
                                                     style={{
                                                         marginLeft: 10,
@@ -16364,14 +19735,26 @@ function SpecialModePage() {
                                                         fontSize: rank <= 3 ? "32px" : "16px",
                                                     }}
                                                 >
-                                                    {trophyDisplay.mode === "icons" ? (
-                                                        Array.from({ length: trophyDisplay.n }).map((_, k) => (
-                                                            <FaTrophy key={k} style={{ verticalAlign: "middle" }} />
-                                                        ))
-                                                    ) : (
-                                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                                            {trophyDisplay.n} <FaTrophy />
-                                                        </span>
+                                                    {trophyDisplay &&
+                                                        (trophyDisplay.mode === "icons" ? (
+                                                            Array.from({ length: trophyDisplay.n }).map((_, k) => (
+                                                                <FaTrophy key={k} style={{ verticalAlign: "middle" }} />
+                                                            ))
+                                                        ) : (
+                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                                {trophyDisplay.n} <FaTrophy />
+                                                            </span>
+                                                        ))}
+                                                    {unbeatenStreak > 0 && (
+                                                        <UnbeatenStreakFire
+                                                            value={unbeatenStreak}
+                                                            size={streakFireSize}
+                                                            style={{
+                                                                marginLeft: trophyDisplay ? 4 : 0,
+                                                                marginTop: -streakFireOverhang,
+                                                                marginBottom: -streakFireOverhang,
+                                                            }}
+                                                        />
                                                     )}
                                                 </span>
                                             )}
@@ -16407,6 +19790,13 @@ function SpecialModePage() {
                         })}
                     </div>
                 </div>
+
+                <TeamStatsHoverPopover
+                    team={hoveredLeaderboardTeam}
+                    cursorRef={leaderboardCursorRef}
+                    statsNow={teamStats?.[hoveredLeaderboardTeam?.id]}
+                    tab={leaderboardStatsTab}
+                />
                 {isRestartModalOpen && (
                     <div className={css.restart_modal}>
                         <p className={css.restart_text}>
@@ -16621,6 +20011,257 @@ function SpecialModePage() {
                                 Cancel
                             </button>
                             <button className={css.confirm_button} onClick={handleFinalScoreboardReset}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isScoreBoardResetModeModalOpen && (
+                    <div className={css.restart_modal} style={{ width: "520px" }}>
+                        <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                            Leaderboard management
+                        </p>
+
+                        <select
+                            className={css.reset_input}
+                            style={{ width: "80%" }}
+                            value={scoreboardResetMode}
+                            onChange={(e) => setScoreboardResetMode(e.target.value)}
+                        >
+                            <option value=""></option>
+                            <option value="reset">Reset the leaderboard?</option>
+                            <option value="stats">Manage team stats</option>
+                        </select>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={closeStatsAdminModals}>
+                                Cancel
+                            </button>
+                            <button
+                                className={`${css.confirm_button} ${!scoreboardResetMode ? css.locked : ""}`}
+                                disabled={!scoreboardResetMode}
+                                onClick={handleScoreboardResetModeConfirm}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isManageStatsModalOpen && (
+                    <div
+                        className={css.restart_modal}
+                        style={{
+                            width: "620px",
+                            height: "360px",
+                            top: "20%",
+                            padding: 0,
+                            display: "flex",
+                            flexDirection: "column",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <div
+                            style={{
+                                flex: 1,
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                padding: "20px 24px 16px",
+                                width: "620px",
+                            }}
+                        >
+                            <p className={css.restart_text} style={{ marginBottom: 12 }}>
+                                Manage team stats
+                            </p>
+
+                            <div style={{ marginBottom: 12, width: "100%" }}>
+                                <label className={css.reset_label}>Team</label>
+
+                                <button
+                                    type="button"
+                                    className={css.reset_input}
+                                    style={{
+                                        marginBottom: 0,
+                                        textAlign: "left",
+                                        cursor: "pointer",
+                                        minHeight: 38,
+                                    }}
+                                    onClick={() => setIsManageStatsPickerOpen((open) => !open)}
+                                >
+                                    {manageStatsTeam ? `Team ${manageStatsTeam.name}` : "Choose a team…"}
+                                </button>
+
+                                {isManageStatsPickerOpen && (
+                                    <div
+                                        style={{
+                                            overflowY: "auto",
+                                            overflowX: "hidden",
+                                            height: "180px",
+                                            width: "100%",
+                                            border: "1px solid #999",
+                                            borderRadius: 8,
+                                            padding: 12,
+                                            marginTop: 8,
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", userSelect: "none" }}>
+                                            {[...allTeams]
+                                                .sort((a, b) => (rankById?.[a.id] ?? 64) - (rankById?.[b.id] ?? 64))
+                                                .map((team) => {
+                                                    const isSelected = manageStatsTeamId === team.id;
+                                                    return (
+                                                        <button
+                                                            key={team.id}
+                                                            type="button"
+                                                            onClick={() => handleManageStatsPickTeam(team.id)}
+                                                            className={css.team_circle_ro32}
+                                                            style={{
+                                                                width: 37.2,
+                                                                height: 37.2,
+                                                                boxShadow: isSelected ? `0 0 12px ${team.unlitColor}` : "none",
+                                                                border: isSelected ? `2px solid ${team.unlitColor}` : "2px solid #999",
+                                                                background: team.color,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                position: "relative",
+                                                                overflow: "hidden",
+                                                                cursor: "pointer",
+                                                            }}
+                                                            title={`Team ${team.name}`}
+                                                        >
+                                                            <span
+                                                                style={{
+                                                                    color: "#ffffff",
+                                                                    fontSize: "12px",
+                                                                    textShadow: "0 0 4px #000",
+                                                                }}
+                                                                className={css.modal_team_rating}
+                                                            >
+                                                                {`${teamRatings?.[team.id] ?? 0}p`}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div
+                                style={{
+                                    visibility: manageStatsTeam ? "visible" : "hidden",
+                                    pointerEvents: manageStatsTeam ? "auto" : "none",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: "100%",
+                                        margin: "4px 0 16px",
+                                        borderTop: "1px solid #ddd",
+                                    }}
+                                />
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+                                    {STAT_DEFINITIONS.map((def) => {
+                                        const currentValue =
+                                            Number(manageStatsCurrent[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]) || 0;
+
+                                        return (
+                                            <React.Fragment key={def.key}>
+                                                <ManageStatRow
+                                                    def={def}
+                                                    currentValue={currentValue}
+                                                    inputValue={manageStatsValues[def.key]}
+                                                    isEditing={manageStatsEditingKey === def.key}
+                                                    onStartEdit={setManageStatsEditingKey}
+                                                    onInputChange={handleManageStatsInputChange}
+                                                    onInputCommit={handleManageStatsInputBlur}
+                                                    onSlide={handleManageStatsSlide}
+                                                />
+
+                                                {def.key === "unbeatenNerve" && (
+                                                    <div>
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: 8,
+                                                                minHeight: 28,
+                                                            }}
+                                                        >
+                                                            <label
+                                                                className={css.reset_label}
+                                                                style={{ margin: 0, color: "#ff8a00", fontWeight: 700 }}
+                                                            >
+                                                                {UNBEATEN_STREAK_DEFINITION.label}:
+                                                            </label>
+                                                            <UnbeatenStreakFire
+                                                                value={readUnbeatenStreak(manageStatsCurrent)}
+                                                                size={26}
+                                                                showZero
+                                                            />
+                                                        </div>
+                                                        <input
+                                                            className={css.reset_input}
+                                                            style={{ marginBottom: 0 }}
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            autoComplete="off"
+                                                            disabled={!manageStatsTeam}
+                                                            value={manageStatsValues.unbeatenStreak ?? ""}
+                                                            onChange={(e) =>
+                                                                handleManageStatsInputChange("unbeatenStreak", e.target.value)
+                                                            }
+                                                            onBlur={() => handleManageStatsInputBlur("unbeatenStreak")}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                position: "sticky",
+                                bottom: 0,
+                                background: "#fff",
+                                borderTop: "1px solid #ddd",
+                                padding: "12px 24px",
+                            }}
+                        >
+                            <div className={css.restart_buttons} style={{ margin: 0 }}>
+                                <button className={css.cancel_button} onClick={closeStatsAdminModals}>
+                                    Cancel
+                                </button>
+                                <button
+                                    className={`${css.confirm_button} ${!canConfirmManageStats ? css.locked : ""}`}
+                                    disabled={!canConfirmManageStats}
+                                    onClick={handleManageStatsFormConfirm}
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isManageStatsFinalModalOpen && (
+                    <div className={css.restart_modal}>
+                        <p className={css.restart_text}>
+                            Are you sure you want to edit{" "}
+                            <b>{manageStatsChanges.length === 1 ? "this stat" : "these stats"}</b>?
+                        </p>
+
+                        <div className={css.restart_buttons}>
+                            <button className={css.cancel_button} onClick={closeStatsAdminModals}>
+                                Cancel
+                            </button>
+                            <button className={css.confirm_button} onClick={handleManageStatsFinalConfirm}>
                                 Confirm
                             </button>
                         </div>
