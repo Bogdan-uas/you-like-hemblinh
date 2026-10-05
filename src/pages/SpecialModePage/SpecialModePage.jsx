@@ -31,6 +31,26 @@ const { usage, quota } = await navigator.storage.estimate();
 console.log(`Used: ${(usage / 1024 / 1024).toFixed(2)} MB`);
 console.log(`Quota: ${(quota / 1024 / 1024 / 1024).toFixed(2)} GB`);
 
+const getLocalStorageUsage = () => {
+    let bytes = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+
+        bytes += (key.length + value.length) * 2;
+    }
+
+    return bytes;
+};
+
+const localStorageUsage = getLocalStorageUsage();
+const localStorageQuota = 5 * 1024 * 1024;
+
+console.log(`[LOCAL STORAGE] Used: ${(localStorageUsage / 1024 / 1024).toFixed(2)} MB`);
+console.log(`[LOCAL STORAGE] Estimated Quota: ${(localStorageQuota / 1024 / 1024).toFixed(2)} MB`);
+console.log(`[LOCAL STORAGE] Usage: ${((localStorageUsage / localStorageQuota) * 100).toFixed(2)}%`);
+
 const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
 
 const STORAGE_KEY = "specialPageState_swiss_v2";
@@ -522,9 +542,10 @@ const otStaminaRollEffect = (value, { active, depth }) => {
     return Math.max(-0.4, Math.min(0.4, raw));
 };
 
-const upsetPedigreeRollEffect = (value, active) => {
+const upsetPedigreeRollEffect = (value, active, cap) => {
     if (!active) return 0;
-    return (value / 100) * 0.3;
+    const raw = (value / 100) * UPSET_PEDIGREE_EFFECT_SCALE;
+    return Number.isFinite(cap) ? Math.min(raw, Math.max(0, cap)) : raw;
 };
 
 const bounceBackRollEffect = (value, active) => {
@@ -579,6 +600,15 @@ const unbeatenBreakerLossAmount = (streak) => {
     return 1 + 4 * ((s - 1) / (UNBEATEN_BREAKER_STREAK_CAP - 1));
 };
 
+const RATING_EDGE_SCALE = 0.04;
+
+const ratingRollEdge = (ownRating, oppRating) => {
+    const own = Number(ownRating);
+    const opp = Number(oppRating);
+    if (!Number.isFinite(own) || !Number.isFinite(opp)) return 0;
+    return Math.round((expectedScore(own, opp) - 0.5) * RATING_EDGE_SCALE * 10000) / 10000;
+};
+
 const computeRollBonus = (side, rawRoll, ctx) => {
     const stat = { ...DEFAULT_TEAM_STAT_VALUES, ...(ctx.liveStats?.[side] ?? {}) };
     const matchCtx = ctx.matchCtx;
@@ -593,7 +623,8 @@ const computeRollBonus = (side, rawRoll, ctx) => {
     bonus += otStaminaRollEffect(stat.otStamina, ctx.otContext);
     bonus += upsetPedigreeRollEffect(
         matchCtx?.upsetValue?.[side] ?? stat.upsetPedigree,
-        !!active.upsetPedigree && matchCtx?.upsetUnderdogSide === side
+        !!active.upsetPedigree && matchCtx?.upsetUnderdogSide === side,
+        matchCtx?.upset?.bonusCap
     );
     bonus += bounceBackRollEffect(stat.bounceBack, ctx.bounceBackArmedSide === side);
     bonus += antiTiltRollEffect(stat.antiTilt, ctx.lastRoundLoserSide === side);
@@ -607,6 +638,7 @@ const computeRollBonus = (side, rawRoll, ctx) => {
         stat.streakBreaker,
         (ctx.liveStats?.[foe]?.momentum ?? 0) >= 5
     );
+    bonus += matchCtx?.ratingEdge?.[side] ?? 0;
     bonus += unbeatenStreakBreakerRollEffect(
         stat.unbeatenStreakBreaker,
         !!active.unbeatenStreakBreaker
@@ -615,19 +647,53 @@ const computeRollBonus = (side, rawRoll, ctx) => {
     return bonus;
 };
 
-const relativeRatingsGap = (ratingA, ratingB) => {
-    const a = Number.isFinite(ratingA) ? ratingA : 0;
-    const b = Number.isFinite(ratingB) ? ratingB : 0;
-    const avg = (a + b) / 2;
-    if (avg <= 0) return 0;
-    return Math.abs(a - b) / avg;
+const upsetGapScale = (gapPct) =>
+    Math.max(
+        0,
+        Math.min(
+            1,
+            (gapPct - UPSET_GAP_THRESHOLD_PCT) / (UPSET_GAP_FULL_PCT - UPSET_GAP_THRESHOLD_PCT)
+        )
+    );
+
+const upsetPedigreeSetDeltas = (gapPct) => {
+    const t = upsetGapScale(gapPct);
+    return {
+        underdogGain: Math.round((1 + 4 * t) * 10) / 10,
+        favoriteLoss: Math.round((1 + 2 * t) * 10) / 10,
+    };
 };
 
-const upsetPedigreeSetGain = (gapPct) => {
-    const t = Math.max(0, Math.min(1, (gapPct - 0.15) / 0.35));
+const resolveUpsetMatchup = (leftWinProbability) => {
+    if (!Number.isFinite(leftWinProbability)) return null;
+
+    const leftPct = toDisplayedPercent(leftWinProbability);
+    const rightPct = Math.round((100 - leftPct) * 10) / 10;
+    const gapPct = Math.round(Math.abs(leftPct - rightPct) * 10) / 10;
+    const active = gapPct >= UPSET_GAP_THRESHOLD_PCT;
+    const underdogSide = active ? (leftPct < rightPct ? "left" : "right") : null;
+
     return {
-        underdogGain: 2 + t * 2,
-        favoriteLoss: 1 + t * 1,
+        leftPct,
+        rightPct,
+        gapPct,
+        active,
+        underdogSide,
+        favoriteSide: underdogSide ? otherSide(underdogSide) : null,
+    };
+};
+
+const buildStoredUpsetMeta = (upset, leftTeam, rightTeam) => {
+    if (!upset) return null;
+    const idOf = (side) => (side === "left" ? leftTeam?.id : side === "right" ? rightTeam?.id : null);
+    return {
+        active: !!upset.active,
+        gapPct: upset.gapPct,
+        underdogTeamId: idOf(upset.underdogSide) ?? null,
+        winPct: {
+            ...(leftTeam?.id ? { [leftTeam.id]: upset.leftPct } : {}),
+            ...(rightTeam?.id ? { [rightTeam.id]: upset.rightPct } : {}),
+        },
     };
 };
 
@@ -907,7 +973,9 @@ const applyOtStaminaPenaltyAttempt = (liveStats, attackerSide, attackerSucceeded
 const ELIMINATION_NETS = ["0:2", "1:2", "2:2"];
 const PLAYOFF_ROUND_INDEX = { ro16: 0, qf: 1, sf: 2, gf: 3 };
 
-const UPSET_GAP_THRESHOLD = 0.15;
+const UPSET_GAP_THRESHOLD_PCT = 7;
+const UPSET_GAP_FULL_PCT = 80;
+const UPSET_PEDIGREE_EFFECT_SCALE = 0.05;
 const TOP_SEED_RANK_LIMIT = 10;
 
 const STAT_NOT_ACTIVATED_NOTE = "Not activated";
@@ -973,7 +1041,7 @@ const resetBattleExperience = (teamStats) => {
     return out;
 };
 
-const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, rating, rank, values }) => {
+const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, upset, rank, values }) => {
     const isSwiss = kind === "swiss";
     const isThirdPlace = !isSwiss && playoffsStage === "thirdPlace";
     const [winsInStage, lossesInStage] = isSwiss
@@ -987,11 +1055,7 @@ const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, rating
     const bigStageCanRise = isSwiss ? winsInStage === 2 : true;
     const bigStageCanFall = isSwiss && lossesInStage === 2;
 
-    const ratingsKnown = Number.isFinite(rating?.left) && Number.isFinite(rating?.right);
-    const gapActive = ratingsKnown
-        ? relativeRatingsGap(rating.left, rating.right) >= UPSET_GAP_THRESHOLD
-        : null;
-    const underdogSide = ratingsKnown ? (rating.left < rating.right ? "left" : "right") : null;
+    const upsetKnown = upset !== null && upset !== undefined;
 
     const isFloored = (side, key) => {
         const v = values?.[side]?.[key];
@@ -1005,10 +1069,10 @@ const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, rating
 
         const bigStage =
             bigStageCanRise || (bigStageCanFall && !isFloored(side, "bigStage"));
-        const upsetPedigree =
-            gapActive === null
-                ? null
-                : gapActive && (underdogSide === side || !isFloored(side, "upsetPedigree"));
+        const upsetPedigree = !upsetKnown
+            ? null
+            : !!upset.active &&
+            (upset.underdogSide === side || !isFloored(side, "upsetPedigree"));
 
         return {
             bigStage,
@@ -1051,6 +1115,7 @@ const getFinishedMatchStatActivation = ({ match, modalContext, bestOf, leftTeam,
 
     const before = match.statsMeta?.before;
     const ratingsBefore = match.ratingMeta?.before;
+    const storedUpset = match.statsMeta?.upset ?? null;
     const streakOf = (id) => {
         const n = readOptionalNumber(before?.[id]?.unbeatenStreak);
         return n === null ? null : Math.max(0, Math.floor(n));
@@ -1072,10 +1137,14 @@ const getFinishedMatchStatActivation = ({ match, modalContext, bestOf, leftTeam,
                 upsetPedigree: readOptionalNumber(before?.[rightId]?.upsetPedigree),
             },
         },
-        rating: {
-            left: readOptionalNumber(ratingsBefore?.[leftId]?.points),
-            right: readOptionalNumber(ratingsBefore?.[rightId]?.points),
-        },
+        upset: storedUpset?.underdogTeamId
+            ? {
+                active: !!storedUpset.active,
+                underdogSide: storedUpset.underdogTeamId === leftId ? "left" : "right",
+            }
+            : storedUpset
+                ? { active: !!storedUpset.active, underdogSide: null }
+                : null,
         rank: {
             left: readOptionalNumber(ratingsBefore?.[leftId]?.rank),
             right: readOptionalNumber(ratingsBefore?.[rightId]?.rank),
@@ -1106,6 +1175,22 @@ const seriesSeverity = (winnerSets, loserSets) => {
     return Math.max(0.25, Math.min(1, (w - l) / w));
 };
 
+const upsetBonusCapAtStart = ({ seeded, matchCtx, setsToWin, underdogSide }) => {
+    const midRoll = (MULTIPLIER_MIN + MULTIPLIER_MAX) / 2;
+    const ctx = {
+        liveStats: seeded,
+        matchCtx,
+        otContext: { active: false, depth: 0 },
+        bounceBackArmedSide: null,
+        lastRoundLoserSide: null,
+        finisherActive: setsToWin > 1,
+    };
+    const edge =
+        computeRollBonus(otherSide(underdogSide), midRoll, ctx) -
+        computeRollBonus(underdogSide, midRoll, ctx);
+    return Math.round(Math.max(0, edge) * 10000) / 10000;
+};
+
 const buildMatchStatContext = ({
     kind,
     net = null,
@@ -1130,16 +1215,19 @@ const buildMatchStatContext = ({
     const ratingOf = (team) => Number(ratings?.[team?.id]) || 0;
     const rankOf = (team) => rankById?.[team?.id] ?? null;
 
-    const active = deriveStatActivation({
-        kind: isSwiss ? "swiss" : "playoffs",
-        net,
-        playoffsStage,
-        bestOf,
-        streak: { left: streakOf("left"), right: streakOf("right") },
-        values: { left: seededStats?.left, right: seededStats?.right },
-        rating: { left: ratingOf(leftTeam), right: ratingOf(rightTeam) },
-        rank: { left: rankOf(leftTeam), right: rankOf(rightTeam) },
-    });
+    const activationFor = (upset) =>
+        deriveStatActivation({
+            kind: isSwiss ? "swiss" : "playoffs",
+            net,
+            playoffsStage,
+            bestOf,
+            streak: { left: streakOf("left"), right: streakOf("right") },
+            values: { left: seededStats?.left, right: seededStats?.right },
+            upset,
+            rank: { left: rankOf(leftTeam), right: rankOf(rightTeam) },
+        });
+
+    const baseActive = activationFor({ active: false, underdogSide: null });
 
     const stakes = battleStakesOf({
         kind: isSwiss ? "swiss" : "playoffs",
@@ -1157,31 +1245,68 @@ const buildMatchStatContext = ({
             stakes,
         });
 
-    return {
+    const baseCtx = {
         kind: isSwiss ? "swiss" : "playoffs",
         isBo1: bestOf === 1,
-        elimNerveActive: active.left.elimNerve,
+        elimNerveActive: baseActive.left.elimNerve,
         unbeatenExempt: isThirdPlace,
         unbeatenRoundIndex: PLAYOFF_ROUND_INDEX[playoffsStage] ?? 0,
         unbeaten: {
-            left: { eligible: unbeatenEligible, active: active.left.unbeatenNerve },
-            right: { eligible: unbeatenEligible, active: active.right.unbeatenNerve },
+            left: { eligible: unbeatenEligible, active: baseActive.left.unbeatenNerve },
+            right: { eligible: unbeatenEligible, active: baseActive.right.unbeatenNerve },
         },
         battle: {
             left: { difficulty: difficultyFor(leftTeam, rightTeam) },
             right: { difficulty: difficultyFor(rightTeam, leftTeam) },
         },
         unbeatenBreaker: {
-            left: { active: active.left.unbeatenStreakBreaker, streak: streakOf("right") },
-            right: { active: active.right.unbeatenStreakBreaker, streak: streakOf("left") },
+            left: { active: baseActive.left.unbeatenStreakBreaker, streak: streakOf("right") },
+            right: { active: baseActive.right.unbeatenStreakBreaker, streak: streakOf("left") },
         },
         topSeedRank: { left: rankOf(leftTeam), right: rankOf(rightTeam) },
-        upsetUnderdogSide: ratingOf(leftTeam) < ratingOf(rightTeam) ? "left" : "right",
+        ratingEdge: {
+            left: ratingRollEdge(ratingOf(leftTeam), ratingOf(rightTeam)),
+            right: ratingRollEdge(ratingOf(rightTeam), ratingOf(leftTeam)),
+        },
+        upsetUnderdogSide: null,
         upsetValue: {
             left: Number(seededStats?.left?.upsetPedigree) || 0,
             right: Number(seededStats?.right?.upsetPedigree) || 0,
         },
-        active,
+        upset: null,
+        active: baseActive,
+    };
+
+    const setsToWin = calcSetsToWin(bestOf);
+    const baseSeeded = {
+        left: { ...DEFAULT_TEAM_STAT_VALUES, ...(seededStats?.left ?? {}), momentum: 0 },
+        right: { ...DEFAULT_TEAM_STAT_VALUES, ...(seededStats?.right ?? {}), momentum: 0 },
+    };
+    const matchup =
+        setsToWin >= 1
+            ? resolveUpsetMatchup(
+                predictLeftSeriesWin({ seeded: baseSeeded, matchCtx: baseCtx, setsToWin })
+            )
+            : null;
+    const upset = matchup
+        ? {
+            ...matchup,
+            bonusCap: matchup.active
+                ? upsetBonusCapAtStart({
+                    seeded: baseSeeded,
+                    matchCtx: baseCtx,
+                    setsToWin,
+                    underdogSide: matchup.underdogSide,
+                })
+                : 0,
+        }
+        : null;
+
+    return {
+        ...baseCtx,
+        upsetUnderdogSide: upset?.underdogSide ?? null,
+        upset,
+        active: activationFor(upset),
     };
 };
 
@@ -1800,6 +1925,28 @@ const predictSeriesWin = (env, setsToWin) => {
     return walk(0, 0, null);
 };
 
+const predictLeftSeriesWin = ({ seeded, matchCtx, setsToWin }) => {
+    const cacheKey = JSON.stringify([seeded, matchCtx, setsToWin]);
+    const cached = predictionCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    const env = {
+        leftStats: seeded.left,
+        rightStats: seeded.right,
+        matchCtx,
+        finisherActive: setsToWin > 1,
+        cache: new Map(),
+    };
+
+    const leftWinProbability = predictSeriesWin(env, setsToWin);
+
+    if (predictionCache.size >= PREDICTION_CACHE_MAX) {
+        predictionCache.delete(predictionCache.keys().next().value);
+    }
+    predictionCache.set(cacheKey, leftWinProbability);
+    return leftWinProbability;
+};
+
 const getMatchWinPrediction = ({
     leftTeam,
     rightTeam,
@@ -1831,25 +1978,10 @@ const getMatchWinPrediction = ({
 
     const setsToWin = calcSetsToWin(bestOf);
 
-    const cacheKey = JSON.stringify([seeded, matchCtx, setsToWin]);
-    const cached = predictionCache.get(cacheKey);
-    if (cached !== undefined) return cached;
-
-    const env = {
-        leftStats: seeded.left,
-        rightStats: seeded.right,
-        matchCtx,
-        finisherActive: setsToWin > 1,
-        cache: new Map(),
+    return {
+        leftWinProbability: predictLeftSeriesWin({ seeded, matchCtx, setsToWin }),
+        upset: matchCtx.upset,
     };
-
-    const result = { leftWinProbability: predictSeriesWin(env, setsToWin) };
-
-    if (predictionCache.size >= PREDICTION_CACHE_MAX) {
-        predictionCache.delete(predictionCache.keys().next().value);
-    }
-    predictionCache.set(cacheKey, result);
-    return result;
 };
 
 const resolveSetConclusion = ({
@@ -1858,8 +1990,7 @@ const resolveSetConclusion = ({
     enteringLeftSets,
     enteringRightSets,
     setsToWin,
-    leftRating,
-    rightRating,
+    upset = null,
     setComebackTracker = null,
 }) => {
     let stats = normalizeLiveStats(liveStats);
@@ -1897,16 +2028,10 @@ const resolveSetConclusion = ({
         }
     }
 
-    const gapPct = relativeRatingsGap(leftRating, rightRating);
-    if (gapPct >= 0.15) {
-        const underdogSide = leftRating < rightRating ? "left" : "right";
-        const favoriteSide = otherSide(underdogSide);
-
-        if (setWinnerSide === underdogSide) {
-            const { underdogGain, favoriteLoss } = upsetPedigreeSetGain(gapPct);
-            stats = bumpStat(stats, underdogSide, "upsetPedigree", underdogGain);
-            stats = bumpStat(stats, favoriteSide, "upsetPedigree", -favoriteLoss);
-        }
+    if (upset?.active && upset.underdogSide && setWinnerSide === upset.underdogSide) {
+        const { underdogGain, favoriteLoss } = upsetPedigreeSetDeltas(upset.gapPct);
+        stats = bumpStat(stats, upset.underdogSide, "upsetPedigree", underdogGain);
+        stats = bumpStat(stats, otherSide(upset.underdogSide), "upsetPedigree", -favoriteLoss);
     }
 
     return {
@@ -10378,8 +10503,7 @@ function SpecialModePage() {
                     enteringLeftSets: prev.playerWonSets,
                     enteringRightSets: prev.playerLostSets,
                     setsToWin: prev.setsToWin,
-                    leftRating: teamRatingsRef.current?.[prev.leftTeam?.id] ?? 0,
-                    rightRating: teamRatingsRef.current?.[prev.rightTeam?.id] ?? 0,
+                    upset: prev.matchCtx?.upset ?? null,
                 });
                 liveStatsAfterPens = pensSetConclusion.liveStats;
 
@@ -10640,8 +10764,7 @@ function SpecialModePage() {
                         enteringLeftSets: enteringLeftSetsOt,
                         enteringRightSets: enteringRightSetsOt,
                         setsToWin: toWin,
-                        leftRating: teamRatingsRef.current?.[prev.leftTeam?.id] ?? 0,
-                        rightRating: teamRatingsRef.current?.[prev.rightTeam?.id] ?? 0,
+                        upset: prev.matchCtx?.upset ?? null,
                     });
                     const liveStatsAfterOtSet = otSetConclusion.liveStats;
                     const bounceBackArmedAfterOtSet = otSetConclusion.bounceBackArmedSide;
@@ -11043,8 +11166,7 @@ function SpecialModePage() {
                     enteringLeftSets: enteringLeftSetsReg,
                     enteringRightSets: enteringRightSetsReg,
                     setsToWin: toWin,
-                    leftRating: teamRatingsRef.current?.[prev.leftTeam?.id] ?? 0,
-                    rightRating: teamRatingsRef.current?.[prev.rightTeam?.id] ?? 0,
+                    upset: prev.matchCtx?.upset ?? null,
                 });
                 liveStatsAfterRegSet = regSetConclusion.liveStats;
                 bounceBackArmedAfterRegSet = regSetConclusion.bounceBackArmedSide;
@@ -11302,6 +11424,7 @@ function SpecialModePage() {
                                 },
                             }
                             : null,
+                        upset: buildStoredUpsetMeta(seriesState.matchCtx?.upset, leftTeam, rightTeam),
                     };
 
                     const nextTeamStatsPlayoffs = {
@@ -11530,6 +11653,7 @@ function SpecialModePage() {
                             },
                         }
                         : null,
+                    upset: buildStoredUpsetMeta(seriesState.matchCtx?.upset, leftTeam, rightTeam),
                 };
 
                 const nextTeamStatsSwiss = {
@@ -11666,8 +11790,7 @@ function SpecialModePage() {
                         enteringLeftSets: curr.playerWonSets,
                         enteringRightSets: curr.playerLostSets,
                         setsToWin: curr.setsToWin,
-                        leftRating: teamRatingsRef.current?.[curr.leftTeam?.id] ?? 0,
-                        rightRating: teamRatingsRef.current?.[curr.rightTeam?.id] ?? 0,
+                        upset: curr.matchCtx?.upset ?? null,
                     });
 
                     if (seriesOver) {
