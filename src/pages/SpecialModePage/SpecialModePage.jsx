@@ -13,7 +13,8 @@ import {
     FaCircleInfo,
     FaCheck,
     FaXmark,
-    FaCircle
+    FaCircle,
+    FaChartSimple
 } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
 import "odometer/themes/odometer-theme-default.css";
@@ -45,6 +46,8 @@ const BREAKDOWN_HIDDEN_LS_KEY = "specialMode_breakdownModalHidden_v1";
 const TOURNAMENT_NUMBERS_LS_KEY = "specialMode_tournamentNumbers_v1";
 const HALL_TEAM_SORT_LS_KEY = "specialMode_hallTeamSort_v1";
 const TEAM_STATS_LS_KEY = "specialMode_teamStats_v1";
+const LEADERBOARD_SORT_LS_KEY = "specialMode_leaderboardSort_v1";
+const LAST_FINALIZED_TOURNAMENT_LS_KEY = "specialMode_lastFinalizedTournament_v1";
 
 const isNativeScrollArea = (node) => {
     if (!(node instanceof HTMLElement)) return false;
@@ -95,6 +98,38 @@ const saveTournamentNumbers = (numbers) => {
         localStorage.setItem(TOURNAMENT_NUMBERS_LS_KEY, JSON.stringify(numbers));
     } catch {
         /* ignore */
+    }
+};
+
+const ACTIVE_TOURNAMENT_TYPE = "Official";
+
+const normalizeTournamentRef = (value) => {
+    if (!value || typeof value !== "object") return null;
+
+    const number = Number(value.number);
+    if (!Number.isInteger(number)) return null;
+
+    return {
+        type: typeof value.type === "string" && value.type ? value.type : ACTIVE_TOURNAMENT_TYPE,
+        number,
+    };
+};
+
+const loadLastFinalizedTournament = () => {
+    try {
+        const raw = localStorage.getItem(LAST_FINALIZED_TOURNAMENT_LS_KEY);
+        if (raw === null) return undefined;
+        return normalizeTournamentRef(JSON.parse(raw));
+    } catch {
+        return undefined;
+    }
+};
+
+const saveLastFinalizedTournament = (value) => {
+    try {
+        localStorage.setItem(LAST_FINALIZED_TOURNAMENT_LS_KEY, JSON.stringify(value ?? null));
+    } catch {
+        console.error("Couldn't save the last finalized tournament");
     }
 };
 const HALL_OF_FAME_DB_NAME = "specialModeHallOfFame";
@@ -2302,6 +2337,76 @@ const buildLeaderboard = (teams, ratings) => {
     sorted.forEach((t, i) => (rankById[t.id] = i + 1));
 
     return { sorted, rankById, baseIndexById };
+};
+
+const LEADERBOARD_SORT_OPTIONS = [
+    { value: "points", label: "Points (default)" },
+    { value: "trophies", label: "Trophies" },
+    { value: "seconds", label: "Second Places" },
+    { value: "thirds", label: "Third Places" },
+    { value: "stats", label: "Stats" },
+];
+
+const LEADERBOARD_SORT_VALUES = LEADERBOARD_SORT_OPTIONS.map((o) => o.value);
+const DEFAULT_LEADERBOARD_SORT = "points";
+const LEADERBOARD_RESHUFFLE_MS = 700;
+const LEADERBOARD_RESHUFFLE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+const loadLeaderboardSortMode = () => {
+    try {
+        const saved = localStorage.getItem(LEADERBOARD_SORT_LS_KEY);
+        return LEADERBOARD_SORT_VALUES.includes(saved) ? saved : DEFAULT_LEADERBOARD_SORT;
+    } catch {
+        return DEFAULT_LEADERBOARD_SORT;
+    }
+};
+
+const saveLeaderboardSortMode = (mode) => {
+    try {
+        localStorage.setItem(LEADERBOARD_SORT_LS_KEY, mode);
+    } catch {
+        console.error("Couldn't save the leaderboard sorting");
+    }
+};
+
+const COLORS_ORDER_INDEX = Object.fromEntries(Object.keys(COLORS).map((key, i) => [key, i]));
+
+const getTeamStatPoints = (stats) => {
+    const total = STAT_KEYS.reduce((sum, key) => {
+        const value = stats?.[key];
+        return sum + (Number.isFinite(value) ? value : DEFAULT_TEAM_STAT_VALUES[key] ?? 0);
+    }, 0);
+    return Math.round(total * 100) / 100;
+};
+
+const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) => {
+    const fallbackIndexById = {};
+    teams.forEach((t, i) => (fallbackIndexById[t.id] = i));
+
+    const colorsIndex = (t) => COLORS_ORDER_INDEX[t.key] ?? fallbackIndexById[t.id] ?? 0;
+    const points = (t) => ratings?.[t.id] ?? 0;
+
+    const primaryById = {};
+    teams.forEach((t) => {
+        const p = placings?.[t.id];
+        switch (mode) {
+            case "trophies": primaryById[t.id] = p?.wins ?? 0; break;
+            case "seconds": primaryById[t.id] = p?.seconds ?? 0; break;
+            case "thirds": primaryById[t.id] = p?.thirds ?? 0; break;
+            case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;
+            default: primaryById[t.id] = 0;
+        }
+    });
+
+    return [...teams].sort((a, b) => {
+        const primaryDiff = primaryById[b.id] - primaryById[a.id];
+        if (primaryDiff !== 0) return primaryDiff;
+
+        const pointsDiff = points(b) - points(a);
+        if (pointsDiff !== 0) return pointsDiff;
+
+        return colorsIndex(a) - colorsIndex(b);
+    });
 };
 
 const classifyTeamsForStages = (teams, ratings) => {
@@ -5311,6 +5416,22 @@ const ANNIVERSARY_THEMES = [
     },
 ];
 
+const getTournamentNumberStyle = (theme) => (
+    theme
+        ? {
+            backgroundImage: theme.gradient,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: theme.animation ? "120% 120%" : "100% 100%",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            color: "transparent",
+            filter: `drop-shadow(0 0 3px ${theme.glow})`,
+            animation: theme.animation,
+        }
+        : undefined
+);
+
 const PICKEM_PLAYOFF_KEYS = ["ro16", "qf", "sf", "tpd", "gf"];
 const PICKEM_STEP_MS = 1000;
 const PICKEM_INTRO_SCALE = 8;
@@ -6323,6 +6444,351 @@ const snapToDevicePixel = (value) => {
     return Math.round(value * dpr) / dpr;
 };
 
+const LEADERBOARD_SORT_TEXT_COLOR = "#2e2f42";
+const LEADERBOARD_SORT_LABEL_ID = "leaderboard-sort-label";
+const LEADERBOARD_SORT_VALUE_ID = "leaderboard-sort-value";
+const LEADERBOARD_SORT_OPTION_ID = (value) => `leaderboard-sort-option-${value}`;
+
+const LeaderboardSortIcon = ({ value }) => {
+    const box = {
+        width: 22,
+        height: 22,
+        flex: "0 0 22px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: 1,
+    };
+
+    switch (value) {
+        case "points":
+            return (
+                <span style={box} aria-hidden="true">
+                    <span
+                        style={{
+                            width: 18,
+                            height: 18,
+                            boxSizing: "border-box",
+                            borderRadius: "50%",
+                            border: "2px solid #999",
+                            background: LEADERBOARD_SORT_TEXT_COLOR,
+                            color: "#fff",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            paddingBottom: 1,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
+                        p
+                    </span>
+                </span>
+            );
+        case "trophies":
+            return (
+                <span style={box} aria-hidden="true">
+                    <FaTrophy size={16} color={LEADERBOARD_SORT_TEXT_COLOR} />
+                </span>
+            );
+        case "seconds":
+            return (
+                <span style={{ ...box, fontSize: 18 }} aria-hidden="true">
+                    🥈
+                </span>
+            );
+        case "thirds":
+            return (
+                <span style={{ ...box, fontSize: 18 }} aria-hidden="true">
+                    🥉
+                </span>
+            );
+        case "stats":
+            return (
+                <span style={box} aria-hidden="true">
+                    <FaChartSimple size={15} color={LEADERBOARD_SORT_TEXT_COLOR} />
+                </span>
+            );
+        default:
+            return <span style={box} aria-hidden="true" />;
+    }
+};
+
+const LeaderboardSortSelect = ({ value, onChange }) => {
+    const reduceMotion = useReducedMotion();
+    const wrapperRef = useRef(null);
+    const triggerRef = useRef(null);
+    const listRef = useRef(null);
+
+    const selectedIndex = Math.max(0, LEADERBOARD_SORT_OPTIONS.findIndex((o) => o.value === value));
+    const selected = LEADERBOARD_SORT_OPTIONS[selectedIndex];
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isKeyboardFocused, setIsKeyboardFocused] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(selectedIndex);
+
+    const isActive = isOpen || isHovered || isKeyboardFocused;
+
+    const openMenu = () => {
+        setActiveIndex(selectedIndex);
+        setIsOpen(true);
+    };
+
+    const closeMenu = (returnFocus = false) => {
+        setIsOpen(false);
+        if (returnFocus) triggerRef.current?.focus({ preventScroll: true });
+    };
+
+    const chooseOption = (index, returnFocus = false) => {
+        const option = LEADERBOARD_SORT_OPTIONS[index];
+        if (option && option.value !== value) onChange(option.value);
+        closeMenu(returnFocus);
+    };
+
+    useEffect(() => {
+        if (isOpen) listRef.current?.focus({ preventScroll: true });
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        const handlePointerDown = (e) => {
+            if (!wrapperRef.current?.contains(e.target)) setIsOpen(false);
+        };
+
+        document.addEventListener("pointerdown", handlePointerDown);
+        return () => document.removeEventListener("pointerdown", handlePointerDown);
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isHovered) return undefined;
+
+        const handlePointerMove = (e) => {
+            if (!wrapperRef.current?.contains(e.target)) setIsHovered(false);
+        };
+
+        window.addEventListener("pointermove", handlePointerMove, { passive: true });
+        return () => window.removeEventListener("pointermove", handlePointerMove);
+    }, [isHovered]);
+
+    const handleTriggerKeyDown = (e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            openMenu();
+        }
+    };
+
+    const handleListKeyDown = (e) => {
+        const last = LEADERBOARD_SORT_OPTIONS.length - 1;
+
+        switch (e.key) {
+            case "ArrowDown":
+                e.preventDefault();
+                setActiveIndex((i) => (i >= last ? 0 : i + 1));
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                setActiveIndex((i) => (i <= 0 ? last : i - 1));
+                break;
+            case "Home":
+                e.preventDefault();
+                setActiveIndex(0);
+                break;
+            case "End":
+                e.preventDefault();
+                setActiveIndex(last);
+                break;
+            case "Enter":
+            case " ":
+                e.preventDefault();
+                chooseOption(activeIndex, true);
+                break;
+            case "Escape":
+                e.preventDefault();
+                e.stopPropagation();
+                closeMenu(true);
+                break;
+            case "Tab":
+                closeMenu(false);
+                break;
+            default:
+                break;
+        }
+    };
+
+    return (
+        <div
+            ref={wrapperRef}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onFocus={(e) => {
+                let visible = false;
+                try {
+                    visible = e.target.matches(":focus-visible");
+                } catch {
+                    visible = false;
+                }
+                setIsKeyboardFocused(visible);
+            }}
+            onBlur={(e) => {
+                if (!wrapperRef.current?.contains(e.relatedTarget)) setIsKeyboardFocused(false);
+            }}
+            style={{
+                position: "fixed",
+                top: "7%",
+                right: "8%",
+                zIndex: 20,
+            }}
+        >
+            <div
+                style={{
+                    zoom: isActive ? 1 : 0.9,
+                    opacity: isActive ? 1 : 0.7,
+                    transition: "opacity 0.2s ease, zoom 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                }}
+            >
+                <span
+                    id={LEADERBOARD_SORT_LABEL_ID}
+                    onClick={() => (isOpen ? closeMenu() : openMenu())}
+                    style={{
+                        color: LEADERBOARD_SORT_TEXT_COLOR,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                        cursor: "pointer",
+                        userSelect: "none",
+                    }}
+                >
+                    Placement sorting
+                </span>
+
+                <div style={{ position: "relative" }}>
+                    <button
+                        ref={triggerRef}
+                        type="button"
+                        aria-haspopup="listbox"
+                        aria-expanded={isOpen}
+                        aria-controls={isOpen ? "leaderboard-sort-listbox" : undefined}
+                        aria-labelledby={`${LEADERBOARD_SORT_LABEL_ID} ${LEADERBOARD_SORT_VALUE_ID}`}
+                        onClick={() => (isOpen ? closeMenu() : openMenu())}
+                        onKeyDown={handleTriggerKeyDown}
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            width: 192,
+                            padding: "8px 10px 8px 12px",
+                            background: "#fff",
+                            color: LEADERBOARD_SORT_TEXT_COLOR,
+                            border: "none",
+                            borderRadius: 6,
+                            boxShadow: "0 2px 10px rgba(0,0,0,.2)",
+                            fontFamily: "inherit",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            lineHeight: 1.2,
+                            textAlign: "left",
+                            textTransform: "none",
+                            letterSpacing: "normal",
+                            cursor: "pointer",
+                            userSelect: "none",
+                        }}
+                    >
+                        <LeaderboardSortIcon value={selected.value} />
+                        <span id={LEADERBOARD_SORT_VALUE_ID} style={{ flex: 1, whiteSpace: "nowrap" }}>
+                            {selected.label}
+                        </span>
+                        <IoIosArrowForward
+                            size={14}
+                            color={STATS_TAB_LINK_COLOR}
+                            style={{
+                                flex: "0 0 auto",
+                                transform: `rotate(${isOpen ? -90 : 90}deg)`,
+                                transition: reduceMotion ? "none" : "transform 0.2s ease",
+                            }}
+                        />
+                    </button>
+
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.ul
+                                ref={listRef}
+                                id="leaderboard-sort-listbox"
+                                role="listbox"
+                                tabIndex={-1}
+                                aria-labelledby={LEADERBOARD_SORT_LABEL_ID}
+                                aria-activedescendant={LEADERBOARD_SORT_OPTION_ID(LEADERBOARD_SORT_OPTIONS[activeIndex]?.value)}
+                                onKeyDown={handleListKeyDown}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                style={{
+                                    position: "absolute",
+                                    top: "calc(100% + 6px)",
+                                    right: 0,
+                                    minWidth: "100%",
+                                    boxSizing: "border-box",
+                                    margin: 0,
+                                    padding: 4,
+                                    listStyle: "none",
+                                    background: "#fff",
+                                    borderRadius: 6,
+                                    boxShadow: "0 2px 10px rgba(0,0,0,.2)",
+                                    outline: "none",
+                                }}
+                            >
+                                {LEADERBOARD_SORT_OPTIONS.map((option, index) => {
+                                    const isSelected = option.value === value;
+                                    const isHighlighted = index === activeIndex;
+
+                                    return (
+                                        <li
+                                            key={option.value}
+                                            id={LEADERBOARD_SORT_OPTION_ID(option.value)}
+                                            role="option"
+                                            aria-selected={isSelected}
+                                            onMouseEnter={() => setActiveIndex(index)}
+                                            onClick={() => chooseOption(index)}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 8,
+                                                padding: "6px 8px",
+                                                borderRadius: 4,
+                                                background: isHighlighted ? "#cadefd" : isSelected ? "#66a0fe" : "transparent",
+                                                color: isSelected ? "#fff" : LEADERBOARD_SORT_TEXT_COLOR,
+                                                fontSize: 14,
+                                                fontWeight: isSelected ? 700 : 500,
+                                                pointerEvents: isSelected ? "none" : "auto",
+                                                whiteSpace: "nowrap",
+                                                cursor: "pointer",
+                                                userSelect: "none",
+                                            }}
+                                        >
+                                            <LeaderboardSortIcon value={option.value} />
+                                            <span style={{ flex: 1, color: isHighlighted ? "#fff" : "" }}>{option.label}</span>
+                                            <FaCheck
+                                                size={11}
+                                                color='#fff'
+                                                style={{ visibility: isSelected ? "visible" : "hidden" }}
+                                            />
+                                        </li>
+                                    );
+                                })}
+                            </motion.ul>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const TeamStatsHoverPopover = ({ team, cursorRef, statsNow, tab = 0 }) => {
     const wrapperRef = useRef(null);
 
@@ -6521,6 +6987,111 @@ function SpecialModePage() {
     const [manageStatsEditingKey, setManageStatsEditingKey] = useState(null);
 
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
+
+    const [leaderboardSortMode, setLeaderboardSortModeState] = useState(loadLeaderboardSortMode);
+
+    const setLeaderboardSortMode = useCallback((mode) => {
+        if (!LEADERBOARD_SORT_VALUES.includes(mode)) return;
+        setLeaderboardSortModeState(mode);
+        saveLeaderboardSortMode(mode);
+    }, []);
+
+    const leaderboardDisplayOrder = useMemo(() => {
+        if (leaderboardSortMode === DEFAULT_LEADERBOARD_SORT) return leaderboard.sorted;
+        return sortLeaderboardTeams(allTeams, {
+            mode: leaderboardSortMode,
+            ratings: teamRatings,
+            placings: teamPlacings,
+            stats: teamStats,
+        });
+    }, [leaderboardSortMode, leaderboard, allTeams, teamRatings, teamPlacings, teamStats]);
+
+    const reduceLeaderboardMotion = useReducedMotion();
+    const leaderboardListRef = useRef(null);
+    const leaderboardRowNodesRef = useRef(new Map());
+    const leaderboardRowRefCallbacksRef = useRef(new Map());
+    const leaderboardRowAnimationsRef = useRef(new Map());
+    const leaderboardDividerAnimationsRef = useRef([]);
+    const leaderboardReshuffleFromRef = useRef(null);
+
+    const getLeaderboardRowRef = (id) => {
+        const callbacks = leaderboardRowRefCallbacksRef.current;
+        if (!callbacks.has(id)) {
+            callbacks.set(id, (node) => {
+                if (node) leaderboardRowNodesRef.current.set(id, node);
+                else leaderboardRowNodesRef.current.delete(id);
+            });
+        }
+        return callbacks.get(id);
+    };
+
+    const handleLeaderboardSortChange = (mode) => {
+        if (mode === leaderboardSortMode) return;
+
+        if (!reduceLeaderboardMotion) {
+            const from = new Map();
+            leaderboardRowNodesRef.current.forEach((node, id) => {
+                from.set(id, node.getBoundingClientRect());
+            });
+            leaderboardReshuffleFromRef.current = from;
+        }
+
+        setLeaderboardSortMode(mode);
+    };
+
+    useLayoutEffect(() => {
+        const from = leaderboardReshuffleFromRef.current;
+        if (!from) return;
+        leaderboardReshuffleFromRef.current = null;
+
+        const rowAnimations = leaderboardRowAnimationsRef.current;
+        rowAnimations.forEach((animation) => animation.cancel());
+        rowAnimations.clear();
+        leaderboardDividerAnimationsRef.current.forEach((animation) => animation.cancel());
+        leaderboardDividerAnimationsRef.current = [];
+
+        const moves = [];
+        leaderboardRowNodesRef.current.forEach((node, id) => {
+            const start = from.get(id);
+            if (!start || typeof node.animate !== "function") return;
+
+            const end = node.getBoundingClientRect();
+            const dx = (start.left + start.width / 2) - (end.left + end.width / 2);
+            const dy = (start.top + start.height / 2) - (end.top + end.height / 2);
+            if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+            moves.push({ id, node, dx, dy });
+        });
+
+        moves.forEach(({ id, node, dx, dy }) => {
+            const animation = node.animate(
+                [
+                    { transform: `translate(${dx}px, ${dy}px)` },
+                    { transform: "translate(0px, 0px)" },
+                ],
+                { duration: LEADERBOARD_RESHUFFLE_MS, easing: LEADERBOARD_RESHUFFLE_EASING, composite: "add" }
+            );
+            rowAnimations.set(id, animation);
+            animation.onfinish = () => {
+                if (rowAnimations.get(id) === animation) rowAnimations.delete(id);
+            };
+        });
+
+        if (leaderboardSortMode === DEFAULT_LEADERBOARD_SORT) {
+            leaderboardListRef.current?.querySelectorAll("[data-leaderboard-divider]").forEach((node) => {
+                if (typeof node.animate !== "function") return;
+                leaderboardDividerAnimationsRef.current.push(
+                    node.animate([{ opacity: 0 }, { opacity: 1 }], {
+                        duration: 300,
+                        delay: LEADERBOARD_RESHUFFLE_MS * 0.55,
+                        easing: "ease-out",
+                        fill: "backwards",
+                    })
+                );
+            });
+        }
+    }, [leaderboardSortMode, leaderboardDisplayOrder]);
+
     const teamPlacingsRef = useRef(teamPlacings);
     const tournamentSeedsRef = useRef(null);
     const netEntryCounterRef = useRef(1);
@@ -6540,6 +7111,7 @@ function SpecialModePage() {
     const [placingsAdminCode, setPlacingsAdminCode] = useState("");
 
     const [tournamentNumber, setTournamentNumber] = useState(() => loadTournamentNumber());
+    const [lastFinalizedTournament, setLastFinalizedTournament] = useState(loadLastFinalizedTournament);
 
     useEffect(() => {
         saveStatsPanelMemory(statsPanelMemory);
@@ -7445,25 +8017,7 @@ function SpecialModePage() {
     const tournamentLabel = useMemo(() => (
         <>
             Official{" "}
-            <span
-                style={
-                    tournamentTheme
-                        ? {
-                            backgroundImage: tournamentTheme.gradient,
-                            backgroundRepeat: "no-repeat",
-                            backgroundSize: tournamentTheme.animation
-                                ? "120% 120%"
-                                : "100% 100%",
-                            WebkitBackgroundClip: "text",
-                            backgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            color: "transparent",
-                            filter: `drop-shadow(0 0 3px ${tournamentTheme.glow})`,
-                            animation: tournamentTheme.animation,
-                        }
-                        : undefined
-                }
-            >
+            <span style={getTournamentNumberStyle(tournamentTheme)}>
                 #{tournamentNumber}
             </span>
         </>
@@ -7558,41 +8112,32 @@ function SpecialModePage() {
         });
     };
 
-    const renderTournamentLabelFor = (typeId, number) => {
-        const theme = getTournamentTheme(number);
+    const renderTournamentLabelFor = (typeId, number, { highlightName = true } = {}) => {
         const config = getTournamentTypeConfig(typeId);
+        const highlight = highlightName && config.highlightCard;
         return (
             <>
                 <span
                     style={{
-                        textShadow: config.highlightCard ? "0 0 24px rgba(255, 215, 0, 0.9)" : "",
-                        color: config.highlightCard ? "rgba(255, 215, 0, 0.9)" : "",
+                        textShadow: highlight ? "0 0 24px rgba(255, 215, 0, 0.9)" : "",
+                        color: highlight ? "rgba(255, 215, 0, 0.9)" : "",
                     }}
                 >
                     {config.label}
                 </span>{" "}
-                <span
-                    style={
-                        theme
-                            ? {
-                                backgroundImage: theme.gradient,
-                                backgroundRepeat: "no-repeat",
-                                backgroundSize: theme.animation ? "120% 120%" : "100% 100%",
-                                WebkitBackgroundClip: "text",
-                                backgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                                color: "transparent",
-                                filter: `drop-shadow(0 0 3px ${theme.glow})`,
-                                animation: theme.animation,
-                            }
-                            : undefined
-                    }
-                >
+                <span style={getTournamentNumberStyle(getTournamentTheme(number))}>
                     #{number}
                 </span>
             </>
         );
     };
+
+    const leaderboardTitleTournament = lastFinalizedTournament !== undefined
+        ? lastFinalizedTournament
+        : (() => {
+            const number = showIntro ? tournamentNumber : tournamentNumber - 1;
+            return number >= 1 ? { type: ACTIVE_TOURNAMENT_TYPE, number } : null;
+        })();
 
     const hallTeamById = (id) => allTeams.find((team) => team.id === id) || null;
 
@@ -8081,6 +8626,11 @@ function SpecialModePage() {
                 saveTournamentNumber(next);
                 return next;
             });
+        } else {
+            const finalized = normalizeTournamentRef(tournamentResults.tournament)
+                ?? { type: ACTIVE_TOURNAMENT_TYPE, number: tournamentNumber };
+            setLastFinalizedTournament(finalized);
+            saveLastFinalizedTournament(finalized);
         }
 
         tournamentSeedsRef.current = null;
@@ -8254,6 +8804,9 @@ function SpecialModePage() {
 
         setTournamentNumber(0);
         saveTournamentNumber(0);
+
+        setLastFinalizedTournament(null);
+        saveLastFinalizedTournament(null);
 
         const seeded = classifyTeamsForStages(allTeams, defaults);
 
@@ -10807,7 +11360,10 @@ function SpecialModePage() {
                             thirdPlace: thirdPlaceWinner,
                             fourthPlace,
                         };
-                        setTournamentResults(finishedResults);
+                        setTournamentResults({
+                            ...finishedResults,
+                            tournament: { type: ACTIVE_TOURNAMENT_TYPE, number: tournamentNumber },
+                        });
                         saveFinishedTournamentToHallOfFame(copy, finishedResults);
                         setTeamPlacings((prev) => {
                             const next = { ...prev };
@@ -11506,7 +12062,7 @@ function SpecialModePage() {
         const record = {
             id: `official-${tournamentNumber}-${Date.now()}`,
             number: tournamentNumber,
-            type: "Official",
+            type: ACTIVE_TOURNAMENT_TYPE,
             finishedAt: new Date().toISOString(),
             neededPickemPoints,
             achievedPickemPoints: hallAchievedPickemPoints,
@@ -19565,6 +20121,7 @@ function SpecialModePage() {
                     >
                         Change tournament number
                     </button>
+                    <LeaderboardSortSelect value={leaderboardSortMode} onChange={handleLeaderboardSortChange} />
                     <div className={css.leaderboard_header}>
 
                         <div
@@ -19577,25 +20134,30 @@ function SpecialModePage() {
                         >
                             Leaderboard
 
-                            {tournamentNumber >= 1 && (
+                            {leaderboardTitleTournament && (
                                 <span style={{ textShadow: "none" }}>
                                     {" "}after{" "}
-                                    {tournamentLabel}
+                                    {renderTournamentLabelFor(
+                                        leaderboardTitleTournament.type,
+                                        leaderboardTitleTournament.number,
+                                        { highlightName: false }
+                                    )}
                                 </span>
                             )}
                         </div>
                     </div>
 
-                    <div className={css.leaderboard_list}>
-                        {leaderboard.sorted.map((t, i) => {
+                    <div ref={leaderboardListRef} className={css.leaderboard_list}>
+                        {leaderboardDisplayOrder.map((t, i) => {
                             const rank = i + 1;
                             const rating = teamRatings[t.id] ?? 0;
+                            const showStageDividers = leaderboardSortMode === DEFAULT_LEADERBOARD_SORT;
 
                             const placementColor = placementColors[rank] || "#2e2f42";
 
                             const rankSticker = () => {
                                 return (
-                                    <span style={{ color: placementColor }} className={css.leaderboard_rank}>
+                                    <span style={{ color: placementColor, transition: "none" }} className={css.leaderboard_rank}>
                                         {formatOrdinal(rank)}
                                     </span>
                                 );
@@ -19637,6 +20199,8 @@ function SpecialModePage() {
                             const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
                             const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
+                            const pointsRank = rankById[t.id] ?? rank;
+                            const pointsRankColor = placementColors[pointsRank] || "#2e2f42";
                             const trophyIconSize = rank <= 3 ? 32 : 16;
                             const streakFireSize = rank <= 3 ? 34 : 24;
                             const streakFireOverhang = Math.max(0, (streakFireSize - trophyIconSize) / 2);
@@ -19644,7 +20208,7 @@ function SpecialModePage() {
                             return (
                                 <React.Fragment key={t.id}>
                                     {rank === 17 && (
-                                        <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+                                        <div data-leaderboard-divider style={{ marginTop: showStageDividers ? "24px" : "0", marginBottom: showStageDividers ? "24px" : "0", opacity: showStageDividers ? 1 : 0, pointerEvents: showStageDividers ? "auto" : "none", height: !showStageDividers ? "0px" : "", transition: "none" }}>
                                             <h4
                                                 className={css.game_title}
                                                 style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
@@ -19664,7 +20228,7 @@ function SpecialModePage() {
                                     )}
 
                                     {rank === 33 && (
-                                        <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+                                        <div data-leaderboard-divider style={{ marginTop: showStageDividers ? "24px" : "0", marginBottom: showStageDividers ? "24px" : "0", opacity: showStageDividers ? 1 : 0, pointerEvents: showStageDividers ? "auto" : "none", height: !showStageDividers ? "0px" : "", transition: "none" }}>
                                             <h4
                                                 className={css.game_title}
                                                 style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
@@ -19685,8 +20249,9 @@ function SpecialModePage() {
 
                                     <div
                                         key={t.id}
+                                        ref={getLeaderboardRowRef(t.id)}
                                         className={css.leaderboard_row}
-                                        style={{ ...rowStyle, position: rank > 10 ? 'relative' : 'static', gap: rank === 3 ? "0px" : "", userSelect: "none" }}
+                                        style={{ ...rowStyle, position: "relative", gap: rank === 3 ? "0px" : "", userSelect: "none" }}
                                         onMouseEnter={(e) => {
                                             leaderboardCursorRef.current = { x: e.clientX, y: e.clientY };
                                             setHoveredLeaderboardTeam(t);
@@ -19709,6 +20274,8 @@ function SpecialModePage() {
                                                 gap: isTop10 ? "0" : "8px",
                                                 border: "3px solid #999",
                                                 marginLeft: rank > 10 ? "210px" : "0",
+                                                position: "relative",
+                                                transition: "none"
                                             }}
                                         >
                                             <span
@@ -19716,6 +20283,7 @@ function SpecialModePage() {
                                                     color: "#ffffff",
                                                     textShadow: "0 0 4px #000",
                                                     fontSize: ratingFontSize,
+                                                    transition: "none"
                                                 }}
                                                 className={css.modal_team_rating}
                                             >
@@ -19723,7 +20291,7 @@ function SpecialModePage() {
                                             </span>
                                         </div>
 
-                                        <div style={{ position: rank <= 10 ? 'relative' : 'static' }}>
+                                        <div style={{ position: rank <= 10 ? 'relative' : 'static', transition: "none" }}>
                                             {(trophyDisplay || unbeatenStreak > 0) && (
                                                 <span
                                                     style={{
@@ -19737,15 +20305,16 @@ function SpecialModePage() {
                                                         color: "#2e2f42",
                                                         fontWeight: 700,
                                                         fontSize: rank <= 3 ? "32px" : "16px",
+                                                        transition: "none"
                                                     }}
                                                 >
                                                     {trophyDisplay &&
                                                         (trophyDisplay.mode === "icons" ? (
                                                             Array.from({ length: trophyDisplay.n }).map((_, k) => (
-                                                                <FaTrophy key={k} style={{ verticalAlign: "middle" }} />
+                                                                <FaTrophy key={k} style={{ verticalAlign: "middle", transition: "none" }} />
                                                             ))
                                                         ) : (
-                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
                                                                 {trophyDisplay.n} <FaTrophy />
                                                             </span>
                                                         ))}
@@ -19762,10 +20331,10 @@ function SpecialModePage() {
                                                     )}
                                                 </span>
                                             )}
-                                            <span style={{ fontSize: rank <= 3 ? "32px" : "16px", marginRight: rank <= 3 ? "4px" : "0px" }} className={css.leaderboard_rank}>
+                                            <span style={{ fontSize: rank <= 3 ? "32px" : "16px", marginRight: rank <= 3 ? "4px" : "0px", transition: "none" }} className={css.leaderboard_rank}>
                                                 {rankSticker()}
                                             </span>{" "}
-                                            <span style={{ color: "#2e2f42", fontWeight: 700 }} className={nameClass}>
+                                            <span style={{ color: "#2e2f42", fontWeight: 700, transition: "none" }} className={nameClass}>
                                                 Team {t.name}
                                                 <span style={{
                                                     position: "absolute",
@@ -19773,21 +20342,52 @@ function SpecialModePage() {
                                                     left: rank > 10 ? '70%' : '120%',
                                                     display: "inline-flex",
                                                     alignItems: "center",
+                                                    transition: "none"
                                                 }}>
                                                     {p.seconds > 0 && (
-                                                        <span style={{ marginLeft: '12px' }}>
+                                                        <span style={{ marginLeft: '12px', transition: "none" }}>
                                                             🥈:{p.seconds}
                                                         </span>
                                                     )}
 
                                                     {p.thirds > 0 && (
-                                                        <span>
+                                                        <span style={{ transition: "none" }}>
                                                             🥉:{p.thirds}
                                                         </span>
                                                     )}
                                                 </span>
                                             </span>
                                         </div>
+
+                                        <AnimatePresence initial={false}>
+                                            {!showStageDividers && (
+                                                <motion.span
+                                                    key="points-rank"
+                                                    initial={{ opacity: 0, x: 10 }}
+                                                    animate={{ opacity: 1, x: 0, transition: { duration: 0.3, delay: 0.3, ease: "easeOut" } }}
+                                                    exit={{ opacity: 0, x: 10, transition: { duration: 0.15, ease: "easeIn" } }}
+                                                    style={{
+                                                        position: "absolute",
+                                                        top: "25%",
+                                                        right: "70%",
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 6,
+                                                        whiteSpace: "nowrap",
+                                                        pointerEvents: "none",
+                                                        transition: "none",
+                                                    }}
+                                                >
+                                                    <strong style={{ color: "#2e2f42" }}>Original ranking:</strong>
+                                                    <span
+                                                        className={css.leaderboard_rank}
+                                                        style={{ color: pointsRankColor, fontSize: "16px", fontWeight: 800, transition: "none" }}
+                                                    >
+                                                        {formatOrdinal(pointsRank)}
+                                                    </span>
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 </React.Fragment>
                             );
