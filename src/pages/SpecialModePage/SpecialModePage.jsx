@@ -7420,6 +7420,17 @@ function SpecialModePage() {
         };
     }, []);
 
+    useEffect(() => {
+        if (!isLeaderboardOpen) return undefined;
+        const resize = () => lenisRef.current?.resize();
+        const frameId = requestAnimationFrame(resize);
+        const timeoutId = setTimeout(resize, LEADERBOARD_RESHUFFLE_MS + 100);
+        return () => {
+            cancelAnimationFrame(frameId);
+            clearTimeout(timeoutId);
+        };
+    }, [isLeaderboardOpen, leaderboardSortMode, leaderboardDisplayOrder]);
+
     const hallScrollRef = useRef(null);
     const hallScrollTargetRef = useRef(0);
     const hallScrollFrameRef = useRef(null);
@@ -20414,6 +20425,7 @@ function SpecialModePage() {
                                 fontSize: "40px",
                                 textShadow: "0 0 4px #000",
                                 textTransform: "none",
+                                marginTop: "56px",
                             }}
                             className={css.game_title}
                         >
@@ -20437,6 +20449,16 @@ function SpecialModePage() {
                             const rank = i + 1;
                             const rating = teamRatings[t.id] ?? 0;
                             const showStageDividers = leaderboardSortMode === DEFAULT_LEADERBOARD_SORT;
+                            const stageDividerStyle = {
+                                marginTop: showStageDividers ? "24px" : "0",
+                                marginBottom: showStageDividers ? "24px" : "0",
+                                height: showStageDividers ? "auto" : "0px",
+                                overflow: showStageDividers ? "visible" : "hidden",
+                                opacity: showStageDividers ? 1 : 0,
+                                visibility: showStageDividers ? "visible" : "hidden",
+                                pointerEvents: showStageDividers ? "auto" : "none",
+                                transition: "none",
+                            };
 
                             const placementColor = placementColors[rank] || "#2e2f42";
 
@@ -20493,7 +20515,7 @@ function SpecialModePage() {
                             return (
                                 <React.Fragment key={t.id}>
                                     {rank === 17 && (
-                                        <div data-leaderboard-divider style={{ marginTop: showStageDividers ? "24px" : "0", marginBottom: showStageDividers ? "24px" : "0", opacity: showStageDividers ? 1 : 0, pointerEvents: showStageDividers ? "auto" : "none", height: !showStageDividers ? "0px" : "", transition: "none" }}>
+                                        <div data-leaderboard-divider aria-hidden={!showStageDividers} style={stageDividerStyle}>
                                             <h4
                                                 className={css.game_title}
                                                 style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
@@ -20513,7 +20535,7 @@ function SpecialModePage() {
                                     )}
 
                                     {rank === 33 && (
-                                        <div data-leaderboard-divider style={{ marginTop: showStageDividers ? "24px" : "0", marginBottom: showStageDividers ? "24px" : "0", opacity: showStageDividers ? 1 : 0, pointerEvents: showStageDividers ? "auto" : "none", height: !showStageDividers ? "0px" : "", transition: "none" }}>
+                                        <div data-leaderboard-divider aria-hidden={!showStageDividers} style={stageDividerStyle}>
                                             <h4
                                                 className={css.game_title}
                                                 style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
