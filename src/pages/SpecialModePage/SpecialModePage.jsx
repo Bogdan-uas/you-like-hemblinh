@@ -68,6 +68,7 @@ const HALL_TEAM_SORT_LS_KEY = "specialMode_hallTeamSort_v1";
 const TEAM_STATS_LS_KEY = "specialMode_teamStats_v1";
 const LEADERBOARD_SORT_LS_KEY = "specialMode_leaderboardSort_v1";
 const LAST_FINALIZED_TOURNAMENT_LS_KEY = "specialMode_lastFinalizedTournament_v1";
+const RATING_BASED_STATS_LS_KEY = "specialMode_ratingBasedStats_v1";
 
 const isNativeScrollArea = (node) => {
     if (!(node instanceof HTMLElement)) return false;
@@ -2506,6 +2507,70 @@ const getTeamStatPoints = (stats) => {
 
 const getTeamStatAverage = (stats) =>
     Math.round((getTeamStatPoints(stats) / STAT_KEYS.length) * 100) / 100;
+
+const RATING_BASED_STAT_RANGES = {
+    clutch: [30, 85],
+    composure: [32, 82],
+    bigStage: [0, 80],
+    otStamina: [38, 74],
+    upsetPedigree: [8, 48],
+    bounceBack: [36, 76],
+    antiTilt: [34, 80],
+    finisher: [30, 86],
+    elimNerve: [32, 80],
+    unbeatenNerve: [35, 78],
+    battleTested: [10, 88],
+    topSeed: [30, 84],
+    streakBreaker: [36, 74],
+    unbeatenStreakBreaker: [34, 72],
+};
+
+const RATING_BASED_POINTS_WEIGHT = 0.75;
+
+const RATING_BASED_FAR_OFF_DISTANCE = 25;
+
+const getRatingBasedStrength = (teamId, teams, ratings, rankById) => {
+    const points = teams.map((t) => Number(ratings?.[t.id]) || 0);
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const own = Number(ratings?.[teamId]) || 0;
+    const pointsNorm = max > min ? (own - min) / (max - min) : 0.5;
+
+    const rank = rankById?.[teamId] ?? teams.length;
+    const rankNorm = teams.length > 1 ? 1 - (rank - 1) / (teams.length - 1) : 0.5;
+
+    const strength = RATING_BASED_POINTS_WEIGHT * pointsNorm + (1 - RATING_BASED_POINTS_WEIGHT) * rankNorm;
+    return Math.max(0, Math.min(1, strength));
+};
+
+const estimateStatsFromStrength = (strength) =>
+    Object.fromEntries(
+        STAT_KEYS.map((key) => {
+            const [low, high] = RATING_BASED_STAT_RANGES[key] ?? [0, 100];
+            return [key, Math.round(low + (high - low) * strength)];
+        })
+    );
+
+const getStatsDistance = (stats, estimate) =>
+    STAT_KEYS.reduce((sum, key) => sum + Math.abs((Number(stats?.[key]) || 0) - (Number(estimate?.[key]) || 0)), 0) /
+    STAT_KEYS.length;
+
+const loadRatingBasedStatsTeamIds = () => {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(RATING_BASED_STATS_LS_KEY) || "{}");
+        return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+        return {};
+    }
+};
+
+const saveRatingBasedStatsTeamIds = (ids) => {
+    try {
+        localStorage.setItem(RATING_BASED_STATS_LS_KEY, JSON.stringify(ids));
+    } catch {
+        console.error("Couldn't save the rating-based stats teams");
+    }
+};
 
 const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) => {
     const fallbackIndexById = {};
@@ -7134,6 +7199,8 @@ function SpecialModePage() {
     const [manageStatsValues, setManageStatsValues] = useState({});
     const [manageStatsEditingKey, setManageStatsEditingKey] = useState(null);
     const [manageStatsDrafts, setManageStatsDrafts] = useState({});
+    const [manageStatsRatingBasedIds, setManageStatsRatingBasedIds] = useState({});
+    const [ratingBasedStatsTeamIds, setRatingBasedStatsTeamIds] = useState(loadRatingBasedStatsTeamIds);
 
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
 
@@ -8984,6 +9051,7 @@ function SpecialModePage() {
         setManageStatsValues({});
         setManageStatsEditingKey(null);
         setManageStatsDrafts({});
+        setManageStatsRatingBasedIds({});
     };
 
     const handleScoreboardResetModeConfirm = () => {
@@ -9000,6 +9068,7 @@ function SpecialModePage() {
             setManageStatsTeamId("");
             setManageStatsValues({});
             setManageStatsDrafts({});
+            setManageStatsRatingBasedIds({});
             setIsManageStatsPickerOpen(false);
             setIsManageStatsModalOpen(true);
         }
@@ -9050,19 +9119,42 @@ function SpecialModePage() {
 
     const canConfirmManageStats = manageStatsChangeCount > 0;
 
-    const manageStatsAverage = manageStatsTeam
-        ? getTeamStatAverage(
-            Object.fromEntries(
-                STAT_DEFINITIONS.map((def) => {
-                    const typed = parseStatInput(manageStatsValues[def.key]);
-                    const value = typed === null
-                        ? Number(manageStatsCurrent[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]) || 0
-                        : roundManageStatValue(def, typed);
-                    return [def.key, value];
-                })
-            )
+    const manageStatsPreview = manageStatsTeam
+        ? Object.fromEntries(
+            STAT_DEFINITIONS.map((def) => {
+                const typed = parseStatInput(manageStatsValues[def.key]);
+                const value = typed === null
+                    ? Number(manageStatsCurrent[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]) || 0
+                    : roundManageStatValue(def, typed);
+                return [def.key, value];
+            })
         )
         : null;
+
+    const manageStatsAverage = manageStatsPreview ? getTeamStatAverage(manageStatsPreview) : null;
+
+    const manageStatsEstimate = manageStatsTeam
+        ? estimateStatsFromStrength(getRatingBasedStrength(manageStatsTeam.id, allTeams, teamRatings, rankById))
+        : null;
+
+    const isManageStatsRatingBased = !!manageStatsTeam &&
+        !!(manageStatsRatingBasedIds[manageStatsTeam.id] || ratingBasedStatsTeamIds[manageStatsTeam.id]);
+
+    const canUseRatingBasedStats = !!manageStatsTeam &&
+        (!isManageStatsRatingBased ||
+            getStatsDistance(manageStatsPreview, manageStatsEstimate) >= RATING_BASED_FAR_OFF_DISTANCE);
+
+    const handleManageStatsRatingBased = () => {
+        if (!manageStatsTeam || !manageStatsEstimate) return;
+        setManageStatsValues((prev) => ({
+            ...prev,
+            ...Object.fromEntries(
+                STAT_DEFINITIONS.map((def) => [def.key, statToInputString(manageStatsEstimate[def.key])])
+            ),
+        }));
+        setManageStatsRatingBasedIds((prev) => ({ ...prev, [manageStatsTeam.id]: true }));
+        setManageStatsEditingKey(null);
+    };
 
     const buildManageStatsValues = (teamId) => {
         const current = teamStatsRef.current?.[teamId] ?? DEFAULT_TEAM_STAT_VALUES;
@@ -9153,6 +9245,12 @@ function SpecialModePage() {
         setTeamStats(nextStats);
         teamStatsRef.current = nextStats;
         saveTeamStats(nextStats);
+
+        if (Object.keys(manageStatsRatingBasedIds).length > 0) {
+            const nextRatingBasedIds = { ...ratingBasedStatsTeamIds, ...manageStatsRatingBasedIds };
+            setRatingBasedStatsTeamIds(nextRatingBasedIds);
+            saveRatingBasedStatsTeamIds(nextRatingBasedIds);
+        }
 
         toast.success(manageStatsChangeCount === 1 ? "Stat has been updated." : "Stats have been updated.");
         closeStatsAdminModals();
@@ -21057,15 +21155,48 @@ function SpecialModePage() {
                                     justifySelf: "start",
                                     minWidth: 0,
                                     maxWidth: "100%",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    fontWeight: 800,
-                                    fontSize: "14px",
-                                    color: manageStatsTeam?.color ?? "#2e2f42",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "flex-start",
+                                    gap: 2,
                                 }}
                             >
-                                {manageStatsTeam ? `Team ${manageStatsTeam.name}` : ""}
+                                <div
+                                    style={{
+                                        maxWidth: "100%",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        fontWeight: 800,
+                                        fontSize: "14px",
+                                        lineHeight: "18px",
+                                        color: manageStatsTeam?.color ?? "#2e2f42",
+                                    }}
+                                >
+                                    {manageStatsTeam ? `Team ${manageStatsTeam.name}` : ""}
+                                </div>
+
+                                {canUseRatingBasedStats && (
+                                    <button
+                                        type="button"
+                                        onClick={handleManageStatsRatingBased}
+                                        title="Set this team's stats to match its rating and leaderboard placement"
+                                        style={{
+                                            padding: "2px 8px",
+                                            fontSize: "11px",
+                                            fontWeight: 600,
+                                            lineHeight: "16px",
+                                            whiteSpace: "nowrap",
+                                            color: "#fff",
+                                            background: "#747bff",
+                                            border: "none",
+                                            borderRadius: 6,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Based on rating
+                                    </button>
+                                )}
                             </div>
 
                             <div className={css.restart_buttons} style={{ margin: 0 }}>
