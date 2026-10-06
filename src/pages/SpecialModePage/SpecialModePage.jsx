@@ -5991,7 +5991,7 @@ const STAT_ROW_NOTE_COLOR = "#8a8d99";
 const fitStatRowFont = (natural, available) =>
     Math.floor(STAT_ROW_FONT_PX * (available / natural) * 10) / 10;
 
-const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "13px", note = null }) => {
+const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "8px", note = null }) => {
     const rounded = Math.round((Number(value) || 0) * 10) / 10;
     const roundedDiff = diff == null ? null : Math.round(diff * 10) / 10;
     const rowRef = useRef(null);
@@ -6325,7 +6325,7 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
                             max={def.max}
                             diff={diff}
                             note={rowNotes?.[def.key] ?? null}
-                            marginBottom={i === defs.length - 1 ? "0px" : "13px"}
+                            marginBottom={i === defs.length - 1 ? "0px" : "8px"}
                         />
                     );
                 })}
