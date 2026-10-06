@@ -7133,6 +7133,7 @@ function SpecialModePage() {
     const [manageStatsTeamId, setManageStatsTeamId] = useState("");
     const [manageStatsValues, setManageStatsValues] = useState({});
     const [manageStatsEditingKey, setManageStatsEditingKey] = useState(null);
+    const [manageStatsDrafts, setManageStatsDrafts] = useState({});
 
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
 
@@ -8982,6 +8983,7 @@ function SpecialModePage() {
         setManageStatsTeamId("");
         setManageStatsValues({});
         setManageStatsEditingKey(null);
+        setManageStatsDrafts({});
     };
 
     const handleScoreboardResetModeConfirm = () => {
@@ -8997,6 +8999,7 @@ function SpecialModePage() {
             setScoreboardResetMode("");
             setManageStatsTeamId("");
             setManageStatsValues({});
+            setManageStatsDrafts({});
             setIsManageStatsPickerOpen(false);
             setIsManageStatsModalOpen(true);
         }
@@ -9015,17 +9018,51 @@ function SpecialModePage() {
             ? Math.round(clampStat(typed, 0, def.max))
             : Math.round(clampStat(typed, 0, def.max) * 100) / 100;
 
-    const manageStatsChanges = manageStatsTeam
-        ? MANAGE_STAT_DEFINITIONS.filter((def) => {
-            const typed = parseStatInput(manageStatsValues[def.key]);
-            if (typed === null) return false;
-            const next = roundManageStatValue(def, typed);
-            const current = manageStatsCurrent[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key];
-            return Math.abs(next - current) > 0.0001;
-        }).map((def) => def.key)
-        : [];
+    const getManageStatsChanges = (teamId, values) => {
+        if (!teamId) return [];
+        const current = teamStats?.[teamId] ?? DEFAULT_TEAM_STAT_VALUES;
 
-    const canConfirmManageStats = manageStatsChanges.length > 0;
+        return MANAGE_STAT_DEFINITIONS.reduce((acc, def) => {
+            const typed = parseStatInput(values?.[def.key]);
+            if (typed === null) return acc;
+            const next = roundManageStatValue(def, typed);
+            const from = Number(current[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]) || 0;
+            if (Math.abs(next - from) > 0.0001) acc.push({ key: def.key, label: def.label, from, to: next });
+            return acc;
+        }, []);
+    };
+
+    const manageStatsAllValues = manageStatsTeamId
+        ? { ...manageStatsDrafts, [manageStatsTeamId]: manageStatsValues }
+        : manageStatsDrafts;
+
+    const manageStatsEdits = Object.entries(manageStatsAllValues)
+        .map(([teamId, values]) => ({
+            team: allTeams.find((t) => t.id === teamId) ?? null,
+            changes: getManageStatsChanges(teamId, values),
+        }))
+        .filter((edit) => edit.team && edit.changes.length > 0)
+        .sort((a, b) => (rankById?.[a.team.id] ?? 64) - (rankById?.[b.team.id] ?? 64));
+
+    const manageStatsEditedTeamIds = new Set(manageStatsEdits.map((edit) => edit.team.id));
+
+    const manageStatsChangeCount = manageStatsEdits.reduce((sum, edit) => sum + edit.changes.length, 0);
+
+    const canConfirmManageStats = manageStatsChangeCount > 0;
+
+    const manageStatsAverage = manageStatsTeam
+        ? getTeamStatAverage(
+            Object.fromEntries(
+                STAT_DEFINITIONS.map((def) => {
+                    const typed = parseStatInput(manageStatsValues[def.key]);
+                    const value = typed === null
+                        ? Number(manageStatsCurrent[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key]) || 0
+                        : roundManageStatValue(def, typed);
+                    return [def.key, value];
+                })
+            )
+        )
+        : null;
 
     const buildManageStatsValues = (teamId) => {
         const current = teamStatsRef.current?.[teamId] ?? DEFAULT_TEAM_STAT_VALUES;
@@ -9038,12 +9075,16 @@ function SpecialModePage() {
     };
 
     const handleManageStatsPickTeam = (teamId) => {
+        if (manageStatsTeamId) {
+            setManageStatsDrafts((prev) => ({ ...prev, [manageStatsTeamId]: manageStatsValues }));
+        }
+
         if (manageStatsTeamId === teamId) {
             setManageStatsTeamId("");
             setManageStatsValues({});
         } else {
             setManageStatsTeamId(teamId);
-            setManageStatsValues(buildManageStatsValues(teamId));
+            setManageStatsValues(manageStatsDrafts[teamId] ?? buildManageStatsValues(teamId));
         }
         setManageStatsEditingKey(null);
         setIsManageStatsPickerOpen(false);
@@ -9093,27 +9134,27 @@ function SpecialModePage() {
     };
 
     const handleManageStatsFinalConfirm = () => {
-        if (!manageStatsTeamId || !canConfirmManageStats) {
+        if (!canConfirmManageStats) {
             closeStatsAdminModals();
             return;
         }
 
         const base = teamStatsRef.current ?? teamStats ?? {};
-        const nextTeamStats = { ...(base[manageStatsTeamId] ?? DEFAULT_TEAM_STAT_VALUES) };
+        const nextStats = { ...base };
 
-        manageStatsChanges.forEach((key) => {
-            const def = MANAGE_STAT_DEFINITIONS.find((d) => d.key === key);
-            const typed = parseStatInput(manageStatsValues[key]);
-            if (!def || typed === null) return;
-            nextTeamStats[key] = roundManageStatValue(def, typed);
+        manageStatsEdits.forEach(({ team, changes }) => {
+            const nextTeamStats = { ...(base[team.id] ?? DEFAULT_TEAM_STAT_VALUES) };
+            changes.forEach(({ key, to }) => {
+                nextTeamStats[key] = to;
+            });
+            nextStats[team.id] = nextTeamStats;
         });
 
-        const nextStats = { ...base, [manageStatsTeamId]: nextTeamStats };
         setTeamStats(nextStats);
         teamStatsRef.current = nextStats;
         saveTeamStats(nextStats);
 
-        toast.success(manageStatsChanges.length === 1 ? "Stat has been updated." : "Stats have been updated.");
+        toast.success(manageStatsChangeCount === 1 ? "Stat has been updated." : "Stats have been updated.");
         closeStatsAdminModals();
     };
 
@@ -20860,9 +20901,13 @@ function SpecialModePage() {
                                                 .sort((a, b) => (rankById?.[a.id] ?? 64) - (rankById?.[b.id] ?? 64))
                                                 .map((team) => {
                                                     const isSelected = manageStatsTeamId === team.id;
+                                                    const isEdited = manageStatsEditedTeamIds.has(team.id);
                                                     return (
-                                                        <button
+                                                        <span
                                                             key={team.id}
+                                                            style={{ position: "relative", display: "inline-flex" }}
+                                                        >
+                                                        <button
                                                             type="button"
                                                             onClick={() => handleManageStatsPickTeam(team.id)}
                                                             className={css.team_circle_ro32}
@@ -20879,7 +20924,7 @@ function SpecialModePage() {
                                                                 overflow: "hidden",
                                                                 cursor: "pointer",
                                                             }}
-                                                            title={`Team ${team.name}`}
+                                                            title={isEdited ? `Team ${team.name} (stats edited)` : `Team ${team.name}`}
                                                         >
                                                             <span
                                                                 style={{
@@ -20892,6 +20937,25 @@ function SpecialModePage() {
                                                                 {`${teamRatings?.[team.id] ?? 0}p`}
                                                             </span>
                                                         </button>
+                                                        {isEdited && (
+                                                            <span
+                                                                aria-hidden="true"
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    zIndex: 2,
+                                                                    top: -3,
+                                                                    right: -3,
+                                                                    width: 14,
+                                                                    height: 14,
+                                                                    borderRadius: "50%",
+                                                                    background: "#ff8a00",
+                                                                    border: "2px solid #fff",
+                                                                    boxShadow: "0 0 4px rgba(0,0,0,.45)",
+                                                                    pointerEvents: "none",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        </span>
                                                     );
                                                 })}
                                         </div>
@@ -20982,8 +21046,28 @@ function SpecialModePage() {
                                 background: "#fff",
                                 borderTop: "1px solid #ddd",
                                 padding: "12px 24px",
+                                display: "grid",
+                                gridTemplateColumns: "1fr auto 1fr",
+                                alignItems: "center",
+                                columnGap: 12,
                             }}
                         >
+                            <div
+                                style={{
+                                    justifySelf: "start",
+                                    minWidth: 0,
+                                    maxWidth: "100%",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    fontWeight: 800,
+                                    fontSize: "14px",
+                                    color: manageStatsTeam?.color ?? "#2e2f42",
+                                }}
+                            >
+                                {manageStatsTeam ? `Team ${manageStatsTeam.name}` : ""}
+                            </div>
+
                             <div className={css.restart_buttons} style={{ margin: 0 }}>
                                 <button className={css.cancel_button} onClick={closeStatsAdminModals}>
                                     Cancel
@@ -20996,16 +21080,129 @@ function SpecialModePage() {
                                     Confirm
                                 </button>
                             </div>
+
+                            <div
+                                style={{
+                                    justifySelf: "end",
+                                    whiteSpace: "nowrap",
+                                    fontWeight: 700,
+                                    fontSize: "13px",
+                                    color: "#2e2f42",
+                                    opacity: 0.8,
+                                }}
+                            >
+                                {manageStatsTeam ? `Average: ${manageStatsAverage}` : ""}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {isManageStatsFinalModalOpen && (
-                    <div className={css.restart_modal}>
+                    <motion.div
+                        className={css.restart_modal}
+                        initial={{ y: "-100%" }}
+                        animate={{ y: 0 }}
+                        transition={{ duration: 0, ease: "easeInOut" }}
+                        style={{
+                            width: "620px",
+                            top: 0,
+                            x: "-50%",
+                            opacity: 1,
+                            animation: "none",
+                            borderRadius: "0 0 8px 8px",
+                        }}
+                    >
                         <p className={css.restart_text}>
                             Are you sure you want to edit{" "}
-                            <b>{manageStatsChanges.length === 1 ? "this stat" : "these stats"}</b>?
+                            <b>{manageStatsChangeCount === 1 ? "this stat" : "these stats"}</b>?
                         </p>
+
+                        <div
+                            style={{
+                                width: "100%",
+                                maxHeight: "320px",
+                                overflowY: "auto",
+                                border: "1px solid #ddd",
+                                borderRadius: 8,
+                                margin: "4px 0 12px",
+                            }}
+                        >
+                            <table
+                                style={{
+                                    width: "100%",
+                                    borderCollapse: "collapse",
+                                    fontSize: "13px",
+                                    color: "#2e2f42",
+                                }}
+                            >
+                                <thead>
+                                    <tr>
+                                        {["Team", "Stat", "Original", "New"].map((heading, i) => (
+                                            <th
+                                                key={heading}
+                                                style={{
+                                                    position: "sticky",
+                                                    top: 0,
+                                                    background: "#f4f4f6",
+                                                    padding: "8px 10px",
+                                                    textAlign: i >= 2 ? "right" : "left",
+                                                    fontWeight: 800,
+                                                    borderBottom: "1px solid #ddd",
+                                                }}
+                                            >
+                                                {heading}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {manageStatsEdits.map(({ team, changes }) =>
+                                        changes.map((change, i) => {
+                                            const isLastOfTeam = i === changes.length - 1;
+                                            const cellStyle = {
+                                                padding: "6px 10px",
+                                                borderBottom: isLastOfTeam ? "1px solid #ddd" : "1px solid #f0f0f0",
+                                            };
+
+                                            return (
+                                                <tr key={`${team.id}-${change.key}`}>
+                                                    {i === 0 && (
+                                                        <td
+                                                            rowSpan={changes.length}
+                                                            style={{
+                                                                padding: "6px 10px",
+                                                                borderBottom: "1px solid #ddd",
+                                                                borderRight: "1px solid #ddd",
+                                                                verticalAlign: "top",
+                                                                fontWeight: 800,
+                                                                whiteSpace: "nowrap",
+                                                                color: team.color ?? "#2e2f42",
+                                                            }}
+                                                        >
+                                                            Team {team.name}
+                                                        </td>
+                                                    )}
+                                                    <td style={cellStyle}>{change.label}</td>
+                                                    <td style={{ ...cellStyle, textAlign: "right", opacity: 0.6 }}>
+                                                        {statToInputString(change.from)}
+                                                    </td>
+                                                    <td
+                                                        style={{
+                                                            ...cellStyle,
+                                                            textAlign: "right",
+                                                            fontWeight: 800,
+                                                            color: change.to > change.from ? "#1a9a4a" : "#d33a3a",
+                                                        }}
+                                                    >
+                                                        {statToInputString(change.to)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
                         <div className={css.restart_buttons}>
                             <button className={css.cancel_button} onClick={closeStatsAdminModals}>
@@ -21015,7 +21212,7 @@ function SpecialModePage() {
                                 Confirm
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {isAddPlacingsCodeModalOpen && (
