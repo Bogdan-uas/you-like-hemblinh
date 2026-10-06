@@ -2504,6 +2504,9 @@ const getTeamStatPoints = (stats) => {
     return Math.round(total * 100) / 100;
 };
 
+const getTeamStatAverage = (stats) =>
+    Math.round((getTeamStatPoints(stats) / STAT_KEYS.length) * 100) / 100;
+
 const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) => {
     const fallbackIndexById = {};
     teams.forEach((t, i) => (fallbackIndexById[t.id] = i));
@@ -6128,13 +6131,24 @@ const StatsFactorPanelBody = ({ team, statsNow, statsBefore, tab = 0 }) => {
                 style={{
                     fontWeight: 800,
                     fontSize: "13px",
-                    marginBottom: "10px",
+                    marginBottom: "2px",
                     textAlign: "center",
                     opacity: 0.85,
                     color: team?.color ?? "#2e2f42",
                 }}
             >
                 Team {team?.name}
+            </div>
+            <div
+                style={{
+                    fontWeight: 700,
+                    fontSize: "11px",
+                    marginBottom: "10px",
+                    textAlign: "center",
+                    opacity: 0.7,
+                }}
+            >
+                Average: {getTeamStatAverage(statsNow)}
             </div>
             {defs.map((def) => {
                 const val = statsNow?.[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key];
@@ -6210,7 +6224,17 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
             >
                 Team {team?.name}
             </div>
-
+            <div
+                style={{
+                    fontWeight: 700,
+                    fontSize: "11px",
+                    marginBottom: "10px",
+                    textAlign: "center",
+                    opacity: 0.7,
+                }}
+            >
+                Average: {getTeamStatAverage(statsNow)}
+            </div>
             <div
                 style={{
                     flex: 1,
@@ -6218,7 +6242,6 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
-                    paddingTop: "10px",
                     paddingBottom: "4px",
                 }}
             >
