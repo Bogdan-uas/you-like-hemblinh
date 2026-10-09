@@ -20593,7 +20593,7 @@ function SpecialModePage() {
 
     const inSuddenDeath = currentAttempt > 5;
 
-    const isPlayoffsStyleSeries = activePhase === "playoffs" || activePhase === "qualifier" || activePhase === "pemGroups";
+    const isPlayoffsStyleSeries = activePhase === "playoffs";
 
     if (isSeriesActive) {
         const {
