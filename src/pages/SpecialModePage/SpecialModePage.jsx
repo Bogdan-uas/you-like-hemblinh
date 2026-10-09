@@ -25385,7 +25385,7 @@ function SpecialModePage() {
                                 }
                                 matchTitle={modalTitle}
                                 matchNumber={showModalMatchNumber ? modalMatchNumber : null}
-                                isPlayoffs={isEliminationModal}
+                                isPlayoffs={modalContext.type === "playoffs"}
                                 pointLabelText={breakdownPointLabel}
                             />
                         );
