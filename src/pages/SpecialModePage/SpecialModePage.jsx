@@ -23,6 +23,7 @@ import { SERIES_ACTIONS } from "../../../assets/constants.js";
 import GradientCaretLeft from "../../components/GradientIcon/GradientCaretLeft.jsx";
 import GradientCaretRight from "../../components/GradientIcon/GradientCaretRight.jsx";
 import GradientDiamond from "../../components/GradientIcon/GradientDiamond.jsx";
+import PemTrophyIcon from "../../components/PemTrophyIcon/PemTrophyIcon.jsx";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Lenis from "lenis";
 
@@ -69,6 +70,8 @@ const TEAM_STATS_LS_KEY = "specialMode_teamStats_v1";
 const LEADERBOARD_SORT_LS_KEY = "specialMode_leaderboardSort_v1";
 const LAST_FINALIZED_TOURNAMENT_LS_KEY = "specialMode_lastFinalizedTournament_v1";
 const RATING_BASED_STATS_LS_KEY = "specialMode_ratingBasedStats_v1";
+const TOURNAMENT_PICKER_LS_KEY = "specialMode_tournamentPicker_v1";
+const CURRENT_TOURNAMENT_TYPE_LS_KEY = "specialMode_currentTournamentType_v1";
 
 const isNativeScrollArea = (node) => {
     if (!(node instanceof HTMLElement)) return false;
@@ -80,10 +83,126 @@ const isNativeScrollArea = (node) => {
     return node.scrollHeight > node.clientHeight + 1;
 };
 
+const TOURNAMENT_TIERS = {
+    official: { badge: "OF", label: "Official", color: "#000000" },
+    tier1: { badge: "T1", label: "Tier 1", color: "#e01b24" },
+    tier2: { badge: "T2", label: "Tier 2", color: "#f5c400", textColor: "#2e2f42" },
+    qualifier: { badge: "Q", label: "Qualifier", color: "#cccccc", textColor: "#2e2f42" },
+};
+
+const TournamentTierBadge = ({ tier, size = 20 }) => {
+    const config = TOURNAMENT_TIERS[tier];
+    if (!config) return null;
+
+    return (
+        <span
+            title={config.label}
+            aria-label={config.label}
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                width: size,
+                height: size,
+                borderRadius: 4,
+                background: config.color,
+                color: config.textColor ?? "#fff",
+                fontSize: Math.round(size * 0.5),
+                fontWeight: 800,
+                lineHeight: 1,
+                letterSpacing: 0,
+                userSelect: "none",
+                transition: "none",
+            }}
+        >
+            {config.badge}
+        </span>
+    );
+};
+
+const TOURNAMENT_TIER_EXPLANATIONS = [
+    { tier: "official", text: <>The biggest tournament. The winner gets an Official trophy, 2nd and 3rd place get 🥈 and 🥉.</> },
+    { tier: "tier1", text: <>A big tournament, like the PEM Small Tournament main event. The winner gets a unique Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier2", text: <>A smaller tournament, like the Champions Series Tour. The winner gets a 🥇, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "qualifier", text: <>A qualifier for a bigger tournament. It gives no medals: its best teams qualify to the event it belongs to.</> },
+];
+
+const TournamentTierInfo = () => {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <span
+            className={css.tier_info}
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setOpen(false)}
+            tabIndex={0}
+            aria-label="What the tournament icons mean"
+        >
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                <circle cx="10" cy="6" r="1.2" fill="currentColor" />
+                <rect x="9" y="8.5" width="2" height="6.5" rx="1" fill="currentColor" />
+            </svg>
+            {open && (
+                <span className={css.tier_info_popup} role="tooltip">
+                    {TOURNAMENT_TIER_EXPLANATIONS.map(({ tier, text }) => (
+                        <span key={tier} className={css.tier_info_row}>
+                            <TournamentTierBadge tier={tier} size={18} />
+                            <span>
+                                <b>{TOURNAMENT_TIERS[tier].label}</b> — {text}
+                            </span>
+                        </span>
+                    ))}
+                </span>
+            )}
+        </span>
+    );
+};
+
+const PEM_SMALL_TYPE_ID = "PEM Small Tournament";
+const CST_TYPE_ID = "Champions Series Tour";
+
+const PemSmallEventLine = ({ tier, children }) => (
+    <span style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 6 }}>
+        <span style={{ marginTop: -1 }}>
+            <TournamentTierBadge tier={tier} size={16} />
+        </span>
+        <span>{children}</span>
+    </span>
+);
+
+const PemSmallDescription = () => (
+    <>
+        Three tournaments, played one after another:
+        <PemSmallEventLine tier="qualifier">
+            <b>PEM Small Tournament Qualifier</b> — places 13-44 of the Leaderboard, split into Group A and
+            Group B (16 teams each). Every Group is a Double Elimination bracket (all Bo3; Upper Final and
+            Consolidation Final are Bo5) and every group's top 2 teams qualify to the main event.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier2">
+            <b>Champions Series Tour</b> — places 45-64 of the Leaderboard, split into Groups A-D (5 teams
+            each). Every Group is a Round-Robin of Bo1 matches, where ties are possible and top 2 teams of each group go to the
+            Playoffs: Quarterfinals, Semifinals and Third Place Decider (all Bo3), Grand Final (Bo5).
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>PEM Small Tournament</b> — the main event: places 1-12 of the Leaderboard plus the 4 teams
+            from the Qualifier, split into Group A and Group B (8 teams each). Every Group is a Double Elimination
+            bracket (all Bo3; Upper Final and Lower Final are Bo5), where both Upper Finalists and the Lower Final
+            winner go to the 6-team Playoffs: the Upper Final winners start in the Semifinals, the rest in the
+            Quarterfinals. Quarterfinals, Semifinals and Third Place Decider are Bo5, the Grand Final is Bo7.
+        </PemSmallEventLine>
+    </>
+);
+
 const TOURNAMENT_TYPES = [
     {
         id: "Official",
         label: "Official",
+        tier: "official",
+        description: "Biggest tournament. 64 teams, seeded by the Leaderboard: places 33-64 start in Stage I, places 17-32 join in Stage II and the top 16 in Stage III. 16 teams advance from each Swiss Stage, ending in the 16-team Playoffs.",
         highlightCard: true,
         fields: [
             { key: "stage1", label: "Qualifiers to Stage I", multi: true, exactCount: 32 },
@@ -99,10 +218,25 @@ const TOURNAMENT_TYPES = [
             { key: "rest", label: "Top 5-16", multi: true, exactCount: 12 },
         ],
     },
+    {
+        id: PEM_SMALL_TYPE_ID,
+        label: "PEM Small Tournament",
+        longLabel: "Pro Extreme Masters Small Tournament",
+        tier: "tier1",
+        descriptionNode: <PemSmallDescription />,
+    },
 ];
 
+const EVENT_TOURNAMENT_TYPES = [
+    { id: CST_TYPE_ID, label: "Champions Series Tour", tier: "tier2" },
+];
+
+const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAMENT_TYPES];
+
 const getTournamentTypeConfig = (id) =>
-    TOURNAMENT_TYPES.find((type) => type.id === id) || TOURNAMENT_TYPES[0];
+    NUMBERED_TOURNAMENT_TYPES.find((type) => type.id === id) || TOURNAMENT_TYPES[0];
+
+const HALL_FORM_TOURNAMENT_TYPES = TOURNAMENT_TYPES.filter((type) => Array.isArray(type.fields));
 
 const loadTournamentNumbers = () => {
     try {
@@ -123,6 +257,72 @@ const saveTournamentNumbers = (numbers) => {
 };
 
 const ACTIVE_TOURNAMENT_TYPE = "Official";
+
+const DEFAULT_TOURNAMENT_PICKER = { random: true, ids: [] };
+
+const isKnownTournamentType = (id) => TOURNAMENT_TYPES.some((type) => type.id === id);
+
+const loadTournamentPicker = () => {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(TOURNAMENT_PICKER_LS_KEY) || "null");
+        const ids = Array.isArray(parsed?.ids) ? parsed.ids.filter(isKnownTournamentType) : [];
+        if (parsed?.random || ids.length === 0) return DEFAULT_TOURNAMENT_PICKER;
+        return { random: false, ids };
+    } catch {
+        return DEFAULT_TOURNAMENT_PICKER;
+    }
+};
+
+const saveTournamentPicker = (picker) => {
+    try {
+        localStorage.setItem(TOURNAMENT_PICKER_LS_KEY, JSON.stringify(picker));
+    } catch {
+        console.error("Couldn't save the tournament choice");
+    }
+};
+
+const loadCurrentTournamentType = () => {
+    try {
+        const saved = localStorage.getItem(CURRENT_TOURNAMENT_TYPE_LS_KEY);
+        return isKnownTournamentType(saved) ? saved : ACTIVE_TOURNAMENT_TYPE;
+    } catch {
+        return ACTIVE_TOURNAMENT_TYPE;
+    }
+};
+
+const saveCurrentTournamentType = (type) => {
+    try {
+        localStorage.setItem(CURRENT_TOURNAMENT_TYPE_LS_KEY, type);
+    } catch {
+        console.error("Couldn't save the current tournament");
+    }
+};
+
+const pickRandomItem = (items) => items[Math.floor(Math.random() * items.length)];
+
+const pickTournamentType = (picker) => {
+    if (!picker?.random) {
+        const chosen = (picker?.ids ?? []).filter(isKnownTournamentType);
+        if (chosen.length > 0) return pickRandomItem(chosen);
+    }
+
+    return pickRandomItem(TOURNAMENT_TYPES.map((type) => type.id));
+};
+
+const CARET_LEFT_PATH =
+    "M199.7 299.8C189.4 312.4 190.2 330.9 201.9 342.6L329.9 470.6C339.1 479.8 352.8 482.5 364.8 477.5C376.8 472.5 384.6 460.9 384.6 447.9L384.6 191.9C384.6 179 376.8 167.3 364.8 162.3C352.8 157.3 339.1 160.1 329.9 169.2L201.9 297.2L199.7 299.6z";
+
+const WhiteCaretIcon = ({ size = 14, rotation = 0 }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="185 155 205 330"
+        aria-hidden="true"
+        style={{ display: "block", transform: `rotate(${rotation}deg)`, transition: "transform 300ms ease-in-out" }}
+    >
+        <path d={CARET_LEFT_PATH} fill="#fff" />
+    </svg>
+);
 
 const normalizeTournamentRef = (value) => {
     if (!value || typeof value !== "object") return null;
@@ -172,12 +372,20 @@ const openHallOfFameDb = () =>
         request.onerror = () => reject(request.error);
     });
 
+const hallRecordTime = (record) => {
+    const time = Date.parse(record?.finishedAt ?? "");
+    return Number.isFinite(time) ? time : 0;
+};
+
+const sortHallOfFame = (list) =>
+    [...list].sort((a, b) => hallRecordTime(b) - hallRecordTime(a) || (b.number ?? 0) - (a.number ?? 0));
+
 const readHallOfFame = async () => {
     const db = await openHallOfFameDb();
     return new Promise((resolve, reject) => {
         const request = db.transaction(HALL_OF_FAME_STORE, "readonly")
             .objectStore(HALL_OF_FAME_STORE).getAll();
-        request.onsuccess = () => resolve((request.result || []).sort((a, b) => b.number - a.number));
+        request.onsuccess = () => resolve(sortHallOfFame(request.result || []));
         request.onerror = () => reject(request.error);
     });
 };
@@ -1010,8 +1218,24 @@ const readBattleXp = (stats) => {
     return n === null ? null : Math.max(0, n);
 };
 
+const statKindOfContext = (context) =>
+    context?.type === "swiss" || context?.type === "cstGroup"
+        ? "swiss"
+        : context?.type === "qualifier"
+            ? "qualifier"
+            : context?.type === "pemGroup"
+                ? "pemGroup"
+                : "playoffs";
+
+const bracketGroupStagesOf = (kind) =>
+    kind === "pemGroup"
+        ? { upper: PEM_GROUP_UPPER_STAGES, elimination: PEM_GROUP_ELIMINATION_STAGES, qualifying: PEM_GROUP_QUALIFYING_STAGES }
+        : { upper: QUALIFIER_UPPER_STAGES, elimination: QUALIFIER_ELIMINATION_STAGES, qualifying: QUALIFIER_QUALIFYING_STAGES };
+
 const battleStakesOf = ({ kind, swissStageKey, net, playoffsStage }) => {
     if (kind === "playoffs") return BATTLE_PLAYOFF_STAKES[playoffsStage] ?? BATTLE_PLAYOFF_STAKES.ro16;
+    if (kind === "qualifier") return QUALIFIER_BATTLE_STAKES[playoffsStage] ?? QUALIFIER_BATTLE_STAKES.uo;
+    if (kind === "pemGroup") return PEM_GROUP_BATTLE_STAKES[playoffsStage] ?? PEM_GROUP_BATTLE_STAKES.uo;
     const base = BATTLE_SWISS_STAKES[swissStageKey] ?? BATTLE_SWISS_STAKES.stage1;
     return clampShare(base + (isProgressionOrEliminationNet(net) ? BATTLE_DECISIVE_NET_STAKES : 0));
 };
@@ -1044,17 +1268,31 @@ const resetBattleExperience = (teamStats) => {
 
 const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, upset, rank, values }) => {
     const isSwiss = kind === "swiss";
-    const isThirdPlace = !isSwiss && playoffsStage === "thirdPlace";
+    const isQualifier = kind === "qualifier" || kind === "pemGroup";
+    const groupStages = bracketGroupStagesOf(kind);
+    const isThirdPlace = !isSwiss && !isQualifier && playoffsStage === "thirdPlace";
     const [winsInStage, lossesInStage] = isSwiss
         ? String(net ?? "").split(":").map((n) => Number(n) || 0)
         : [0, 0];
-    const unbeatenEligible = !isThirdPlace && (!isSwiss || lossesInStage === 0);
+    const unbeatenEligible = isQualifier
+        ? groupStages.upper.includes(playoffsStage)
+        : !isThirdPlace && (!isSwiss || lossesInStage === 0);
 
     const multiSet = Number.isFinite(bestOf) ? calcSetsToWin(bestOf) > 1 : null;
-    const elimNerve = isSwiss ? ELIMINATION_NETS.includes(net) : !isThirdPlace;
+    const elimNerve = isSwiss
+        ? ELIMINATION_NETS.includes(net)
+        : isQualifier
+            ? groupStages.elimination.includes(playoffsStage)
+            : !isThirdPlace;
 
-    const bigStageCanRise = isSwiss ? winsInStage === 2 : true;
-    const bigStageCanFall = isSwiss && lossesInStage === 2;
+    const bigStageCanRise = isSwiss
+        ? winsInStage === 2
+        : isQualifier
+            ? groupStages.qualifying.includes(playoffsStage)
+            : true;
+    const bigStageCanFall = isSwiss
+        ? lossesInStage === 2
+        : kind === "qualifier" && QUALIFIER_ELIMINATION_STAGES.includes(playoffsStage);
 
     const upsetKnown = upset !== null && upset !== undefined;
 
@@ -1123,7 +1361,7 @@ const getFinishedMatchStatActivation = ({ match, modalContext, bestOf, leftTeam,
     };
 
     return deriveStatActivation({
-        kind: modalContext?.type === "swiss" ? "swiss" : "playoffs",
+        kind: statKindOfContext(modalContext),
         net: modalContext?.net ?? null,
         playoffsStage: modalContext?.stage ?? null,
         bestOf,
@@ -1203,12 +1441,17 @@ const buildMatchStatContext = ({
     seededStats,
     ratings,
     teams,
+    unbeatenEligibleBySide = null,
 }) => {
     const isSwiss = kind === "swiss";
-    const isThirdPlace = !isSwiss && playoffsStage === "thirdPlace";
+    const isQualifier = kind === "qualifier" || kind === "pemGroup";
+    const engineKind = isSwiss ? "swiss" : isQualifier ? kind : "playoffs";
+    const isThirdPlace = !isSwiss && !isQualifier && playoffsStage === "thirdPlace";
     const lossesInStage = isSwiss ? Number(String(net ?? "").split(":")[1]) || 0 : 0;
 
-    const unbeatenEligible = !isThirdPlace && (!isSwiss || lossesInStage === 0);
+    const unbeatenEligible = isQualifier
+        ? bracketGroupStagesOf(kind).upper.includes(playoffsStage)
+        : !isThirdPlace && (!isSwiss || lossesInStage === 0);
     const streakOf = (side) =>
         Math.max(0, Math.floor(Number(seededStats?.[side]?.unbeatenStreak) || 0));
 
@@ -1218,7 +1461,7 @@ const buildMatchStatContext = ({
 
     const activationFor = (upset) =>
         deriveStatActivation({
-            kind: isSwiss ? "swiss" : "playoffs",
+            kind: engineKind,
             net,
             playoffsStage,
             bestOf,
@@ -1231,7 +1474,7 @@ const buildMatchStatContext = ({
     const baseActive = activationFor({ active: false, underdogSide: null });
 
     const stakes = battleStakesOf({
-        kind: isSwiss ? "swiss" : "playoffs",
+        kind: engineKind,
         swissStageKey,
         net,
         playoffsStage,
@@ -1247,14 +1490,14 @@ const buildMatchStatContext = ({
         });
 
     const baseCtx = {
-        kind: isSwiss ? "swiss" : "playoffs",
+        kind: engineKind,
         isBo1: bestOf === 1,
         elimNerveActive: baseActive.left.elimNerve,
         unbeatenExempt: isThirdPlace,
-        unbeatenRoundIndex: PLAYOFF_ROUND_INDEX[playoffsStage] ?? 0,
+        unbeatenRoundIndex: isQualifier ? 0 : PLAYOFF_ROUND_INDEX[playoffsStage] ?? 0,
         unbeaten: {
-            left: { eligible: unbeatenEligible, active: baseActive.left.unbeatenNerve },
-            right: { eligible: unbeatenEligible, active: baseActive.right.unbeatenNerve },
+            left: { eligible: unbeatenEligibleBySide?.left ?? unbeatenEligible, active: baseActive.left.unbeatenNerve },
+            right: { eligible: unbeatenEligibleBySide?.right ?? unbeatenEligible, active: baseActive.right.unbeatenNerve },
         },
         battle: {
             left: { difficulty: difficultyFor(leftTeam, rightTeam) },
@@ -1325,7 +1568,7 @@ const getPreMatchStatActivation = ({
     const isSwiss = modalContext.type === "swiss";
 
     return buildMatchStatContext({
-        kind: isSwiss ? "swiss" : "playoffs",
+        kind: statKindOfContext(modalContext),
         net: isSwiss ? modalContext.net ?? null : null,
         swissStageKey: isSwiss ? modalContext.stageKey ?? null : null,
         playoffsStage: isSwiss ? null : modalContext.stage ?? null,
@@ -1420,6 +1663,45 @@ const resolveSeriesEndStats = ({ liveStats, winnerSide, ctx, winnerSets, loserSe
                 }
                 stats = { ...stats, [side]: { ...stats[side], unbeatenStreak: 0 } };
             }
+        }
+    }
+
+    return stats;
+};
+
+const resolveSeriesTieStats = ({ liveStats, ctx }) => {
+    let stats = normalizeLiveStats(liveStats);
+    if (!ctx) return stats;
+
+    for (const side of ["left", "right"]) {
+        const difficulty = ctx.battle?.[side]?.difficulty;
+        if (Number.isFinite(difficulty)) {
+            const experience = (readBattleXp(stats[side]) ?? 0) + battleXpGain(1, difficulty);
+            const delta =
+                (battleTestedDelta({ won: true, difficulty, experience }) +
+                    battleTestedDelta({ won: false, difficulty, experience })) / 2;
+            stats = bumpStat(stats, side, "battleTested", delta);
+            stats = {
+                ...stats,
+                [side]: { ...stats[side], battleXp: Math.round(experience * 100) / 100 },
+            };
+        }
+
+        const rank = ctx.topSeedRank?.[side];
+        if (Number.isFinite(rank) && rank >= 1 && rank <= 10) {
+            const k = rank === 1 ? 1 : 0.5;
+            stats = bumpStat(stats, side, "topSeed", -k);
+        }
+
+        const breaker = ctx.unbeatenBreaker?.[side];
+        if (breaker?.active) {
+            const streak = Math.max(1, breaker.streak ?? 1);
+            stats = bumpStat(
+                stats,
+                side,
+                "unbeatenStreakBreaker",
+                (unbeatenBreakerWinGain(streak) - unbeatenBreakerLossAmount(streak)) / 2
+            );
         }
     }
 
@@ -1965,7 +2247,7 @@ const getMatchWinPrediction = ({
 
     const isSwiss = matchContext?.type === "swiss";
     const matchCtx = buildMatchStatContext({
-        kind: isSwiss ? "swiss" : "playoffs",
+        kind: statKindOfContext(matchContext),
         net: isSwiss ? matchContext?.net ?? null : null,
         swissStageKey: isSwiss ? matchContext?.stageKey ?? null : null,
         playoffsStage: isSwiss ? null : matchContext?.stage ?? null,
@@ -2358,7 +2640,13 @@ const buildModalStatsKey = ({ modalContext, currentModalMatch, hallRecordId, tou
     const placePart =
         modalContext.type === "swiss"
             ? `${modalContext.stageKey}:${modalContext.net}`
-            : `playoffs:${modalContext.stage}`;
+            : modalContext.type === "qualifier"
+                ? `qualifier:${modalContext.group}:${modalContext.stage}`
+                : modalContext.type === "cstGroup"
+                    ? `cst:${modalContext.group}`
+                    : modalContext.type === "pemGroup"
+                        ? `pemGroup:${modalContext.group}:${modalContext.stage}`
+                        : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : "playoffs"}:${modalContext.stage}`;
     const originPart = modalContext.isArchivedHallOfFame
         ? `hall:${hallRecordId ?? ""}:`
         : `t${tournamentNumber}:`;
@@ -2467,7 +2755,7 @@ const buildLeaderboard = (teams, ratings) => {
 
 const LEADERBOARD_SORT_OPTIONS = [
     { value: "points", label: "Points (default)" },
-    { value: "trophies", label: "Trophies" },
+    { value: "trophies", label: "Trophies and first places" },
     { value: "seconds", label: "Second Places" },
     { value: "thirds", label: "Third Places" },
     { value: "stats", label: "Stats" },
@@ -2583,9 +2871,9 @@ const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) => {
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = p?.wins ?? 0; break;
-            case "seconds": primaryById[t.id] = p?.seconds ?? 0; break;
-            case "thirds": primaryById[t.id] = p?.thirds ?? 0; break;
+            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
+            case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
+            case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;
             default: primaryById[t.id] = 0;
         }
@@ -2648,7 +2936,17 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
     const stage =
         phase === "swiss"
             ? swissStageWeight(swissStageKey)
-            : playoffsWeight(playoffsStage);
+            : phase === "qualifier"
+                ? (QUALIFIER_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                : phase === "pemGroup"
+                    ? (PEM_GROUP_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                    : phase === "cstGroup"
+                        ? CST_GROUP_RATING_WEIGHT
+                        : phase === "cstPlayoffs"
+                            ? (CST_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                            : phase === "pemPlayoffs"
+                                ? (PEM_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                : playoffsWeight(playoffsStage);
 
     return stage * boWeight(bestOf) * marginMultiplier({ bestOf, loserSetsWon });
 };
@@ -2767,7 +3065,9 @@ const applyRatings = ({
         )
     );
 
-    if (phase === "playoffs" && playoffsStage === "gf") {
+    const isGrandFinal = (phase === "playoffs" || phase === "cstPlayoffs" || phase === "pemPlayoffs") && playoffsStage === "gf";
+
+    if (isGrandFinal) {
         losePoints = Math.round(winPoints * 0.2);
     }
 
@@ -2795,7 +3095,7 @@ const applyRatings = ({
                 playedAtMs: playedAtMs ?? null,
                 expectedWinner: eW,
                 lossScale,
-                gfNoLossApplied: phase === "playoffs" && playoffsStage === "gf",
+                gfNoLossApplied: isGrandFinal,
             },
             before: {
                 [winnerId]: { points: beforePointsW, rank: beforeRankW },
@@ -2804,6 +3104,44 @@ const applyRatings = ({
             after: {
                 [winnerId]: { points: next[winnerId], rank: afterRankW },
                 [loserId]: { points: next[loserId], rank: afterRankL },
+            },
+        },
+    };
+};
+
+const applyTieRatings = ({ ratings, teams, leftId, rightId, phase, playoffsStage, bestOf, playedAtMs }) => {
+    const beforeLb = buildLeaderboard(teams, ratings);
+    const next = { ...ratings };
+    const beforeLeft = next[leftId] ?? 0;
+    const beforeRight = next[rightId] ?? 0;
+
+    const eLeft = expectedScore(beforeLeft, beforeRight);
+    const K =
+        20 *
+        matchImportance({ phase, playoffsStage, bestOf, loserSetsWon: 0 }) *
+        recencyWeight(playedAtMs) *
+        ratingGapDamp(beforeLeft, beforeRight);
+    const leftDelta = Math.max(-165, Math.min(165, Math.round(K * (0.5 - eLeft))));
+
+    next[leftId] = clampMin0(beforeLeft + leftDelta);
+    next[rightId] = clampMin0(beforeRight - leftDelta);
+
+    const afterLb = buildLeaderboard(teams, next);
+
+    return {
+        nextRatings: next,
+        meta: {
+            tie: true,
+            winnerId: null,
+            loserId: null,
+            debug: { phase, playoffsStage, bestOf, playedAtMs: playedAtMs ?? null, expectedLeft: eLeft },
+            before: {
+                [leftId]: { points: beforeLeft, rank: beforeLb.rankById[leftId] ?? null },
+                [rightId]: { points: beforeRight, rank: beforeLb.rankById[rightId] ?? null },
+            },
+            after: {
+                [leftId]: { points: next[leftId], rank: afterLb.rankById[leftId] ?? null },
+                [rightId]: { points: next[rightId], rank: afterLb.rankById[rightId] ?? null },
             },
         },
     };
@@ -3215,7 +3553,9 @@ const stageLabelPlayoffs = (stage) => {
     }
 };
 
-const getBestOfForPlayoffs = (stage) => {
+const getBestOfForPlayoffs = (stage, kind = null) => {
+    if (kind === "cst") return CST_PLAYOFFS_BEST_OF[stage] ?? 3;
+    if (kind === "pem") return PEM_PLAYOFFS_BEST_OF[stage] ?? 5;
     if (stage === "gf") return 9;
     if (stage === "sf") return 7;
     if (stage === "thirdPlace") return 7;
@@ -3328,10 +3668,1156 @@ const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
     return true;
 };
 
+
+const PEM_SMALL_MAIN_AUTO_COUNT = 12;
+const PEM_SMALL_QUALIFIER_COUNT = 32;
+
+const buildPemSmallSeeds = (teams, ratings) => {
+    const { sorted } = buildLeaderboard(teams, ratings);
+    const qualifierEnd = PEM_SMALL_MAIN_AUTO_COUNT + PEM_SMALL_QUALIFIER_COUNT;
+    return {
+        mainEvent: sorted.slice(0, PEM_SMALL_MAIN_AUTO_COUNT).map(toBaseTeam),
+        qualifier: sorted.slice(PEM_SMALL_MAIN_AUTO_COUNT, qualifierEnd).map(toBaseTeam),
+        cst: sorted.slice(qualifierEnd).map(toBaseTeam),
+    };
+};
+
+const splitQualifierGroups = (qualifierTeams) => ({
+    A: qualifierTeams.filter((_, i) => i % 2 === 0),
+    B: qualifierTeams.filter((_, i) => i % 2 === 1),
+});
+
+const QUALIFIER_GROUPS = ["A", "B"];
+
+const QUALIFIER_STAGE_ORDER = ["uo", "uqf", "lr1", "lr2", "lr3", "usf", "lsf", "lf", "uf", "cf"];
+
+const QUALIFIER_STAGE_SIZES = { uo: 8, uqf: 4, lr1: 4, lr2: 4, lr3: 2, usf: 2, lsf: 2, lf: 1, uf: 1, cf: 1 };
+
+const QUALIFIER_STAGE_LABELS = {
+    uo: "Upper Opening Rd.",
+    uqf: "Upper Quarterfinal",
+    usf: "Upper Semifinal",
+    uf: "Upper Final",
+    lr1: "Lower Round 1",
+    lr2: "Lower Round 2",
+    lr3: "Lower Round 3",
+    lsf: "Lower Semifinal",
+    lf: "Lower Final",
+    cf: "Consolidation Final",
+};
+
+const QUALIFIER_COLUMN_TITLES = {
+    uo: "Upper Opening Rd.",
+    uqf: "Upper Quarterfinals",
+    usf: "Upper Semifinals",
+    uf: "Upper Final",
+    lr1: "Lower Round 1",
+    lr2: "Lower Round 2",
+    lr3: "Lower Round 3",
+    lsf: "Lower Semifinals",
+    lf: "Lower Final",
+    cf: "Consolidation Final",
+};
+
+const QUALIFIER_UPPER_STAGES = ["uo", "uqf", "usf", "uf"];
+const QUALIFIER_ELIMINATION_STAGES = ["lr1", "lr2", "lr3", "lsf", "lf", "cf"];
+const QUALIFIER_QUALIFYING_STAGES = ["uf", "cf"];
+
+const QUALIFIER_BATTLE_STAKES = { uo: 0.2, uqf: 0.3, lr1: 0.2, lr2: 0.3, lr3: 0.35, usf: 0.4, lsf: 0.45, lf: 0.5, uf: 0.55, cf: 0.6 };
+const QUALIFIER_RATING_WEIGHTS = { uo: 1.08, uqf: 1.2, lr1: 1.04, lr2: 1.12, lr3: 1.16, usf: 1.28, lsf: 1.24, lf: 1.36, uf: 1.37, cf: 1.3 };
+
+const QUALIFIER_MIN_NEEDED_PICKEM = 111;
+const QUALIFIER_MAX_NEEDED_PICKEM = 182;
+
+const getRandomQualifierNeededPickemPoints = () =>
+    Math.floor(Math.random() * (QUALIFIER_MAX_NEEDED_PICKEM - QUALIFIER_MIN_NEEDED_PICKEM + 1)) +
+    QUALIFIER_MIN_NEEDED_PICKEM;
+
+const qualifierStageLabel = (stage) => QUALIFIER_STAGE_LABELS[stage] ?? "";
+
+const isSingleQualifierStage = (stage) => QUALIFIER_STAGE_SIZES[stage] === 1;
+
+const getBestOfForQualifier = (stage) => (stage === "uf" || stage === "cf" ? 5 : 3);
+
+const qualifierSlotSource = (stage, idx, slotKey) => {
+    const second = slotKey === "slotB";
+    switch (stage) {
+        case "uqf": return { stage: "uo", idx: idx * 2 + (second ? 1 : 0), want: "winner" };
+        case "usf": return { stage: "uqf", idx: idx * 2 + (second ? 1 : 0), want: "winner" };
+        case "uf": return { stage: "usf", idx: second ? 1 : 0, want: "winner" };
+        case "lr1": return { stage: "uo", idx: idx * 2 + (second ? 1 : 0), want: "loser" };
+        case "lr2": return second ? { stage: "uqf", idx, want: "loser" } : { stage: "lr1", idx, want: "winner" };
+        case "lr3": return { stage: "lr2", idx: idx * 2 + (second ? 1 : 0), want: "winner" };
+        case "lsf": return second ? { stage: "usf", idx, want: "loser" } : { stage: "lr3", idx, want: "winner" };
+        case "lf": return { stage: "lsf", idx: second ? 1 : 0, want: "winner" };
+        case "cf": return second ? { stage: "uf", idx: 0, want: "loser" } : { stage: "lf", idx: 0, want: "winner" };
+        default: return null;
+    }
+};
+
+const QUALIFIER_ROUTES = (() => {
+    const routes = {};
+    QUALIFIER_STAGE_ORDER.forEach((stage) => {
+        for (let idx = 0; idx < QUALIFIER_STAGE_SIZES[stage]; idx++) {
+            ["slotA", "slotB"].forEach((slotKey) => {
+                const source = qualifierSlotSource(stage, idx, slotKey);
+                if (!source) return;
+                const key = `${source.stage}-${source.idx}`;
+                routes[key] = { ...(routes[key] || {}), [source.want]: { stage, idx, slotKey } };
+            });
+        }
+    });
+    return routes;
+})();
+
+const makeQualifierMatch = (group, stage, idx) => ({
+    id: `q${group}-${stage}-${idx + 1}`,
+    group,
+    stage,
+    slotA: null,
+    slotB: null,
+    played: false,
+    scoreLeft: null,
+    scoreRight: null,
+    winnerTeamId: null,
+    loserTeamId: null,
+    pickTeamId: null,
+    setHistory: [],
+});
+
+const buildQualifierGroupBracket = (group, teams16) => {
+    const bracket = { group, teams: teams16.map(toBaseTeam) };
+
+    QUALIFIER_STAGE_ORDER.forEach((stage) => {
+        bracket[stage] = Array.from(
+            { length: QUALIFIER_STAGE_SIZES[stage] },
+            (_, i) => makeQualifierMatch(group, stage, i)
+        );
+    });
+
+    bracketOrder.forEach(([a, b], i) => {
+        bracket.uo[i].slotA = bracket.teams[a] ?? null;
+        bracket.uo[i].slotB = bracket.teams[b] ?? null;
+    });
+
+    return bracket;
+};
+
+const buildQualifier = (groups) =>
+    Object.fromEntries(QUALIFIER_GROUPS.map((group) => [group, buildQualifierGroupBracket(group, groups[group] || [])]));
+
+const canOpenQualifierMatch = (bracket, stage, idx) => {
+    const match = bracket?.[stage]?.[idx];
+    if (!match || !match.slotA || !match.slotB || match.played) return false;
+
+    for (const s of QUALIFIER_STAGE_ORDER) {
+        const arr = bracket[s] || [];
+        if (s === stage) return arr.slice(0, idx).every((m) => m.played);
+        if (arr.some((m) => !m.played)) return false;
+    }
+
+    return false;
+};
+
+const findCurrentQualifierMatch = (bracket) => {
+    if (!bracket) return null;
+
+    for (const stage of QUALIFIER_STAGE_ORDER) {
+        const arr = bracket[stage] || [];
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i].played) continue;
+            return canOpenQualifierMatch(bracket, stage, i) ? { stage, index: i, id: arr[i].id } : null;
+        }
+    }
+
+    return null;
+};
+
+const findNextQualifierMatch = (bracket, current) => {
+    if (!bracket || !current) return null;
+
+    let passedCurrent = false;
+    for (const stage of QUALIFIER_STAGE_ORDER) {
+        const arr = bracket[stage] || [];
+        for (let i = 0; i < arr.length; i++) {
+            if (!passedCurrent) {
+                if (stage === current.stage && i === current.index) passedCurrent = true;
+                continue;
+            }
+            const m = arr[i];
+            if (!m.played && m.slotA && m.slotB) return { stage, index: i, id: m.id };
+        }
+    }
+
+    return null;
+};
+
+const advanceQualifierBracket = (bracket, stage, idx, winner, loser) => {
+    const route = QUALIFIER_ROUTES[`${stage}-${idx}`] || {};
+
+    const place = (target, team) => {
+        if (!target || !team) return;
+        const arr = [...bracket[target.stage]];
+        arr[target.idx] = { ...arr[target.idx], [target.slotKey]: toBaseTeam(team) };
+        bracket[target.stage] = arr;
+    };
+
+    place(route.winner, winner);
+    place(route.loser, loser);
+};
+
+const getMatchWinnerTeam = (match) =>
+    match?.played ? [match.slotA, match.slotB].find((team) => team?.id === match.winnerTeamId) ?? null : null;
+
+const getMatchLoserTeam = (match) =>
+    match?.played ? [match.slotA, match.slotB].find((team) => team?.id === match.loserTeamId) ?? null : null;
+
+const isQualifierGroupFinished = (bracket) => !!bracket?.cf?.[0]?.played;
+
+const isQualifierFinished = (qualifier) =>
+    !!qualifier && QUALIFIER_GROUPS.every((group) => isQualifierGroupFinished(qualifier[group]));
+
+const getQualifierGroupQualifiers = (bracket) =>
+    [getMatchWinnerTeam(bracket?.uf?.[0]), getMatchWinnerTeam(bracket?.cf?.[0])].filter(Boolean);
+
+const getQualifierMatches = (qualifier) =>
+    QUALIFIER_GROUPS.flatMap((group) =>
+        QUALIFIER_STAGE_ORDER.flatMap((stage) => qualifier?.[group]?.[stage] || [])
+    );
+
+const qualifierMatchPoints = (match) => {
+    if (!match?.played || !match.pickTeamId) return 0;
+
+    const bestOf = getBestOfForQualifier(match.stage);
+    if (match.winnerTeamId === match.pickTeamId) return bestOf;
+
+    const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
+    const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
+    return (pickedSets || 0) * 2;
+};
+
+const QUALIFIER_PICKEM_ROUNDS = [
+    { stage: "uo", label: "Opening Rounds" },
+    { stage: "uqf", label: "Upper Quarterfinals" },
+    { stage: "lr1", label: "Lower Rounds 1" },
+    { stage: "lr2", label: "Lower Rounds 2" },
+    { stage: "lr3", label: "Lower Rounds 3" },
+    { stage: "usf", label: "Upper Semifinals" },
+    { stage: "lsf", label: "Lower Semifinals" },
+    { stage: "lf", label: "Lower Finals" },
+    { stage: "uf", label: "Upper Finals" },
+    { stage: "cf", label: "Consolidation Finals" },
+].map((round) => ({
+    ...round,
+    key: `q_${round.stage}`,
+    total: QUALIFIER_STAGE_SIZES[round.stage] * QUALIFIER_GROUPS.length,
+}));
+
+const getQualifierStakeTexts = (stage) => {
+    switch (stage) {
+        case "uo": return { winner: <>goes to <b>Upper Quarterfinals</b></>, loser: <>drops to <b>Lower Round 1</b></> };
+        case "uqf": return { winner: <>goes to <b>Upper Semifinals</b></>, loser: <>drops to <b>Lower Round 2</b></> };
+        case "usf": return { winner: <>goes to the <b>Upper Final</b></>, loser: <>drops to <b>Lower Semifinals</b></> };
+        case "uf": return { winner: "qualifies to the main event", loser: <>drops to the <b>Consolidation Final</b></> };
+        case "lr1": return { winner: <>goes to <b>Lower Round 2</b></>, loser: "doesn't make it into the main event" };
+        case "lr2": return { winner: <>goes to <b>Lower Round 3</b></>, loser: "doesn't make it into the main event" };
+        case "lr3": return { winner: <>goes to <b>Lower Semifinals</b></>, loser: "doesn't make it into the main event" };
+        case "lsf": return { winner: <>goes to the <b>Lower Final</b></>, loser: "doesn't make it into the main event" };
+        case "lf": return { winner: <>goes to the <b>Consolidation Final</b></>, loser: "doesn't make it into the main event" };
+        case "cf": return { winner: "qualifies to the main event", loser: "doesn't make it into the main event" };
+        default: return { winner: null, loser: null };
+    }
+};
+
+const CST_GROUPS = ["A", "B", "C", "D"];
+const CST_TIE_SCORE = 15;
+const CST_MIN_NEEDED_PICKEM = 40;
+const CST_MAX_NEEDED_PICKEM = 66;
+const CST_PLAYOFFS_BEST_OF = { qf: 3, sf: 3, thirdPlace: 3, gf: 5 };
+const CST_GROUP_RATING_WEIGHT = 0.9;
+const CST_PLAYOFFS_RATING_WEIGHTS = { qf: 1.0, sf: 1.12, thirdPlace: 1.2, gf: 1.25 };
+const CST_BIG_STAGE_SCALE = 0.5;
+
+const getRandomCstNeededPickemPoints = () =>
+    Math.floor(Math.random() * (CST_MAX_NEEDED_PICKEM - CST_MIN_NEEDED_PICKEM + 1)) +
+    CST_MIN_NEEDED_PICKEM;
+
+const splitCstGroups = (teams) =>
+    Object.fromEntries(
+        CST_GROUPS.map((group, groupIndex) => [
+            group,
+            teams.filter((_, i) => i % CST_GROUPS.length === groupIndex).map(toBaseTeam),
+        ])
+    );
+
+const buildRoundRobinPairs = (count) => {
+    let order = Array.from({ length: count % 2 === 0 ? count : count + 1 }, (_, i) => (i < count ? i : null));
+    const pairs = [];
+
+    for (let round = 0; round < order.length - 1; round++) {
+        for (let k = 0; k < order.length / 2; k++) {
+            const a = order[k];
+            const b = order[order.length - 1 - k];
+            if (a !== null && b !== null) pairs.push(a < b ? [a, b] : [b, a]);
+        }
+        order = [order[0], order[order.length - 1], ...order.slice(1, order.length - 1)];
+    }
+
+    return pairs;
+};
+
+const makeCstGroupMatch = (group, number, slotA, slotB) => ({
+    id: `cst-${group}-${number}`,
+    group,
+    number,
+    slotA,
+    slotB,
+    played: false,
+    isTie: false,
+    scoreLeft: null,
+    scoreRight: null,
+    winnerTeamId: null,
+    loserTeamId: null,
+    pickTeamId: null,
+    setHistory: [],
+});
+
+const buildCstGroupStage = (groups) =>
+    Object.fromEntries(
+        CST_GROUPS.map((group) => {
+            const teams = groups?.[group] || [];
+            const matches = buildRoundRobinPairs(teams.length).map(([a, b], i) =>
+                makeCstGroupMatch(group, i + 1, teams[a], teams[b])
+            );
+            return [group, { group, teams, matches }];
+        })
+    );
+
+const canOpenCstGroupMatch = (groupObj, idx) => {
+    const match = groupObj?.matches?.[idx];
+    if (!match || match.played || !match.slotA || !match.slotB) return false;
+    return groupObj.matches.slice(0, idx).every((m) => m.played);
+};
+
+const isCstGroupFinished = (groupObj) =>
+    !!groupObj?.matches?.length && groupObj.matches.every((m) => m.played);
+
+const isCstGroupStageFinished = (stage) =>
+    !!stage && CST_GROUPS.every((group) => isCstGroupFinished(stage[group]));
+
+const getCstGroupMatches = (stage) => CST_GROUPS.flatMap((group) => stage?.[group]?.matches || []);
+
+const getCstStandings = (groupObj) => {
+    const rows = new Map(
+        (groupObj?.teams || []).map((team, seed) => [
+            team.id,
+            { team, seed, m: 0, w: 0, t: 0, l: 0, rw: 0, rl: 0, points: 0 },
+        ])
+    );
+    const playedMatches = (groupObj?.matches || []).filter((m) => m.played);
+
+    playedMatches.forEach((m) => {
+        const a = rows.get(m.slotA?.id);
+        const b = rows.get(m.slotB?.id);
+        if (!a || !b) return;
+
+        a.m += 1;
+        b.m += 1;
+        a.rw += m.scoreLeft ?? 0;
+        a.rl += m.scoreRight ?? 0;
+        b.rw += m.scoreRight ?? 0;
+        b.rl += m.scoreLeft ?? 0;
+
+        if (m.isTie) {
+            a.t += 1;
+            b.t += 1;
+            a.points += 1;
+            b.points += 1;
+        } else if (m.winnerTeamId === a.team.id) {
+            a.w += 1;
+            b.l += 1;
+            a.points += 3;
+        } else {
+            b.w += 1;
+            a.l += 1;
+            b.points += 3;
+        }
+    });
+
+    const headToHead = (x, y) => {
+        const m = playedMatches.find(
+            (match) =>
+                (match.slotA?.id === x.team.id && match.slotB?.id === y.team.id) ||
+                (match.slotA?.id === y.team.id && match.slotB?.id === x.team.id)
+        );
+        if (!m || m.isTie) return 0;
+        return m.winnerTeamId === x.team.id ? -1 : 1;
+    };
+
+    return [...rows.values()]
+        .map((row) => ({ ...row, rd: row.rw - row.rl }))
+        .sort((x, y) =>
+            y.points - x.points ||
+            y.rd - x.rd ||
+            y.rw - x.rw ||
+            headToHead(x, y) ||
+            x.seed - y.seed
+        )
+        .map((row, i) => ({ ...row, position: i + 1 }));
+};
+
+const getCstGroupQualifiers = (groupObj) => getCstStandings(groupObj).slice(0, 2).map((row) => row.team);
+
+const makeCstPlayoffsMatch = (stage, i, slotA = null, slotB = null) => ({
+    id: `${stage}-${i + 1}`,
+    stage,
+    cst: true,
+    slotA,
+    slotB,
+    played: false,
+    scoreLeft: null,
+    scoreRight: null,
+    winnerTeamId: null,
+    loserTeamId: null,
+    pickTeamId: null,
+    setHistory: [],
+});
+
+const buildCstPlayoffs = (stage) => {
+    const top = Object.fromEntries(CST_GROUPS.map((group) => [group, getCstGroupQualifiers(stage?.[group])]));
+    const quarterfinals = [
+        [top.A[0], top.C[1]],
+        [top.C[0], top.B[1]],
+        [top.B[0], top.D[1]],
+        [top.D[0], top.A[1]],
+    ];
+
+    return {
+        kind: "cst",
+        ro16: [],
+        qf: quarterfinals.map(([a, b], i) => makeCstPlayoffsMatch("qf", i, a ?? null, b ?? null)),
+        sf: [0, 1].map((i) => makeCstPlayoffsMatch("sf", i)),
+        thirdPlace: [makeCstPlayoffsMatch("thirdPlace", 0)],
+        gf: [makeCstPlayoffsMatch("gf", 0)],
+    };
+};
+
+const cstGroupMatchPoints = (match) =>
+    match?.played && match.pickTeamId && !match.isTie && match.winnerTeamId === match.pickTeamId ? 1 : 0;
+
+const PEM_MAIN_GROUPS = ["A", "B"];
+
+const PEM_GROUP_STAGE_ORDER = ["uo", "usf", "lr1", "lsf", "uf", "lf"];
+
+const PEM_GROUP_STAGE_SIZES = { uo: 4, usf: 2, lr1: 2, lsf: 2, uf: 1, lf: 1 };
+
+const PEM_GROUP_STAGE_LABELS = {
+    uo: "Opening Round",
+    usf: "Upper Semifinal",
+    uf: "Upper Final",
+    lr1: "Lower Round 1",
+    lsf: "Lower Semifinal",
+    lf: "Lower Final",
+};
+
+const PEM_GROUP_COLUMN_TITLES = {
+    uo: "Opening Round",
+    usf: "Upper Semifinals",
+    uf: "Upper Final",
+    lr1: "Lower Round 1",
+    lsf: "Lower Semifinals",
+    lf: "Lower Final",
+};
+
+const PEM_GROUP_UPPER_STAGES = ["uo", "usf", "uf"];
+const PEM_GROUP_ELIMINATION_STAGES = ["lr1", "lsf", "lf"];
+const PEM_GROUP_QUALIFYING_STAGES = ["usf", "lf"];
+
+const PEM_GROUP_BATTLE_STAKES = { uo: 0.35, usf: 0.5, lr1: 0.35, lsf: 0.5, uf: 0.6, lf: 0.6 };
+const PEM_GROUP_RATING_WEIGHTS = { uo: 1.32, usf: 1.52, lr1: 1.24, lsf: 1.44, uf: 1.7, lf: 1.6 };
+
+const PEM_PLAYOFFS_BEST_OF = { qf: 5, sf: 5, thirdPlace: 5, gf: 7 };
+const PEM_PLAYOFFS_RATING_WEIGHTS = { qf: 2.0, sf: 3.2, thirdPlace: 3.47, gf: 6.0 };
+
+const PEM_MIN_NEEDED_PICKEM = 67;
+const PEM_MAX_NEEDED_PICKEM = 110;
+
+const PEM_TROPHY_SILVER = "linear-gradient(180deg, #ffffff 0%, #d9d9d9 30%, #a9a9a9 62%, #7d7d7d 100%)";
+
+const PEM_QUALIFIED_HIGHLIGHT = { boxShadow: "0 0 10px rgba(255, 215, 0, 0.9)", borderColor: "#ffd700" };
+
+const getRandomPemNeededPickemPoints = () =>
+    Math.floor(Math.random() * (PEM_MAX_NEEDED_PICKEM - PEM_MIN_NEEDED_PICKEM + 1)) +
+    PEM_MIN_NEEDED_PICKEM;
+
+const pemGroupStageLabel = (stage) => PEM_GROUP_STAGE_LABELS[stage] ?? "";
+
+const isSinglePemGroupStage = (stage) => PEM_GROUP_STAGE_SIZES[stage] === 1;
+
+const getBestOfForPemGroup = (stage) => (stage === "uf" || stage === "lf" ? 5 : 3);
+
+const PEM_GROUP_BRACKET_ORDER = [
+    [0, 7],
+    [3, 4],
+    [1, 6],
+    [2, 5],
+];
+
+const pemGroupSlotSource = (stage, idx, slotKey) => {
+    const second = slotKey === "slotB";
+    switch (stage) {
+        case "usf": return { stage: "uo", idx: idx * 2 + (second ? 1 : 0), want: "winner" };
+        case "uf": return { stage: "usf", idx: second ? 1 : 0, want: "winner" };
+        case "lr1": return { stage: "uo", idx: idx * 2 + (second ? 1 : 0), want: "loser" };
+        case "lsf": return second ? { stage: "usf", idx, want: "loser" } : { stage: "lr1", idx, want: "winner" };
+        case "lf": return { stage: "lsf", idx: second ? 1 : 0, want: "winner" };
+        default: return null;
+    }
+};
+
+const PEM_GROUP_ROUTES = (() => {
+    const routes = {};
+    PEM_GROUP_STAGE_ORDER.forEach((stage) => {
+        for (let idx = 0; idx < PEM_GROUP_STAGE_SIZES[stage]; idx++) {
+            ["slotA", "slotB"].forEach((slotKey) => {
+                const source = pemGroupSlotSource(stage, idx, slotKey);
+                if (!source) return;
+                const key = `${source.stage}-${source.idx}`;
+                routes[key] = { ...(routes[key] || {}), [source.want]: { stage, idx, slotKey } };
+            });
+        }
+    });
+    return routes;
+})();
+
+const makePemGroupMatch = (group, stage, idx) => ({
+    id: `pem${group}-${stage}-${idx + 1}`,
+    group,
+    stage,
+    slotA: null,
+    slotB: null,
+    played: false,
+    scoreLeft: null,
+    scoreRight: null,
+    winnerTeamId: null,
+    loserTeamId: null,
+    pickTeamId: null,
+    setHistory: [],
+});
+
+const buildPemGroupBracket = (group, teams8) => {
+    const bracket = { group, teams: teams8.map(toBaseTeam) };
+
+    PEM_GROUP_STAGE_ORDER.forEach((stage) => {
+        bracket[stage] = Array.from(
+            { length: PEM_GROUP_STAGE_SIZES[stage] },
+            (_, i) => makePemGroupMatch(group, stage, i)
+        );
+    });
+
+    PEM_GROUP_BRACKET_ORDER.forEach(([a, b], i) => {
+        bracket.uo[i].slotA = bracket.teams[a] ?? null;
+        bracket.uo[i].slotB = bracket.teams[b] ?? null;
+    });
+
+    return bracket;
+};
+
+const buildPemMainEventTeams = (pemSmall) => {
+    const qualifierOrder = new Map((pemSmall?.seeds?.qualifier || []).map((team, index) => [team.id, index]));
+    const qualified = [...(pemSmall?.qualified || [])].sort(
+        (a, b) => (qualifierOrder.get(a.id) ?? 99) - (qualifierOrder.get(b.id) ?? 99)
+    );
+    return [...(pemSmall?.seeds?.mainEvent || []), ...qualified].map(toBaseTeam);
+};
+
+const buildPemMainGroupStage = (groups) =>
+    Object.fromEntries(PEM_MAIN_GROUPS.map((group) => [group, buildPemGroupBracket(group, groups[group] || [])]));
+
+const canOpenPemGroupMatch = (bracket, stage, idx) => {
+    const match = bracket?.[stage]?.[idx];
+    if (!match || !match.slotA || !match.slotB || match.played) return false;
+
+    for (const s of PEM_GROUP_STAGE_ORDER) {
+        const arr = bracket[s] || [];
+        if (s === stage) return arr.slice(0, idx).every((m) => m.played);
+        if (arr.some((m) => !m.played)) return false;
+    }
+
+    return false;
+};
+
+const findCurrentPemGroupMatch = (bracket) => {
+    if (!bracket) return null;
+
+    for (const stage of PEM_GROUP_STAGE_ORDER) {
+        const arr = bracket[stage] || [];
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i].played) continue;
+            return canOpenPemGroupMatch(bracket, stage, i) ? { stage, index: i, id: arr[i].id } : null;
+        }
+    }
+
+    return null;
+};
+
+const findNextPemGroupMatch = (bracket, current) => {
+    if (!bracket || !current) return null;
+
+    let passedCurrent = false;
+    for (const stage of PEM_GROUP_STAGE_ORDER) {
+        const arr = bracket[stage] || [];
+        for (let i = 0; i < arr.length; i++) {
+            if (!passedCurrent) {
+                if (stage === current.stage && i === current.index) passedCurrent = true;
+                continue;
+            }
+            const m = arr[i];
+            if (!m.played && m.slotA && m.slotB) return { stage, index: i, id: m.id };
+        }
+    }
+
+    return null;
+};
+
+const advancePemGroupBracket = (bracket, stage, idx, winner, loser) => {
+    const route = PEM_GROUP_ROUTES[`${stage}-${idx}`] || {};
+
+    const place = (target, team) => {
+        if (!target || !team) return;
+        const arr = [...bracket[target.stage]];
+        arr[target.idx] = { ...arr[target.idx], [target.slotKey]: toBaseTeam(team) };
+        bracket[target.stage] = arr;
+    };
+
+    place(route.winner, winner);
+    place(route.loser, loser);
+};
+
+const isPemGroupFinished = (bracket) =>
+    PEM_GROUP_STAGE_ORDER.every((stage) => (bracket?.[stage] || []).length > 0 && bracket[stage].every((m) => m.played));
+
+const isPemGroupStageFinished = (groupStage) =>
+    !!groupStage && PEM_MAIN_GROUPS.every((group) => isPemGroupFinished(groupStage[group]));
+
+const getPemGroupMatches = (groupStage) =>
+    PEM_MAIN_GROUPS.flatMap((group) =>
+        PEM_GROUP_STAGE_ORDER.flatMap((stage) => groupStage?.[group]?.[stage] || [])
+    );
+
+const pemGroupMatchPoints = (match) => {
+    if (!match?.played || !match.pickTeamId) return 0;
+
+    const bestOf = getBestOfForPemGroup(match.stage);
+    if (match.winnerTeamId === match.pickTeamId) return bestOf;
+
+    const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
+    const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
+    return (pickedSets || 0) * 2;
+};
+
+const PEM_GROUP_PICKEM_ROUNDS = [
+    { stage: "uo", label: "Opening Rounds" },
+    { stage: "usf", label: "Upper Semifinals" },
+    { stage: "lr1", label: "Lower Rounds 1" },
+    { stage: "lsf", label: "Lower Semifinals" },
+    { stage: "uf", label: "Upper Finals" },
+    { stage: "lf", label: "Lower Finals" },
+].map((round) => ({
+    ...round,
+    key: `pem_${round.stage}`,
+    total: PEM_GROUP_STAGE_SIZES[round.stage] * PEM_MAIN_GROUPS.length,
+}));
+
+const PEM_ELIMINATED_TEXT = "doesn't make into Playoffs";
+
+const getPemGroupStakeTexts = (stage) => {
+    switch (stage) {
+        case "uo": return { winner: <>goes to <b>Upper Semifinals</b></>, loser: <>drops to <b>Lower Round 1</b></> };
+        case "usf": return { winner: <>qualifies to <b>Playoffs</b> and goes to the <b>Upper Final</b></>, loser: <>drops to <b>Lower Semifinals</b></> };
+        case "uf": return { winner: <>goes directly to Playoffs: <b>Semifinals</b></>, loser: <>goes to Playoffs: <b>Quarterfinals</b></> };
+        case "lr1": return { winner: <>goes to <b>Lower Semifinals</b></>, loser: PEM_ELIMINATED_TEXT };
+        case "lsf": return { winner: <>goes to the <b>Lower Final</b></>, loser: PEM_ELIMINATED_TEXT };
+        case "lf": return { winner: <>qualifies to Playoffs: <b>Quarterfinals</b></>, loser: PEM_ELIMINATED_TEXT };
+        default: return { winner: null, loser: null };
+    }
+};
+
+const makePemPlayoffsMatch = (stage, i, slotA = null, slotB = null) => ({
+    id: `${stage}-${i + 1}`,
+    stage,
+    pem: true,
+    slotA,
+    slotB,
+    played: false,
+    scoreLeft: null,
+    scoreRight: null,
+    winnerTeamId: null,
+    loserTeamId: null,
+    pickTeamId: null,
+    setHistory: [],
+});
+
+const buildPemPlayoffs = (groupStage) => {
+    const a = groupStage?.A;
+    const b = groupStage?.B;
+    const seed = (team) => (team ? toBaseTeam(team) : null);
+
+    return {
+        kind: "pem",
+        ro16: [],
+        qf: [
+            makePemPlayoffsMatch("qf", 0, seed(getMatchWinnerTeam(a?.lf?.[0])), seed(getMatchLoserTeam(b?.uf?.[0]))),
+            makePemPlayoffsMatch("qf", 1, seed(getMatchLoserTeam(a?.uf?.[0])), seed(getMatchWinnerTeam(b?.lf?.[0]))),
+        ],
+        sf: [
+            makePemPlayoffsMatch("sf", 0, seed(getMatchWinnerTeam(a?.uf?.[0]))),
+            makePemPlayoffsMatch("sf", 1, seed(getMatchWinnerTeam(b?.uf?.[0]))),
+        ],
+        thirdPlace: [makePemPlayoffsMatch("thirdPlace", 0)],
+        gf: [makePemPlayoffsMatch("gf", 0)],
+    };
+};
+
+const PEM_GROUP_CONNECTOR_LINKS = (() => {
+    const links = [];
+    const add = (fromStage, fromIdx, toStage, toIdx, toSlot) =>
+        links.push({ from: `${fromStage}-${fromIdx}`, to: `${toStage}-${toIdx}`, toY: toSlot === "slotB" ? 0.75 : 0.25 });
+    const pairSlot = (i) => (i % 2 === 0 ? "slotA" : "slotB");
+
+    for (let i = 0; i < 4; i++) add("uo", i, "usf", Math.floor(i / 2), pairSlot(i));
+    for (let i = 0; i < 2; i++) add("usf", i, "uf", 0, pairSlot(i));
+    for (let i = 0; i < 2; i++) add("lr1", i, "lsf", i, "slotA");
+    for (let i = 0; i < 2; i++) add("lsf", i, "lf", 0, pairSlot(i));
+
+    return links;
+})();
+
+const PEM_PLAYOFFS_CONNECTOR_LINKS = [
+    { from: "qf-0", to: "sf-0", toY: 0.75 },
+    { from: "qf-1", to: "sf-1", toY: 0.75 },
+    { from: "sf-0", to: "gf-0", toY: 0.25 },
+    { from: "sf-1", to: "gf-0", toY: 0.75 },
+];
+
+const QUALIFIER_CONNECTOR_LINKS = (() => {
+    const links = [];
+    const add = (fromStage, fromIdx, toStage, toIdx, toSlot) =>
+        links.push({ from: `${fromStage}-${fromIdx}`, to: `${toStage}-${toIdx}`, toY: toSlot === "slotB" ? 0.75 : 0.25 });
+    const pairSlot = (i) => (i % 2 === 0 ? "slotA" : "slotB");
+
+    for (let i = 0; i < 8; i++) add("uo", i, "uqf", Math.floor(i / 2), pairSlot(i));
+    for (let i = 0; i < 4; i++) add("uqf", i, "usf", Math.floor(i / 2), pairSlot(i));
+    for (let i = 0; i < 2; i++) add("usf", i, "uf", 0, pairSlot(i));
+    for (let i = 0; i < 4; i++) add("lr1", i, "lr2", i, "slotA");
+    for (let i = 0; i < 4; i++) add("lr2", i, "lr3", Math.floor(i / 2), pairSlot(i));
+    for (let i = 0; i < 2; i++) add("lr3", i, "lsf", i, "slotA");
+    for (let i = 0; i < 2; i++) add("lsf", i, "lf", 0, pairSlot(i));
+    add("lf", 0, "cf", 0, "slotA");
+
+    return links;
+})();
+
+const buildConnectorPath = (x1, y1, x2, y2, radius = 8) => {
+    if (Math.abs(y2 - y1) < 1) return `M${x1} ${y1} H${x2}`;
+
+    const midX = x1 + (x2 - x1) / 2;
+    const dir = y2 > y1 ? 1 : -1;
+    const r = Math.max(0, Math.min(radius, Math.abs(y2 - y1) / 2, Math.abs(midX - x1)));
+
+    return [
+        `M${x1} ${y1}`,
+        `H${midX - r}`,
+        `Q${midX} ${y1} ${midX} ${y1 + dir * r}`,
+        `V${y2 - dir * r}`,
+        `Q${midX} ${y2} ${midX + r} ${y2}`,
+        `H${x2}`,
+    ].join(" ");
+};
+
+const BracketConnectors = ({ links }) => {
+    const svgRef = useRef(null);
+    const [paths, setPaths] = useState([]);
+
+    useLayoutEffect(() => {
+        const container = svgRef.current?.parentElement;
+        if (!container) return undefined;
+
+        const measure = () => {
+            const base = container.getBoundingClientRect();
+            const next = [];
+
+            links.forEach(({ from, to, toY = 0.5 }) => {
+                const a = container.querySelector(`[data-bracket-rect="${from}"]`);
+                const b = container.querySelector(`[data-bracket-rect="${to}"]`);
+                if (!a || !b) return;
+
+                const ra = a.getBoundingClientRect();
+                const rb = b.getBoundingClientRect();
+
+                next.push(buildConnectorPath(
+                    Math.round(ra.right - base.left) + 0.5,
+                    Math.round(ra.top + ra.height / 2 - base.top) + 0.5,
+                    Math.round(rb.left - base.left) + 0.5,
+                    Math.round(rb.top + rb.height * toY - base.top) + 0.5
+                ));
+            });
+
+            setPaths((prev) => (prev.join("|") === next.join("|") ? prev : next));
+        };
+
+        measure();
+
+        const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+        observer?.observe(container);
+        window.addEventListener("resize", measure);
+        document.fonts?.ready?.then(measure).catch(() => { });
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", measure);
+        };
+    });
+
+    return (
+        <svg
+            ref={svgRef}
+            aria-hidden="true"
+            style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+                overflow: "visible",
+                transition: "none",
+            }}
+        >
+            {paths.map((d, i) => (
+                <path key={i} d={d} fill="none" stroke="#8a8a8a" strokeWidth={1} />
+            ))}
+        </svg>
+    );
+};
+
+const QUALIFIER_SCRIPT_FONT_ID = "qualifier-script-font";
+const QUALIFIER_SCRIPT_FONT = '"Great Vibes", "Pinyon Script", "Brush Script MT", cursive';
+
+const ensureQualifierScriptFont = () => {
+    if (typeof document === "undefined" || document.getElementById(QUALIFIER_SCRIPT_FONT_ID)) return;
+
+    const link = document.createElement("link");
+    link.id = QUALIFIER_SCRIPT_FONT_ID;
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap";
+    document.head.appendChild(link);
+};
+
+const roundedPolygonPath = (points, radius) => {
+    const n = points.length;
+    const parts = [];
+
+    for (let i = 0; i < n; i++) {
+        const [px, py] = points[(i - 1 + n) % n];
+        const [cx, cy] = points[i];
+        const [nx, ny] = points[(i + 1) % n];
+
+        const toPrev = Math.hypot(px - cx, py - cy);
+        const toNext = Math.hypot(nx - cx, ny - cy);
+        const r = Math.min(radius, toPrev / 2, toNext / 2);
+
+        const sx = cx + ((px - cx) / toPrev) * r;
+        const sy = cy + ((py - cy) / toPrev) * r;
+        const ex = cx + ((nx - cx) / toNext) * r;
+        const ey = cy + ((ny - cy) / toNext) * r;
+
+        parts.push(`${i === 0 ? "M" : "L"}${sx.toFixed(2)} ${sy.toFixed(2)} Q${cx} ${cy} ${ex.toFixed(2)} ${ey.toFixed(2)}`);
+    }
+
+    return `${parts.join(" ")} Z`;
+};
+
+const QualifierBadge = ({ height = 30, color = "#2e2f42", textColor = "#ffffff", style = {} }) => {
+    useEffect(() => {
+        ensureQualifierScriptFont();
+    }, []);
+
+    const width = Math.round(height * 3.4);
+    const inset = Math.round(height * 0.4);
+    const radius = Math.max(2, Math.round(height * 0.2));
+    const shape = roundedPolygonPath(
+        [[0, 0], [width, 0], [width - inset, height], [inset, height]],
+        radius
+    );
+
+    return (
+        <span
+            title="Qualifier"
+            style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width,
+                height,
+                flexShrink: 0,
+                verticalAlign: "middle",
+                transition: "none",
+                ...style,
+            }}
+        >
+            <svg
+                aria-hidden="true"
+                width={width}
+                height={height}
+                viewBox={`0 0 ${width} ${height}`}
+                style={{ position: "absolute", inset: 0, overflow: "visible", transition: "none" }}
+            >
+                <path d={shape} fill={color} />
+            </svg>
+            <span
+                style={{
+                    position: "relative",
+                    fontFamily: QUALIFIER_SCRIPT_FONT,
+                    fontSize: Math.round(height * 0.74),
+                    fontWeight: 400,
+                    fontStyle: "normal",
+                    lineHeight: 1,
+                    letterSpacing: 0,
+                    textTransform: "none",
+                    textShadow: "none",
+                    whiteSpace: "nowrap",
+                    userSelect: "none",
+                    color: textColor,
+                    marginTop: -Math.round(height * 0.04),
+                    transition: "none",
+                }}
+            >
+                Qualifier
+            </span>
+        </span>
+    );
+};
+
+const StickyBelow = ({ anchor, style, children }) => {
+    const ref = useRef(null);
+    const [layout, setLayout] = useState({ top: null, reach: 0, stuck: false });
+
+    useLayoutEffect(() => {
+        const element = document.querySelector(anchor);
+        if (!element) return undefined;
+
+        const measure = () => {
+            const anchorTop = parseFloat(window.getComputedStyle(element).top) || 0;
+            const top = Math.round(anchorTop + element.offsetHeight);
+            const reach = element.offsetHeight;
+            const rect = ref.current?.getBoundingClientRect();
+            const stuck = !!rect && rect.top <= top + 1 && rect.bottom > top + 1;
+
+            if (stuck) element.setAttribute("data-joined", "true");
+            else element.removeAttribute("data-joined");
+
+            setLayout((prev) => (
+                prev.top === top && prev.reach === reach && prev.stuck === stuck ? prev : { top, reach, stuck }
+            ));
+        };
+
+        measure();
+
+        const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+        observer?.observe(element);
+        window.addEventListener("resize", measure);
+        window.addEventListener("scroll", measure, { passive: true });
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", measure);
+            window.removeEventListener("scroll", measure);
+            element.removeAttribute("data-joined");
+        };
+    }, [anchor]);
+
+    return (
+        <div
+            ref={ref}
+            className={css.sticky_join}
+            data-stuck={layout.stuck}
+            style={{ top: layout.top ?? 0, "--join-reach": `${layout.reach}px`, ...style }}
+        >
+            {children}
+        </div>
+    );
+};
+
+const QualifierGroupNav = ({ value, onChange, fixed = false }) => {
+    const wrapRef = useRef(null);
+    const hasMeasuredRef = useRef(false);
+    const [indicator, setIndicator] = useState({ left: 0, width: 0, animate: false });
+
+    useLayoutEffect(() => {
+        const measure = (animate) => {
+            const wrap = wrapRef.current;
+            if (!wrap) return;
+            const active = wrap.querySelector("[data-group-active='true']");
+            if (!active) return;
+            setIndicator({ left: active.offsetLeft, width: active.offsetWidth, animate });
+        };
+
+        measure(hasMeasuredRef.current);
+        hasMeasuredRef.current = true;
+
+        const handleResize = () => measure(false);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [value]);
+
+    return (
+        <div
+            className={fixed ? css.groups_header : css.groups_header_inline}
+            data-sticky-anchor={fixed ? "qualifier-groups" : undefined}
+        >
+            <div ref={wrapRef} className={css.groups_navigation}>
+                {QUALIFIER_GROUPS.map((group) => {
+                    const isActive = value === group;
+                    return (
+                        <button
+                            key={group}
+                            type="button"
+                            data-group-active={isActive}
+                            onClick={() => onChange(group)}
+                            className={`${css.resultsNavigationButton} ${css.groupNavigationButton} ${isActive ? css.resultsNavigationButtonActive : ""}`}
+                        >
+                            Group {group}
+                        </button>
+                    );
+                })}
+                <motion.div
+                    className={css.groupNavigationIndicator}
+                    initial={false}
+                    animate={{ left: indicator.left, width: indicator.width }}
+                    transition={indicator.animate ? { type: "tween", duration: 0.3, ease: "easeInOut" } : { duration: 0 }}
+                />
+            </div>
+        </div>
+    );
+};
+
+const QualifierBracketLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{QUALIFIER_COLUMN_TITLES[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={css.qualifier_bracket}>
+            <BracketConnectors links={QUALIFIER_CONNECTOR_LINKS} />
+
+            {column("uo", css.columnRo16)}
+            {column("uqf", css.columnQuarters)}
+            <div />
+            {column("usf", css.columnSemis)}
+            <div />
+            {column("uf", css.columnGrandFinal)}
+
+            {column("lr1", css.columnRo16)}
+            {column("lr2", css.columnRo16)}
+            {column("lr3", css.columnQuarters)}
+            {column("lsf", css.columnQuarters)}
+            {column("lf", css.columnGrandFinal)}
+            {column("cf", css.columnGrandFinal)}
+        </div>
+    );
+};
+
+const PemGroupBracketLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{PEM_GROUP_COLUMN_TITLES[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={css.pem_group_bracket}>
+            <BracketConnectors links={PEM_GROUP_CONNECTOR_LINKS} />
+
+            {column("uo", css.columnRo16)}
+            {column("usf", css.columnQuarters)}
+            {column("uf", css.columnGrandFinal)}
+
+            {/* Both rows are equally tall, so every Lower match sits right below its Upper counterpart */}
+            {column("lr1", css.columnQuarters)}
+            {column("lsf", css.columnQuarters)}
+            {column("lf", css.columnGrandFinal)}
+        </div>
+    );
+};
+
+const PemPlayoffsLayout = ({ bracket, renderMatch }) => (
+    <div className={css.bracket_container} style={{ transition: "none", height: "max-content" }}>
+        <div className={css.bracket_inner} style={{ position: "relative", transition: "none" }}>
+            <BracketConnectors links={PEM_PLAYOFFS_CONNECTOR_LINKS} />
+
+            <div className={css.column_container}>
+                <h4 className={css.column_title}>Quarterfinals</h4>
+                <div className={css.columnQuarters}>
+                    {(bracket?.qf || []).map((match, idx) => renderMatch(match, "qf", idx))}
+                </div>
+            </div>
+
+            <div className={css.column_container}>
+                <h4 className={css.column_title}>Semifinals</h4>
+                <div className={css.columnQuarters}>
+                    {(bracket?.sf || []).map((match, idx) => renderMatch(match, "sf", idx))}
+                </div>
+            </div>
+
+            <div className={css.column_container} style={{ position: "relative" }}>
+                <h4 className={css.column_title}>Grand Final</h4>
+                <div className={css.columnGrandFinal}>
+                    {(bracket?.gf || []).map((match, idx) => renderMatch(match, "gf", idx))}
+                </div>
+                {bracket?.thirdPlace?.length ? (
+                    <div
+                        className={css.thirdPlace_container}
+                        style={{ top: "calc(100% + 28px)", left: "50%", transform: "translateX(-50%)", marginTop: 0 }}
+                    >
+                        <h4 style={{ width: "17ch" }} className={css.column_title}>Third Place Decider</h4>
+                        <div className={css.columnThirdPlace}>
+                            {bracket.thirdPlace.map((match, idx) => renderMatch(match, "thirdPlace", idx))}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    </div>
+);
+
+const EMPTY_TEAM_PLACINGS = {
+    wins: 0,
+    seconds: 0,
+    thirds: 0,
+    tier1Wins: 0,
+    tier1Seconds: 0,
+    tier1Thirds: 0,
+    tier2Wins: 0,
+    tier2Seconds: 0,
+    tier2Thirds: 0,
+};
+
+const totalSecondPlaces = (p) => (p?.seconds ?? 0) + (p?.tier1Seconds ?? 0) + (p?.tier2Seconds ?? 0);
+const totalThirdPlaces = (p) => (p?.thirds ?? 0) + (p?.tier1Thirds ?? 0) + (p?.tier2Thirds ?? 0);
+
 const buildDefaultTeamPlacings = (teams) => {
     const out = {};
     teams.forEach((t) => {
-        out[t.id] = { wins: 0, seconds: 0, thirds: 0 };
+        out[t.id] = { ...EMPTY_TEAM_PLACINGS };
     });
     return out;
 };
@@ -3350,6 +4836,12 @@ const loadTeamPlacings = (teams) => {
                 wins: Math.max(0, Number(v.wins) || 0),
                 seconds: Math.max(0, Number(v.seconds) || 0),
                 thirds: Math.max(0, Number(v.thirds) || 0),
+                tier1Wins: Math.max(0, Number(v.tier1Wins) || 0),
+                tier1Seconds: Math.max(0, Number(v.tier1Seconds) || 0),
+                tier1Thirds: Math.max(0, Number(v.tier1Thirds) || 0),
+                tier2Wins: Math.max(0, Number(v.tier2Wins) || 0),
+                tier2Seconds: Math.max(0, Number(v.tier2Seconds) || 0),
+                tier2Thirds: Math.max(0, Number(v.tier2Thirds) || 0),
             };
         });
         return base;
@@ -3366,11 +4858,77 @@ const saveTeamPlacings = (placings) => {
     }
 };
 
+const medalBreakdownText = (official, tier1, tier2) =>
+    [
+        official > 0 ? `${official} from Official${official === 1 ? "" : "s"}` : null,
+        tier1 > 0 ? `${tier1} from Tier 1 tournament${tier1 === 1 ? "" : "s"}` : null,
+        tier2 > 0 ? `${tier2} from Tier 2 tournament${tier2 === 1 ? "" : "s"}` : null,
+    ].filter(Boolean).join(", ");
+
+const medalBreakdownTitle = (official, tier1, tier2) =>
+    tier1 > 0 || tier2 > 0 ? medalBreakdownText(official, tier1, tier2) : null;
+
+const PemSilverTrophy = ({ style, ...props }) => (
+    <PemTrophyIcon
+        color={PEM_TROPHY_SILVER}
+        style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
+        {...props}
+    />
+);
+
+const buildPlacingItems = (p, trophyIcon, tier1TrophyIcon = <PemSilverTrophy />) => {
+    const items = [];
+    if ((p?.wins ?? 0) > 0) items.push({ key: "wins", icon: trophyIcon, value: p.wins, title: null });
+    if ((p?.tier1Wins ?? 0) > 0) {
+        items.push({ key: "tier1Wins", icon: tier1TrophyIcon, value: p.tier1Wins, title: medalBreakdownText(0, p.tier1Wins, 0) });
+    }
+    if ((p?.tier2Wins ?? 0) > 0) {
+        items.push({ key: "tier2Wins", icon: "🥇", value: p.tier2Wins, title: medalBreakdownText(0, 0, p.tier2Wins) });
+    }
+    const seconds = totalSecondPlaces(p);
+    if (seconds > 0) {
+        items.push({ key: "seconds", icon: "🥈", value: seconds, title: medalBreakdownTitle(p?.seconds ?? 0, p?.tier1Seconds ?? 0, p?.tier2Seconds ?? 0) });
+    }
+    const thirds = totalThirdPlaces(p);
+    if (thirds > 0) {
+        items.push({ key: "thirds", icon: "🥉", value: thirds, title: medalBreakdownTitle(p?.thirds ?? 0, p?.tier1Thirds ?? 0, p?.tier2Thirds ?? 0) });
+    }
+    return items;
+};
+
+const MedalWithBreakdown = ({ icon, value, title, onHoverChange, style }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <span
+            style={{ position: "relative", transition: "none", cursor: title ? "help" : undefined, ...style }}
+            onMouseEnter={() => {
+                if (!title) return;
+                setOpen(true);
+                onHoverChange?.(true);
+            }}
+            onMouseLeave={() => {
+                if (!title) return;
+                setOpen(false);
+                onHoverChange?.(false);
+            }}
+        >
+            {icon}:{value}
+            {open && title && (
+                <span className={css.medal_tip}>{title}</span>
+            )}
+        </span>
+    );
+};
+
 const trophyCountToDisplay = (n) => {
     if (!n) return null;
     if (n < 11) return { mode: "icons", n };
     return { mode: "count", n };
 };
+
+const TIE_BANNER_COLOR = "#6b6b6b";
+const TIE_BANNER_GRADIENT = "linear-gradient(180deg, #9c9c9c 0%, #757575 45%, #555555 100%)";
 
 const BREAKDOWN_GLOW = (color) => `
                                 0 0 6px ${color},
@@ -3789,18 +5347,18 @@ const BreakdownScoreRow = ({
                             marginTop: "-4px",
                             minWidth: "77.8px",
                             textShadow: `
-                                0 0 4px ${ggBanner.team?.color},
-                                0 0 10px ${ggBanner.team?.color}66,
+                                0 0 4px ${ggBanner.tie ? TIE_BANNER_COLOR : ggBanner.team?.color},
+                                0 0 10px ${ggBanner.tie ? TIE_BANNER_COLOR : ggBanner.team?.color}66,
                                 0 2px 6px rgba(0,0,0,0.4)
                             `,
                         }}
                     >
-                        {"GG!".split("").map((char, i) => (
+                        {(ggBanner.tie ? "TIE!" : "GG!").split("").map((char, i) => (
                             <span
                                 key={`${char}-${i}`}
                                 style={{
                                     display: "inline-block",
-                                    background: ggBanner.team?.gradient,
+                                    background: ggBanner.tie ? TIE_BANNER_GRADIENT : ggBanner.team?.gradient,
                                     backgroundClip: "text",
                                     WebkitBackgroundClip: "text",
                                     color: "transparent",
@@ -4003,7 +5561,8 @@ const SetBreakdownOverlay = ({
         );
 
         const isATie = entry.wins === entry.losses;
-        const hasExtended = isATie && extWinners.length > 0;
+        const isTrueTie = !!entry.tie;
+        const hasExtended = isATie && !isTrueTie && extWinners.length > 0;
         const penalties = extendedRounds.penalties ?? null;
 
         let extLeft = 0;
@@ -4013,7 +5572,7 @@ const SetBreakdownOverlay = ({
             else extRight += 1;
         });
 
-        const tieDecidedBy = isATie
+        const tieDecidedBy = isATie && !isTrueTie
             ? penalties
                 ? "penalties"
                 : extWinners.length
@@ -4100,7 +5659,7 @@ const SetBreakdownOverlay = ({
     const setLinesTotal = Math.max(1, Math.ceil(bestOf / 2));
     const setsToWin = Math.max(1, Math.ceil(bestOf / 2));
     const leftSetsAfter = setsWonByLeft;
-    const rightSetsAfter = index + 1 - setsWonByLeft;
+    const rightSetsAfter = (sets ?? []).slice(0, index + 1).filter((s) => !s.won && !s.tie).length;
 
     const setsWonByLeftBefore = useMemo(
         () => (sets ?? []).slice(0, index).filter((s) => s.won).length,
@@ -4210,6 +5769,7 @@ const SetBreakdownOverlay = ({
     if (!entry || !plan) return null;
 
     const won = !!entry.won;
+    const isTieSet = !!entry.tie;
     const background = won ? "linear-gradient(180deg,#b8ffd7 0%,#ffffff 120%)" : "linear-gradient(180deg, #ffbfbf 0%, #ffffff 120%)";
     const tieDecided = !!plan.tieDecidedBy;
     const tieWinner = plan.tieLeftScore > plan.tieRightScore ? "left" : plan.tieRightScore > plan.tieLeftScore ? "right" : null;
@@ -4291,7 +5851,7 @@ const SetBreakdownOverlay = ({
                 : "Set point!"
             : "";
 
-        const opacities = isDecisive
+        const opacities = isDecisive && !isTieSet
             ? decisiveOpacities(!!won)
             : { leftOpacity: 1, rightOpacity: 1 };
 
@@ -4369,8 +5929,8 @@ const SetBreakdownOverlay = ({
                     setLinesTotal={isDecisive ? setLinesTotal : 0}
                     leftSets={leftSetsAfter}
                     rightSets={rightSetsAfter}
-                    leftGlow={isDecisive && won}
-                    rightGlow={isDecisive && !won}
+                    leftGlow={isDecisive && won && !isTieSet}
+                    rightGlow={isDecisive && !won && !isTieSet}
                     isPlayoffs={isPlayoffs}
                     showLabels
                     leftLabel={leftLabel}
@@ -4379,7 +5939,7 @@ const SetBreakdownOverlay = ({
                     rightMomentumStreak={!isLastRoundOfSet && round.momentumSide === "right" ? round.momentumValue : null}
                     ggBanner={
                         isMatchDecidingRound
-                            ? { team: won ? leftTeam : rightTeam }
+                            ? isTieSet ? { tie: true } : { team: won ? leftTeam : rightTeam }
                             : null
                     }
                     {...opacities}
@@ -4766,7 +6326,7 @@ const SetBreakdownOverlay = ({
                             <span
                                 className={css.match_modal_pickem_total}
                                 style={{
-                                    left: isPlayoffs ? "95%" : "74%",
+                                    left: isPlayoffs ? "85%" : "74%",
                                 }}
                             >
                                 +{totalPickemPoints} Pick&apos;em point{totalPickemPoints !== 1 ? "s" : ""}
@@ -4776,7 +6336,7 @@ const SetBreakdownOverlay = ({
                             className={css.match_modal_pickem}
                             style={{
                                 color: won ? "#2e7d32" : "red",
-                                left: isPlayoffs ? "95%" : "75%",
+                                left: isPlayoffs ? "85%" : "75%",
                             }}
                         >
                             {won
@@ -4801,11 +6361,11 @@ const SetBreakdownOverlay = ({
                         setLinesTotal={setLinesTotal}
                         leftSets={leftSetsAfter}
                         rightSets={rightSetsAfter}
-                        leftGlow={won}
-                        rightGlow={!won}
+                        leftGlow={won && !isTieSet}
+                        rightGlow={!won && !isTieSet}
                         isInModal={true}
                         isModalHidden={isModalHidden}
-                        {...decisiveOpacities(!!won)}
+                        {...(isTieSet ? { leftOpacity: 1, rightOpacity: 1 } : decisiveOpacities(!!won))}
                     />
                 </div>
 
@@ -5142,8 +6702,10 @@ const MatchRect = ({
     const displayScoreRight =
         shouldSwap ? rawLeftScore : rawRightScore;
 
+    const isTieResult = isPlayed && !!match.isTie;
+
     const bo1Tiebreak = (() => {
-        if (!bo1History?.extendedRounds) return null;
+        if (isTieResult || !bo1History?.extendedRounds) return null;
         if (displayScoreLeft !== displayScoreRight) return null;
 
         if (bo1History.extendedRounds.penalties) {
@@ -5186,18 +6748,20 @@ const MatchRect = ({
         match.pickTeamId === match.winnerTeamId;
 
     const resultClass = isPlayed
-        ? isUserWin
-            ? css.match_win
-            : css.match_loss
+        ? isTieResult
+            ? css.match_tie
+            : isUserWin
+                ? css.match_win
+                : css.match_loss
         : "";
 
-    const boLabelResultClass = isPlayed
+    const boLabelResultClass = isPlayed && !isTieResult
         ? isUserWin
             ? css.match_win_label
             : css.match_loss_label
         : "";
 
-    const noLabelResultClass = isPlayed
+    const noLabelResultClass = isPlayed && !isTieResult
         ? isUserWin
             ? css.match_win_no_label
             : css.match_loss_no_label
@@ -6893,7 +8457,7 @@ const LeaderboardSortSelect = ({ value, onChange }) => {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 8,
-                            width: 192,
+                            minWidth: 192,
                             padding: "8px 10px 8px 12px",
                             background: "#fff",
                             color: LEADERBOARD_SORT_TEXT_COLOR,
@@ -6912,8 +8476,20 @@ const LeaderboardSortSelect = ({ value, onChange }) => {
                         }}
                     >
                         <LeaderboardSortIcon value={selected.value} />
-                        <span id={LEADERBOARD_SORT_VALUE_ID} style={{ flex: 1, whiteSpace: "nowrap" }}>
-                            {selected.label}
+                        <span style={{ flex: 1, display: "grid", whiteSpace: "nowrap" }}>
+                            {LEADERBOARD_SORT_OPTIONS.map((option) => (
+                                <span
+                                    key={option.value}
+                                    id={option.value === selected.value ? LEADERBOARD_SORT_VALUE_ID : undefined}
+                                    aria-hidden={option.value === selected.value ? undefined : true}
+                                    style={{
+                                        gridArea: "1 / 1",
+                                        visibility: option.value === selected.value ? "visible" : "hidden",
+                                    }}
+                                >
+                                    {option.label}
+                                </span>
+                            ))}
                         </span>
                         <IoIosArrowForward
                             size={14}
@@ -6944,6 +8520,7 @@ const LeaderboardSortSelect = ({ value, onChange }) => {
                                     position: "absolute",
                                     top: "calc(100% + 6px)",
                                     right: 0,
+                                    width: "max-content",
                                     minWidth: "100%",
                                     boxSizing: "border-box",
                                     margin: 0,
@@ -7095,6 +8672,9 @@ function SpecialModePage() {
     );
 
     const [showIntro, setShowIntro] = useState(true);
+    const [isTournamentPickerOpen, setIsTournamentPickerOpen] = useState(false);
+    const [tournamentPicker, setTournamentPicker] = useState(loadTournamentPicker);
+    const [currentTournamentType, setCurrentTournamentType] = useState(loadCurrentTournamentType);
     const [showTournamentIntro, setShowTournamentIntro] = useState(false);
 
     const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
@@ -7108,6 +8688,38 @@ function SpecialModePage() {
     const [stage2, setStage2] = useState(null);
     const [stage3, setStage3] = useState(null);
     const [playoffs, setPlayoffs] = useState(null);
+
+    const [pemSmall, setPemSmall] = useState(null);
+    const [qualifier, setQualifier] = useState(null);
+    const [qualifierGroupView, setQualifierGroupView] = useState("A");
+    const qualifierRef = useRef(qualifier);
+
+    useEffect(() => {
+        qualifierRef.current = qualifier;
+    }, [qualifier]);
+
+    const isQualifierPhase = activePhase === "qualifier" && !!qualifier;
+
+    const [cst, setCst] = useState(null);
+    const cstRef = useRef(cst);
+
+    useEffect(() => {
+        cstRef.current = cst;
+    }, [cst]);
+
+    const isCstPhase = pemSmall?.event === "cst" && !!cst;
+    const isCstPlayoffs = isCstPhase && playoffs?.kind === "cst";
+
+    const [pemMain, setPemMain] = useState(null);
+    const [pemGroupView, setPemGroupView] = useState("A");
+    const pemMainRef = useRef(pemMain);
+
+    useEffect(() => {
+        pemMainRef.current = pemMain;
+    }, [pemMain]);
+
+    const isPemMainPhase = pemSmall?.event === "main" && !!pemMain;
+    const isPemPlayoffs = isPemMainPhase && playoffs?.kind === "pem";
 
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
     const [modalContext, setModalContext] = useState(null);
@@ -7182,6 +8794,8 @@ function SpecialModePage() {
     const [isHallOfFameOpen, setIsHallOfFameOpen] = useState(false);
     const [hallOfFame, setHallOfFame] = useState([]);
     const [selectedHallTournament, setSelectedHallTournament] = useState(null);
+    const [hallQualifierGroup, setHallQualifierGroup] = useState("A");
+    const [hallPendingScroll, setHallPendingScroll] = useState(null);
     const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
     const statsSnapshotRef = useRef(loadStatsSnapshot());
 
@@ -7707,14 +9321,32 @@ function SpecialModePage() {
             return arr.find((m) => m.id === modalContext.matchId) || null;
         }
 
+        if (modalContext.type === "qualifier") {
+            const arr = qualifier?.[modalContext.group]?.[modalContext.stage] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        if (modalContext.type === "cstGroup") {
+            const arr = cst?.[modalContext.group]?.matches || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        if (modalContext.type === "pemGroup") {
+            const arr = pemMain?.[modalContext.group]?.[modalContext.stage] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
         return null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalContext, stage1, stage2, stage3, playoffs, selectedHallMatch]);
+    }, [modalContext, stage1, stage2, stage3, playoffs, qualifier, cst, pemMain, selectedHallMatch]);
 
     const modalBestOf = useMemo(() => {
         if (!modalContext) return null;
         if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net, modalContext.stageKey);
-        return getBestOfForPlayoffs(modalContext.stage);
+        if (modalContext.type === "qualifier") return getBestOfForQualifier(modalContext.stage);
+        if (modalContext.type === "pemGroup") return getBestOfForPemGroup(modalContext.stage);
+        if (modalContext.type === "cstGroup") return 1;
+        return getBestOfForPlayoffs(modalContext.stage, modalContext.kind);
     }, [modalContext]);
     const isBo1Modal = modalBestOf === 1;
 
@@ -7965,7 +9597,7 @@ function SpecialModePage() {
 
     const hasAnyPlacings = useMemo(() => {
         const vals = Object.values(teamPlacings ?? {});
-        return vals.some((p) => (p?.wins ?? 0) > 0 || (p?.seconds ?? 0) > 0 || (p?.thirds ?? 0) > 0);
+        return vals.some((p) => Object.keys(EMPTY_TEAM_PLACINGS).some((key) => (p?.[key] ?? 0) > 0));
     }, [teamPlacings]);
 
     const [arePlacingButtonsArmed, setArePlacingButtonsArmed] = useState(false);
@@ -7995,6 +9627,38 @@ function SpecialModePage() {
     };
 
     const isSeriesActive = seriesState.active;
+    const isLeaderboardButtonShown = showIntro || showPickemLine2 || !!tournamentResults;
+
+    const lastPlayedCstGroupRef = useRef(null);
+
+    const isBracketPageVisible =
+        !showIntro &&
+        !showTournamentIntro &&
+        !isSeriesActive &&
+        !showPickemSummary &&
+        !showWinnersScreen &&
+        !isHallOfFameOpen &&
+        !isLeaderboardOpen;
+
+    useEffect(() => {
+        if (!isBracketPageVisible) return;
+
+        const t = setTimeout(() => {
+            const preferredGroup = lastPlayedCstGroupRef.current;
+            const current =
+                (preferredGroup &&
+                    document.querySelector(`[data-cst-group="${preferredGroup}"] .${css.match_current}`)) ||
+                document.querySelector(`.${css.match_current}`);
+            if (!current) return;
+
+            const rect = current.getBoundingClientRect();
+            const target = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            window.scrollTo({ top: Math.max(0, Math.min(target, maxScroll)), behavior: "smooth" });
+        }, 450);
+
+        return () => clearTimeout(t);
+    }, [isBracketPageVisible, viewPhase, qualifierGroupView, pemGroupView]);
 
     const isStatsAdminModalOpen =
         isScoreBoardResetModeModalOpen ||
@@ -8128,6 +9792,17 @@ function SpecialModePage() {
             setStage3(parsed.stage3 ?? null);
             setPlayoffs(parsed.playoffs ?? null);
 
+            const isLegacyPemMainPlaceholder = parsed.pemSmall?.event === "main" && !parsed.pemMain;
+            setPemSmall(isLegacyPemMainPlaceholder ? { ...parsed.pemSmall, event: "cst" } : parsed.pemSmall ?? null);
+            setQualifier(parsed.qualifier ?? null);
+            qualifierRef.current = parsed.qualifier ?? null;
+            setQualifierGroupView(QUALIFIER_GROUPS.includes(parsed.qualifierGroupView) ? parsed.qualifierGroupView : "A");
+            setCst(parsed.cst ?? null);
+            cstRef.current = parsed.cst ?? null;
+            setPemMain(parsed.pemMain ?? null);
+            pemMainRef.current = parsed.pemMain ?? null;
+            setPemGroupView(PEM_MAIN_GROUPS.includes(parsed.pemGroupView) ? parsed.pemGroupView : "A");
+
             setSeriesState(parsed.seriesState ? { ...defaultSeriesState, ...parsed.seriesState } : defaultSeriesState);
 
             setNeededPickemPoints(parsed.neededPickemPoints ?? getRandomNeededPickemPoints());
@@ -8170,6 +9845,12 @@ function SpecialModePage() {
             stage2,
             stage3,
             playoffs,
+            pemSmall,
+            qualifier,
+            qualifierGroupView,
+            cst,
+            pemMain,
+            pemGroupView,
             seriesState,
             neededPickemPoints,
             finalPickemPoints,
@@ -8205,6 +9886,12 @@ function SpecialModePage() {
         stage2,
         stage3,
         playoffs,
+        pemSmall,
+        qualifier,
+        qualifierGroupView,
+        cst,
+        pemMain,
+        pemGroupView,
         seriesState,
         neededPickemPoints,
         finalPickemPoints,
@@ -8249,6 +9936,35 @@ function SpecialModePage() {
             </span>
         </>
     ), [tournamentNumber, tournamentTheme]);
+
+    const pemSmallEdition = pemSmall?.edition ?? (tournamentNumbers?.[PEM_SMALL_TYPE_ID] ?? 0);
+
+    const pemSmallLabel = useMemo(() => (
+        <>
+            PEM Small Tournament{" "}
+            <span style={getTournamentNumberStyle(getTournamentTheme(pemSmallEdition))}>
+                #{pemSmallEdition}
+            </span>
+        </>
+    ), [pemSmallEdition]);
+
+    const cstNumber = pemSmall?.cstNumber ?? (tournamentNumbers?.[CST_TYPE_ID] ?? 0);
+
+    const cstLabel = useMemo(() => (
+        <>
+            Champions Series Tour{" "}
+            <span style={getTournamentNumberStyle(getTournamentTheme(cstNumber))}>
+                #{cstNumber}
+            </span>
+        </>
+    ), [cstNumber]);
+
+    const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = pemSmallLabel, gap = 6 } = {}) => (
+        <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
+            <QualifierBadge height={badgeHeight} />
+            <span>{label}</span>
+        </span>
+    );
 
     const clearTournamentNumberAdminState = () => {
         setTournamentNumberCode("");
@@ -8402,7 +10118,7 @@ function SpecialModePage() {
     };
 
     const emptyHallPicks = (typeId) =>
-        Object.fromEntries(getTournamentTypeConfig(typeId).fields.map((field) => [field.key, []]));
+        Object.fromEntries((getTournamentTypeConfig(typeId).fields || []).map((field) => [field.key, []]));
 
     const makeEmptyHallForm = (typeId = "") => ({
         type: typeId,
@@ -8833,7 +10549,7 @@ function SpecialModePage() {
             .then(() => {
                 setHallOfFame((prev) => {
                     const without = prev.filter((item) => item.id !== record.id);
-                    return [record, ...without].sort((a, b) => (b.number ?? 0) - (a.number ?? 0));
+                    return sortHallOfFame([record, ...without]);
                 });
                 setSelectedHallTournament((prev) => (prev?.id === record.id ? record : prev));
                 toast.success(hallManagerMode === "edit"
@@ -8848,14 +10564,22 @@ function SpecialModePage() {
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
         if (!tournamentResults) {
-            setTournamentNumber((prev) => {
-                const next = Math.max(0, prev - 1);
-                saveTournamentNumber(next);
-                return next;
-            });
+            if (pemSmall?.event === "cst") {
+                setTypeNumber(CST_TYPE_ID, Math.max(0, getTypeNumber(CST_TYPE_ID) - 1));
+            } else if (pemSmall?.event === "main") {
+                // ignore
+            } else if (pemSmall) {
+                setTypeNumber(PEM_SMALL_TYPE_ID, Math.max(0, getTypeNumber(PEM_SMALL_TYPE_ID) - 1));
+            } else {
+                setTournamentNumber((prev) => {
+                    const next = Math.max(0, prev - 1);
+                    saveTournamentNumber(next);
+                    return next;
+                });
+            }
         } else {
             const finalized = normalizeTournamentRef(tournamentResults.tournament)
-                ?? { type: ACTIVE_TOURNAMENT_TYPE, number: tournamentNumber };
+                ?? { type: currentTournamentType, number: tournamentNumber };
             setLastFinalizedTournament(finalized);
             saveLastFinalizedTournament(finalized);
         }
@@ -8889,6 +10613,16 @@ function SpecialModePage() {
         setStage2(null);
         setStage3(null);
         setPlayoffs(null);
+
+        setPemSmall(null);
+        setQualifier(null);
+        setCst(null);
+        cstRef.current = null;
+        qualifierRef.current = null;
+        setQualifierGroupView("A");
+        setPemMain(null);
+        pemMainRef.current = null;
+        setPemGroupView("A");
 
         setActivePhase("stage1");
         setViewPhase("stage1");
@@ -8966,6 +10700,16 @@ function SpecialModePage() {
         setStage3(null);
         setPlayoffs(null);
 
+        setPemSmall(null);
+        setQualifier(null);
+        setCst(null);
+        cstRef.current = null;
+        qualifierRef.current = null;
+        setQualifierGroupView("A");
+        setPemMain(null);
+        pemMainRef.current = null;
+        setPemGroupView("A");
+
         setActivePhase("stage1");
         setViewPhase("stage1");
         setShowIntro(true);
@@ -9031,6 +10775,9 @@ function SpecialModePage() {
 
         setTournamentNumber(0);
         saveTournamentNumber(0);
+
+        setTournamentNumbers({});
+        saveTournamentNumbers({});
 
         setLastFinalizedTournament(null);
         saveLastFinalizedTournament(null);
@@ -9313,9 +11060,7 @@ function SpecialModePage() {
         return (
             !!selectedPlacingTeamIds.length &&
             (
-                placingCategory === "wins" ||
-                placingCategory === "seconds" ||
-                placingCategory === "thirds" ||
+                Object.hasOwn(EMPTY_TEAM_PLACINGS, placingCategory) ||
                 placingCategory === "points"
             ) &&
             Number.isFinite(n) &&
@@ -9364,7 +11109,7 @@ function SpecialModePage() {
             const next = { ...prev };
 
             teamIds.forEach((id) => {
-                const cur = next[id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                const cur = next[id] ?? { ...EMPTY_TEAM_PLACINGS };
 
                 next[id] = {
                     ...cur,
@@ -9394,9 +11139,7 @@ function SpecialModePage() {
         return leaderboard.sorted.filter((t) => {
             const p = teamPlacings?.[t.id];
 
-            if (placingCategory === "wins") return (p?.wins ?? 0) > 0;
-            if (placingCategory === "seconds") return (p?.seconds ?? 0) > 0;
-            if (placingCategory === "thirds") return (p?.thirds ?? 0) > 0;
+            if (Object.hasOwn(EMPTY_TEAM_PLACINGS, placingCategory)) return (p?.[placingCategory] ?? 0) > 0;
             if (placingCategory === "points") return (teamRatings?.[t.id] ?? 0) > 0;
 
             return false;
@@ -9437,7 +11180,7 @@ function SpecialModePage() {
             const next = { ...prev };
 
             teamIds.forEach((id) => {
-                const cur = next[id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                const cur = next[id] ?? { ...EMPTY_TEAM_PLACINGS };
 
                 next[id] = {
                     ...cur,
@@ -9455,26 +11198,20 @@ function SpecialModePage() {
     };
 
     const getDisplayedValue = (t) => {
-        const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+        const p = teamPlacings?.[t.id] ?? EMPTY_TEAM_PLACINGS;
 
-        if (placingCategory === "wins") return p.wins ?? 0;
-        if (placingCategory === "seconds") return p.seconds ?? 0;
-        if (placingCategory === "thirds") return p.thirds ?? 0;
+        if (Object.hasOwn(EMPTY_TEAM_PLACINGS, placingCategory)) return p[placingCategory] ?? 0;
         if (placingCategory === "points") return teamRatings?.[t.id] ?? 0;
         if (placingCategory === "") return null;
         return teamRatings?.[t.id] ?? 0;
     };
 
     const getSortValue = (t) => {
-        const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+        const p = teamPlacings?.[t.id] ?? EMPTY_TEAM_PLACINGS;
+
+        if (Object.hasOwn(EMPTY_TEAM_PLACINGS, placingCategory)) return p[placingCategory] ?? 0;
 
         switch (placingCategory) {
-            case "wins":
-                return p.wins ?? 0;
-            case "seconds":
-                return p.seconds ?? 0;
-            case "thirds":
-                return p.thirds ?? 0;
             case "points":
                 return teamRatings?.[t.id] ?? 0;
             default:
@@ -9489,19 +11226,84 @@ function SpecialModePage() {
         });
     };
 
+    const updateTournamentPicker = (next) => {
+        setTournamentPicker(next);
+        saveTournamentPicker(next);
+    };
+
+    const handlePickRandomTournament = () => {
+        if (tournamentPicker.random) return;
+        updateTournamentPicker(DEFAULT_TOURNAMENT_PICKER);
+    };
+
+    const handleToggleTournamentType = (id) => {
+        if (tournamentPicker.random) {
+            updateTournamentPicker({ random: false, ids: [id] });
+            return;
+        }
+
+        const ids = tournamentPicker.ids.includes(id)
+            ? tournamentPicker.ids.filter((x) => x !== id)
+            : [...tournamentPicker.ids, id];
+
+        updateTournamentPicker(ids.length > 0 ? { random: false, ids } : DEFAULT_TOURNAMENT_PICKER);
+    };
+
+    useEffect(() => {
+        if (!isTournamentPickerOpen) return undefined;
+        const onKeyDown = (e) => {
+            if (e.key === "Escape") setIsTournamentPickerOpen(false);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [isTournamentPickerOpen]);
+
     const handleTournamentStart = () => {
-        tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+        const nextTournamentType = pickTournamentType(tournamentPicker);
+        setCurrentTournamentType(nextTournamentType);
+        saveCurrentTournamentType(nextTournamentType);
+        setIsTournamentPickerOpen(false);
 
         const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
         setTeamStats(statsWithFreshExperience);
         teamStatsRef.current = statsWithFreshExperience;
         saveTeamStats(statsWithFreshExperience);
 
-        setTournamentNumber((prev) => {
-            const next = prev + 1;
-            saveTournamentNumber(next);
-            return next;
-        });
+        if (nextTournamentType === PEM_SMALL_TYPE_ID) {
+            const edition = getTypeNumber(PEM_SMALL_TYPE_ID) + 1;
+            setTypeNumber(PEM_SMALL_TYPE_ID, edition);
+
+            const seeds = buildPemSmallSeeds(allTeams, teamRatingsRef.current);
+            const groups = splitQualifierGroups(seeds.qualifier);
+            const builtQualifier = buildQualifier(groups);
+
+            setPemSmall({ edition, seeds, groups, event: "qualifier", qualified: [] });
+            setQualifier(builtQualifier);
+            qualifierRef.current = builtQualifier;
+            setPemMain(null);
+            pemMainRef.current = null;
+            setPemGroupView("A");
+            setQualifierGroupView("A");
+            setActivePhase("qualifier");
+            setViewPhase("qualifier");
+            setNeededPickemPoints(getRandomQualifierNeededPickemPoints());
+        } else {
+            tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
+
+            setPemSmall(null);
+            setQualifier(null);
+            setCst(null);
+            cstRef.current = null;
+            qualifierRef.current = null;
+            setPemMain(null);
+            pemMainRef.current = null;
+
+            setTournamentNumber((prev) => {
+                const next = prev + 1;
+                saveTournamentNumber(next);
+                return next;
+            });
+        }
 
         setShowIntro(false);
         setShowTournamentIntro(true);
@@ -9604,7 +11406,11 @@ function SpecialModePage() {
 
     const playoffsMatchPoints = (match) => {
         if (!match.played || !match.pickTeamId) return 0;
-        const baseMap = { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+        const baseMap = match.cst
+            ? CST_PLAYOFFS_BEST_OF
+            : match.pem
+                ? PEM_PLAYOFFS_BEST_OF
+                : { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
         const base = baseMap[match.stage] ?? 0;
 
         if (match.winnerTeamId === match.pickTeamId) return base;
@@ -9648,7 +11454,7 @@ function SpecialModePage() {
         }
     };
 
-    const recomputePickemTotals = () => {
+    const recomputePickemTotals = (qualifierOverride = undefined, cstOverride = undefined, pemMainOverride = undefined, playoffsOverride = undefined) => {
         let total = 0;
         const nextCounts = {
             stage1: 0,
@@ -9661,6 +11467,15 @@ function SpecialModePage() {
             gf: 0,
             correct: 0,
         };
+        QUALIFIER_PICKEM_ROUNDS.forEach(({ key }) => {
+            nextCounts[key] = 0;
+        });
+        CST_GROUPS.forEach((group) => {
+            nextCounts[`cst_${group}`] = 0;
+        });
+        PEM_GROUP_PICKEM_ROUNDS.forEach(({ key }) => {
+            nextCounts[key] = 0;
+        });
 
         const applySwiss = (stg, countKey) => {
             if (!stg) return;
@@ -9697,10 +11512,59 @@ function SpecialModePage() {
             addStage("gf", "gf");
         };
 
-        applySwiss(stage1, "stage1");
-        applySwiss(stage2, "stage2");
-        applySwiss(stage3, "stage3");
-        applyPlayoffs(playoffs);
+        const applyQualifier = (q) => {
+            if (!q) return;
+            getQualifierMatches(q).forEach((m) => {
+                if (!m.played || !m.pickTeamId) return;
+                const points = qualifierMatchPoints(m);
+                total += points;
+                if (m.winnerTeamId === m.pickTeamId) {
+                    nextCounts[`q_${m.stage}`] += 1;
+                    nextCounts.correct += points;
+                }
+            });
+        };
+
+        const applyCstGroups = (stage) => {
+            getCstGroupMatches(stage).forEach((m) => {
+                if (!m.played || !m.pickTeamId) return;
+                const points = cstGroupMatchPoints(m);
+                total += points;
+                if (points > 0) {
+                    nextCounts[`cst_${m.group}`] += 1;
+                    nextCounts.correct += points;
+                }
+            });
+        };
+
+        const applyPemGroups = (groupStage) => {
+            getPemGroupMatches(groupStage).forEach((m) => {
+                if (!m.played || !m.pickTeamId) return;
+                const points = pemGroupMatchPoints(m);
+                total += points;
+                if (m.winnerTeamId === m.pickTeamId) {
+                    nextCounts[`pem_${m.stage}`] += 1;
+                    nextCounts.correct += points;
+                }
+            });
+        };
+
+        const currentPlayoffs = playoffsOverride ?? playoffs;
+
+        if (activePhase === "qualifier" || qualifierOverride) {
+            applyQualifier(qualifierOverride ?? qualifier);
+        } else if (pemMainOverride || isPemMainPhase) {
+            applyPemGroups(pemMainOverride ?? pemMain);
+            if (currentPlayoffs?.kind === "pem") applyPlayoffs(currentPlayoffs);
+        } else if (cstOverride || isCstPhase) {
+            applyCstGroups(cstOverride ?? cst);
+            if (playoffs?.kind === "cst") applyPlayoffs(playoffs);
+        } else {
+            applySwiss(stage1, "stage1");
+            applySwiss(stage2, "stage2");
+            applySwiss(stage3, "stage3");
+            applyPlayoffs(playoffs);
+        }
 
         setFinalPickemPoints(total);
         setGuessedCounts(nextCounts);
@@ -9725,7 +11589,36 @@ function SpecialModePage() {
         const match = (playoffs[stage] || []).find((m) => m.id === matchId);
         if (!match || !match.slotA || !match.slotB) return;
 
-        setModalContext({ type: "playoffs", stage, matchId, readOnly });
+        setModalContext({ type: "playoffs", stage, matchId, readOnly, kind: playoffs.kind ?? null });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openQualifierMatchModal = (group, stage, matchId, readOnly = false) => {
+        const match = (qualifier?.[group]?.[stage] || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type: "qualifier", group, stage, matchId, readOnly });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openArchivedQualifierMatchModal = (record, group, stage, index, match) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, group, stage, index, match });
+        setModalContext({
+            type: "qualifier",
+            group,
+            stage,
+            matchId: match.id || `hall-q${group}-${stage}-${index}`,
+            readOnly: true,
+            isArchivedHallOfFame: true,
+        });
         setModalLeftTeam(match.slotA);
         setModalRightTeam(match.slotB);
         setHasChosen(false);
@@ -9740,6 +11633,64 @@ function SpecialModePage() {
             type: "playoffs",
             stage,
             matchId: match.id || `hall-${stage}-${index}`,
+            readOnly: true,
+            isArchivedHallOfFame: true,
+            kind: record?.playoffs?.kind ?? null,
+        });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openCstGroupMatchModal = (group, matchId, readOnly = false) => {
+        const match = (cst?.[group]?.matches || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type: "cstGroup", group, matchId, readOnly });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openArchivedCstGroupMatchModal = (record, group, index, match) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, group, index, match });
+        setModalContext({
+            type: "cstGroup",
+            group,
+            matchId: match.id || `hall-cst-${group}-${index}`,
+            readOnly: true,
+            isArchivedHallOfFame: true,
+        });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openPemGroupMatchModal = (group, stage, matchId, readOnly = false) => {
+        const match = (pemMain?.[group]?.[stage] || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type: "pemGroup", group, stage, matchId, readOnly });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openArchivedPemGroupMatchModal = (record, group, stage, index, match) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, group, stage, index, match });
+        setModalContext({
+            type: "pemGroup",
+            group,
+            stage,
+            matchId: match.id || `hall-pem${group}-${stage}-${index}`,
             readOnly: true,
             isArchivedHallOfFame: true,
         });
@@ -9854,9 +11805,181 @@ function SpecialModePage() {
             return;
         }
 
+        if (modalContext.type === "cstGroup") {
+            const { group, matchId } = modalContext;
+            const groupMatches = cst?.[group]?.matches || [];
+            const cstMatchNumber = Math.max(1, groupMatches.findIndex((m) => m.id === matchId) + 1);
+
+            setCst((prev) => {
+                if (!prev?.[group]) return prev;
+                const matches = (prev[group].matches || []).map((m) =>
+                    m.id === matchId ? { ...m, pickTeamId: pickedTeamId, setHistory: [] } : m
+                );
+                const next = { ...prev, [group]: { ...prev[group], matches } };
+                cstRef.current = next;
+                return next;
+            });
+
+            clearRoundLog();
+
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+                lastPlayedCstGroupRef.current = group;
+                const hasLostInCstGroupStage = (teamId) =>
+                    getCstGroupMatches(cstRef.current).some((m) => m.played && m.loserTeamId === teamId);
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: "cstGroup",
+                    allowTie: true,
+                    cstGroup: group,
+                    cstMatchId: matchId,
+                    cstMatchNumber,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: 1,
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "swiss",
+                        swissStageKey: "cst",
+                        bestOf: 1,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                        unbeatenEligibleBySide: {
+                            left: !hasLostInCstGroupStage(modalLeftTeam?.id),
+                            right: !hasLostInCstGroupStage(modalRightTeam?.id),
+                        },
+                    }),
+                });
+            }
+
+            closeMatchModal();
+            return;
+        }
+
+        if (modalContext.type === "qualifier") {
+            const { group, stage, matchId } = modalContext;
+            const bestOf = getBestOfForQualifier(stage);
+
+            const stageArr = qualifier?.[group]?.[stage] || [];
+            const qualifierMatchNumber = Math.max(1, stageArr.findIndex((m) => m.id === matchId) + 1);
+
+            setQualifier((prev) => {
+                if (!prev?.[group]) return prev;
+                const arr = [...(prev[group][stage] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                const next = { ...prev, [group]: { ...prev[group], [stage]: arr } };
+                qualifierRef.current = next;
+                return next;
+            });
+
+            clearRoundLog();
+
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: "qualifier",
+                    qualifierGroup: group,
+                    qualifierStage: stage,
+                    qualifierMatchId: matchId,
+                    qualifierMatchNumber,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "qualifier",
+                        playoffsStage: stage,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
+
+            closeMatchModal();
+            return;
+        }
+
+        if (modalContext.type === "pemGroup") {
+            const { group, stage, matchId } = modalContext;
+            const bestOf = getBestOfForPemGroup(stage);
+
+            const stageArr = pemMain?.[group]?.[stage] || [];
+            const pemGroupMatchNumber = Math.max(1, stageArr.findIndex((m) => m.id === matchId) + 1);
+
+            setPemMain((prev) => {
+                if (!prev?.[group]) return prev;
+                const arr = [...(prev[group][stage] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                const next = { ...prev, [group]: { ...prev[group], [stage]: arr } };
+                pemMainRef.current = next;
+                return next;
+            });
+
+            clearRoundLog();
+
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: "pemGroup",
+                    pemGroup: group,
+                    pemGroupStage: stage,
+                    pemGroupMatchId: matchId,
+                    pemGroupMatchNumber,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "pemGroup",
+                        playoffsStage: stage,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
+
+            closeMatchModal();
+            return;
+        }
+
         if (modalContext.type === "playoffs") {
             const { stage, matchId } = modalContext;
-            const bestOf = getBestOfForPlayoffs(stage);
+            const bestOf = getBestOfForPlayoffs(stage, playoffs?.kind);
 
             const stageArr = (playoffs && playoffs[stage]) ? playoffs[stage] : [];
             const playoffsMatchNumber = Math.max(
@@ -9919,7 +12042,8 @@ function SpecialModePage() {
         won,
         firstHalfLeft,
         firstHalfRight,
-        extendedRounds
+        extendedRounds,
+        extra = {}
     ) => {
         const setEntry = (history) => [
             ...(history || []),
@@ -9932,8 +12056,58 @@ function SpecialModePage() {
                 firstHalfRight,
                 extendedRounds,
                 roundLog: roundLogRef.current.map((e) => ({ ...e })),
+                ...extra,
             },
         ];
+        if (seriesState.phase === "cstGroup" && seriesState.cstGroup && seriesState.cstMatchId) {
+            const group = seriesState.cstGroup;
+            const matchId = seriesState.cstMatchId;
+
+            setCst((prev) => {
+                if (!prev?.[group]) return prev;
+                const matches = (prev[group].matches || []).map((m) =>
+                    m.id === matchId ? { ...m, setHistory: setEntry(m.setHistory) } : m
+                );
+                const next = { ...prev, [group]: { ...prev[group], matches } };
+                cstRef.current = next;
+                return next;
+            });
+            return;
+        }
+        if (seriesState.phase === "qualifier" && seriesState.qualifierGroup && seriesState.qualifierStage && seriesState.qualifierMatchId) {
+            const group = seriesState.qualifierGroup;
+            const stageKey = seriesState.qualifierStage;
+            const matchId = seriesState.qualifierMatchId;
+
+            setQualifier((prev) => {
+                if (!prev?.[group]) return prev;
+                const arr = [...(prev[group][stageKey] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], setHistory: setEntry(arr[idx].setHistory) };
+                const next = { ...prev, [group]: { ...prev[group], [stageKey]: arr } };
+                qualifierRef.current = next;
+                return next;
+            });
+            return;
+        }
+        if (seriesState.phase === "pemGroup" && seriesState.pemGroup && seriesState.pemGroupStage && seriesState.pemGroupMatchId) {
+            const group = seriesState.pemGroup;
+            const stageKey = seriesState.pemGroupStage;
+            const matchId = seriesState.pemGroupMatchId;
+
+            setPemMain((prev) => {
+                if (!prev?.[group]) return prev;
+                const arr = [...(prev[group][stageKey] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], setHistory: setEntry(arr[idx].setHistory) };
+                const next = { ...prev, [group]: { ...prev[group], [stageKey]: arr } };
+                pemMainRef.current = next;
+                return next;
+            });
+            return;
+        }
         if (seriesState.phase === "playoffs" && playoffs && seriesState.playoffsStage && seriesState.playoffsMatchId) {
             const stageKey = seriesState.playoffsStage;
             const matchId = seriesState.playoffsMatchId;
@@ -11018,6 +13192,66 @@ function SpecialModePage() {
                     };
                 }
 
+                if (otTiedBlock && prev.allowTie && overtimeBlock === 1) {
+                    appendSetToCurrentMatchHistory(
+                        updatedRoundWins,
+                        updatedRoundLosses,
+                        false,
+                        prev.firstHalfLeft,
+                        prev.firstHalfRight,
+                        extendedRounds,
+                        { tie: true }
+                    );
+
+                    toast.dismiss();
+                    toast(
+                        <span style={{ color: TIE_BANNER_COLOR, fontWeight: 900 }}>
+                            {CST_TIE_SCORE}-{CST_TIE_SCORE}, it's a TIE!
+                        </span>,
+                        { icon: "🤝", duration: 4000 }
+                    );
+
+                    banner = {
+                        text: "TIE",
+                        tie: true,
+                        shadow: `
+                            0 0 3px ${TIE_BANNER_COLOR},
+                            0 0 7px ${TIE_BANNER_COLOR}66,
+                            0 1px 3px rgba(0,0,0,0.4)
+                        `,
+                        color: TIE_BANNER_COLOR,
+                        gradient: TIE_BANNER_GRADIENT,
+                    };
+
+                    setIsCalculating(false);
+
+                    return {
+                        ...prev,
+                        lastMultiplierLeft: leftMult,
+                        lastMultiplierRight: rightMult,
+                        playerWonSets,
+                        playerLostSets,
+                        extendedRounds,
+                        setNumber,
+                        roundWins,
+                        roundLosses,
+                        roundNumber,
+                        miniWins,
+                        miniLosses,
+                        isOvertime: true,
+                        overtimeBlock,
+                        otWins,
+                        otLosses,
+                        banner,
+                        liveStats: liveStatsAfterRound,
+                        clutchRoundFlag: null,
+                        roundComebackTracker: otRoundConclusion.roundComebackTracker,
+                        lastRoundLoserSide: nextLastRoundLoserSide,
+                        bounceBackArmedSide: nextBounceBackArmedSide,
+                        pendingAction: prev.pendingAction ?? null,
+                    };
+                }
+
                 if (otTiedBlock) {
                     if (overtimeBlock >= OT_MAX_BLOCK) {
                         toast.dismiss();
@@ -11425,6 +13659,417 @@ function SpecialModePage() {
         });
     };
 
+    const commitQualifierSeries = ({
+        group,
+        stage,
+        matchId,
+        leftTeam,
+        rightTeam,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+    }) => {
+        const current = qualifierRef.current;
+        const groupBracket = current?.[group];
+        if (!groupBracket?.[stage]) return;
+
+        const bracket = { ...groupBracket };
+        QUALIFIER_STAGE_ORDER.forEach((key) => {
+            bracket[key] = [...(groupBracket[key] || [])];
+        });
+
+        const idx = bracket[stage].findIndex((m) => m.id === matchId);
+        if (idx < 0) return;
+
+        const m = { ...bracket[stage][idx] };
+        const bestOf = getBestOfForQualifier(stage);
+        const { scoreLeft, scoreRight } = getCommittedSeriesScore({
+            bestOf,
+            seriesState,
+            matchObj: m,
+            seriesLeftSets,
+            seriesRightSets,
+        });
+
+        m.played = true;
+        m.scoreLeft = scoreLeft;
+        m.scoreRight = scoreRight;
+        m.winnerTeamId = winner.id;
+        m.loserTeamId = loser.id;
+
+        const applied = applyRatings({
+            ratings: teamRatingsRef.current,
+            teams: allTeams,
+            winnerId: winner.id,
+            loserId: loser.id,
+            phase: "qualifier",
+            swissStageKey: null,
+            swissNet: null,
+            playoffsStage: stage,
+            bestOf,
+            loserSetsWon: Math.min(scoreLeft, scoreRight),
+            playedAtMs,
+        });
+
+        m.ratingMeta = applied.meta;
+
+        setTeamRatings(applied.nextRatings);
+        teamRatingsRef.current = applied.nextRatings;
+        saveTeamRatings(applied.nextRatings);
+
+        const winnerSideKey = winner.id === leftTeam.id ? "left" : "right";
+        const loserSideKey = otherSide(winnerSideKey);
+
+        let liveStatsAfter =
+            seriesState.liveStats ?? {
+                left: { ...DEFAULT_TEAM_STAT_VALUES },
+                right: { ...DEFAULT_TEAM_STAT_VALUES },
+            };
+
+        if (QUALIFIER_QUALIFYING_STAGES.includes(stage)) {
+            liveStatsAfter = bumpStat(liveStatsAfter, winnerSideKey, "bigStage", 3);
+        }
+        if (QUALIFIER_ELIMINATION_STAGES.includes(stage)) {
+            liveStatsAfter = bumpStat(liveStatsAfter, loserSideKey, "bigStage", -3);
+        }
+
+        liveStatsAfter = resolveSeriesEndStats({
+            liveStats: liveStatsAfter,
+            winnerSide: winnerSideKey,
+            ctx: seriesState.matchCtx,
+            winnerSets: winnerSideKey === "left" ? seriesLeftSets : seriesRightSets,
+            loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
+        });
+
+        m.statsMeta = {
+            before: {
+                [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                [rightTeam.id]: seriesState.initialStats?.right ?? { ...DEFAULT_TEAM_STAT_VALUES },
+            },
+            after: {
+                [leftTeam.id]: liveStatsAfter.left,
+                [rightTeam.id]: liveStatsAfter.right,
+            },
+            statActivation: seriesState.matchCtx?.active
+                ? {
+                    version: STAT_ACTIVATION_VERSION,
+                    byTeam: {
+                        [leftTeam.id]: seriesState.matchCtx.active.left,
+                        [rightTeam.id]: seriesState.matchCtx.active.right,
+                    },
+                }
+                : null,
+            upset: buildStoredUpsetMeta(seriesState.matchCtx?.upset, leftTeam, rightTeam),
+        };
+
+        const nextTeamStats = {
+            ...teamStatsRef.current,
+            [leftTeam.id]: { ...liveStatsAfter.left, momentum: 0 },
+            [rightTeam.id]: { ...liveStatsAfter.right, momentum: 0 },
+        };
+        setTeamStats(nextTeamStats);
+        teamStatsRef.current = nextTeamStats;
+        saveTeamStats(nextTeamStats);
+
+        bracket[stage][idx] = m;
+        advanceQualifierBracket(bracket, stage, idx, winner, loser);
+
+        const nextQualifier = { ...current, [group]: bracket };
+        setQualifier(nextQualifier);
+        qualifierRef.current = nextQualifier;
+
+        recomputePickemTotals(nextQualifier);
+
+        if (isQualifierFinished(nextQualifier)) {
+            finishQualifier(nextQualifier);
+        }
+    };
+
+    const commitCstGroupSeries = ({
+        group,
+        matchId,
+        leftTeam,
+        rightTeam,
+        isTie,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+    }) => {
+        const current = cstRef.current;
+        const groupObj = current?.[group];
+        if (!groupObj) return;
+
+        const matches = [...(groupObj.matches || [])];
+        const idx = matches.findIndex((m) => m.id === matchId);
+        if (idx < 0) return;
+
+        const m = { ...matches[idx] };
+        const { scoreLeft, scoreRight } = getCommittedSeriesScore({
+            bestOf: 1,
+            seriesState,
+            matchObj: m,
+            seriesLeftSets,
+            seriesRightSets,
+        });
+
+        m.played = true;
+        m.isTie = isTie;
+        m.scoreLeft = scoreLeft;
+        m.scoreRight = scoreRight;
+        m.winnerTeamId = isTie ? null : winner.id;
+        m.loserTeamId = isTie ? null : loser.id;
+
+        const applied = isTie
+            ? applyTieRatings({
+                ratings: teamRatingsRef.current,
+                teams: allTeams,
+                leftId: leftTeam.id,
+                rightId: rightTeam.id,
+                phase: "cstGroup",
+                playoffsStage: null,
+                bestOf: 1,
+                playedAtMs,
+            })
+            : applyRatings({
+                ratings: teamRatingsRef.current,
+                teams: allTeams,
+                winnerId: winner.id,
+                loserId: loser.id,
+                phase: "cstGroup",
+                swissStageKey: null,
+                swissNet: null,
+                playoffsStage: null,
+                bestOf: 1,
+                loserSetsWon: 0,
+                playedAtMs,
+            });
+
+        m.ratingMeta = applied.meta;
+
+        setTeamRatings(applied.nextRatings);
+        teamRatingsRef.current = applied.nextRatings;
+        saveTeamRatings(applied.nextRatings);
+
+        const liveStatsBefore =
+            seriesState.liveStats ?? {
+                left: { ...DEFAULT_TEAM_STAT_VALUES },
+                right: { ...DEFAULT_TEAM_STAT_VALUES },
+            };
+
+        const winnerSideKey = !isTie && winner.id === leftTeam.id ? "left" : "right";
+        const liveStatsAfter = isTie
+            ? resolveSeriesTieStats({ liveStats: liveStatsBefore, ctx: seriesState.matchCtx })
+            : resolveSeriesEndStats({
+                liveStats: liveStatsBefore,
+                winnerSide: winnerSideKey,
+                ctx: seriesState.matchCtx,
+                winnerSets: winnerSideKey === "left" ? seriesLeftSets : seriesRightSets,
+                loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
+            });
+
+        m.statsMeta = {
+            before: {
+                [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                [rightTeam.id]: seriesState.initialStats?.right ?? { ...DEFAULT_TEAM_STAT_VALUES },
+            },
+            after: {
+                [leftTeam.id]: liveStatsAfter.left,
+                [rightTeam.id]: liveStatsAfter.right,
+            },
+            statActivation: seriesState.matchCtx?.active
+                ? {
+                    version: STAT_ACTIVATION_VERSION,
+                    byTeam: {
+                        [leftTeam.id]: seriesState.matchCtx.active.left,
+                        [rightTeam.id]: seriesState.matchCtx.active.right,
+                    },
+                }
+                : null,
+            upset: buildStoredUpsetMeta(seriesState.matchCtx?.upset, leftTeam, rightTeam),
+        };
+
+        const nextTeamStats = {
+            ...teamStatsRef.current,
+            [leftTeam.id]: { ...liveStatsAfter.left, momentum: 0 },
+            [rightTeam.id]: { ...liveStatsAfter.right, momentum: 0 },
+        };
+        setTeamStats(nextTeamStats);
+        teamStatsRef.current = nextTeamStats;
+        saveTeamStats(nextTeamStats);
+
+        matches[idx] = m;
+        const next = { ...current, [group]: { ...groupObj, matches } };
+        setCst(next);
+        cstRef.current = next;
+
+        recomputePickemTotals(undefined, next);
+
+        if (isCstGroupStageFinished(next)) {
+            setPlayoffs(buildCstPlayoffs(next));
+            setActivePhase("playoffs");
+            setViewPhase("playoffs");
+        }
+    };
+
+    const commitPemGroupSeries = ({
+        group,
+        stage,
+        matchId,
+        leftTeam,
+        rightTeam,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+    }) => {
+        const current = pemMainRef.current;
+        const groupBracket = current?.[group];
+        if (!groupBracket?.[stage]) return;
+
+        const bracket = { ...groupBracket };
+        PEM_GROUP_STAGE_ORDER.forEach((key) => {
+            bracket[key] = [...(groupBracket[key] || [])];
+        });
+
+        const idx = bracket[stage].findIndex((m) => m.id === matchId);
+        if (idx < 0) return;
+
+        const m = { ...bracket[stage][idx] };
+        const bestOf = getBestOfForPemGroup(stage);
+        const { scoreLeft, scoreRight } = getCommittedSeriesScore({
+            bestOf,
+            seriesState,
+            matchObj: m,
+            seriesLeftSets,
+            seriesRightSets,
+        });
+
+        m.played = true;
+        m.scoreLeft = scoreLeft;
+        m.scoreRight = scoreRight;
+        m.winnerTeamId = winner.id;
+        m.loserTeamId = loser.id;
+
+        const applied = applyRatings({
+            ratings: teamRatingsRef.current,
+            teams: allTeams,
+            winnerId: winner.id,
+            loserId: loser.id,
+            phase: "pemGroup",
+            swissStageKey: null,
+            swissNet: null,
+            playoffsStage: stage,
+            bestOf,
+            loserSetsWon: Math.min(scoreLeft, scoreRight),
+            playedAtMs,
+        });
+
+        m.ratingMeta = applied.meta;
+
+        setTeamRatings(applied.nextRatings);
+        teamRatingsRef.current = applied.nextRatings;
+        saveTeamRatings(applied.nextRatings);
+
+        const winnerSideKey = winner.id === leftTeam.id ? "left" : "right";
+
+        let liveStatsAfter =
+            seriesState.liveStats ?? {
+                left: { ...DEFAULT_TEAM_STAT_VALUES },
+                right: { ...DEFAULT_TEAM_STAT_VALUES },
+            };
+
+        if (PEM_GROUP_QUALIFYING_STAGES.includes(stage)) {
+            liveStatsAfter = bumpStat(liveStatsAfter, winnerSideKey, "bigStage", 3);
+        }
+
+        liveStatsAfter = resolveSeriesEndStats({
+            liveStats: liveStatsAfter,
+            winnerSide: winnerSideKey,
+            ctx: seriesState.matchCtx,
+            winnerSets: winnerSideKey === "left" ? seriesLeftSets : seriesRightSets,
+            loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
+        });
+
+        m.statsMeta = {
+            before: {
+                [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                [rightTeam.id]: seriesState.initialStats?.right ?? { ...DEFAULT_TEAM_STAT_VALUES },
+            },
+            after: {
+                [leftTeam.id]: liveStatsAfter.left,
+                [rightTeam.id]: liveStatsAfter.right,
+            },
+            statActivation: seriesState.matchCtx?.active
+                ? {
+                    version: STAT_ACTIVATION_VERSION,
+                    byTeam: {
+                        [leftTeam.id]: seriesState.matchCtx.active.left,
+                        [rightTeam.id]: seriesState.matchCtx.active.right,
+                    },
+                }
+                : null,
+            upset: buildStoredUpsetMeta(seriesState.matchCtx?.upset, leftTeam, rightTeam),
+        };
+
+        const nextTeamStats = {
+            ...teamStatsRef.current,
+            [leftTeam.id]: { ...liveStatsAfter.left, momentum: 0 },
+            [rightTeam.id]: { ...liveStatsAfter.right, momentum: 0 },
+        };
+        setTeamStats(nextTeamStats);
+        teamStatsRef.current = nextTeamStats;
+        saveTeamStats(nextTeamStats);
+
+        bracket[stage][idx] = m;
+        advancePemGroupBracket(bracket, stage, idx, winner, loser);
+
+        const nextPemMain = { ...current, [group]: bracket };
+        setPemMain(nextPemMain);
+        pemMainRef.current = nextPemMain;
+
+        if (isPemGroupStageFinished(nextPemMain)) {
+            const builtPlayoffs = buildPemPlayoffs(nextPemMain);
+            setPlayoffs(builtPlayoffs);
+            setActivePhase("playoffs");
+            setViewPhase("playoffs");
+            recomputePickemTotals(undefined, undefined, nextPemMain, builtPlayoffs);
+            return;
+        }
+
+        recomputePickemTotals(undefined, undefined, nextPemMain);
+    };
+
+
+    const finishQualifier = (finishedQualifier) => {
+        const qualifiers = Object.fromEntries(
+            QUALIFIER_GROUPS.map((group) => [group, getQualifierGroupQualifiers(finishedQualifier[group])])
+        );
+        const edition = pemSmall?.edition ?? getTypeNumber(PEM_SMALL_TYPE_ID);
+
+        setTournamentResults({
+            kind: "pemQualifier",
+            qualifiers,
+            tournament: { type: PEM_SMALL_TYPE_ID, number: edition },
+        });
+
+        setPemSmall((prev) => (prev
+            ? { ...prev, qualified: QUALIFIER_GROUPS.flatMap((group) => qualifiers[group]).map(toBaseTeam) }
+            : prev));
+
+        saveFinishedQualifierToHallOfFame(finishedQualifier, qualifiers, edition);
+
+        setShowWinnersScreen(true);
+        ratingsSnapshotRef.current = null;
+        clearRatingsSnapshot();
+        statsSnapshotRef.current = null;
+        clearStatsSnapshot();
+    };
+
     const seriesCommitExecuteAtRef = useRef(null);
 
     useEffect(() => {
@@ -11448,6 +14093,9 @@ function SpecialModePage() {
             swissMatchId,
             playoffsStage,
             playoffsMatchId,
+            qualifierGroup,
+            qualifierStage,
+            qualifierMatchId,
         } = seriesState;
 
         if (!leftTeam || !rightTeam) return;
@@ -11469,6 +14117,57 @@ function SpecialModePage() {
 
         const t = setTimeout(() => {
             seriesCommitExecuteAtRef.current = null;
+            if (phase === "cstGroup") {
+                commitCstGroupSeries({
+                    group: seriesState.cstGroup,
+                    matchId: seriesState.cstMatchId,
+                    leftTeam,
+                    rightTeam,
+                    isTie: !!seriesState.banner?.tie,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
+            if (phase === "qualifier") {
+                commitQualifierSeries({
+                    group: qualifierGroup,
+                    stage: qualifierStage,
+                    matchId: qualifierMatchId,
+                    leftTeam,
+                    rightTeam,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
+            if (phase === "pemGroup") {
+                commitPemGroupSeries({
+                    group: seriesState.pemGroup,
+                    stage: seriesState.pemGroupStage,
+                    matchId: seriesState.pemGroupMatchId,
+                    leftTeam,
+                    rightTeam,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
             if (phase === "playoffs") {
                 setPlayoffs((prev) => {
                     if (!prev) return prev;
@@ -11487,7 +14186,11 @@ function SpecialModePage() {
                     if (idx < 0) return prev;
 
                     const m = { ...arr[idx] };
-                    const bestOf = getBestOfForPlayoffs(playoffsStage);
+                    const isCstBracket = prev.kind === "cst";
+                    const isPemBracket = prev.kind === "pem";
+                    const bigStageScale = isCstBracket ? CST_BIG_STAGE_SCALE : 1;
+                    const bigStageBump = (value) => Math.round(value * bigStageScale);
+                    const bestOf = getBestOfForPlayoffs(playoffsStage, prev.kind);
                     const { scoreLeft, scoreRight } = getCommittedSeriesScore({
                         bestOf,
                         seriesState,
@@ -11508,7 +14211,7 @@ function SpecialModePage() {
                         teams: allTeams,
                         winnerId: winner.id,
                         loserId: loser.id,
-                        phase: "playoffs",
+                        phase: isCstBracket ? "cstPlayoffs" : isPemBracket ? "pemPlayoffs" : "playoffs",
                         swissStageKey: null,
                         swissNet: null,
                         playoffsStage,
@@ -11532,7 +14235,21 @@ function SpecialModePage() {
                             right: { ...DEFAULT_TEAM_STAT_VALUES },
                         };
 
-                    if (
+                    if (isPemBracket) {
+                        const pemBigStage = {
+                            qf: { winner: 4 },
+                            sf: { winner: 4 },
+                            thirdPlace: { winner: 5, loser: 4 },
+                            gf: { winner: 7, loser: 6 },
+                        }[playoffsStage] ?? {};
+
+                        if (pemBigStage.winner) {
+                            liveStatsAfterBigStage = bumpStat(liveStatsAfterBigStage, winnerSideKey, "bigStage", pemBigStage.winner);
+                        }
+                        if (pemBigStage.loser) {
+                            liveStatsAfterBigStage = bumpStat(liveStatsAfterBigStage, loserSideKey, "bigStage", pemBigStage.loser);
+                        }
+                    } else if (
                         playoffsStage === "ro16" ||
                         playoffsStage === "qf" ||
                         playoffsStage === "sf"
@@ -11541,33 +14258,33 @@ function SpecialModePage() {
                             liveStatsAfterBigStage,
                             winnerSideKey,
                             "bigStage",
-                            5
+                            bigStageBump(5)
                         );
                     } else if (playoffsStage === "thirdPlace") {
                         liveStatsAfterBigStage = bumpStat(
                             liveStatsAfterBigStage,
                             winnerSideKey,
                             "bigStage",
-                            8
+                            bigStageBump(8)
                         );
                         liveStatsAfterBigStage = bumpStat(
                             liveStatsAfterBigStage,
                             loserSideKey,
                             "bigStage",
-                            7
+                            bigStageBump(7)
                         );
                     } else if (playoffsStage === "gf") {
                         liveStatsAfterBigStage = bumpStat(
                             liveStatsAfterBigStage,
                             winnerSideKey,
                             "bigStage",
-                            10
+                            bigStageBump(10)
                         );
                         liveStatsAfterBigStage = bumpStat(
                             liveStatsAfterBigStage,
                             loserSideKey,
                             "bigStage",
-                            8
+                            bigStageBump(8)
                         );
                     }
 
@@ -11624,6 +14341,8 @@ function SpecialModePage() {
                         const pairIndex = Math.floor(idx / 2);
                         const slotKey = idx % 2 === 0 ? "slotA" : "slotB";
                         assign("qf", pairIndex, slotKey, winner);
+                    } else if (playoffsStage === "qf" && isPemBracket) {
+                        assign("sf", idx, "slotB", winner);
                     } else if (playoffsStage === "qf") {
                         const pairIndex = Math.floor(idx / 2);
                         const slotKey = idx % 2 === 0 ? "slotA" : "slotB";
@@ -11656,23 +14375,40 @@ function SpecialModePage() {
                             thirdPlace: thirdPlaceWinner,
                             fourthPlace,
                         };
-                        setTournamentResults({
-                            ...finishedResults,
-                            tournament: { type: ACTIVE_TOURNAMENT_TYPE, number: tournamentNumber },
-                        });
-                        saveFinishedTournamentToHallOfFame(copy, finishedResults);
+                        if (isCstBracket) {
+                            setTournamentResults({
+                                kind: "cst",
+                                ...finishedResults,
+                                tournament: { type: CST_TYPE_ID, number: cstNumber },
+                            });
+                            saveFinishedCstToHallOfFame(copy, finishedResults);
+                        } else if (isPemBracket) {
+                            setTournamentResults({
+                                kind: "pem",
+                                ...finishedResults,
+                                tournament: { type: PEM_SMALL_TYPE_ID, number: pemSmallEdition },
+                            });
+                            saveFinishedPemMainToHallOfFame(copy, finishedResults);
+                        } else {
+                            setTournamentResults({
+                                ...finishedResults,
+                                tournament: { type: currentTournamentType, number: tournamentNumber },
+                            });
+                            saveFinishedTournamentToHallOfFame(copy, finishedResults);
+                        }
                         setTeamPlacings((prev) => {
                             const next = { ...prev };
 
                             const inc = (id, key) => {
                                 if (!id) return;
-                                const cur = next[id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                                const cur = next[id] ?? { ...EMPTY_TEAM_PLACINGS };
                                 next[id] = { ...cur, [key]: (cur[key] ?? 0) + 1 };
                             };
 
-                            inc(winner?.id, "wins");
-                            inc(loser?.id, "seconds");
-                            inc(thirdPlaceWinner?.id, "thirds");
+                            const tierPrefix = isCstBracket ? "tier2" : isPemBracket ? "tier1" : null;
+                            inc(winner?.id, tierPrefix ? `${tierPrefix}Wins` : "wins");
+                            inc(loser?.id, tierPrefix ? `${tierPrefix}Seconds` : "seconds");
+                            inc(thirdPlaceWinner?.id, tierPrefix ? `${tierPrefix}Thirds` : "thirds");
 
                             saveTeamPlacings(next);
                             return next;
@@ -12110,6 +14846,39 @@ function SpecialModePage() {
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
 
+        if (tournamentResults.kind === "pemQualifier") {
+            const edition = tournamentResults.tournament?.number ?? pemSmallEdition;
+            const finalText = `The 4 qualifiers of PEM Small Tournament #${edition}:`;
+
+            setShowProceed(false);
+            setShowPodium(true);
+
+            if (!hasPlayedWinnerAnimation) {
+                setWinnersText("Qualified from Group A:");
+
+                const timers = [
+                    setTimeout(() => setShowWinnerText(true), 500),
+                    setTimeout(() => setWinnersText("Qualified from Group B:"), 5000),
+                    setTimeout(() => setWinnersText(finalText), 9500),
+                    setTimeout(() => setShowProceed(true), 11500),
+                    setTimeout(() => setHasPlayedWinnerAnimation(true), 13500),
+                ];
+
+                return () => timers.forEach(clearTimeout);
+            }
+
+            setShowWinnerText(true);
+            setShowProceed(true);
+            setWinnersText(finalText);
+            return;
+        }
+
+        const championText = tournamentResults.kind === "cst"
+            ? `And the WINNER of Champions Series Tour #${tournamentResults.tournament?.number ?? cstNumber} is:`
+            : tournamentResults.kind === "pem"
+                ? `And the CHAMPION of PEM Small Tournament #${tournamentResults.tournament?.number ?? pemSmallEdition} is:`
+                : `And the CHAMPION of Official #${tournamentNumber} is:`;
+
         setShowProceed(false);
         setShowPodium(true);
 
@@ -12127,7 +14896,7 @@ function SpecialModePage() {
             }, 7000);
 
             const t4 = setTimeout(() => {
-                setWinnersText(`And the CHAMPION of Official #${tournamentNumber} is:`);
+                setWinnersText(championText);
             }, 10000);
 
             const proceed = setTimeout(() => {
@@ -12149,7 +14918,7 @@ function SpecialModePage() {
 
         setShowWinnerText(true);
         setShowProceed(true);
-        setWinnersText(`And the CHAMPION of Official #${tournamentNumber} is:`);
+        setWinnersText(championText);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         showWinnersScreen,
@@ -12170,7 +14939,7 @@ function SpecialModePage() {
         setShowPickemButtons(false);
         setPickemSentenceStep(0);
 
-        const partsCount = 4 + PICKEM_PLAYOFF_KEYS.filter((key) => (guessedCounts?.[key] ?? 0) > 0).length;
+        const partsCount = buildPickemSentenceParts().length;
         const hasLossLine = (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0) !== 0;
         const stepsCount = partsCount + (hasLossLine ? 1 : 0);
 
@@ -12243,6 +15012,137 @@ function SpecialModePage() {
 
     const buildPickemSentenceParts = () => {
         const green = "#2e7d32";
+
+        if (activePhase === "qualifier") {
+            const qualifierParts = [<>YOU guessed{" "}</>];
+
+            QUALIFIER_PICKEM_ROUNDS.forEach(({ key, label, total }, idx) => {
+                const value = guessedCounts?.[key] ?? 0;
+                const isLast = idx === QUALIFIER_PICKEM_ROUNDS.length - 1;
+                const isSecondLast = idx === QUALIFIER_PICKEM_ROUNDS.length - 2;
+                const isPerfect = value === total;
+                const isAwful = total >= 4 ? value <= Math.floor(total / 4) : value === 0;
+
+                qualifierParts.push(
+                    <>
+                        {isLast ? "and " : ""}
+                        <span style={{ fontWeight: 900, color: isPerfect ? green : isAwful ? "red" : undefined }}>
+                            {value}/{total}
+                        </span>{" "}
+                        {label}{isLast || isSecondLast ? "" : ","}{" "}
+                    </>
+                );
+            });
+
+            return qualifierParts;
+        }
+        if (isPemMainPhase) {
+            const items = PEM_GROUP_PICKEM_ROUNDS.map(({ key, label, total }) => {
+                const value = guessedCounts?.[key] ?? 0;
+                const isAwful = total >= 4 ? value <= Math.floor(total / 4) : value === 0;
+
+                return (
+                    <>
+                        <span style={{ fontWeight: 900, color: value === total ? green : isAwful ? "red" : undefined }}>
+                            {value}/{total}
+                        </span>{" "}
+                        {label}
+                    </>
+                );
+            });
+
+            const pemRoundDefs = {
+                qf: { total: 2, label: "Quarterfinals", awfulMax: 0 },
+                sf: { total: 2, label: "Semifinals", awfulMax: 0 },
+            };
+
+            ["qf", "sf", "tpd", "gf"]
+                .filter((key) => (guessedCounts?.[key] ?? 0) > 0)
+                .forEach((key) => {
+                    const value = guessedCounts[key];
+
+                    if (key === "tpd") {
+                        items.push(<span style={{ fontWeight: 900, color: green }}>the Third Place Decider</span>);
+                    } else if (key === "gf") {
+                        items.push(<span style={{ fontWeight: 900, color: green }}>the Grand Final</span>);
+                    } else {
+                        const { total, label, awfulMax } = pemRoundDefs[key];
+                        items.push(
+                            <>
+                                <span style={{ fontWeight: 900, color: value === total ? green : value <= awfulMax ? "red" : undefined }}>
+                                    {value}/{total}
+                                </span>{" "}
+                                {label}
+                            </>
+                        );
+                    }
+                });
+
+            return [
+                <>YOU guessed{" "}</>,
+                ...items.map((node, idx) => (
+                    <>
+                        {idx === items.length - 1 && items.length > 1 ? "and " : ""}
+                        {node}
+                        {idx < items.length - 2 ? ", " : " "}
+                    </>
+                )),
+            ];
+        }
+        if (isCstPhase) {
+            const items = CST_GROUPS.map((group) => {
+                const value = guessedCounts?.[`cst_${group}`] ?? 0;
+                const total = cst?.[group]?.matches?.length ?? 10;
+
+                return (
+                    <>
+                        <span style={{ fontWeight: 900, color: value === total ? green : value <= Math.floor(total / 4) ? "red" : undefined }}>
+                            {value}/{total}
+                        </span>{" "}
+                        matches from Group {group}
+                    </>
+                );
+            });
+
+            const cstRoundDefs = {
+                qf: { total: 4, label: "Quarterfinals", awfulMax: 1 },
+                sf: { total: 2, label: "Semifinals" },
+            };
+
+            ["qf", "sf", "tpd", "gf"]
+                .filter((key) => (guessedCounts?.[key] ?? 0) > 0)
+                .forEach((key) => {
+                    const value = guessedCounts[key];
+
+                    if (key === "tpd") {
+                        items.push(<span style={{ fontWeight: 900, color: green }}>the Third Place Decider</span>);
+                    } else if (key === "gf") {
+                        items.push(<span style={{ fontWeight: 900, color: green }}>the Grand Final</span>);
+                    } else {
+                        const { total, label, awfulMax } = cstRoundDefs[key];
+                        items.push(
+                            <>
+                                <span style={{ fontWeight: 900, color: value === total ? green : awfulMax !== undefined && value <= awfulMax ? "red" : undefined }}>
+                                    {value}/{total}
+                                </span>{" "}
+                                {label}
+                            </>
+                        );
+                    }
+                });
+
+            return [
+                <>YOU guessed{" "}</>,
+                ...items.map((node, idx) => (
+                    <>
+                        {idx === items.length - 1 && items.length > 1 ? "and " : ""}
+                        {node}
+                        {idx < items.length - 2 ? ", " : " "}
+                    </>
+                )),
+            ];
+        }
+
         const playoffKeys = PICKEM_PLAYOFF_KEYS.filter((key) => (guessedCounts?.[key] ?? 0) > 0);
         const roundDefs = {
             ro16: { total: 8, label: "Rounds of 16", awfulMax: 2 },
@@ -12310,11 +15210,107 @@ function SpecialModePage() {
         buildPickemSentenceParts().map((part, idx) => (
             <span
                 key={idx}
-                style={{ opacity: pickemSummarySeen || pickemSentenceStep > idx ? 1 : 0, transition: "opacity 0.8s ease" }}
+                style={{ opacity: pickemSummarySeen || pickemSentenceStep > idx ? 1 : 0, transition: "opacity 0.8s ease-in-out" }}
             >
                 {part}
             </span>
         ));
+
+    const startChampionsSeriesTour = () => {
+        const number = getTypeNumber(CST_TYPE_ID) + 1;
+        setTypeNumber(CST_TYPE_ID, number);
+
+        const groups = splitCstGroups(pemSmall?.seeds?.cst || []);
+        const builtCst = buildCstGroupStage(groups);
+
+        const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
+        setTeamStats(statsWithFreshExperience);
+        teamStatsRef.current = statsWithFreshExperience;
+        saveTeamStats(statsWithFreshExperience);
+
+        setCst(builtCst);
+        cstRef.current = builtCst;
+        setPlayoffs(null);
+        setPemSmall((prev) => (prev ? { ...prev, event: "cst", cstNumber: number, cstGroups: groups } : prev));
+        setActivePhase("cstGroups");
+        setViewPhase("cstGroups");
+
+        setSeriesState(defaultSeriesState);
+        clearRoundLog();
+
+        setNeededPickemPoints(getRandomCstNeededPickemPoints());
+        setFinalPickemPoints(0);
+        setGuessedCounts({ stage1: 0, stage2: 0, stage3: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0, correct: 0 });
+        setShowPickemSummary(false);
+        setShowPickemLine2(false);
+        setShowPickemResult(false);
+        setPickemSummarySeen(false);
+
+        setShowWinnersScreen(false);
+        setTournamentResults(null);
+        setShowWinnerText(false);
+        setShowPodium(false);
+        setShowProceed(false);
+        setHasPlayedWinnerAnimation(false);
+        setWinnersText("And the Fourth Place is:");
+
+        ensureRatingsSnapshot();
+        setShowTournamentIntro(true);
+        window.scrollTo({ top: 0 });
+    };
+
+    const startPemMainEvent = () => {
+        const groups = splitQualifierGroups(buildPemMainEventTeams(pemSmall));
+        const builtPemMain = buildPemMainGroupStage(groups);
+
+        const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
+        setTeamStats(statsWithFreshExperience);
+        teamStatsRef.current = statsWithFreshExperience;
+        saveTeamStats(statsWithFreshExperience);
+
+        setPemMain(builtPemMain);
+        pemMainRef.current = builtPemMain;
+        setPemGroupView("A");
+        setPlayoffs(null);
+        setPemSmall((prev) => (prev ? { ...prev, event: "main", mainGroups: groups } : prev));
+        setActivePhase("pemGroups");
+        setViewPhase("pemGroups");
+
+        setSeriesState(defaultSeriesState);
+        clearRoundLog();
+
+        setNeededPickemPoints(getRandomPemNeededPickemPoints());
+        setFinalPickemPoints(0);
+        setGuessedCounts({ stage1: 0, stage2: 0, stage3: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0, correct: 0 });
+        setShowPickemSummary(false);
+        setShowPickemLine2(false);
+        setShowPickemResult(false);
+        setPickemSummarySeen(false);
+
+        setShowWinnersScreen(false);
+        setTournamentResults(null);
+        setShowWinnerText(false);
+        setShowPodium(false);
+        setShowProceed(false);
+        setHasPlayedWinnerAnimation(false);
+        setWinnersText("And the Fourth Place is:");
+
+        ensureRatingsSnapshot();
+        setShowTournamentIntro(true);
+        window.scrollTo({ top: 0 });
+    };
+
+    const handlePemProceedToNextEvent = () => {
+        setShowPickemSummary(false);
+        setShowWinnersScreen(false);
+
+        if (pemSmall?.event === "qualifier" || (activePhase === "qualifier" && !cst)) {
+            startChampionsSeriesTour();
+            return;
+        }
+
+        if (pemSmall?.event === "cst") startPemMainEvent();
+    };
 
     const handleProceed = () => {
         recomputePickemTotals();
@@ -12358,7 +15354,7 @@ function SpecialModePage() {
         const record = {
             id: `official-${tournamentNumber}-${Date.now()}`,
             number: tournamentNumber,
-            type: ACTIVE_TOURNAMENT_TYPE,
+            type: currentTournamentType,
             finishedAt: new Date().toISOString(),
             neededPickemPoints,
             achievedPickemPoints: hallAchievedPickemPoints,
@@ -12379,20 +15375,137 @@ function SpecialModePage() {
         };
 
         saveHallTournament(record)
-            .then(() => setHallOfFame((prev) => [record, ...prev.filter((item) => item.id !== record.id)]))
+            .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
             .catch((error) => console.error("Couldn't save tournament to Hall of Fame:", error));
     };
 
-    const hallTeamCircle = (team, size = 52) => (
+    const saveFinishedCstToHallOfFame = (finishedPlayoffs, finishedResults) => {
+        const groupStage = cstRef.current;
+        const achievedPickemPoints =
+            getCstGroupMatches(groupStage).reduce((sum, match) => sum + cstGroupMatchPoints(match), 0) +
+            Object.values(finishedPlayoffs || {})
+                .filter(Array.isArray)
+                .flat()
+                .reduce((sum, match) => sum + playoffsMatchPoints(match), 0);
+        setFinalPickemPoints(achievedPickemPoints);
+
+        const loserOf = (match) =>
+            match?.played
+                ? [match.slotA, match.slotB].find((team) => team?.id === match.loserTeamId) || null
+                : null;
+        const quarterLosers = (finishedPlayoffs.qf || []).map(loserOf).filter(Boolean);
+        const orderedPlaces = [
+            finishedResults.winner,
+            finishedResults.runnerUp,
+            finishedResults.thirdPlace,
+            finishedResults.fourthPlace,
+            ...quarterLosers,
+        ].filter(Boolean);
+
+        const record = {
+            id: `cst-${cstNumber}-${Date.now()}`,
+            type: CST_TYPE_ID,
+            event: "cst",
+            number: cstNumber,
+            pemSmallEdition,
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints,
+            pickemWon: achievedPickemPoints >= neededPickemPoints,
+            results: finishedResults,
+            places: orderedPlaces.map((team, index) => ({ place: index + 1, team })),
+            groups: Object.fromEntries(
+                CST_GROUPS.map((group) => [group, (groupStage?.[group]?.teams || []).map(toBaseTeam)])
+            ),
+            groupStage,
+            playoffs: finishedPlayoffs,
+        };
+
+        saveHallTournament(record)
+            .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
+            .catch((error) => console.error("Couldn't save the Champions Series Tour to Hall of Fame:", error));
+    };
+
+    const saveFinishedQualifierToHallOfFame = (finishedQualifier, qualifiers, edition) => {
+        const achievedPickemPoints = getQualifierMatches(finishedQualifier)
+            .reduce((sum, match) => sum + qualifierMatchPoints(match), 0);
+        setFinalPickemPoints(achievedPickemPoints);
+
+        const record = {
+            id: `pem-small-qualifier-${edition}-${Date.now()}`,
+            type: PEM_SMALL_TYPE_ID,
+            event: "qualifier",
+            number: edition,
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints,
+            pickemWon: achievedPickemPoints >= neededPickemPoints,
+            results: { qualifiers },
+            groups: Object.fromEntries(
+                QUALIFIER_GROUPS.map((group) => [group, (finishedQualifier[group]?.teams || []).map(toBaseTeam)])
+            ),
+            qualifier: finishedQualifier,
+        };
+
+        saveHallTournament(record)
+            .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
+            .catch((error) => console.error("Couldn't save the Qualifier to Hall of Fame:", error));
+    };
+
+    const saveFinishedPemMainToHallOfFame = (finishedPlayoffs, finishedResults) => {
+        const groupStage = pemMainRef.current;
+        const achievedPickemPoints =
+            getPemGroupMatches(groupStage).reduce((sum, match) => sum + pemGroupMatchPoints(match), 0) +
+            Object.values(finishedPlayoffs || {})
+                .filter(Array.isArray)
+                .flat()
+                .reduce((sum, match) => sum + playoffsMatchPoints(match), 0);
+        setFinalPickemPoints(achievedPickemPoints);
+
+        const quarterLosers = (finishedPlayoffs.qf || []).map(getMatchLoserTeam).filter(Boolean);
+        const orderedPlaces = [
+            finishedResults.winner,
+            finishedResults.runnerUp,
+            finishedResults.thirdPlace,
+            finishedResults.fourthPlace,
+            ...quarterLosers,
+        ].filter(Boolean);
+
+        const record = {
+            id: `pem-small-${pemSmallEdition}-${Date.now()}`,
+            type: PEM_SMALL_TYPE_ID,
+            event: "main",
+            number: pemSmallEdition,
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints,
+            pickemWon: achievedPickemPoints >= neededPickemPoints,
+            results: finishedResults,
+            places: orderedPlaces.map((team, index) => ({ place: index + 1, team })),
+            teams: buildPemMainEventTeams(pemSmall),
+            qualifiedTeamIds: (pemSmall?.qualified || []).map((team) => team.id),
+            groups: Object.fromEntries(
+                PEM_MAIN_GROUPS.map((group) => [group, (groupStage?.[group]?.teams || []).map(toBaseTeam)])
+            ),
+            groupStage,
+            playoffs: finishedPlayoffs,
+        };
+
+        saveHallTournament(record)
+            .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
+            .catch((error) => console.error("Couldn't save the PEM Small Tournament to Hall of Fame:", error));
+    };
+
+    const hallTeamCircle = (team, size = 52, highlighted = false) => (
         <div
-            title={team ? `Team ${team.name}` : "Unknown team"}
+            title={team ? `Team ${team.name}${highlighted ? " (via the Qualifier)" : ""}` : "Unknown team"}
             style={{
                 width: size,
                 height: size,
                 borderRadius: "50%",
                 background: team?.color || "#666",
-                border: "3px solid #999",
-                boxShadow: team?.shadow || "0 0 8px rgba(0,0,0,.35)",
+                border: `3px solid ${highlighted ? PEM_QUALIFIED_HIGHLIGHT.borderColor : "#999"}`,
+                boxShadow: highlighted ? PEM_QUALIFIED_HIGHLIGHT.boxShadow : team?.shadow || "0 0 8px rgba(0,0,0,.35)",
                 flex: "0 0 auto",
             }}
         />
@@ -12408,36 +15521,44 @@ function SpecialModePage() {
         <div style={{ display: "flex", alignItems: "center", marginTop: 18, position: "relative" }}>
             {hallTeamCircle(team, size)}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span
-                    className={css.finished_modal_team_label}
-                    style={{
-                        fontSize: 20,
-                        fontWeight: 800,
-                        color: "#fff",
-                        textShadow: `
-                            0 0 6px ${team?.color},
-                            0 0 14px ${team?.color}66,
-                            0 1px 3px rgba(0,0,0,0.4)
-                        `,
-                        width: "max-content",
-                        position: "absolute",
-                        top: '60%',
-                        left: '50%',
-                        transform: 'translateX(-50%)'
-                    }}
-                >
-                    {label}
-                </span>
+                {label ? (
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            fontSize: 20,
+                            fontWeight: 800,
+                            color: "#fff",
+                            textShadow: `
+                                0 0 6px ${team?.color},
+                                0 0 14px ${team?.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
+                            width: "max-content",
+                            position: "absolute",
+                            top: '60%',
+                            left: '50%',
+                            transform: 'translateX(-50%)'
+                        }}
+                    >
+                        {label}
+                    </span>
+                ) : null}
                 <span
                     className={css.finished_modal_team_label}
                     style={{
                         fontSize: 14,
                         fontWeight: 800,
                         color: "#fff",
-                        textShadow: '0 0 4px #000',
+                        textShadow: label
+                            ? '0 0 4px #000'
+                            : `
+                                0 0 6px ${team?.color},
+                                0 0 14px ${team?.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
                         width: "max-content",
                         position: "absolute",
-                        top: '-14%',
+                        top: label ? '-14%' : '60%',
                         left: '50%',
                         transform: 'translateX(-50%)'
                     }}
@@ -12448,19 +15569,497 @@ function SpecialModePage() {
         </div>
     );
 
-    const renderHallTeamRow = (teams, size = 38) => (
+    const renderHallTeamRow = (teams, size = 38, highlightedIds = null) => (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {(teams || []).length === 0
                 ? <span className={css.info_text} style={{ fontSize: 14 }}>No teams saved.</span>
-                : (teams || []).map((team, index) => (
-                    <span key={`${team?.id ?? "team"}-${index}`} title={`Team ${team?.name}`}>
-                        {hallTeamCircle(team, size)}
-                    </span>
-                ))}
+                : (teams || []).map((team, index) => {
+                    const highlighted = !!highlightedIds?.has(team?.id);
+                    return (
+                        <span
+                            key={`${team?.id ?? "team"}-${index}`}
+                            title={`Team ${team?.name}`}
+                        >
+                            {hallTeamCircle(team, size, highlighted)}
+                        </span>
+                    );
+                })}
         </div>
     );
 
+    const hallRecordLabel = (item) =>
+        item?.event === "qualifier"
+            ? `PEM Small Tournament Qualifier #${item.number}`
+            : item?.event === "main"
+                ? `Pro Extreme Masters Small Tournament #${item.number}`
+                : `${getTournamentTypeConfig(item?.type).label} #${item?.number}`;
+
+    const renderPemHallCardName = (number) => (
+        <>
+            <span style={{ display: "block" }}>Pro</span>
+            <span style={{ display: "block" }}>Extreme</span>
+            <span style={{ display: "block" }}>Masters</span>
+            <span style={{ fontSize: 44, fontStyle: "normal" }}>Small</span>
+            <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                <span>Tournament</span>{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(number))}>#{number}</span>
+            </span>
+        </>
+    );
+
+    const renderQualifierWinnersBlock = (qualifiers, { animated = false } = {}) => (
+        <div className={css.qualifier_winners}>
+            {QUALIFIER_GROUPS.map((group, groupIndex) => (
+                <div key={group} className={css.qualifier_winners_group}>
+                    <motion.h3
+                        initial={animated ? { opacity: 0, y: -20 } : false}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={animated ? { duration: 0.6, delay: groupIndex === 0 ? 0.8 : 5.3 } : { duration: 0 }}
+                        className={css.game_title}
+                        style={{ fontSize: 34, textTransform: "none" }}
+                    >
+                        Group {group}
+                    </motion.h3>
+                    <div className={css.qualifier_winners_teams}>
+                        {(qualifiers?.[group] || []).map((team, i) => (
+                            <motion.div
+                                key={team.id}
+                                initial={animated ? { opacity: 0, y: 80 } : false}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={animated ? { duration: 1.2, delay: (groupIndex === 0 ? 1.2 : 5.7) + i * 1.2 } : { duration: 0 }}
+                                className={css.qualifier_winner_card}
+                            >
+                                <div
+                                    className={css.winnerLogo}
+                                    style={{ backgroundColor: team.color, boxShadow: team.shadow }}
+                                />
+                                <span
+                                    className={css.qualifier_winner_name}
+                                    style={{
+                                        textShadow: `
+                                            0 0 6px ${team.color},
+                                            0 0 14px ${team.color}66,
+                                            0 1px 3px rgba(0,0,0,0.4)
+                                        `,
+                                    }}
+                                >
+                                    Team <b>{team.name}</b>
+                                </span>
+                                <span className={css.qualifier_winner_via}>
+                                    {i === 0 ? "via the Upper Final" : "via the Consolidation Final"}
+                                </span>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
+    const renderQualifierHallCard = (item) => {
+        const won = item.pickemWon;
+        const qualifiedTeams = QUALIFIER_GROUPS.flatMap((group) => item.results?.qualifiers?.[group] || []);
+
+        return (
+            <button
+                type="button"
+                key={item.id}
+                onClick={() => {
+                    setHallQualifierGroup("A");
+                    setSelectedHallTournament(item);
+                }}
+                className={won ? css.cardPickemWin : css.cardPickemLoss}
+                style={{
+                    position: "relative",
+                    flex: "0 0 auto",
+                    width: 340,
+                    minHeight: 520,
+                    padding: "22px 18px",
+                    borderRadius: 16,
+                    cursor: "pointer",
+                    color: "#2e2f42",
+                    textAlign: "center",
+                    overflow: "visible",
+                }}
+            >
+                {hallCardIcon(won)}
+
+                <div style={{ display: "flex", position: "relative", zIndex: 2, marginTop: 24 }}>
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "-60px",
+                            left: "-8px",
+                            right: "-8px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: "#fff",
+                                position: "absolute",
+                                top: "6px",
+                                left: "1px"
+                            }}
+                        >
+                            <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                        </span>
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: "8px",
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                zIndex: 3
+                            }}
+                        >
+                            <QualifierBadge height={20} />
+                        </div>
+                        <span
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: won ? "#2e7d32" : "#be3939",
+                                position: "absolute",
+                                top: "6px",
+                                right: "0px"
+                            }}
+                        >
+                            <strong style={{ fontSize: 14 }}><i>{item.achievedPickemPoints}({item.achievedPickemPoints - item.neededPickemPoints > 0 ? '+' : ''}{item.achievedPickemPoints - item.neededPickemPoints})</i></strong> <br /> achieved Pick&apos;em Point{item.achievedPickemPoints !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+                </div>
+
+                <div
+                    className={css.game_title}
+                    style={{
+                        margin: "2px 0 0",
+                        position: "relative",
+                        zIndex: 2,
+                        color: "#fff",
+                        fontStyle: "oblique",
+                        lineHeight: 1,
+                        textTransform: "none",
+                        fontSize: 20,
+                    }}
+                >
+                    {renderPemHallCardName(item.number)}
+                </div>
+
+                <div style={{ position: "relative", zIndex: 2, marginTop: 12 }}>
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: "#ffffff",
+                            fontSize: "36px",
+                            textShadow: `
+                                0 0 6px #2e2f42,
+                                0 0 14px #2e2f4266,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
+                            position: "relative",
+                            top: "auto",
+                            left: "auto",
+                            display: "inline-block",
+                            width: "max-content",
+                        }}
+                    >
+                        Four Qualifiers
+                    </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", zIndex: 2 }}>
+                    {qualifiedTeams.map((team) => (
+                        <React.Fragment key={team.id}>
+                            {hallPlaceRow(null, team, 40)}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </button>
+        );
+    };
+
+    const renderCstHallCard = (item) => {
+        const won = item.pickemWon;
+        const results = item.results || {};
+
+        return (
+            <button
+                type="button"
+                key={item.id}
+                onClick={() => setSelectedHallTournament(item)}
+                className={won ? css.cardPickemWin : css.cardPickemLoss}
+                style={{
+                    position: "relative",
+                    flex: "0 0 auto",
+                    width: 340,
+                    minHeight: 520,
+                    padding: "22px 18px",
+                    borderRadius: 16,
+                    cursor: "pointer",
+                    color: "#2e2f42",
+                    textAlign: "center",
+                    overflow: "visible",
+                }}
+            >
+                {hallCardIcon(won)}
+
+                <div style={{ display: "flex", position: "relative", zIndex: 2, marginTop: 24 }}>
+                    <span
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#fff",
+                            position: "absolute",
+                            top: "-60px",
+                            left: "-8px"
+                        }}
+                    >
+                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                    </span>
+                    <span
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: won ? "#2e7d32" : "#be3939",
+                            position: "absolute",
+                            top: "-60px",
+                            right: "-8px"
+                        }}
+                    >
+                        <strong style={{ fontSize: 14 }}><i>{item.achievedPickemPoints}({item.achievedPickemPoints - item.neededPickemPoints > 0 ? '+' : ''}{item.achievedPickemPoints - item.neededPickemPoints})</i></strong> <br /> achieved Pick&apos;em Point{item.achievedPickemPoints !== 1 ? 's' : ''}
+                    </span>
+                </div>
+
+                <div
+                    className={css.game_title}
+                    style={{
+                        margin: "0",
+                        position: "relative",
+                        zIndex: 2,
+                        color: "#fff",
+                        fontStyle: "oblique",
+                        lineHeight: 1,
+                        textTransform: "none",
+                        fontSize: 30,
+                    }}
+                >
+                    <span style={{ display: "block" }}>Champions</span>
+                    <span style={{ display: "block" }}>Series</span>
+                    <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                        Tour{" "}
+                        <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
+                    </span>
+                </div>
+
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        marginTop: 34,
+                        position: "relative"
+                    }}
+                >
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: `#ffffff`,
+                            fontSize: "26px",
+                            width: "max-content",
+                            textShadow: '0 0 4px #000',
+                            position: "absolute",
+                            left: "50%",
+                            top: "-20%",
+                            transform: "translateX(-50%)",
+                            zIndex: 3
+                        }}
+                    >
+                        Team {results.winner?.name ?? "—"}
+                    </span>
+                    <div style={{ position: "relative", zIndex: 2 }}>
+                        {hallTeamCircle(results.winner, 84)}
+                    </div>
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: '#ffffff',
+                            fontSize: "40px",
+                            width: "max-content",
+                            textShadow: `
+                                0 0 6px ${results.winner?.color},
+                                0 0 14px ${results.winner?.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
+                            position: "absolute",
+                            left: "50%",
+                            top: "50%",
+                            transform: "translateX(-50%)",
+                            zIndex: 3
+                        }}
+                    >
+                        1st place
+                    </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14, position: "relative", zIndex: 2 }}>
+                    {hallPlaceRow("2nd place", results.runnerUp, 56)}
+                    {hallPlaceRow("3rd place", results.thirdPlace, 46)}
+                    {hallPlaceRow("4th place", results.fourthPlace, 40)}
+                </div>
+            </button>
+        );
+    };
+
+    const renderPemMainHallCard = (item) => {
+        const won = item.pickemWon;
+        const results = item.results || {};
+
+        return (
+            <button
+                type="button"
+                key={item.id}
+                onClick={() => {
+                    setHallQualifierGroup("A");
+                    setSelectedHallTournament(item);
+                }}
+                className={won ? css.cardPickemWin : css.cardPickemLoss}
+                style={{
+                    position: "relative",
+                    flex: "0 0 auto",
+                    width: 340,
+                    minHeight: 520,
+                    padding: "22px 18px",
+                    borderRadius: 16,
+                    cursor: "pointer",
+                    color: "#2e2f42",
+                    textAlign: "center",
+                    overflow: "visible",
+                }}
+            >
+                {hallCardIcon(won)}
+
+                <div style={{ display: "flex", position: "relative", zIndex: 2, marginTop: 12 }}>
+                    <span
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#fff",
+                            position: "absolute",
+                            top: "-32px",
+                            left: "-8px"
+                        }}
+                    >
+                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                    </span>
+                    <span
+                        style={{
+                            position: "absolute",
+                            top: "-30px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            display: "flex",
+                        }}
+                    >
+                        <PemSilverTrophy size={28} />
+                    </span>
+                    <span
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: won ? "#2e7d32" : "#be3939",
+                            position: "absolute",
+                            top: "-32px",
+                            right: "-8px"
+                        }}
+                    >
+                        <strong style={{ fontSize: 14 }}><i>{item.achievedPickemPoints}({item.achievedPickemPoints - item.neededPickemPoints > 0 ? '+' : ''}{item.achievedPickemPoints - item.neededPickemPoints})</i></strong> <br /> achieved Pick&apos;em Point{item.achievedPickemPoints !== 1 ? 's' : ''}
+                    </span>
+                </div>
+
+                <div
+                    className={css.game_title}
+                    style={{
+                        margin: "2px 0 0",
+                        position: "relative",
+                        zIndex: 2,
+                        color: "#fff",
+                        fontStyle: "oblique",
+                        lineHeight: 1,
+                        textTransform: "none",
+                        fontSize: 20,
+                    }}
+                >
+                    {renderPemHallCardName(item.number)}
+                </div>
+
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        marginTop: 36,
+                        position: "relative"
+                    }}
+                >
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: `#ffffff`,
+                            fontSize: "32px",
+                            width: "max-content",
+                            textShadow: '0 0 4px #000',
+                            position: "absolute",
+                            left: "50%",
+                            top: "-25%",
+                            transform: "translateX(-50%)",
+                            zIndex: 3
+                        }}
+                    >
+                        Team {results.winner?.name ?? "—"}
+                    </span>
+                    <div style={{ position: "relative", zIndex: 2 }}>
+                        {hallTeamCircle(results.winner, 88)}
+                    </div>
+                    <span
+                        className={css.finished_modal_team_label}
+                        style={{
+                            color: '#ffffff',
+                            fontSize: "48px",
+                            textShadow: `
+                                0 0 6px ${results.winner?.color},
+                                0 0 14px ${results.winner?.color}66,
+                                0 1px 3px rgba(0,0,0,0.4)
+                            `,
+                            position: "absolute",
+                            left: "50%",
+                            top: "55%",
+                            transform: "translateX(-50%)",
+                            zIndex: 3
+                        }}
+                    >
+                        CHAMPION
+                    </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 10, position: "relative", zIndex: 2 }}>
+                    {hallPlaceRow("Runner Up", results.runnerUp, 58)}
+                    {hallPlaceRow("3rd place", results.thirdPlace, 48)}
+                    {hallPlaceRow("4th place", results.fourthPlace, 40)}
+                </div>
+            </button>
+        );
+    };
+
     const renderHallCard = (item) => {
+        if (item.event === "qualifier") return renderQualifierHallCard(item);
+        if (item.event === "cst") return renderCstHallCard(item);
+        if (item.event === "main") return renderPemMainHallCard(item);
+
         const won = item.pickemWon;
         const config = getTournamentTypeConfig(item.type);
         const results = item.results || {};
@@ -12768,7 +16367,7 @@ function SpecialModePage() {
                                             />
 
                                             <span>
-                                                {getTournamentTypeConfig(item.type).label} #{item.number}
+                                                {hallRecordLabel(item)}
                                             </span>
                                         </label>
                                     );
@@ -12782,11 +16381,13 @@ function SpecialModePage() {
                                 onChange={(e) => setHallManagerTargetId(e.target.value)}
                             >
                                 <option value=""></option>
-                                {hallOfFame.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {getTournamentTypeConfig(item.type).label} #{item.number}
-                                    </option>
-                                ))}
+                                {hallOfFame
+                                    .filter((item) => !item.event)
+                                    .map((item) => (
+                                        <option key={item.id} value={item.id}>
+                                            {hallRecordLabel(item)}
+                                        </option>
+                                    ))}
                             </select>
                         )}
 
@@ -12865,7 +16466,7 @@ function SpecialModePage() {
                                     }}
                                 >
                                     {hallManagerMode === "add" && <option value=""></option>}
-                                    {TOURNAMENT_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
+                                    {HALL_FORM_TOURNAMENT_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
                                 </select>
                                 {[
                                     ["number", "Tournament number"],
@@ -13083,14 +16684,17 @@ function SpecialModePage() {
     };
 
     const renderArchivedPlayoffsBracket = (record) => {
+        const bracketKind = record.playoffs?.kind ?? null;
+        const hasRoundOf16 = (record.playoffs?.ro16?.length ?? 0) > 0;
+        const connectorLevelOf = (stage) => (hasRoundOf16 ? stage : ({ qf: "ro16", sf: "qf" }[stage] ?? stage));
         const stages = [
             ["ro16", "Round of 16", css.match_rect, css.columnRo16],
-            ["qf", "Quarterfinals", css.quarters_rect, css.columnQuarters],
-            ["sf", "Semifinals", css.semis_rect, css.columnSemis],
+            ["qf", "Quarterfinals", css.quarters_rect, hasRoundOf16 ? css.columnQuarters : css.columnRo16],
+            ["sf", "Semifinals", css.semis_rect, hasRoundOf16 ? css.columnSemis : css.columnQuarters],
             ["gf", "Grand Final", css.grandFinal_rect, css.columnGrandFinal],
-        ];
+        ].filter(([stage]) => stage !== "ro16" || hasRoundOf16);
 
-        const renderArchivedMatch = (match, stage, index, rectClass) => {
+        const renderArchivedMatch = (match, stage, index, rectClass, pemLayout = false) => {
             if (!match) return null;
 
             const displayMatch = match;
@@ -13121,17 +16725,20 @@ function SpecialModePage() {
                 <div
                     key={displayMatch.id || `${stage}-${index}`}
                     className={
-                        rectClass === css.match_rect
-                            ? (index % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up)
-                            : rectClass === css.quarters_rect
-                                ? (index % 2 === 0 ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up)
-                                : rectClass === css.semis_rect
-                                    ? (index % 2 === 0 ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up)
-                                    : css.gfConnectorWrapper
+                        pemLayout
+                            ? css.pem_playoffs_wrapper
+                            : connectorLevelOf(stage) === "ro16"
+                                ? (index % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up)
+                                : connectorLevelOf(stage) === "qf"
+                                    ? (index % 2 === 0 ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up)
+                                    : connectorLevelOf(stage) === "sf"
+                                        ? (index % 2 === 0 ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up)
+                                        : css.gfConnectorWrapper
                     }
                 >
                     <button
                         type="button"
+                        data-bracket-rect={pemLayout ? `${stage}-${index}` : undefined}
                         className={`${rectClass} ${winnerIsLeft ? css.playoffs_match_win : css.playoffs_match_loss}`}
                         onClick={() => openArchivedHallMatchModal(record, stage, index, displayMatch)}
                         style={{ cursor: "pointer", borderColor: winnerIsLeft ? "#2e7d32" : "#7d2e2e" }}
@@ -13152,7 +16759,7 @@ function SpecialModePage() {
                             style={{ padding: "4.2px 4px" }}
                             className={`${stage === "thirdPlace" ? css.bo_thirdPlaceDecider_label : css.bo_playoffs_label} ${isUserWin ? css.playoffs_match_win_label : css.playoffs_match_loss_label}`}
                         >
-                            BO{getBestOfForPlayoffs(stage)}
+                            BO{getBestOfForPlayoffs(stage, bracketKind)}
                         </div>
 
                         {stage !== "thirdPlace" && stage !== "gf" ? (
@@ -13231,28 +16838,59 @@ function SpecialModePage() {
                 </div>
             );
         };
+
+        if (bracketKind === "pem") {
+            const pemRectClasses = {
+                qf: css.quarters_rect,
+                sf: css.semis_rect,
+                thirdPlace: css.thirdPlace_rect,
+                gf: css.grandFinal_rect,
+            };
+
+            return (
+                <PemPlayoffsLayout
+                    bracket={record.playoffs}
+                    renderMatch={(match, stage, index) =>
+                        renderArchivedMatch(match, stage, index, pemRectClasses[stage], true)
+                    }
+                />
+            );
+        }
+
+        const thirdPlaceColumn = record.playoffs?.thirdPlace?.length ? (
+            <div
+                className={css.thirdPlace_container}
+                style={hasRoundOf16
+                    ? { top: "76.1%", left: "78.3%" }
+                    : { top: "calc(100% + 28px)", left: "50%", transform: "translateX(-50%)", marginTop: 0 }}
+            >
+                <h4 style={{ width: "17ch" }} className={css.column_title}>Third Place Decider</h4>
+                <div className={css.columnThirdPlace}>{record.playoffs.thirdPlace.map((match, index) => renderArchivedMatch(match, "thirdPlace", index, css.thirdPlace_rect))}</div>
+            </div>
+        ) : null;
+
         return (
-            <div className={css.bracket_container} style={{ transition: "none", marginLeft: 28, position: "relative" }}>
+            <div className={css.bracket_container} style={{ transition: "none", marginLeft: hasRoundOf16 ? 28 : 0, position: "relative" }}>
                 <div className={css.bracket_inner}>
                     {stages.map(([stage, title, rectClass, columnClass]) => (
-                        <div className={css.column_container} key={stage}>
+                        <div
+                            className={css.column_container}
+                            key={stage}
+                            style={stage === "gf" && !hasRoundOf16 ? { position: "relative" } : undefined}
+                        >
                             <h4 className={css.column_title}>{title}</h4>
                             <div className={columnClass}>{(record.playoffs?.[stage] || []).map((match, index) => renderArchivedMatch(match, stage, index, rectClass))}</div>
+                            {stage === "gf" && !hasRoundOf16 && thirdPlaceColumn}
                         </div>
                     ))}
-                    {!!record.playoffs?.thirdPlace?.length && (
-                        <div className={css.thirdPlace_container} style={{ top: "76.1%", left: "78.3%" }}>
-                            <h4 style={{ width: "17ch" }} className={css.column_title}>Third Place Decider</h4>
-                            <div className={css.columnThirdPlace}>{record.playoffs.thirdPlace.map((match, index) => renderArchivedMatch(match, "thirdPlace", index, css.thirdPlace_rect))}</div>
-                        </div>
-                    )}
+                    {hasRoundOf16 && thirdPlaceColumn}
                 </div>
             </div>
         );
     };
 
-    const HallOfFameSectionTitle = ({ text, marginTop = "48px", marginBottom = "48px" }) => (
-        <div style={{ marginTop, marginBottom, position: "relative" }}>
+    const HallOfFameSectionTitle = ({ text, marginTop = "48px", marginBottom = "48px", sectionId }) => (
+        <div data-hall-section={sectionId} style={{ marginTop, marginBottom, position: "relative" }}>
             <div style={{ position: "absolute", top: "-22px", right: "50%", transform: "translateX(50%)" }}>
                 <h4
                     className={css.game_title}
@@ -13264,6 +16902,168 @@ function SpecialModePage() {
             <hr style={{ width: "1800px", margin: 0 }} className={css.dashed_divider} />
         </div>
     );
+
+    const findPemCounterpartRecord = (record, event) => {
+        const finishedAt = hallRecordTime(record);
+        return hallOfFame
+            .filter((item) =>
+                item.type === PEM_SMALL_TYPE_ID &&
+                item.event === event &&
+                item.number === record.number &&
+                (event === "main" ? hallRecordTime(item) >= finishedAt : hallRecordTime(item) <= finishedAt)
+            )
+            .sort((a, b) => Math.abs(hallRecordTime(a) - finishedAt) - Math.abs(hallRecordTime(b) - finishedAt))[0] ?? null;
+    };
+
+    const openLinkedHallRecord = (record, scrollToSection = null) => {
+        setHallQualifierGroup("A");
+        setSelectedHallTournament(record);
+        setHallPendingScroll(scrollToSection ?? "top");
+    };
+
+    useEffect(() => {
+        if (!hallPendingScroll || !selectedHallTournament) return undefined;
+
+        lenisRef.current?.scrollTo(0, { immediate: true });
+        window.scrollTo({ top: 0 });
+
+        if (hallPendingScroll === "top") {
+            setHallPendingScroll(null);
+            return undefined;
+        }
+
+        const frameId = requestAnimationFrame(() => {
+            const section = document.querySelector(`[data-hall-section="${hallPendingScroll}"]`);
+            const header = document.querySelector(`.${css.second_header}`);
+            setHallPendingScroll(null);
+            if (!section) return;
+
+            const headerBottom = header
+                ? (parseFloat(window.getComputedStyle(header).top) || 0) + header.offsetHeight
+                : 0;
+            const target = Math.max(0, section.getBoundingClientRect().top + window.scrollY - headerBottom - 48);
+
+            if (lenisRef.current) lenisRef.current.scrollTo(target, { duration: 1.4 });
+            else window.scrollTo({ top: target, behavior: "smooth" });
+        });
+
+        return () => cancelAnimationFrame(frameId);
+    }, [hallPendingScroll, selectedHallTournament]);
+
+    const renderHallLink = (label, onClick) => (
+        <button type="button" className={css.hall_link} onClick={onClick}>
+            {label}
+        </button>
+    );
+
+    const renderHallPodium = (podium, trophy = null) => (
+        <div className={css.winnerPodium} style={{ height: "732px" }}>
+            {podium.runnerUp && (
+                <div className={css.podiumRow}>
+                    <div className={css.runnerUpLogo} style={{ backgroundColor: podium.runnerUp.color, boxShadow: podium.runnerUp.shadow }} />
+                    <span className={css.runnerUpMedal}>🥈</span>
+                    <div className={css.secondPodium} style={{ height: "500px", marginBottom: "0px" }}>
+                        <ReactFitty key={podium.runnerUp?.name} className={css.runnerUpName} maxSize={16} minSize={10}>
+                            Team <b>{podium.runnerUp.name}</b>
+                        </ReactFitty>
+                        <span className={css.runnerUpLabel}>RunnerUp</span>
+                    </div>
+                </div>
+            )}
+            {podium.winner && (
+                <div className={css.podiumRow}>
+                    <div className={css.winnerLogo} style={{ backgroundColor: podium.winner.color, boxShadow: podium.winner.shadow }} />
+                    <span className={css.winnerMedal}>🥇</span>
+                    {trophy && <span className={css.winnerTrophy}>{trophy}</span>}
+                    <div className={css.firstPodium} style={{ height: "600px", marginBottom: "0px" }}>
+                        <ReactFitty key={podium.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
+                            Team <b>{podium.winner.name}</b>
+                        </ReactFitty>
+                        <span className={css.firstPlaceLabel}>Winner</span>
+                    </div>
+                </div>
+            )}
+            {podium.thirdPlace && (
+                <div className={css.podiumRow}>
+                    <div className={css.placeLogoThird} style={{ background: podium.thirdPlace.color }} />
+                    <span className={css.thirdPlaceMedal}>🥉</span>
+                    <div className={css.thirdPodium} style={{ height: "300px", marginBottom: "0px" }}>
+                        <ReactFitty key={podium.thirdPlace?.name} className={css.thirdPlaceName} maxSize={16} minSize={10}>
+                            Team <b>{podium.thirdPlace.name}</b>
+                        </ReactFitty>
+                        <span className={css.thirdPlaceLabel}>3rd</span>
+                    </div>
+                </div>
+            )}
+            {podium.fourthPlace && (
+                <div className={css.podiumRow}>
+                    <div className={css.placeLogoFourth} style={{ background: podium.fourthPlace.color }} />
+                    <span className={css.fourthPlaceMedal}>🏅</span>
+                    <div className={css.fourthPodium} style={{ height: "200px", marginBottom: "0px" }}>
+                        <ReactFitty key={podium.fourthPlace?.name} className={css.fourthPlaceName} maxSize={16} minSize={10}>
+                            Team <b>{podium.fourthPlace.name}</b>
+                        </ReactFitty>
+                        <span className={css.fourthPlaceLabel}>4th</span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const renderHallPlaceEntry = (entry, placementColors) => (
+        <div
+            key={`${entry.place}-${entry.team?.id}`}
+            style={{ display: "flex", alignItems: "center", flexDirection: "column", gap: 4, color: "#2e2f42" }}
+        >
+            {hallTeamCircle(entry.team, 42)}
+            <div>
+                <span className={css.leaderboard_rank} style={{ color: placementColors[entry.place] || "#2e2f42" }}>
+                    {formatOrdinal(entry.place)}
+                </span>{" "}
+                <span style={{ fontWeight: "700" }}>Team {entry.team?.name}</span>
+            </div>
+        </div>
+    );
+
+    const renderHallChallengeInfo = (record) => {
+        const resultColor = record.pickemWon ? "#2e7d32" : "#be3939";
+        const difference = record.achievedPickemPoints - record.neededPickemPoints;
+
+        return (
+            <div className={css.info_text} style={{ textAlign: "center", width: "max-content" }}>
+                <span
+                    style={{
+                        color: resultColor,
+                        fontWeight: 800,
+                        fontSize: "28px",
+                        display: "inline-block",
+                        marginBottom: "12px",
+                        marginTop: "6px",
+                    }}
+                >
+                    {record.pickemWon ? "Challenge won" : "Challenge lost"}
+                </span>
+                <br />
+                <i>
+                    <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
+                    needed Pick&apos;em points
+                </i>
+                <br />
+                <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
+                <i>
+                    <span style={{ color: resultColor, fontWeight: 900 }}>
+                        {record.achievedPickemPoints}{" "}
+                    </span>
+                    achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
+                    <span style={{ color: resultColor, fontWeight: 800 }}>
+                        ({difference > 0 ? "+" : ""}
+                        {difference})
+                    </span>
+                </i>
+                <br />
+            </div>
+        );
+    };
 
     const renderHallOfFame = () => {
         const record = selectedHallTournament;
@@ -13399,6 +17199,337 @@ function SpecialModePage() {
                         {renderHallManagerModals()}
                     </div>
                 </div>
+            );
+        }
+
+        if (record.event === "cst") {
+            const groups = record.groups || {};
+            const allCstTeams = Array.from({ length: 5 }).flatMap((_, i) =>
+                CST_GROUPS.map((group) => groups[group]?.[i]).filter(Boolean)
+            );
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+            const placementColors = {
+                5: "#40e0d0",
+                6: "#ba68c8",
+                7: "#ff5e2d",
+                8: "#81c784",
+            };
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header}>
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none", display: "inline-flex", alignItems: "center", gap: 12 }} className={css.game_title}>
+                                <span>
+                                    Champions Series Tour{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        #{record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            <div
+                                className={css.info_text}
+                                style={{ textAlign: "center", width: "max-content" }}
+                            >
+                                <span
+                                    style={{
+                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                        fontWeight: 800,
+                                        fontSize: "28px",
+                                        display: "inline-block",
+                                        marginBottom: "12px",
+                                        marginTop: "6px",
+                                    }}
+                                >
+                                    {record.pickemWon ? "Challenge won" : "Challenge lost"}
+                                </span>
+                                <br />
+                                <i>
+                                    <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
+                                    needed Pick&apos;em points
+                                </i>
+                                <br />
+                                <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
+                                <i>
+                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
+                                        {record.achievedPickemPoints}{" "}
+                                    </span>
+                                    achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
+                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
+                                        ({record.achievedPickemPoints - record.neededPickemPoints > 0 ? "+" : ""}
+                                        {record.achievedPickemPoints - record.neededPickemPoints})
+                                    </span>
+                                </i>
+                                <br />
+                            </div>
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(allCstTeams)}
+
+                        <div style={{ display: "flex", gap: 56, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
+                            {CST_GROUPS.map((group) => (
+                                <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                    <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                        Group {group}
+                                    </h4>
+                                    {renderHallTeamRow(groups[group])}
+                                </div>
+                            ))}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
+                        {renderCstGroupStage(record.groupStage, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Playoffs bracket" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record)}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium)}
+
+                        <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => (
+                                <div
+                                    key={`${entry.place}-${entry.team?.id}`}
+                                    style={{ display: "flex", alignItems: "center", flexDirection: "column", gap: 4, color: "#2e2f42" }}
+                                >
+                                    {hallTeamCircle(entry.team, 42)}
+                                    <div>
+                                        <span className={css.leaderboard_rank} style={{ color: placementColors[entry.place] || "#2e2f42" }}>
+                                            {formatOrdinal(entry.place)}
+                                        </span>{" "}
+                                        <span style={{ fontWeight: "700" }}>Team {entry.team?.name}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "main") {
+            const groups = record.groups || {};
+            const allMainEventTeams = record.teams?.length
+                ? record.teams
+                : Array.from({ length: 8 }).flatMap((_, i) =>
+                    PEM_MAIN_GROUPS.map((group) => groups[group]?.[i]).filter(Boolean)
+                );
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+            const placementColors = { 5: "#40e0d0", 6: "#ba68c8" };
+            const qualifiedTeamIds = new Set(record.qualifiedTeamIds || []);
+            const qualifierRecord = findPemCounterpartRecord(record, "qualifier");
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header} data-sticky-anchor="hall-pem-main">
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                                    <span>
+                                        Pro Extreme Masters Small Tournament{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(allMainEventTeams, 38, qualifiedTeamIds)}
+
+                        {qualifierRecord && (
+                            <div style={{ marginTop: 20 }}>
+                                {renderHallLink(
+                                    "See how the glowing teams came through the Qualifier",
+                                    () => openLinkedHallRecord(qualifierRecord, "qualifier-bracket")
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: 64, marginTop: qualifierRecord ? 24 : 36, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
+                            {PEM_MAIN_GROUPS.map((group) => (
+                                <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                    <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                        Group {group}
+                                    </h4>
+                                    {renderHallTeamRow(groups[group])}
+                                </div>
+                            ))}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <StickyBelow
+                                anchor='[data-sticky-anchor="hall-pem-main"]'
+                                style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                            >
+                                <QualifierGroupNav value={hallQualifierGroup} onChange={setHallQualifierGroup} />
+                            </StickyBelow>
+                            {renderPemGroupBracket(record.groupStage?.[hallQualifierGroup], { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Playoffs bracket" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record)}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, <PemSilverTrophy style={{ marginLeft: "6px", marginTop: "-52px" }} />)}
+                        <div style={{ display: "flex", gap: 96, justifyContent: "center", alignItems: "flex-start", marginTop: 48 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "qualifier") {
+            const groups = record.groups || {};
+            const allQualifierTeams = Array.from({ length: 16 }).flatMap((_, i) =>
+                QUALIFIER_GROUPS.map((group) => groups[group]?.[i]).filter(Boolean)
+            );
+            const mainEventRecord = findPemCounterpartRecord(record, "main");
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header} data-sticky-anchor="hall-qualifier">
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                {renderQualifierTitle({
+                                    badgeHeight: 36,
+                                    label: (
+                                        <>
+                                            Pro Extreme Masters Small Tournament{" "}
+                                            <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                                #{record.number}
+                                            </span>
+                                        </>
+                                    ),
+                                })}
+                            </h2>
+                            <div
+                                className={css.info_text}
+                                style={{ textAlign: "center", width: "max-content" }}
+                            >
+                                <span
+                                    style={{
+                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                        fontWeight: 800,
+                                        fontSize: "28px",
+                                        display: "inline-block",
+                                        marginBottom: "12px",
+                                        marginTop: "6px",
+                                    }}
+                                >
+                                    {record.pickemWon ? "Challenge won" : "Challenge lost"}
+                                </span>
+                                <br />
+                                <i>
+                                    <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
+                                    needed Pick&apos;em points
+                                </i>
+                                <br />
+                                <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
+                                <i>
+                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
+                                        {record.achievedPickemPoints}{" "}
+                                    </span>
+                                    achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
+                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
+                                        ({record.achievedPickemPoints - record.neededPickemPoints > 0 ? "+" : ""}
+                                        {record.achievedPickemPoints - record.neededPickemPoints})
+                                    </span>
+                                </i>
+                                <br />
+                            </div>
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(allQualifierTeams)}
+
+                        <div style={{ display: "flex", gap: 64, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
+                            {QUALIFIER_GROUPS.map((group) => (
+                                <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                    <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                        Group {group}
+                                    </h4>
+                                    {renderHallTeamRow(groups[group])}
+                                </div>
+                            ))}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Qualifier bracket" marginTop="64px" sectionId="qualifier-bracket" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <StickyBelow
+                                anchor='[data-sticky-anchor="hall-qualifier"]'
+                                style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                            >
+                                <QualifierGroupNav value={hallQualifierGroup} onChange={setHallQualifierGroup} />
+                            </StickyBelow>
+                            {renderQualifierBracket(record.qualifier?.[hallQualifierGroup], { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Qualified teams" marginTop="64px" />
+                        {renderQualifierWinnersBlock(record.results?.qualifiers)}
+                        {mainEventRecord && (
+                            <div style={{ marginTop: 40 }}>
+                                {renderHallLink(
+                                    "See how the qualified teams did in the main event",
+                                    () => openLinkedHallRecord(mainEventRecord)
+                                )}
+                            </div>
+                        )}
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
             );
         }
 
@@ -13564,61 +17695,7 @@ function SpecialModePage() {
                     )}
 
                     <HallOfFameSectionTitle text="Podium" marginTop="102px" />
-                    <div className={css.winnerPodium} style={{ height: "732px" }}>
-                        {podium.runnerUp && (
-                            <div className={css.podiumRow}>
-                                <div className={css.runnerUpLogo} style={{ backgroundColor: podium.runnerUp.color, boxShadow: podium.runnerUp.shadow }} />
-                                <span className={css.runnerUpMedal}>
-                                    🥈
-                                </span>
-                                <div className={css.secondPodium} style={{ height: "500px", marginBottom: "0px" }}>
-                                    <ReactFitty key={podium.runnerUp?.name} className={css.runnerUpName} maxSize={16} minSize={10}>
-                                        Team <b>{podium.runnerUp.name}</b>
-                                    </ReactFitty>
-                                    <span className={css.runnerUpLabel}>
-                                        RunnerUp
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-                        {podium.winner && (
-                            <div className={css.podiumRow}>
-                                <div className={css.winnerLogo} style={{ backgroundColor: podium.winner.color, boxShadow: podium.winner.shadow }} />
-                                <span className={css.winnerMedal}>🥇</span>
-                                <span className={css.winnerTrophy}><FaTrophy /></span>
-                                <div className={css.firstPodium} style={{ height: "600px", marginBottom: "0px" }}>
-                                    <ReactFitty key={podium.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
-                                        Team <b>{podium.winner.name}</b>
-                                    </ReactFitty>
-                                    <span className={css.firstPlaceLabel}>Winner</span>
-                                </div>
-                            </div>
-                        )}
-                        {podium.thirdPlace && (
-                            <div className={css.podiumRow}>
-                                <div className={css.placeLogoThird} style={{ background: podium.thirdPlace.color }} />
-                                <span className={css.thirdPlaceMedal}>🥉</span>
-                                <div className={css.thirdPodium} style={{ height: "300px", marginBottom: "0px" }}>
-                                    <ReactFitty key={podium.thirdPlace?.name} className={css.thirdPlaceName} maxSize={16} minSize={10}>
-                                        Team <b>{podium.thirdPlace.name}</b>
-                                    </ReactFitty>
-                                    <span className={css.thirdPlaceLabel}>3rd</span>
-                                </div>
-                            </div>
-                        )}
-                        {podium.fourthPlace && (
-                            <div className={css.podiumRow}>
-                                <div className={css.placeLogoFourth} style={{ background: podium.fourthPlace.color }} />
-                                <span className={css.fourthPlaceMedal}>🏅</span>
-                                <div className={css.fourthPodium} style={{ height: "200px", marginBottom: "0px" }}>
-                                    <ReactFitty key={podium.fourthPlace?.name} className={css.fourthPlaceName} maxSize={16} minSize={10}>
-                                        Team <b>{podium.fourthPlace.name}</b>
-                                    </ReactFitty>
-                                    <span className={css.fourthPlaceLabel}>4th</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {renderHallPodium(podium, <FaTrophy />)}
 
                     <HallOfFameSectionTitle text="5th - 16th places" marginTop="82px" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -13873,9 +17950,24 @@ function SpecialModePage() {
         modalContext,
         currentModalMatch,
         hallRecordId: selectedHallMatch?.record?.id,
-        tournamentNumber,
+        tournamentNumber: modalContext?.type === "qualifier"
+            ? `pem${pemSmallEdition}`
+            : modalContext?.type === "pemGroup" || modalContext?.kind === "pem"
+                ? `pemMain${pemSmallEdition}`
+                : modalContext?.type === "cstGroup" || modalContext?.kind === "cst"
+                    ? `cst${cstNumber}`
+                    : tournamentNumber,
         isPlayed: isPlayedModal,
     });
+
+    const isEliminationModal =
+        modalContext?.type === "playoffs" || modalContext?.type === "qualifier" || modalContext?.type === "pemGroup";
+
+    const showModalMatchNumber = modalContext?.type === "qualifier"
+        ? !isSingleQualifierStage(modalContext.stage)
+        : modalContext?.type === "pemGroup"
+            ? !isSinglePemGroupStage(modalContext.stage)
+            : modalContext?.stage !== "gf" && modalContext?.stage !== "thirdPlace";
 
     const modalStatsPanels = (modalStatsKey && statsPanelMemory[modalStatsKey]) || DEFAULT_STATS_PANELS_STATE;
 
@@ -13924,6 +18016,12 @@ function SpecialModePage() {
             wonPickemPoints = swissMatchPoints(currentModalMatch);
         } else if (modalContext?.type === "playoffs") {
             wonPickemPoints = playoffsMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "qualifier") {
+            wonPickemPoints = qualifierMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "pemGroup") {
+            wonPickemPoints = pemGroupMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "cstGroup") {
+            wonPickemPoints = cstGroupMatchPoints(currentModalMatch);
         }
     }
 
@@ -13933,13 +18031,13 @@ function SpecialModePage() {
     if (wonPickemPoints !== null) {
         if (wonPickemPoints === 0) {
             pickemLabelText = "+0 Pick'em points";
-            pickemLabelStyle = { color: "red", left: modalContext?.type === "playoffs" ? '95%' : '75%' };
+            pickemLabelStyle = { color: "red", left: isEliminationModal ? '95%' : '75%' };
         } else if (wonPickemPoints === 1) {
             pickemLabelText = "+1 Pick'em point";
-            pickemLabelStyle = { color: "#2e7d32", left: modalContext?.type === "playoffs" ? '95%' : '75%' };
+            pickemLabelStyle = { color: "#2e7d32", left: isEliminationModal ? '95%' : '75%' };
         } else {
             pickemLabelText = `+${wonPickemPoints} Pick'em points`;
-            pickemLabelStyle = { color: "#2e7d32", left: modalContext?.type === "playoffs" ? '95%' : '75%' };
+            pickemLabelStyle = { color: "#2e7d32", left: isEliminationModal ? '95%' : '75%' };
         }
     }
 
@@ -14099,6 +18197,9 @@ function SpecialModePage() {
             return getTeamById(m.loserTeamId, m.slotA, m.slotB);
         };
 
+        const bracketKind = playoffs.kind ?? null;
+        const hasRoundOf16 = (playoffs.ro16?.length ?? 0) > 0;
+
         const currentStageKey = currentPlayablePlayoffsMatch?.stage ?? null;
 
         const nextStageKey =
@@ -14131,6 +18232,10 @@ function SpecialModePage() {
             if (stageKey === "qf") {
                 const srcIdx = idx * 2 + (slotKey === "slotA" ? 0 : 1);
                 return pickFromMatch(playoffs.ro16[srcIdx], "winner");
+            }
+
+            if (stageKey === "sf" && bracketKind === "pem") {
+                return slotKey === "slotB" ? pickFromMatch(playoffs.qf[idx], "winner") : [];
             }
 
             if (stageKey === "sf") {
@@ -14274,7 +18379,7 @@ function SpecialModePage() {
             return (a?.length ?? 0) > 0 || (b?.length ?? 0) > 0;
         };
 
-        const renderMatch = (m, stageKey, idx, baseClass, nextRect, bestOf, connectorStyle, isSingularMatch) => {
+        const renderMatch = (m, stageKey, idx, baseClass, nextRect, bestOf, connectorStyle, isSingularMatch, pemLayout = false) => {
             const isPlayed = !!m.played;
 
             const isUserWin =
@@ -14350,6 +18455,7 @@ function SpecialModePage() {
             return (
                 <div key={m.id} className={connectorStyle}>
                     <div
+                        data-bracket-rect={pemLayout ? `${stageKey}-${idx}` : undefined}
                         className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""
                             } ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? baseClass : css.no_hover
                             }`}
@@ -14509,30 +18615,91 @@ function SpecialModePage() {
             );
         };
 
+        if (bracketKind === "pem") {
+            const pemRectClasses = {
+                qf: css.quarters_rect,
+                sf: css.semis_rect,
+                thirdPlace: css.thirdPlace_rect,
+                gf: css.grandFinal_rect,
+            };
+
+            return (
+                <PemPlayoffsLayout
+                    bracket={playoffs}
+                    renderMatch={(m, stageKey, idx) =>
+                        renderMatch(
+                            m,
+                            stageKey,
+                            idx,
+                            pemRectClasses[stageKey],
+                            css.next_rect,
+                            getBestOfForPlayoffs(stageKey, bracketKind),
+                            css.pem_playoffs_wrapper,
+                            stageKey === "gf" || stageKey === "thirdPlace",
+                            true
+                        )
+                    }
+                />
+            );
+        }
+
+        const connectorWrapperFor = (stageKey, idx) => {
+            const level = hasRoundOf16 ? stageKey : ({ qf: "ro16", sf: "qf" }[stageKey] ?? stageKey);
+            const down = idx % 2 === 0;
+            if (level === "ro16") return down ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up;
+            if (level === "qf") return down ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up;
+            return down ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up;
+        };
+
+        const thirdPlaceColumn = playoffs.thirdPlace ? (
+            <div
+                className={css.thirdPlace_container}
+                style={hasRoundOf16 ? undefined : { top: "calc(100% + 28px)", left: "50%", transform: "translateX(-50%)", marginTop: 0 }}
+            >
+                <h4 style={{ width: '17ch' }} className={css.column_title}>Third Place Decider</h4>
+                <div className={css.columnThirdPlace}>
+                    {playoffs.thirdPlace.map((m, idx) =>
+                        renderMatch(
+                            m,
+                            "thirdPlace",
+                            idx,
+                            css.thirdPlace_rect,
+                            css.next_rect,
+                            getBestOfForPlayoffs("thirdPlace", bracketKind),
+                            css.thirdPlaceDeciderConnectorWrapper,
+                            true
+                        )
+                    )}
+                </div>
+            </div>
+        ) : null;
+
         return (
-            <div className={css.bracket_container} style={{ transition: "none", marginLeft: '28px' }}>
+            <div className={css.bracket_container} style={{ transition: "none", marginLeft: hasRoundOf16 ? '28px' : 0 }}>
                 <div className={css.bracket_inner}>
-                    <div className={css.column_container}>
-                        <h4 className={css.column_title}>Round of 16</h4>
-                        <div className={css.columnRo16}>
-                            {playoffs.ro16.map((m, idx) =>
-                                renderMatch(
-                                    m,
-                                    "ro16",
-                                    idx,
-                                    css.match_rect,
-                                    css.next_rect,
-                                    getBestOfForPlayoffs("ro16"),
-                                    idx % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up,
-                                    false
-                                )
-                            )}
+                    {hasRoundOf16 && (
+                        <div className={css.column_container}>
+                            <h4 className={css.column_title}>Round of 16</h4>
+                            <div className={css.columnRo16}>
+                                {playoffs.ro16.map((m, idx) =>
+                                    renderMatch(
+                                        m,
+                                        "ro16",
+                                        idx,
+                                        css.match_rect,
+                                        css.next_rect,
+                                        getBestOfForPlayoffs("ro16", bracketKind),
+                                        idx % 2 === 0 ? css.ro16ConnectorWrapper_down : css.ro16ConnectorWrapper_up,
+                                        false
+                                    )
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className={css.column_container}>
                         <h4 className={css.column_title}>Quarterfinals</h4>
-                        <div className={css.columnQuarters}>
+                        <div className={hasRoundOf16 ? css.columnQuarters : css.columnRo16}>
                             {playoffs.qf.map((m, idx) =>
                                 renderMatch(
                                     m,
@@ -14540,8 +18707,8 @@ function SpecialModePage() {
                                     idx,
                                     css.quarters_rect,
                                     css.next_rect,
-                                    getBestOfForPlayoffs("qf"),
-                                    idx % 2 === 0 ? css.qfConnectorWrapper_down : css.qfConnectorWrapper_up,
+                                    getBestOfForPlayoffs("qf", bracketKind),
+                                    connectorWrapperFor("qf", idx),
                                     false
                                 )
                             )}
@@ -14550,7 +18717,7 @@ function SpecialModePage() {
 
                     <div className={css.column_container}>
                         <h4 className={css.column_title}>Semifinals</h4>
-                        <div className={css.columnSemis}>
+                        <div className={hasRoundOf16 ? css.columnSemis : css.columnQuarters}>
                             {playoffs.sf.map((m, idx) =>
                                 renderMatch(
                                     m,
@@ -14558,15 +18725,15 @@ function SpecialModePage() {
                                     idx,
                                     css.semis_rect,
                                     css.next_rect,
-                                    getBestOfForPlayoffs("sf"),
-                                    idx % 2 === 0 ? css.sfConnectorWrapper_down : css.sfConnectorWrapper_up,
+                                    getBestOfForPlayoffs("sf", bracketKind),
+                                    connectorWrapperFor("sf", idx),
                                     false
                                 )
                             )}
                         </div>
                     </div>
 
-                    <div className={css.column_container}>
+                    <div className={css.column_container} style={hasRoundOf16 ? undefined : { position: "relative" }}>
                         <h4 className={css.column_title}>Grand Final</h4>
                         <div className={css.columnGrandFinal}>
                             {playoffs.gf.map((m, idx) =>
@@ -14576,34 +18743,760 @@ function SpecialModePage() {
                                     idx,
                                     css.grandFinal_rect,
                                     css.next_rect,
-                                    getBestOfForPlayoffs("gf"),
+                                    getBestOfForPlayoffs("gf", bracketKind),
                                     css.gfConnectorWrapper,
                                     true
                                 )
                             )}
                         </div>
+                        {!hasRoundOf16 && thirdPlaceColumn}
                     </div>
 
-                    {playoffs.thirdPlace && (
-                        <div className={css.thirdPlace_container}>
-                            <h4 style={{ width: '17ch' }} className={css.column_title}>Third Place Decider</h4>
-                            <div className={css.columnThirdPlace}>
-                                {playoffs.thirdPlace.map((m, idx) =>
-                                    renderMatch(
-                                        m,
-                                        "thirdPlace",
-                                        idx,
-                                        css.thirdPlace_rect,
-                                        css.next_rect,
-                                        getBestOfForPlayoffs("thirdPlace"),
-                                        css.thirdPlaceDeciderConnectorWrapper,
-                                        true
-                                    )
-                                )}
-                            </div>
-                        </div>
+                    {hasRoundOf16 && thirdPlaceColumn}
+                </div>
+            </div>
+        );
+    };
+
+    const QUALIFIER_VS_TEXT_SHADOW = `
+        1px 0 #d8d8d8,
+        -1px 0 #d8d8d8,
+        0 1px #d8d8d8,
+        0 -1px #d8d8d8,
+        1px 1px #d8d8d8,
+        1px -1px #d8d8d8,
+        -1px 1px #d8d8d8,
+        -1px -1px #d8d8d8,
+        2px 0 #5a5a5a,
+        -2px 0 #5a5a5a,
+        0 2px #5a5a5a,
+        0 -2px #5a5a5a,
+        2px 2px #5a5a5a,
+        2px -2px #5a5a5a,
+        -2px 2px #5a5a5a,
+        -2px -2px #5a5a5a,
+        2px 0 #5a5a5a,
+        -2px 0 #5a5a5a
+    `;
+
+    const qualifierMatchFormat = {
+        slotSource: qualifierSlotSource,
+        canOpen: canOpenQualifierMatch,
+        bestOf: getBestOfForQualifier,
+        isSingle: isSingleQualifierStage,
+        open: openQualifierMatchModal,
+        openArchived: openArchivedQualifierMatchModal,
+    };
+
+    const pemGroupMatchFormat = {
+        slotSource: pemGroupSlotSource,
+        canOpen: canOpenPemGroupMatch,
+        bestOf: getBestOfForPemGroup,
+        isSingle: isSinglePemGroupStage,
+        open: openPemGroupMatchModal,
+        openArchived: openArchivedPemGroupMatchModal,
+    };
+
+    const getQualifierSlotContenders = (bracket, stage, idx, slotKey, slotSource = qualifierSlotSource) => {
+        const source = slotSource(stage, idx, slotKey);
+        const sourceMatch = source ? bracket?.[source.stage]?.[source.idx] : null;
+        if (!sourceMatch) return { source, sourceMatch: null, contenders: [] };
+
+        const contenders = sourceMatch.played
+            ? [source.want === "winner" ? getMatchWinnerTeam(sourceMatch) : getMatchLoserTeam(sourceMatch)].filter(Boolean)
+            : [sourceMatch.slotA, sourceMatch.slotB].filter(Boolean);
+
+        return { source, sourceMatch, contenders };
+    };
+
+    const renderQualifierPlaceholder = (bracket, stage, idx, slotKey, slotSource = qualifierSlotSource) => {
+        const { source, sourceMatch, contenders } = getQualifierSlotContenders(bracket, stage, idx, slotKey, slotSource);
+
+        if (!contenders.length) {
+            return <div style={{ fontSize: "20px" }} className={css.placeholder_circle}>?</div>;
+        }
+
+        const prefix = source?.want === "loser" ? "Loser of" : "Winner of";
+        const teamA = sourceMatch?.slotA ?? null;
+        const teamB = sourceMatch?.slotB ?? null;
+        const matchupText = `${teamA?.name ? `Team ${teamA.name}` : "TBD"} VS ${teamB?.name ? `Team ${teamB.name}` : "TBD"}`;
+
+        const mini = (team, pos) => {
+            const common = {
+                position: "absolute",
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                boxShadow: "0 0 3px rgba(0,0,0,0.4)",
+                opacity: 0.75,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                fontWeight: 800,
+                lineHeight: 1,
+                color: "#fff",
+                textShadow: "0 0 3px rgba(0,0,0,0.8)",
+                userSelect: "none",
+                ...(pos === "tl" ? { top: 5, left: 5 } : { bottom: 5, right: 5 }),
+            };
+
+            if (!team) {
+                return (
+                    <div
+                        style={{
+                            ...common,
+                            background: "rgba(0,0,0,0.25)",
+                            border: "1px solid rgba(255,255,255,0.35)",
+                            fontStyle: "italic",
+                        }}
+                    >
+                        ?
+                    </div>
+                );
+            }
+
+            return <div style={{ ...common, background: team.color }} />;
+        };
+
+        return (
+            <div
+                className={css.placeholder_circle}
+                style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+                title={`${prefix} '${matchupText}' match-up`}
+            >
+                {mini(teamA, "tl")}
+                {mini(teamB, "br")}
+                <span
+                    style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        opacity: 0.75,
+                        pointerEvents: "none",
+                        fontStyle: "italic",
+                        userSelect: "none",
+                    }}
+                >
+                    vs
+                </span>
+            </div>
+        );
+    };
+
+    const renderQualifierMatch = (bracket, m, stage, idx, { archived = false, record = null, current = null, next = null, format = qualifierMatchFormat } = {}) => {
+        const isPlayed = !!m.played;
+
+        const isUserWin =
+            isPlayed &&
+            !!m.pickTeamId &&
+            !!m.winnerTeamId &&
+            m.pickTeamId === m.winnerTeamId;
+
+        const shouldSwap =
+            !!m.pickTeamId &&
+            m.slotA &&
+            m.slotB &&
+            m.pickTeamId === m.slotB.id;
+
+        const leftTeam = shouldSwap ? m.slotB : m.slotA;
+        const rightTeam = shouldSwap ? m.slotA : m.slotB;
+
+        const displayScoreLeft = shouldSwap ? m.scoreRight : m.scoreLeft;
+        const displayScoreRight = shouldSwap ? m.scoreLeft : m.scoreRight;
+
+        const resultClass = isPlayed ? (isUserWin ? css.playoffs_match_win : css.playoffs_match_loss) : "";
+        const boLabelResultClass = isPlayed
+            ? isUserWin ? css.playoffs_match_win_label : css.playoffs_match_loss_label
+            : "";
+        const noLabelResultClass = isPlayed
+            ? isUserWin ? css.playoffs_match_win_no_label : css.playoffs_match_loss_no_label
+            : "";
+
+        const isCurrent = !archived && current?.stage === stage && current?.index === idx;
+        const isNext = !archived && next?.stage === stage && next?.index === idx;
+
+        const winnerIsLeft = isPlayed && !!leftTeam && m.winnerTeamId === leftTeam.id;
+        const winnerIsRight = isPlayed && !!rightTeam && m.winnerTeamId === rightTeam.id;
+        const isLeftLoser = isPlayed && !!leftTeam && m.loserTeamId === leftTeam.id;
+        const isRightLoser = isPlayed && !!rightTeam && m.loserTeamId === rightTeam.id;
+
+        const hasPreview =
+            !!m.slotA ||
+            !!m.slotB ||
+            getQualifierSlotContenders(bracket, stage, idx, "slotA", format.slotSource).contenders.length > 0 ||
+            getQualifierSlotContenders(bracket, stage, idx, "slotB", format.slotSource).contenders.length > 0;
+
+        const canClick = archived
+            ? isPlayed
+            : !isMatchRectLocked && (isPlayed || format.canOpen(bracket, stage, idx));
+        const canHover = canClick || (!archived && !isMatchRectLocked && hasPreview);
+
+        const labelHighlight = isCurrent
+            ? { outline: "2px solid #ffd700", border: "none", boxShadow: "0 0 12px rgba(255, 215, 0, 0.9)" }
+            : isNext
+                ? { outline: "2px dashed #888", border: "none", boxShadow: "0 0 12px rgba(160, 160, 160, 0.43)" }
+                : {};
+
+        const handleClick = () => {
+            if (!canClick) return;
+            if (archived) {
+                format.openArchived(record, bracket.group, stage, idx, m);
+                return;
+            }
+            format.open(bracket.group, stage, m.id);
+        };
+
+        const renderTeamRow = (team, slotKey, isWinner, isLoser, score, scoreLeftPct) => (
+            <div className={css.team_row}>
+                <div className={css.team_cell}>
+                    {team ? (
+                        <div
+                            className={css.team_circle}
+                            style={{ background: team.color }}
+                            title={`Team ${team.name}`}
+                        />
+                    ) : (
+                        renderQualifierPlaceholder(bracket, stage, idx, slotKey, format.slotSource)
                     )}
                 </div>
+
+                <div
+                    style={{ color: !isPlayed ? "" : isWinner ? "#2e7d32" : "red" }}
+                    className={css.team_name_placeholder}
+                >
+                    {team?.name ? `Team ${team.name}` : "TBD"}
+                </div>
+                <span
+                    style={{
+                        color: isWinner ? "#2e7d32" : "red",
+                        fontWeight: 800,
+                        fontStyle: "italic",
+                        position: "absolute",
+                        left: scoreLeftPct,
+                        zIndex: 1,
+                        fontSize: 72,
+                        opacity: isLoser ? 0.4 : 1,
+                    }}
+                    className={isWinner ? css.winnerScoreShadow : css.loserScoreShadow}
+                >
+                    {score}
+                </span>
+            </div>
+        );
+
+        return (
+            <div key={m.id} className={css.qualifier_match_wrapper}>
+                <div
+                    data-bracket-rect={`${stage}-${idx}`}
+                    className={`${css.match_rect} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? "" : css.no_hover}`}
+                    style={{
+                        pointerEvents: canHover ? "auto" : "none",
+                        cursor: canClick ? "pointer" : "default",
+                        borderColor: isPlayed ? (isUserWin ? "#2e7d32" : "#7d2e2e") : "",
+                    }}
+                    onClick={handleClick}
+                >
+                    {isPlayed && (
+                        <div className={css.playoffsSuccessPickemIndicator}>
+                            <FaCircle size={28} color={isUserWin ? "#37b737" : "#be3939"} />
+                            {isUserWin ? <FaCheck size={16} color="#ffffff" /> : <FaXmark size={16} color="#fff" />}
+                        </div>
+                    )}
+                    <div className={`${css.bo_playoffs_label} ${boLabelResultClass}`} style={labelHighlight}>
+                        BO{format.bestOf(stage)}
+                    </div>
+                    {!format.isSingle(stage) ? (
+                        <div className={`${css.no_playoffs_label} ${noLabelResultClass}`} style={labelHighlight}>
+                            #{idx + 1}
+                        </div>
+                    ) : null}
+                    <div className={css.match_content}>
+                        {renderTeamRow(leftTeam, shouldSwap ? "slotB" : "slotA", winnerIsLeft, isLeftLoser, displayScoreLeft, "85%")}
+
+                        <div className={css.vs_row}>
+                            <div
+                                style={{ backgroundColor: isPlayed ? (isUserWin ? "#2e7d32" : "red") : "rgb(90, 90, 90)" }}
+                                className={css.divider}
+                            />
+                            {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
+                                <span style={{ textShadow: QUALIFIER_VS_TEXT_SHADOW }} className={css.vs_text}>
+                                    VS
+                                </span>
+                            ) : null}
+                        </div>
+
+                        {renderTeamRow(rightTeam, shouldSwap ? "slotA" : "slotB", winnerIsRight, isRightLoser, displayScoreRight, "83%")}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderQualifierBracket = (bracket, { archived = false, record = null } = {}) => {
+        if (!bracket) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    This Group has not been drawn yet.
+                </div>
+            );
+        }
+
+        const current = archived ? null : findCurrentQualifierMatch(bracket);
+        const next = archived ? null : findNextQualifierMatch(bracket, current);
+
+        return (
+            <QualifierBracketLayout
+                key={`${archived ? "hall" : "live"}-${bracket.group}`}
+                bracket={bracket}
+                renderMatch={(m, stage, idx) =>
+                    renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next })
+                }
+            />
+        );
+    };
+
+    const renderPemGroupBracket = (bracket, { archived = false, record = null } = {}) => {
+        if (!bracket) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    This Group has not been drawn yet.
+                </div>
+            );
+        }
+
+        const current = archived ? null : findCurrentPemGroupMatch(bracket);
+        const next = archived ? null : findNextPemGroupMatch(bracket, current);
+
+        return (
+            <PemGroupBracketLayout
+                key={`${archived ? "hall" : "live"}-${bracket.group}`}
+                bracket={bracket}
+                renderMatch={(m, stage, idx) =>
+                    renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next, format: pemGroupMatchFormat })
+                }
+            />
+        );
+    };
+
+    const renderPemMainPage = () => {
+        const showingPlayoffs = viewPhase === "playoffs" && isPemPlayoffs;
+        const champion = tournamentResults?.kind === "pem" ? tournamentResults.winner : null;
+        const showEndButtons = showPickemLine2 && !!champion;
+
+        const neededPickemCounter = (
+            <>
+                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                <span className={css.points}>
+                    <CountUp
+                        start={0}
+                        duration={1.2}
+                        end={neededPickemPoints}
+                        key={neededPickemPoints}
+                    />
+                </span>
+            </>
+        );
+
+        const endButtons = showEndButtons ? (
+            <div className={css.pickem_buttons} style={{ top: "96px", left: "auto", right: "3%", zIndex: 19 }}>
+                <button
+                    className={`${css.gamble_button} ${css.back_button}`}
+                    onClick={() => setShowPickemSummary(true)}
+                >
+                    Back to the Pick'em challenge summary
+                </button>
+                <button
+                    className={`${css.gamble_button} ${css.back_back_button}`}
+                    style={{ backgroundColor: hover ? champion.hoverOn : champion.color }}
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                    onClick={() => setShowWinnersScreen(true)}
+                >
+                    Back to the Winners' screen
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToHome}>
+                    To Home Page
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToSpecialStart}>
+                    Back to the start of Special Mode
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToGambling}>
+                    Back to normal Gambling
+                </button>
+            </div>
+        ) : null;
+
+        if (showingPlayoffs) {
+            return (
+                <div className={css.cst_page}>
+                    {renderPemNav()}
+
+                    {endButtons ?? (
+                        <div style={{ gap: 0, top: "96px", left: "auto", right: "5%" }} className={css.pickem_buttons}>
+                            {neededPickemCounter}
+                        </div>
+                    )}
+
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {pemSmallLabel} | Playoffs
+                    </div>
+
+                    <div style={{ width: "100%", marginTop: "180px" }}>{renderPlayoffsBracket()}</div>
+                </div>
+            );
+        }
+
+        return (
+            <>
+                <QualifierGroupNav fixed value={pemGroupView} onChange={setPemGroupView} />
+                <div className={css.qualifier_page} style={{ position: "relative", minWidth: 1464 }}>
+                    {renderPemNav()}
+                    {endButtons}
+
+                    <StickyBelow
+                        anchor='[data-sticky-anchor="qualifier-groups"]'
+                        style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: "6px 0 16px" }}
+                    >
+                        <div className={css.stage_title} style={{ marginBottom: 0, marginTop: "-28px" }}>
+                            {pemSmallLabel} | Group Stage
+                        </div>
+
+                        {!endButtons && (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    right: "calc(50% - 670px)",
+                                    transform: "translateY(-50%)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                }}
+                            >
+                                {neededPickemCounter}
+                            </div>
+                        )}
+                    </StickyBelow>
+
+                    {renderPemGroupBracket(pemMain?.[pemGroupView])}
+                </div>
+            </>
+        );
+    };
+
+    const renderQualifierPage = () => {
+        const group = qualifierGroupView;
+        const firstQualified = tournamentResults?.kind === "pemQualifier"
+            ? tournamentResults.qualifiers?.A?.[0] ?? null
+            : null;
+
+        return (
+            <>
+                <QualifierGroupNav fixed value={group} onChange={setQualifierGroupView} />
+                <div className={css.qualifier_page}>
+                    <StickyBelow
+                        anchor='[data-sticky-anchor="qualifier-groups"]'
+                        style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: showPickemLine2 ? "18px 0 36px" : "6px 0 16px" }}
+                    >
+                        <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                            {renderQualifierTitle({ badgeHeight: 34 })}
+                        </div>
+
+                        {showPickemLine2 ? (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    right: "calc(50% - 670px)",
+                                    transform: "translateY(-50%)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "flex-end",
+                                    gap: 10,
+                                }}
+                            >
+                                <button
+                                    className={`${css.gamble_button} ${css.back_button}`}
+                                    onClick={() => setShowPickemSummary(true)}
+                                >
+                                    Back to the Pick'em challenge summary
+                                </button>
+                                <button
+                                    className={`${css.gamble_button} ${css.back_back_button}`}
+                                    style={firstQualified ? {
+                                        backgroundColor: hover ? firstQualified.hoverOn : firstQualified.color,
+                                    } : undefined}
+                                    onMouseEnter={() => setHover(true)}
+                                    onMouseLeave={() => setHover(false)}
+                                    onClick={() => setShowWinnersScreen(true)}
+                                >
+                                    Back to the Winners' screen
+                                </button>
+                                <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                                    Proceed
+                                </button>
+                            </div>
+                        ) : (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    right: "calc(50% - 670px)",
+                                    transform: "translateY(-50%)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                                <span className={css.points}>
+                                    <CountUp
+                                        start={0}
+                                        duration={1.2}
+                                        end={neededPickemPoints}
+                                        key={neededPickemPoints}
+                                    />
+                                </span>
+                            </div>
+                        )}
+                    </StickyBelow>
+
+                    {renderQualifierBracket(qualifier?.[group])}
+                </div>
+            </>
+        );
+    };
+
+    const renderCstStandingsTable = (groupObj) => {
+        const finished = isCstGroupFinished(groupObj);
+        const rows = getCstStandings(groupObj);
+
+        return (
+            <table className={css.cst_table}>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th style={{ textAlign: "left" }}>Team</th>
+                        <th title="Matches">M</th>
+                        <th title="Wins">W</th>
+                        <th title="Ties">T</th>
+                        <th title="Losses">L</th>
+                        <th title="Rounds Difference">RD</th>
+                        <th title="Points">P</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row) => {
+                        const inRange = row.position <= 2;
+                        const rowClass = finished
+                            ? inRange ? css.cst_row_qualified : css.cst_row_eliminated
+                            : inRange ? css.cst_row_in : "";
+
+                        return (
+                            <tr key={row.team.id} className={rowClass}>
+                                <td>{row.position}</td>
+                                <td style={{ textAlign: "left" }}>
+                                    <div className={css.cst_team_cell}>
+                                        <span className={css.cst_team_dot} style={{ background: row.team.color }} />
+                                        <span className={css.cst_team_name}>Team {row.team.name}</span>
+                                        {finished && (
+                                            inRange ? (
+                                                <FaCheck size={11} color="#2e7d32" title="Qualified to Playoffs" style={{ flexShrink: 0 }} />
+                                            ) : (
+                                                <FaXmark size={12} color="#be3939" title="Eliminated" style={{ flexShrink: 0 }} />
+                                            )
+                                        )}
+                                    </div>
+                                </td>
+                                <td>{row.m}</td>
+                                <td>{row.w}</td>
+                                <td>{row.t}</td>
+                                <td>{row.l}</td>
+                                <td style={{ color: row.rd > 0 ? "#2e7d32" : row.rd < 0 ? "red" : "" }}>
+                                    {row.rd > 0 ? `+${row.rd}` : row.rd}
+                                </td>
+                                <td>{row.points}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        );
+    };
+
+    const renderCstGroupStage = (stage, { archived = false, record = null } = {}) => (
+        <div className={css.cst_groups}>
+            {CST_GROUPS.map((group) => {
+                const groupObj = stage?.[group];
+                const matches = groupObj?.matches || [];
+                const currentIndex = archived ? -1 : matches.findIndex((m) => !m.played);
+                const nextIndex = currentIndex >= 0 && currentIndex + 1 < matches.length ? currentIndex + 1 : -1;
+
+                return (
+                    <div key={group} className={css.cst_group} data-cst-group={archived ? undefined : group}>
+                        <h3 className={css.cst_group_title}>Group {group}</h3>
+                        {renderCstStandingsTable(groupObj)}
+
+                        <div className={css.cst_group_matches}>
+                            {[matches.slice(0, 5), matches.slice(5)].map((column, columnIdx) => (
+                                <div key={columnIdx} className={css.cst_match_column}>
+                                    {column.map((m, columnRow) => {
+                                        const idx = columnIdx * 5 + columnRow;
+                                        const isClickable = archived
+                                            ? m.played
+                                            : !isMatchRectLocked && (m.played || canOpenCstGroupMatch(groupObj, idx));
+                                        const highlightClass =
+                                            idx === currentIndex ? css.match_current : idx === nextIndex ? css.match_next : "";
+
+                                        return (
+                                            <MatchRect
+                                                key={m.id}
+                                                match={m}
+                                                bestOf={1}
+                                                shouldBestOfBeShown={false}
+                                                isClickable={isClickable}
+                                                isButtonLocked={!archived && isMatchRectLocked}
+                                                onClick={() => {
+                                                    if (!isClickable) return;
+                                                    if (archived) openArchivedCstGroupMatchModal(record, group, idx, m);
+                                                    else openCstGroupMatchModal(group, m.id, false);
+                                                }}
+                                                className={highlightClass}
+                                                dataIdx={idx + 1}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+
+    const renderCstNav = () => (isCstPlayoffs ? renderGroupStageNav("cstGroups") : null);
+
+    const renderPemNav = () => (isPemPlayoffs ? renderGroupStageNav("pemGroups") : null);
+
+    const renderGroupStageNav = (groupStageViewId) => {
+        const entries = [
+            { id: "playoffs", label: "Playoffs" },
+            { id: groupStageViewId, label: "Group Stage" },
+        ];
+
+        return (
+            <div
+                ref={navRef}
+                style={{
+                    position: "absolute",
+                    top: "10%",
+                    left: "2%",
+                    zIndex: 5,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 10,
+                    transition: "none",
+                }}
+            >
+                {entries.map((entry) => {
+                    const isActive = viewPhase === entry.id;
+                    return (
+                        <button
+                            key={entry.id}
+                            data-results-active={isActive}
+                            onClick={() => setViewPhase(entry.id)}
+                            className={`${css.resultsNavigationButton} ${isActive ? css.resultsNavigationButtonActive : ""}`}
+                        >
+                            {entry.label}
+                        </button>
+                    );
+                })}
+                <motion.div
+                    className={css.resultsNavigationIndicator}
+                    initial={false}
+                    animate={{
+                        top: indicator.top,
+                        height: indicator.height,
+                    }}
+                    transition={{
+                        type: "tween",
+                        stiffness: 300,
+                        damping: 60,
+                    }}
+                />
+            </div>
+        );
+    };
+
+    const renderCstTitle = (suffix = null) => (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <span>
+                {cstLabel}
+                {suffix ? <> | {suffix}</> : null}
+            </span>
+        </span>
+    );
+
+    const renderCstPage = () => {
+        const showingPlayoffs = viewPhase === "playoffs" && isCstPlayoffs;
+        const champion = tournamentResults?.kind === "cst" ? tournamentResults.winner : null;
+        const showEndButtons = showPickemLine2 && !!champion;
+
+        return (
+            <div className={css.cst_page}>
+                {renderCstNav()}
+
+                {showEndButtons ? (
+                    <div className={css.pickem_buttons} style={{ top: "96px", left: "auto", right: "3%" }}>
+                        <button
+                            className={`${css.gamble_button} ${css.back_button}`}
+                            onClick={() => setShowPickemSummary(true)}
+                        >
+                            Back to the Pick'em challenge summary
+                        </button>
+                        <button
+                            className={`${css.gamble_button} ${css.back_back_button}`}
+                            style={{ backgroundColor: hover ? champion.hoverOn : champion.color }}
+                            onMouseEnter={() => setHover(true)}
+                            onMouseLeave={() => setHover(false)}
+                            onClick={() => setShowWinnersScreen(true)}
+                        >
+                            Back to the Winners' screen
+                        </button>
+                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                            Proceed
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ gap: 0, top: "96px", left: "auto", right: "5%" }} className={css.pickem_buttons}>
+                        <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                        <span className={css.points}>
+                            <CountUp
+                                start={0}
+                                duration={1.2}
+                                end={neededPickemPoints}
+                                key={neededPickemPoints}
+                            />
+                        </span>
+                    </div>
+                )}
+
+                <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                    {renderCstTitle(showingPlayoffs ? "Playoffs" : "Group Stage")}
+                </div>
+
+                {showingPlayoffs ? (
+                    <div style={{ width: "100%", marginTop: "-16px", height: "788px" }}>{renderPlayoffsBracket()}</div>
+                ) : (
+                    <>
+                        <div className={css.info_text} style={{ fontSize: 14, color: "#777", marginBottom: showEndButtons ? 68 : 4 }}>
+                            Win = 3 points, Tie (15-15) = 1 point. The top 2 teams of every Group go to the Playoffs.
+                        </div>
+                        {renderCstGroupStage(cst)}
+                    </>
+                )}
             </div>
         );
     };
@@ -14668,6 +19561,20 @@ function SpecialModePage() {
                 if (winnerIsRight) {
                     leftText = eliminationText;
                 }
+            }
+        }
+
+        if (type === "qualifier" || type === "pemGroup") {
+            const texts = type === "pemGroup"
+                ? getPemGroupStakeTexts(playoffsStage)
+                : getQualifierStakeTexts(playoffsStage);
+
+            if (winnerIsLeft) {
+                leftText = texts.winner;
+                rightText = texts.loser;
+            } else if (winnerIsRight) {
+                rightText = texts.winner;
+                leftText = texts.loser;
             }
         }
 
@@ -14759,6 +19666,18 @@ function SpecialModePage() {
             return swissNetTitle(modalContext.net);
         }
 
+        if (modalContext.type === "qualifier") {
+            return qualifierStageLabel(modalContext.stage);
+        }
+
+        if (modalContext.type === "pemGroup") {
+            return pemGroupStageLabel(modalContext.stage);
+        }
+
+        if (modalContext.type === "cstGroup") {
+            return `Group ${modalContext.group}`;
+        }
+
         const stageText = stageLabelPlayoffs(modalContext.stage);
         return stageText;
     }, [modalContext]);
@@ -14772,17 +19691,29 @@ function SpecialModePage() {
 
         const matches = modalContext.isArchivedHallOfFame
             ? []
-            : (playoffs?.[modalContext.stage] ?? []);
+            : modalContext.type === "qualifier"
+                ? (qualifier?.[modalContext.group]?.[modalContext.stage] ?? [])
+                : modalContext.type === "pemGroup"
+                    ? (pemMain?.[modalContext.group]?.[modalContext.stage] ?? [])
+                    : modalContext.type === "cstGroup"
+                        ? (cst?.[modalContext.group]?.matches ?? [])
+                        : (playoffs?.[modalContext.stage] ?? []);
         const index = modalContext.isArchivedHallOfFame
             ? selectedHallMatch?.index ?? -1
             : matches.findIndex((m) => m.id === modalContext.matchId);
 
         return index >= 0 ? index + 1 : 1;
-    }, [modalContext, currentModalMatch, playoffs, selectedHallMatch]);
+    }, [modalContext, currentModalMatch, playoffs, qualifier, cst, pemMain, selectedHallMatch]);
 
     const breakdownPointLabel = useMemo(() => {
         if (!modalContext) return "MATCH POINT!!!";
-        if (modalContext.type === "playoffs") return "MATCH POINT!!!";
+        if (modalContext.type === "playoffs" || modalContext.type === "cstGroup") return "MATCH POINT!!!";
+        if (modalContext.type === "qualifier") {
+            return QUALIFIER_QUALIFYING_STAGES.includes(modalContext.stage) ? "MAIN EVENT POINT!!!" : "MATCH POINT!!!";
+        }
+        if (modalContext.type === "pemGroup") {
+            return PEM_GROUP_QUALIFYING_STAGES.includes(modalContext.stage) ? "PLAYOFFS POINT!!!" : "MATCH POINT!!!";
+        }
 
         const pointNet = ["2:0", "2:1", "2:2"];
         if (!pointNet.includes(modalContext.net)) return "MATCH POINT!!!";
@@ -14797,6 +19728,9 @@ function SpecialModePage() {
     const modalStageSmallLabel = useMemo(() => {
         if (!modalContext) return "";
         if (modalContext.type === "playoffs") return "";
+        if (modalContext.type === "qualifier") return `Group ${modalContext.group}`;
+        if (modalContext.type === "pemGroup") return `Group ${modalContext.group}`;
+        if (modalContext.type === "cstGroup") return "Group Stage";
         if (modalContext.stageKey === "stage1") return "Stage I";
         if (modalContext.stageKey === "stage2") return "Stage II";
         if (modalContext.stageKey === "stage3") return "Stage III";
@@ -14822,8 +19756,29 @@ function SpecialModePage() {
         let small = "";
         let big = "";
 
-        if (seriesState.phase === "playoffs") {
-            small = tournamentLabel;
+        if (seriesState.phase === "qualifier") {
+            small = (
+                <>
+                    {pemSmallLabel} | Group {seriesState.qualifierGroup}
+                </>
+            );
+            big = qualifierStageLabel(seriesState.qualifierStage);
+        } else if (seriesState.phase === "pemGroup") {
+            small = (
+                <>
+                    {pemSmallLabel} | Group {seriesState.pemGroup}
+                </>
+            );
+            big = pemGroupStageLabel(seriesState.pemGroupStage);
+        } else if (seriesState.phase === "cstGroup") {
+            small = (
+                <>
+                    {cstLabel} | Group Stage
+                </>
+            );
+            big = `Group ${seriesState.cstGroup}`;
+        } else if (seriesState.phase === "playoffs") {
+            small = isCstPhase ? cstLabel : isPemMainPhase ? pemSmallLabel : tournamentLabel;
             big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "stage1") {
             small = (
@@ -14848,17 +19803,34 @@ function SpecialModePage() {
             big = swissNetTitle(seriesState.swissNet);
         }
 
+        const isQualifierSeries = seriesState.phase === "qualifier";
+        const isPemGroupSeries = seriesState.phase === "pemGroup";
+        const isCstSeries = isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs");
+        const isPemSeries = isPemMainPhase && (isPemGroupSeries || seriesState.phase === "playoffs");
+
         const seriesMatchNumber =
             seriesState.phase === "playoffs"
                 ? seriesState.playoffsMatchNumber
-                : seriesState.swissMatchNumber ?? 1;
+                : isQualifierSeries
+                    ? seriesState.qualifierMatchNumber ?? 1
+                    : isPemGroupSeries
+                        ? seriesState.pemGroupMatchNumber ?? 1
+                        : seriesState.phase === "cstGroup"
+                            ? seriesState.cstMatchNumber ?? 1
+                            : seriesState.swissMatchNumber ?? 1;
+
+        const showSeriesMatchNumber = isQualifierSeries
+            ? !isSingleQualifierStage(seriesState.qualifierStage)
+            : isPemGroupSeries
+                ? !isSinglePemGroupStage(seriesState.pemGroupStage)
+                : seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace";
 
         return (
             <>
                 <span className={css.series_label}>
                     <span className={css.series_upper_label}>
                         <motion.span
-                            key={`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage}`}
+                            key={`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage ?? seriesState.qualifierStage ?? seriesState.pemGroupStage}`}
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 40 }}
@@ -14875,16 +19847,51 @@ function SpecialModePage() {
                         >
                             {small}
                         </motion.span>
-                        <motion.span
-                            initial={{ opacity: 0, y: -40 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -40 }}
-                            transition={{ duration: 0.6 }}
-                            className={css.round_text}
-                            style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "44.55%", transition: 'none' }}
-                        >
-                            <FaTrophy />
-                        </motion.span>
+                        {isQualifierSeries ? (
+                            <motion.span
+                                initial={{ opacity: 0, y: -40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -40 }}
+                                transition={{ duration: 0.6 }}
+                                className={css.round_text}
+                                style={{ position: "absolute", left: "50%", x: "-50%", top: "-10px", display: "flex", transition: 'none' }}
+                            >
+                                <QualifierBadge height={20} />
+                            </motion.span>
+                        ) : isCstSeries ? (
+                            <motion.span
+                                initial={{ opacity: 0, y: -40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -40 }}
+                                transition={{ duration: 0.6 }}
+                                className={css.round_text}
+                                style={{ position: "absolute", left: "50%", x: "-50%", top: "-12px", display: "flex", transition: 'none' }}
+                            >
+                                &nbsp;
+                            </motion.span>
+                        ) : isPemSeries ? (
+                            <motion.span
+                                initial={{ opacity: 0, y: -40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -40 }}
+                                transition={{ duration: 0.6 }}
+                                className={css.round_text}
+                                style={{ fontSize: "28px", position: "absolute", left: "50%", x: "-50%", display: "flex", transition: 'none' }}
+                            >
+                                <PemSilverTrophy />
+                            </motion.span>
+                        ) : (
+                            <motion.span
+                                initial={{ opacity: 0, y: -40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -40 }}
+                                transition={{ duration: 0.6 }}
+                                className={css.round_text}
+                                style={{ fontSize: "28px", marginBottom: "-5px", position: "absolute", left: "44.55%", transition: 'none' }}
+                            >
+                                <FaTrophy />
+                            </motion.span>
+                        )}
                         <motion.div
                             key={big}
                             initial={{ opacity: 0, x: -40 }}
@@ -14903,7 +19910,7 @@ function SpecialModePage() {
                             }}
                         >
                             {big}
-                            {seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace" ? (
+                            {showSeriesMatchNumber ? (
                                 <div
                                     style={{
                                         marginLeft: "2px",
@@ -15160,7 +20167,7 @@ function SpecialModePage() {
                 </span>
             </>
         );
-    }, [seriesState, tournamentLabel]);
+    }, [seriesState, tournamentLabel, pemSmallLabel, cstLabel, isCstPhase, isPemMainPhase]);
 
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
@@ -15285,6 +20292,12 @@ function SpecialModePage() {
                         }}>
                             To the bracket
                         </button>
+                        {activePhase === "qualifier" || isCstPhase ? (
+                            <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                                Proceed
+                            </button>
+                        ) : (
+                            <>
                         <button className={css.gamble_button} onClick={resetSpecialModeState}>
                             Back to the start of Special Mode
                         </button>
@@ -15294,6 +20307,8 @@ function SpecialModePage() {
                         <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/"); }}>
                             To Home Page
                         </button>
+                            </>
+                        )}
                     </motion.div>
                 </div>
             </div>
@@ -15306,7 +20321,47 @@ function SpecialModePage() {
         return list[index];
     };
 
+    if (showWinnersScreen && tournamentResults?.kind === "pemQualifier") {
+        return (
+            <div className={css.winnerScreen}>
+                <QualifierBadge height={26} />
+                {showWinnerText && (
+                    <motion.h2
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className={css.winnerHeadline}
+                    >
+                        {hasPlayedWinnerAnimation ? (
+                            <span>
+                                The 4 qualifiers of {pemSmallLabel}
+                            </span>
+                        ) : winnersText}
+                    </motion.h2>
+                )}
+
+                {renderQualifierWinnersBlock(tournamentResults.qualifiers, { animated: !hasPlayedWinnerAnimation })}
+
+                {showProceed && (
+                    <motion.button
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
+                        className={css.gamble_button}
+                        onClick={handleProceed}
+                        style={{ zIndex: 10, marginTop: "48px" }}
+                    >
+                        Proceed
+                    </motion.button>
+                )}
+            </div>
+        );
+    }
+
     if (showWinnersScreen && tournamentResults) {
+        const isCstResults = tournamentResults.kind === "cst";
+        const isPemResults = tournamentResults.kind === "pem";
+
         return (
             <>
                 <div className={css.winnerScreen}>
@@ -15319,7 +20374,7 @@ function SpecialModePage() {
                         >
                             {hasPlayedWinnerAnimation ? (
                                 <span>
-                                    The Top 4 of {tournamentLabel}
+                                    The Top 4 of {isCstResults ? cstLabel : isPemResults ? pemSmallLabel : tournamentLabel}
                                 </span>
                             ) : winnersText}
                         </motion.h2>
@@ -15355,7 +20410,9 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.runnerUp.name}</b>
                                             </ReactFitty>
                                             <span className={css.runnerUpLabel}>RunnerUp</span>
-                                            <span className={css.runnerUpQuote}>"{pickQuote(PODIUM_QUOTES.runnerUp, tournamentResults.runnerUp?.id ?? 0)}"</span>
+                                            {!isCstResults && (
+                                                <span className={css.runnerUpQuote}>"{pickQuote(PODIUM_QUOTES.runnerUp, tournamentResults.runnerUp?.id ?? 0)}"</span>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}
@@ -15382,13 +20439,19 @@ function SpecialModePage() {
                                             }}
                                         />
                                         <span className={css.winnerMedal}>🥇</span>
-                                        <span className={css.winnerTrophy}><FaTrophy /></span>
+                                        {!isCstResults && (
+                                            <span className={css.winnerTrophy}>
+                                                {isPemResults ? <PemSilverTrophy style={{ marginLeft: "6px", marginTop: "-52px" }} /> : <FaTrophy />}
+                                            </span>
+                                        )}
                                         <div className={css.firstPodium}>
                                             <ReactFitty key={tournamentResults.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
                                                 Team <b>{tournamentResults.winner.name}</b>
                                             </ReactFitty>
                                             <span className={css.firstPlaceLabel}>Winner</span>
-                                            <span className={css.firstPlaceQuote}>"{pickQuote(PODIUM_QUOTES.winner, tournamentResults.winner?.id ?? 0)}"</span>
+                                            {!isCstResults && (
+                                                <span className={css.firstPlaceQuote}>"{pickQuote(PODIUM_QUOTES.winner, tournamentResults.winner?.id ?? 0)}"</span>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}
@@ -15417,7 +20480,9 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.thirdPlace.name}</b>
                                             </ReactFitty>
                                             <span className={css.thirdPlaceLabel}>3rd</span>
-                                            <span className={css.thirdPlaceQuote}>"{pickQuote(PODIUM_QUOTES.thirdPlace, tournamentResults.thirdPlace?.id ?? 0)}"</span>
+                                            {!isCstResults && (
+                                                <span className={css.thirdPlaceQuote}>"{pickQuote(PODIUM_QUOTES.thirdPlace, tournamentResults.thirdPlace?.id ?? 0)}"</span>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}
@@ -15447,7 +20512,9 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.fourthPlace.name}</b>
                                             </ReactFitty>
                                             <span className={css.fourthPlaceLabel}>4th</span>
-                                            <span className={css.fourthPlaceQuote}>"{pickQuote(PODIUM_QUOTES.fourthPlace, tournamentResults.fourthPlace?.id ?? 0)}"</span>
+                                            {!isCstResults && (
+                                                <span className={css.fourthPlaceQuote}>"{pickQuote(PODIUM_QUOTES.fourthPlace, tournamentResults.fourthPlace?.id ?? 0)}"</span>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}
@@ -15473,6 +20540,20 @@ function SpecialModePage() {
     }
 
     const getPointLabel = () => {
+        if (seriesState.phase === "cstGroup") return "MATCH POINT!!!";
+
+        if (seriesState.phase === "qualifier") {
+            return QUALIFIER_QUALIFYING_STAGES.includes(seriesState.qualifierStage)
+                ? "MAIN EVENT POINT!!!"
+                : "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "pemGroup") {
+            return PEM_GROUP_QUALIFYING_STAGES.includes(seriesState.pemGroupStage)
+                ? "PLAYOFFS POINT!!!"
+                : "MATCH POINT!!!";
+        }
+
         const pointNet = ["2:0", "2:1", "2:2"];
 
         if (!pointNet.includes(seriesState.swissNet)) {
@@ -15512,6 +20593,8 @@ function SpecialModePage() {
 
     const inSuddenDeath = currentAttempt > 5;
 
+    const isPlayoffsStyleSeries = activePhase === "playoffs" || activePhase === "qualifier" || activePhase === "pemGroups";
+
     if (isSeriesActive) {
         const {
             playerWonSets,
@@ -15542,7 +20625,7 @@ function SpecialModePage() {
                         setIsTournamentNumberButtonArmed(false);
                     }}
                     setIsScoreBoard={() => setIsLeaderboardOpen(true)}
-                    isIntroClosed={showIntro || showPickemLine2}
+                    isIntroClosed={isLeaderboardButtonShown}
                     isLeaderboardOpen={isLeaderboardOpen}
                     isButtonLocked={isButtonLocked}
                     isScoreBoardButtonLocked={isScoreBoardButtonLocked}
@@ -15634,7 +20717,7 @@ function SpecialModePage() {
                                             />
                                         </span>
                                         <div className={css.lines}>
-                                            {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                            {!isPlayoffsStyleSeries && setsToWin === 3 ? (
                                                 <>
                                                     {[...Array(3)].map((_, i) => (
                                                         <div
@@ -15669,7 +20752,7 @@ function SpecialModePage() {
                                                         </div>
                                                     ))}
                                                 </>
-                                            ) : activePhase !== "playoffs" && setsToWin === 2 ? (
+                                            ) : !isPlayoffsStyleSeries && setsToWin === 2 ? (
                                                 <>
                                                     {[...Array(2)].map((_, i) => (
                                                         <div
@@ -15703,7 +20786,7 @@ function SpecialModePage() {
                                                         </div>
                                                     ))}
                                                 </>
-                                            ) : activePhase !== "playoffs" && setsToWin === 1 ? (
+                                            ) : !isPlayoffsStyleSeries && setsToWin === 1 ? (
                                                 <div
                                                     className={css.line}
                                                     style={{
@@ -15736,7 +20819,7 @@ function SpecialModePage() {
                                         </div>
                                     </div>
                                     <div className={css.verticalLines} style={{ marginTop: "6px" }}>
-                                        {activePhase === "playoffs" && setsToWin === 5 ? (
+                                        {isPlayoffsStyleSeries && setsToWin === 5 ? (
                                             <>
                                                 {[...Array(5)].map((_, i) => (
                                                     <div
@@ -15771,7 +20854,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 4 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 4 ? (
                                             <>
                                                 {[...Array(4)].map((_, i) => (
                                                     <div
@@ -15806,7 +20889,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 3 ? (
                                             <>
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
@@ -15841,7 +20924,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -15875,7 +20958,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 1 ? (
                                             <div
                                                 className={css.verticalLine}
                                                 style={{
@@ -15914,10 +20997,8 @@ function SpecialModePage() {
                                             const cleanBanner = banner.text;
                                             const chars = cleanBanner.split("");
 
-                                            const middle = Math.ceil(chars.length / 2);
-
-                                            const topHalf = chars.slice(0, middle);
-                                            const bottomHalf = chars.slice(middle);
+                                            const fromTop = (index) =>
+                                                banner.tie ? index % 2 === 0 : index < Math.ceil(chars.length / 2);
 
                                             return (
                                                 <motion.span
@@ -15928,46 +21009,18 @@ function SpecialModePage() {
                                                         alignItems: "center",
                                                         justifyContent: "center",
                                                         gap: "0px",
-                                                        width: '63.8px',
+                                                        width: banner.tie ? 'max-content' : '63.8px',
                                                         textShadow: banner.shadow,
                                                         position: "relative",
                                                         index: 9999
                                                     }}
                                                 >
-                                                    {topHalf.map((char, index) => (
+                                                    {chars.map((char, index) => (
                                                         <motion.span
-                                                            key={`top-${char}-${index}`}
+                                                            key={`${index}-${char}`}
                                                             initial={{
                                                                 opacity: 0,
-                                                                y: -20,
-                                                            }}
-                                                            animate={{
-                                                                opacity: 1,
-                                                                y: 0,
-                                                            }}
-                                                            transition={{
-                                                                duration: 0.45
-                                                            }}
-                                                            style={{
-                                                                display: "inline-block",
-                                                                background: banner.gradient,
-                                                                backgroundClip: "text",
-                                                                WebkitBackgroundClip: "text",
-
-                                                                color: "transparent",
-                                                                WebkitTextFillColor: "transparent",
-                                                            }}
-                                                        >
-                                                            {char}
-                                                        </motion.span>
-                                                    ))}
-
-                                                    {bottomHalf.map((char, index) => (
-                                                        <motion.span
-                                                            key={`bottom-${char}-${index}`}
-                                                            initial={{
-                                                                opacity: 0,
-                                                                y: 20,
+                                                                y: fromTop(index) ? -20 : 20,
                                                             }}
                                                             animate={{
                                                                 opacity: 1,
@@ -16015,7 +21068,7 @@ function SpecialModePage() {
                                         : seriesState.tiebreakerBigSymbol ? (
                                             <p
                                                 className={css.vs}
-                                                style={{ fontWeight: 700, fontSize: "32px", marginBottom: activePhase === "playoffs" ? "-12px" : "0", }}
+                                                style={{ fontWeight: 700, fontSize: "32px", marginBottom: isPlayoffsStyleSeries ? "-12px" : "0", }}
                                             >
                                                 {seriesState.tiebreakerBigSymbol}
                                             </p>
@@ -16063,7 +21116,7 @@ function SpecialModePage() {
                                             />
                                         </span>
                                         <div className={css.lossLines}>
-                                            {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                            {!isPlayoffsStyleSeries && setsToWin === 3 ? (
                                                 <>
                                                     {[...Array(3)].map((_, i) => (
                                                         <div
@@ -16098,7 +21151,7 @@ function SpecialModePage() {
                                                         </div>
                                                     ))}
                                                 </>
-                                            ) : activePhase !== "playoffs" && setsToWin === 2 ? (
+                                            ) : !isPlayoffsStyleSeries && setsToWin === 2 ? (
                                                 <>
                                                     {[...Array(2)].map((_, i) => (
                                                         <div
@@ -16132,7 +21185,7 @@ function SpecialModePage() {
                                                         </div>
                                                     ))}
                                                 </>
-                                            ) : activePhase !== "playoffs" && setsToWin === 1 ? (
+                                            ) : !isPlayoffsStyleSeries && setsToWin === 1 ? (
                                                 <div
                                                     className={css.line}
                                                     style={{
@@ -16165,7 +21218,7 @@ function SpecialModePage() {
                                         </div>
                                     </div>
                                     <div className={css.verticalLossLines} style={{ marginTop: "6px" }}>
-                                        {activePhase === "playoffs" && setsToWin === 5 ? (
+                                        {isPlayoffsStyleSeries && setsToWin === 5 ? (
                                             <>
                                                 {[...Array(5)].map((_, i) => (
                                                     <div
@@ -16200,7 +21253,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 4 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 4 ? (
                                             <>
                                                 {[...Array(4)].map((_, i) => (
                                                     <div
@@ -16235,7 +21288,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 3 ? (
                                             <>
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
@@ -16270,7 +21323,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -16304,7 +21357,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                        ) : isPlayoffsStyleSeries && setsToWin === 1 ? (
                                             <div
                                                 className={css.verticalLine}
                                                 style={{
@@ -16519,7 +21572,7 @@ function SpecialModePage() {
                                                         `
                                         ,
                                         marginBottom: "4px",
-                                        marginLeft: activePhase === "playoffs" ? '0' : '8px',
+                                        marginLeft: isPlayoffsStyleSeries ? '0' : '8px',
                                         marginTop: "-28px"
                                     }}
                                 >
@@ -16543,7 +21596,7 @@ function SpecialModePage() {
                                                             `
                                             ,
                                             marginBottom: "4px",
-                                            marginLeft: activePhase === "playoffs" ? '0' : '8px',
+                                            marginLeft: isPlayoffsStyleSeries ? '0' : '8px',
                                             marginTop: "-28px"
                                         }}
                                     >
@@ -16551,7 +21604,7 @@ function SpecialModePage() {
                                     </motion.span>
                                 )
                             )}
-                            {activePhase !== "playoffs" && !banner ? (
+                            {!isPlayoffsStyleSeries && !banner ? (
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -16623,7 +21676,7 @@ function SpecialModePage() {
                                         />
                                     </motion.span>
                                     <div className={css.lines}>
-                                        {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                        {!isPlayoffsStyleSeries && setsToWin === 3 ? (
                                             <>
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
@@ -16658,7 +21711,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase !== "playoffs" && setsToWin === 2 ? (
+                                        ) : !isPlayoffsStyleSeries && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -16692,7 +21745,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase !== "playoffs" && setsToWin === 1 ? (
+                                        ) : !isPlayoffsStyleSeries && setsToWin === 1 ? (
                                             <div
                                                 className={css.line}
                                                 style={{
@@ -16774,7 +21827,7 @@ function SpecialModePage() {
                                     </div>
                                 ) : null}
                                 <div className={css.verticalLines}>
-                                    {activePhase === "playoffs" && setsToWin === 5 ? (
+                                    {isPlayoffsStyleSeries && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
                                                 <div
@@ -16811,7 +21864,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 4 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 4 ? (
                                         <>
                                             {[...Array(4)].map((_, i) => (
                                                 <div
@@ -16848,7 +21901,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 3 ? (
                                         <>
                                             {[...Array(3)].map((_, i) => (
                                                 <div
@@ -16885,7 +21938,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 2 ? (
                                         <>
                                             {[...Array(2)].map((_, i) => (
                                                 <div
@@ -16921,7 +21974,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 1 ? (
                                         <div
                                             className={css.verticalLine}
                                             style={{
@@ -16955,7 +22008,7 @@ function SpecialModePage() {
                                         </div>
                                     ) : null}
                                 </div>
-                                {!banner && activePhase === "playoffs" ? (
+                                {!banner && isPlayoffsStyleSeries ? (
                                     <motion.span
                                         key={seriesState.leftTeam?.name}
                                         initial={{ x: 420 }}
@@ -16993,10 +22046,8 @@ function SpecialModePage() {
                             const cleanBanner = banner.text;
                             const chars = cleanBanner.split("");
 
-                            const middle = Math.ceil(chars.length / 2);
-
-                            const topHalf = chars.slice(0, middle);
-                            const bottomHalf = chars.slice(middle);
+                            const fromTop = (index) =>
+                                banner.tie ? index % 2 === 0 : index < Math.ceil(chars.length / 2);
 
                             return (
                                 <motion.span
@@ -17007,44 +22058,16 @@ function SpecialModePage() {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         gap: "0px",
-                                        width: '63.8px',
+                                        width: banner.tie ? 'max-content' : '63.8px',
                                         textShadow: banner.shadow
                                     }}
                                 >
-                                    {topHalf.map((char, index) => (
+                                    {chars.map((char, index) => (
                                         <motion.span
-                                            key={`top-${char}-${index}`}
+                                            key={`${index}-${char}`}
                                             initial={{
                                                 opacity: 0,
-                                                y: -20,
-                                            }}
-                                            animate={{
-                                                opacity: 1,
-                                                y: 0,
-                                            }}
-                                            transition={{
-                                                duration: 0.45
-                                            }}
-                                            style={{
-                                                display: "inline-block",
-                                                background: banner.gradient,
-                                                backgroundClip: "text",
-                                                WebkitBackgroundClip: "text",
-
-                                                color: "transparent",
-                                                WebkitTextFillColor: "transparent",
-                                            }}
-                                        >
-                                            {char}
-                                        </motion.span>
-                                    ))}
-
-                                    {bottomHalf.map((char, index) => (
-                                        <motion.span
-                                            key={`bottom-${char}-${index}`}
-                                            initial={{
-                                                opacity: 0,
-                                                y: 20,
+                                                y: fromTop(index) ? -20 : 20,
                                             }}
                                             animate={{
                                                 opacity: 1,
@@ -17091,7 +22114,7 @@ function SpecialModePage() {
                         })() : (
                             <div
                                 style={{
-                                    marginTop: activePhase === "playoffs" ? "16px" : "24px",
+                                    marginTop: isPlayoffsStyleSeries ? "16px" : "24px",
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
@@ -17102,7 +22125,7 @@ function SpecialModePage() {
                                         width: "63.8px",
                                         height: "42px",
                                         marginBottom:
-                                            activePhase === "playoffs" &&
+                                            isPlayoffsStyleSeries &&
                                                 seriesState.tiebreakerPhase !== "penalties"
                                                 ? "-12px"
                                                 : "0",
@@ -17215,7 +22238,7 @@ function SpecialModePage() {
                                         </motion.div>
                                     </AnimatePresence>
                                 </div>
-                                {activePhase !== "playoffs" && seriesState.tiebreakerPhase === "penalties"
+                                {!isPlayoffsStyleSeries && seriesState.tiebreakerPhase === "penalties"
                                     ? null
                                     : (
                                         <motion.span
@@ -17229,7 +22252,7 @@ function SpecialModePage() {
                                                 width: "63.8px",
                                                 textAlign: "center",
                                                 marginTop:
-                                                    activePhase === "playoffs" &&
+                                                    isPlayoffsStyleSeries &&
                                                         seriesState.tiebreakerPhase !== "penalties"
                                                         ? "8px"
                                                         : "0px",
@@ -17276,7 +22299,7 @@ function SpecialModePage() {
                                                             0 1px 3px rgba(0,0,0,0.4)
                                                         `,
                                         marginBottom: "4px",
-                                        marginRight: activePhase === "playoffs" ? '0' : '8px',
+                                        marginRight: isPlayoffsStyleSeries ? '0' : '8px',
                                         marginTop: "-28px"
                                     }}
                                 >
@@ -17299,7 +22322,7 @@ function SpecialModePage() {
                                                             0 1px 3px rgba(0,0,0,0.4)
                                                         `,
                                             marginBottom: "4px",
-                                            marginRight: activePhase === "playoffs" ? '0' : '8px',
+                                            marginRight: isPlayoffsStyleSeries ? '0' : '8px',
                                             marginTop: "-28px"
                                         }}
                                     >
@@ -17307,7 +22330,7 @@ function SpecialModePage() {
                                     </motion.span>
                                 )
                             )}
-                            {activePhase !== "playoffs" && !banner ? (
+                            {!isPlayoffsStyleSeries && !banner ? (
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -17386,7 +22409,7 @@ function SpecialModePage() {
                                         />
                                     </motion.span>
                                     <div className={css.lossLines}>
-                                        {activePhase !== "playoffs" && setsToWin === 3 ? (
+                                        {!isPlayoffsStyleSeries && setsToWin === 3 ? (
                                             <>
                                                 {[...Array(3)].map((_, i) => (
                                                     <div
@@ -17421,7 +22444,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase !== "playoffs" && setsToWin === 2 ? (
+                                        ) : !isPlayoffsStyleSeries && setsToWin === 2 ? (
                                             <>
                                                 {[...Array(2)].map((_, i) => (
                                                     <div
@@ -17455,7 +22478,7 @@ function SpecialModePage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : activePhase !== "playoffs" && setsToWin === 1 ? (
+                                        ) : !isPlayoffsStyleSeries && setsToWin === 1 ? (
                                             <div
                                                 className={css.line}
                                                 style={{
@@ -17537,7 +22560,7 @@ function SpecialModePage() {
                                     </div>
                                 ) : null}
                                 <div className={css.verticalLossLines}>
-                                    {activePhase === "playoffs" && setsToWin === 5 ? (
+                                    {isPlayoffsStyleSeries && setsToWin === 5 ? (
                                         <>
                                             {[...Array(5)].map((_, i) => (
                                                 <div
@@ -17574,7 +22597,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 4 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 4 ? (
                                         <>
                                             {[...Array(4)].map((_, i) => (
                                                 <div
@@ -17611,7 +22634,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 3 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 3 ? (
                                         <>
                                             {[...Array(3)].map((_, i) => (
                                                 <div
@@ -17648,7 +22671,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 2 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 2 ? (
                                         <>
                                             {[...Array(2)].map((_, i) => (
                                                 <div
@@ -17684,7 +22707,7 @@ function SpecialModePage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : activePhase === "playoffs" && setsToWin === 1 ? (
+                                    ) : isPlayoffsStyleSeries && setsToWin === 1 ? (
                                         <div
                                             className={css.verticalLine}
                                             style={{
@@ -17717,7 +22740,7 @@ function SpecialModePage() {
                                         </div>
                                     ) : null}
                                 </div>
-                                {!banner && activePhase === "playoffs" ? (
+                                {!banner && isPlayoffsStyleSeries ? (
                                     <motion.span
                                         key={seriesState.rightTeam?.name}
                                         initial={{ x: -420 }}
@@ -18206,7 +23229,7 @@ function SpecialModePage() {
                                 }}
                                 className={css.match_modal_title}>
                                 {modalTitle}
-                                {modalContext.stage !== "gf" && modalContext.stage !== "thirdPlace" ? (
+                                {showModalMatchNumber ? (
                                     <div
                                         style={{
                                             marginLeft: "2px",
@@ -18314,8 +23337,8 @@ function SpecialModePage() {
                                     )`
                         };
 
-                        const leftStats = teamPlacings?.[modalLeftTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
-                        const rightStats = teamPlacings?.[modalRightTeam?.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                        const leftStats = teamPlacings?.[modalLeftTeam?.id] ?? EMPTY_TEAM_PLACINGS;
+                        const rightStats = teamPlacings?.[modalRightTeam?.id] ?? EMPTY_TEAM_PLACINGS;
 
                         const leftStreak = readUnbeatenStreak(teamStats?.[modalLeftTeam?.id]);
                         const rightStreak = readUnbeatenStreak(teamStats?.[modalRightTeam?.id]);
@@ -18341,11 +23364,7 @@ function SpecialModePage() {
                         };
 
                         const renderStats = (stats) => {
-                            const items = [];
-
-                            if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
-                            if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
-                            if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+                            const items = buildPlacingItems(stats, <FaTrophy />);
 
                             if (items.length === 0) return null;
 
@@ -18359,8 +23378,8 @@ function SpecialModePage() {
                                         left: stats === rightStats ? "84%" : "auto",
                                     }}
                                 >
-                                    {items.map((i, idx) => (
-                                        <span key={idx} className={css.stat_item}>
+                                    {items.map((i) => (
+                                        <span key={i.key} className={css.stat_item} title={i.title ?? undefined}>
                                             {i.icon}: {i.value}
                                         </span>
                                     ))}
@@ -18372,8 +23391,10 @@ function SpecialModePage() {
 
                         let stageLabel = "Start Match";
 
-                        if (modalContext?.type === "playoffs") {
+                        if (modalContext?.type === "playoffs" || modalContext?.type === "qualifier" || modalContext?.type === "pemGroup") {
                             stageLabel = `Start this ${boLabel} ${modalTitle}`;
+                        } else if (modalContext?.type === "cstGroup") {
+                            stageLabel = `Start this ${boLabel} ${modalTitle} Match`;
                         } else if (modalContext?.type === "swiss") {
                             const net = modalContext?.net;
 
@@ -18403,7 +23424,17 @@ function SpecialModePage() {
 
                             phase: modalContext?.type === "swiss"
                                 ? "swiss"
-                                : "playoffs",
+                                : modalContext?.type === "qualifier"
+                                    ? "qualifier"
+                                    : modalContext?.type === "pemGroup"
+                                        ? "pemGroup"
+                                        : modalContext?.type === "cstGroup"
+                                            ? "cstGroup"
+                                            : modalContext?.kind === "cst"
+                                                ? "cstPlayoffs"
+                                                : modalContext?.kind === "pem"
+                                                    ? "pemPlayoffs"
+                                                    : "playoffs",
 
                             swissStageKey:
                                 modalContext?.type === "swiss"
@@ -18416,7 +23447,7 @@ function SpecialModePage() {
                                     : null,
 
                             playoffsStage:
-                                modalContext?.type === "playoffs"
+                                modalContext?.type === "playoffs" || modalContext?.type === "qualifier" || modalContext?.type === "pemGroup"
                                     ? modalContext?.stage
                                     : null,
 
@@ -18837,12 +23868,30 @@ function SpecialModePage() {
                                 winnerIsRight
                             });
 
+                            const isTieResult = !!currentModalMatch?.isTie;
+                            const leftPickFailed = leftIsLoser || isTieResult;
+                            const rightPickFailed = rightIsLoser || isTieResult;
+
                             const stage = modalContext?.stage;
                             const isGrandFinal = stage === "gf";
                             const isThirdPlace = stage === "thirdPlace";
 
                             const getPlacementBadge = (isWinner, isLoser) => {
                                 if (isGrandFinal) {
+                                    if (isWinner && modalContext?.kind === "cst") {
+                                        return (
+                                            <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
+                                                🥇+
+                                            </span>
+                                        );
+                                    }
+                                    if (isWinner && modalContext?.kind === "pem") {
+                                        return (
+                                            <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <PemSilverTrophy />+
+                                            </span>
+                                        );
+                                    }
                                     if (isWinner) {
                                         return (
                                             <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
@@ -18870,19 +23919,8 @@ function SpecialModePage() {
                                 return null;
                             };
 
-                            const displayedLeftStats =
-                                teamPlacings?.[modalPlayedLeft?.id] ?? {
-                                    wins: 0,
-                                    seconds: 0,
-                                    thirds: 0,
-                                };
-
-                            const displayedRightStats =
-                                teamPlacings?.[modalPlayedRight?.id] ?? {
-                                    wins: 0,
-                                    seconds: 0,
-                                    thirds: 0,
-                                };
+                            const displayedLeftStats = teamPlacings?.[modalPlayedLeft?.id] ?? EMPTY_TEAM_PLACINGS;
+                            const displayedRightStats = teamPlacings?.[modalPlayedRight?.id] ?? EMPTY_TEAM_PLACINGS;
 
                             const leftStreakAfter = readUnbeatenStreak(
                                 currentModalMatch?.statsMeta?.after?.[modalPlayedLeft?.id]
@@ -18924,11 +23962,7 @@ function SpecialModePage() {
                             };
 
                             const renderStats = (stats, side) => {
-                                const items = [];
-
-                                if (stats.wins > 0) items.push({ icon: <FaTrophy />, value: stats.wins });
-                                if (stats.seconds > 0) items.push({ icon: "🥈", value: stats.seconds });
-                                if (stats.thirds > 0) items.push({ icon: "🥉", value: stats.thirds });
+                                const items = buildPlacingItems(stats, <FaTrophy />);
 
                                 if (!items.length) return null;
 
@@ -18945,8 +23979,8 @@ function SpecialModePage() {
                                                 : { left: "88.5%" }),
                                         }}
                                     >
-                                        {items.map((i, idx) => (
-                                            <span key={idx} className={css.stat_item}>
+                                        {items.map((i) => (
+                                            <span key={i.key} className={css.stat_item} title={i.title ?? undefined}>
                                                 {i.icon}: {i.value}
                                             </span>
                                         ))}
@@ -18975,7 +24009,7 @@ function SpecialModePage() {
                                                     background: winnerIsLeft ? "#91ffc1" : "#ff9191",
                                                     boxShadow: winnerIsLeft ? "0 0 32px 8px #91ffc1" : "0 0 32px 8px #ff9191",
                                                     filter: "blur(42px)",
-                                                    opacity: 0.75,
+                                                    opacity: isTieResult ? 0 : 0.75,
                                                     zIndex: 1,
                                                     pointerEvents: "none",
                                                 }}
@@ -18987,7 +24021,7 @@ function SpecialModePage() {
                                                     pointerEvents: "none",
                                                 }}
                                             >
-                                                <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
                                                 <span className={css.modal_team_label}>
                                                     {(() => {
                                                         const meta = currentModalMatch?.ratingMeta;
@@ -19036,13 +24070,13 @@ function SpecialModePage() {
                                                                             )}
                                                                         </span>
                                                                     )}
-                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                         {rankSticker()}
                                                                     </span>
                                                                 </span>
                                                                 <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
                                                                     {getPlacementBadge(winnerIsLeft, leftIsLoser)}
-                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftIsLoser ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                         {modalPlayedLeft?.name}
                                                                         {leftStakeText === "path ends here, for now!" || leftStakeText === "second place is still wonderful!" ? "'s" : ""}
                                                                     </span>
@@ -19061,9 +24095,11 @@ function SpecialModePage() {
                                             <div className={css.modal_vs}>
                                                 <span
                                                     style={{
-                                                        color: winnerIsLeft
-                                                            ? "#2e7d32"
-                                                            : "red",
+                                                        color: isTieResult
+                                                            ? "#5a5a5a"
+                                                            : winnerIsLeft
+                                                                ? "#2e7d32"
+                                                                : "red",
                                                         fontWeight: 800,
                                                         fontStyle: "italic",
                                                         position: "absolute",
@@ -19078,9 +24114,11 @@ function SpecialModePage() {
                                                         maskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
                                                     }}
                                                     className={
-                                                        winnerIsLeft
-                                                            ? css.swissWinnerScoreShadow
-                                                            : css.swissLoserScoreShadow
+                                                        isTieResult
+                                                            ? css.swissTieScoreShadow
+                                                            : winnerIsLeft
+                                                                ? css.swissWinnerScoreShadow
+                                                                : css.swissLoserScoreShadow
                                                     }
                                                 >
                                                     {modalDisplayScoreLeft}
@@ -19101,9 +24139,11 @@ function SpecialModePage() {
                                                 </div>
                                                 <span
                                                     style={{
-                                                        color: winnerIsRight
-                                                            ? "#2e7d32"
-                                                            : "red",
+                                                        color: isTieResult
+                                                            ? "#5a5a5a"
+                                                            : winnerIsRight
+                                                                ? "#2e7d32"
+                                                                : "red",
                                                         fontWeight: 800,
                                                         fontStyle: "italic",
                                                         position: "absolute",
@@ -19118,9 +24158,11 @@ function SpecialModePage() {
                                                         maskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
                                                     }}
                                                     className={
-                                                        winnerIsRight
-                                                            ? css.swissWinnerScoreShadow
-                                                            : css.swissLoserScoreShadow
+                                                        isTieResult
+                                                            ? css.swissTieScoreShadow
+                                                            : winnerIsRight
+                                                                ? css.swissWinnerScoreShadow
+                                                                : css.swissLoserScoreShadow
                                                     }
                                                 >
                                                     {modalDisplayScoreRight}
@@ -19134,7 +24176,7 @@ function SpecialModePage() {
                                                     pointerEvents: "none",
                                                 }}
                                             >
-                                                <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
                                                 <span>
                                                     {(() => {
                                                         const meta = currentModalMatch?.ratingMeta;
@@ -19183,13 +24225,13 @@ function SpecialModePage() {
                                                                             )}
                                                                         </span>
                                                                     )}
-                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                         {rankSticker()}
                                                                     </span>
                                                                 </span>
                                                                 <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
                                                                     {getPlacementBadge(winnerIsRight, rightIsLoser)}
-                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightIsLoser ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
+                                                                    <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                         {modalPlayedRight?.name}
                                                                         {rightStakeText === "path ends here, for now!" || rightStakeText === "second place is still wonderful!" ? "'s" : ""}
                                                                     </span>
@@ -19218,7 +24260,7 @@ function SpecialModePage() {
                                                     background: winnerIsRight ? "#91ffc1" : "#ff9191",
                                                     boxShadow: winnerIsRight ? "0 0 32px 8px #91ffc1" : "0 0 32px 8px #ff9191",
                                                     filter: "blur(42px)",
-                                                    opacity: 0.75,
+                                                    opacity: isTieResult ? 0 : 0.75,
                                                     zIndex: 1,
                                                     pointerEvents: "none",
                                                 }}
@@ -19378,6 +24420,7 @@ function SpecialModePage() {
                                                                 wins,
                                                                 losses,
                                                                 won,
+                                                                tie = false,
                                                                 firstHalfLeft,
                                                                 firstHalfRight,
                                                                 extendedRounds = {
@@ -19389,11 +24432,11 @@ function SpecialModePage() {
                                                                 const isDecider = set === modalBestOf;
                                                                 const label = isDecider ? "Decider" : `Set ${set}`;
 
-                                                                const leftGlow = won;
-                                                                const rightGlow = !won;
+                                                                const leftGlow = won && !tie;
+                                                                const rightGlow = !won && !tie;
 
-                                                                const leftOpacity = won ? 1 : 0.4;
-                                                                const rightOpacity = won ? 0.4 : 1;
+                                                                const leftOpacity = won || tie ? 1 : 0.4;
+                                                                const rightOpacity = won && !tie ? 0.4 : 1;
 
                                                                 const isATie = wins === losses;
 
@@ -19479,7 +24522,7 @@ function SpecialModePage() {
                                                                     (extendedRounds.secondHalf === "right" ? 1 : 0) +
                                                                     rightOtExtendedRounds.length;
 
-                                                                const hasExtendedRounds = isATie &&
+                                                                const hasExtendedRounds = isATie && !tie &&
                                                                     extendedRoundLeftScore + extendedRoundRightScore > 0;
 
                                                                 const totalRounds = wins + losses;
@@ -20341,13 +25384,8 @@ function SpecialModePage() {
                                         : null
                                 }
                                 matchTitle={modalTitle}
-                                matchNumber={
-                                    modalContext.stage !== "gf" &&
-                                        modalContext.stage !== "thirdPlace"
-                                        ? modalMatchNumber
-                                        : null
-                                }
-                                isPlayoffs={modalContext.type === "playoffs"}
+                                matchNumber={showModalMatchNumber ? modalMatchNumber : null}
+                                isPlayoffs={isEliminationModal}
                                 pointLabelText={breakdownPointLabel}
                             />
                         );
@@ -20376,7 +25414,7 @@ function SpecialModePage() {
                         setIsTournamentNumberButtonArmed(false);
                     }}
                     setIsScoreBoard={() => setIsLeaderboardOpen(true)}
-                    isIntroClosed={showIntro || showPickemLine2}
+                    isIntroClosed={isLeaderboardButtonShown}
                     isLeaderboardOpen={isLeaderboardOpen}
                     isButtonLocked={isButtonLocked}
                     isScoreBoardButtonLocked={isScoreBoardButtonLocked}
@@ -20499,10 +25537,12 @@ function SpecialModePage() {
                                     : rank > 10 ? "8px"
                                         : "";
 
-                            const p = teamPlacings?.[t.id] ?? { wins: 0, seconds: 0, thirds: 0 };
+                            const p = teamPlacings?.[t.id] ?? EMPTY_TEAM_PLACINGS;
                             const trophyDisplay = trophyCountToDisplay(p.wins);
+                            const tier1TrophyDisplay = trophyCountToDisplay(p.tier1Wins);
+                            const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay;
 
-                            const isCountMode = trophyDisplay?.mode === "count";
+                            const isCountMode = trophyDisplay?.mode === "count" || tier1TrophyDisplay?.mode === "count";
                             const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
                             const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
@@ -20599,7 +25639,7 @@ function SpecialModePage() {
                                         </div>
 
                                         <div style={{ position: rank <= 10 ? 'relative' : 'static', transition: "none" }}>
-                                            {(trophyDisplay || unbeatenStreak > 0) && (
+                                            {(hasTrophies || unbeatenStreak > 0) && (
                                                 <span
                                                     style={{
                                                         marginLeft: 10,
@@ -20615,6 +25655,16 @@ function SpecialModePage() {
                                                         transition: "none"
                                                     }}
                                                 >
+                                                    {tier1TrophyDisplay &&
+                                                        (tier1TrophyDisplay.mode === "icons" ? (
+                                                            Array.from({ length: tier1TrophyDisplay.n }).map((_, k) => (
+                                                                <PemSilverTrophy key={k} style={{ transition: "none" }} />
+                                                            ))
+                                                        ) : (
+                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
+                                                                {tier1TrophyDisplay.n} <PemSilverTrophy />
+                                                            </span>
+                                                        ))}
                                                     {trophyDisplay &&
                                                         (trophyDisplay.mode === "icons" ? (
                                                             Array.from({ length: trophyDisplay.n }).map((_, k) => (
@@ -20630,7 +25680,7 @@ function SpecialModePage() {
                                                             value={unbeatenStreak}
                                                             size={streakFireSize}
                                                             style={{
-                                                                marginLeft: trophyDisplay ? 4 : 0,
+                                                                marginLeft: hasTrophies ? 4 : 0,
                                                                 marginTop: -streakFireOverhang,
                                                                 marginBottom: -streakFireOverhang,
                                                             }}
@@ -20651,17 +25701,18 @@ function SpecialModePage() {
                                                     alignItems: "center",
                                                     transition: "none"
                                                 }}>
-                                                    {p.seconds > 0 && (
-                                                        <span style={{ marginLeft: '12px', transition: "none" }}>
-                                                            🥈:{p.seconds}
-                                                        </span>
-                                                    )}
-
-                                                    {p.thirds > 0 && (
-                                                        <span style={{ transition: "none" }}>
-                                                            🥉:{p.thirds}
-                                                        </span>
-                                                    )}
+                                                    {buildPlacingItems(p, null)
+                                                        .filter((item) => item.key !== "wins" && item.key !== "tier1Wins")
+                                                        .map((item, itemIndex) => (
+                                                            <MedalWithBreakdown
+                                                                key={item.key}
+                                                                icon={item.icon}
+                                                                value={item.value}
+                                                                title={item.title}
+                                                                onHoverChange={(hovering) => setHoveredLeaderboardTeam(hovering ? null : t)}
+                                                                style={itemIndex === 0 ? { marginLeft: '12px' } : undefined}
+                                                            />
+                                                        ))}
                                                 </span>
                                             </span>
                                         </div>
@@ -20792,7 +25843,7 @@ function SpecialModePage() {
                             onChange={(e) => setTournamentNumberType(e.target.value)}
                         >
                             <option value=""></option>
-                            {TOURNAMENT_TYPES.map((type) => (
+                            {NUMBERED_TOURNAMENT_TYPES.map((type) => (
                                 <option key={type.id} value={type.id}>{type.label}</option>
                             ))}
                         </select>
@@ -21487,6 +26538,12 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="tier1Seconds">🥈 (Tier 1)</option>
+                                <option value="tier1Thirds">🥉 (Tier 1)</option>
+                                <option value="tier2Wins">🥇 (Tier 2)</option>
+                                <option value="tier2Seconds">🥈 (Tier 2)</option>
+                                <option value="tier2Thirds">🥉 (Tier 2)</option>
                                 <option value="points">points</option>
                             </select>
 
@@ -21658,6 +26715,12 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="tier1Seconds">🥈 (Tier 1)</option>
+                                <option value="tier1Thirds">🥉 (Tier 1)</option>
+                                <option value="tier2Wins">🥇 (Tier 2)</option>
+                                <option value="tier2Seconds">🥈 (Tier 2)</option>
+                                <option value="tier2Thirds">🥉 (Tier 2)</option>
                                 <option value="points">points</option>
                             </select>
 
@@ -21723,7 +26786,7 @@ function SpecialModePage() {
                     setIsTournamentNumberButtonArmed(false);
                 }}
                 setIsScoreBoard={() => setIsLeaderboardOpen(true)}
-                isIntroClosed={showIntro || showPickemLine2}
+                isIntroClosed={isLeaderboardButtonShown}
                 isLeaderboardOpen={isLeaderboardOpen}
                 isButtonLocked={isButtonLocked}
                 isScoreBoardButtonLocked={isScoreBoardButtonLocked}
@@ -21794,14 +26857,103 @@ function SpecialModePage() {
                             </div>
                         </div>
 
-                        <footer className={css.footer_row}>
-                            <button className={css.gamble_button} onClick={handleTournamentStart}>
-                                Start Game
-                            </button>
+                        <footer className={css.intro_footer}>
+                            <div className={css.start_split}>
+                                <button
+                                    className={`${css.gamble_button} ${css.start_split_main}`}
+                                    onClick={handleTournamentStart}
+                                >
+                                    Start Game
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${css.gamble_button} ${css.start_split_toggle}`}
+                                    aria-label="Choose tournaments"
+                                    aria-haspopup="dialog"
+                                    aria-expanded={isTournamentPickerOpen}
+                                    onClick={() => setIsTournamentPickerOpen((open) => !open)}
+                                >
+                                    <WhiteCaretIcon size={12} rotation={isTournamentPickerOpen ? 90 : -90} />
+                                </button>
+                            </div>
                             <Link className={`${css.gamble_button} ${css.back_button}`} to="/gambling">
                                 Back to Normal Gambling
                             </Link>
                         </footer>
+
+                        {isTournamentPickerOpen && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className={css.tournament_picker_overlay}
+                                onClick={() => setIsTournamentPickerOpen(false)}
+                            >
+                                <div
+                                    className={css.tournament_picker_modal}
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-label="Choose tournaments"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <TournamentTierInfo />
+                                    <h2 className={css.game_title} style={{ color: "#2e2f42", fontSize: "26px", fontStyle: "italic", width: "100%", textAlign: "center", marginBottom: "12px" }}>
+                                        Choose how you want to play
+                                    </h2>
+                                    <button
+                                        type="button"
+                                        role="checkbox"
+                                        aria-checked={tournamentPicker.random}
+                                        className={`${css.tournament_option} ${tournamentPicker.random ? css.tournament_option_selected : ""}`}
+                                        onClick={handlePickRandomTournament}
+                                        style={{ borderRadius: "12px" }}
+                                    >
+                                        <span className={css.tournament_option_title} style={{ fontSize: "18px" }}>
+                                            Random
+                                        </span>
+                                        <span className={css.tournament_option_description}>
+                                            Random order of tournaments.
+                                            <br />
+                                            Every tournament has the same chance to occur each time.
+                                        </span>
+                                    </button>
+
+                                    <div className={css.divider} />
+
+                                    <div className={css.tournament_option_list}>
+                                        {TOURNAMENT_TYPES.map((type, index) => {
+                                            const isChosen = !tournamentPicker.random && tournamentPicker.ids.includes(type.id);
+                                            return (
+                                                <React.Fragment key={type.id}>
+                                                    {index > 0 && <div className={css.tournament_option_separator} />}
+                                                    <button
+                                                        type="button"
+                                                        role="checkbox"
+                                                        aria-checked={isChosen}
+                                                        className={`${css.tournament_option} ${isChosen ? css.tournament_option_selected : ""}`}
+                                                        onClick={() => handleToggleTournamentType(type.id)}
+                                                    >
+                                                        <span
+                                                            className={css.tournament_option_title}
+                                                            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+                                                        >
+                                                            <TournamentTierBadge tier={type.tier} />
+                                                            {type.longLabel ?? type.label}
+                                                        </span>
+                                                        {(type.descriptionNode || type.description) && (
+                                                            <span className={css.tournament_option_description}>
+                                                                {type.descriptionNode ?? type.description}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
                         <button
                             type="button"
                             className={css.gamble_button}
@@ -21815,6 +26967,12 @@ function SpecialModePage() {
                             Hall of Fame
                         </button>
                     </>
+                ) : isPemMainPhase ? (
+                    renderPemMainPage()
+                ) : isQualifierPhase ? (
+                    renderQualifierPage()
+                ) : isCstPhase ? (
+                    renderCstPage()
                 ) : (
                     <>
                         {renderResultsNav()}
@@ -22105,6 +27263,12 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="tier1Seconds">🥈 (Tier 1)</option>
+                                <option value="tier1Thirds">🥉 (Tier 1)</option>
+                                <option value="tier2Wins">🥇 (Tier 2)</option>
+                                <option value="tier2Seconds">🥈 (Tier 2)</option>
+                                <option value="tier2Thirds">🥉 (Tier 2)</option>
                                 <option value="points">points</option>
                             </select>
 
@@ -22276,6 +27440,12 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
+                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="tier1Seconds">🥈 (Tier 1)</option>
+                                <option value="tier1Thirds">🥉 (Tier 1)</option>
+                                <option value="tier2Wins">🥇 (Tier 2)</option>
+                                <option value="tier2Seconds">🥈 (Tier 2)</option>
+                                <option value="tier2Thirds">🥉 (Tier 2)</option>
                                 <option value="points">points</option>
                             </select>
 
@@ -22327,7 +27497,174 @@ function SpecialModePage() {
                         </div>
                     </div>
                 )}
-                {showTournamentIntro && (
+                {showTournamentIntro && isQualifierPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {renderQualifierTitle({ badgeHeight: 46, gap: 10 })}
+                                </div>
+
+                                {QUALIFIER_GROUPS.map((group, groupIndex) => (
+                                    <div
+                                        key={group}
+                                        className={groupIndex === 0 ? undefined : css.fade_in_delay}
+                                        style={{ marginTop: groupIndex === 0 ? 0 : 22 }}
+                                    >
+                                        <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                            Group {group}
+                                        </div>
+
+                                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "60%", margin: "0 auto" }}>
+                                            {(qualifier?.[group]?.teams || []).map((t) => (
+                                                <TeamCircle
+                                                    key={t.id}
+                                                    team={t}
+                                                    showRating
+                                                    ratingValue={teamRatings[t.id] ?? 0}
+                                                    specialStyle={{ width: "48px", height: "48px" }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {showTournamentIntro && isCstPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {renderCstTitle(null)}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay} style={{ flexDirection: "row", alignItems: "flex-start", gap: 56, justifyContent: "center" }}>
+                                {CST_GROUPS.map((group) => (
+                                    <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                        <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                            Group {group}
+                                        </div>
+
+                                        <div style={{ display: "flex", flexDirection: "row", gap: 10, alignItems: "center" }}>
+                                            {(cst?.[group]?.teams || []).map((t) => (
+                                                <TeamCircle
+                                                    key={t.id}
+                                                    team={t}
+                                                    showRating
+                                                    ratingValue={teamRatings[t.id] ?? 0}
+                                                    specialStyle={{ width: "48px", height: "48px" }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {showTournamentIntro && isPemMainPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                        display: "inline-flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        gap: 10,
+                                    }}
+                                >
+                                    <span>{pemSmallLabel}</span>
+                                </div>
+
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    All teams
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "100%", margin: "0 auto" }}>
+                                    {buildPemMainEventTeams(pemSmall).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{
+                                                width: "48px",
+                                                height: "48px",
+                                                ...((pemSmall?.qualified || []).some((q) => q.id === t.id) ? PEM_QUALIFIED_HIGHLIGHT : {}),
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay} style={{ flexDirection: "row", alignItems: "flex-start", gap: 72, justifyContent: "center", marginTop: 22 }}>
+                                {PEM_MAIN_GROUPS.map((group) => (
+                                    <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                        <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                            Group {group}
+                                        </div>
+
+                                        <div style={{ display: "flex", flexDirection: "row", gap: 10, alignItems: "center" }}>
+                                            {(pemMain?.[group]?.teams || []).map((t) => (
+                                                <TeamCircle
+                                                    key={t.id}
+                                                    team={t}
+                                                    showRating
+                                                    ratingValue={teamRatings[t.id] ?? 0}
+                                                    specialStyle={{ width: "48px", height: "48px" }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {showTournamentIntro && !isQualifierPhase && !isCstPhase && !isPemMainPhase && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>
