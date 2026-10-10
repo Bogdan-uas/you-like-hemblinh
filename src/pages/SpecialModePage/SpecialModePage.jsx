@@ -19898,7 +19898,7 @@ function SpecialModePage() {
                                 exit={{ opacity: 0, y: -40 }}
                                 transition={{ duration: 0.6 }}
                                 className={css.round_text}
-                                style={{ position: "absolute", left: "50%", x: "-50%", top: "-12px", display: "flex", transition: 'none' }}
+                                style={{ position: "absolute", left: "50%", x: "-50%", top: "-12px", display: "flex", transition: 'none', userSelect: "none" }}
                             >
                                 &nbsp;
                             </motion.span>
@@ -19992,7 +19992,7 @@ function SpecialModePage() {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.4 }}
                             className={css.round_text}
-                            style={{ fontSize: "28px" }}
+                            style={{ fontSize: "28px", userSelect: "none" }}
                         >
                             &nbsp;
                         </motion.span>
@@ -20192,6 +20192,7 @@ function SpecialModePage() {
                             style={{
                                 fontSize: "12px",
                                 height: "40px",
+                                userSelect: "none"
                             }}
                         >
                             &nbsp;
