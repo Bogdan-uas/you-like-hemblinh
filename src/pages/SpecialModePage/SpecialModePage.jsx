@@ -3943,13 +3943,13 @@ const getQualifierStakeTexts = (stage) => {
         case "uo": return { winner: <>goes to <b>Upper Quarterfinals</b></>, loser: <>drops to <b>Lower Round 1</b></> };
         case "uqf": return { winner: <>goes to <b>Upper Semifinals</b></>, loser: <>drops to <b>Lower Round 2</b></> };
         case "usf": return { winner: <>goes to the <b>Upper Final</b></>, loser: <>drops to <b>Lower Semifinals</b></> };
-        case "uf": return { winner: "qualifies to the main event", loser: <>drops to the <b>Consolidation Final</b></> };
+        case "uf": return { winner: <><b>qualifies</b> to the main event</>, loser: <>drops to the <b>Consolidation Final</b></> };
         case "lr1": return { winner: <>goes to <b>Lower Round 2</b></>, loser: "doesn't make it into the main event" };
         case "lr2": return { winner: <>goes to <b>Lower Round 3</b></>, loser: "doesn't make it into the main event" };
         case "lr3": return { winner: <>goes to <b>Lower Semifinals</b></>, loser: "doesn't make it into the main event" };
         case "lsf": return { winner: <>goes to the <b>Lower Final</b></>, loser: "doesn't make it into the main event" };
         case "lf": return { winner: <>goes to the <b>Consolidation Final</b></>, loser: "doesn't make it into the main event" };
-        case "cf": return { winner: "qualifies to the main event", loser: "doesn't make it into the main event" };
+        case "cf": return { winner: <><b>qualifies</b> to the main event</>, loser: "doesn't make it into the main event" };
         default: return { winner: null, loser: null };
     }
 };
