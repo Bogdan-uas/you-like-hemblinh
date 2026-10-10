@@ -3844,8 +3844,6 @@ const findNextQualifierMatch = (bracket, current) => {
                 if (stage === current.stage && i === current.index) passedCurrent = true;
                 continue;
             }
-            // Matches are played strictly in this order, so the next unplayed one is next even while
-            // a slot is still TBD: the current match is what fills it
             const m = arr[i];
             if (!m.played) return { stage, index: i, id: m.id };
         }
@@ -4274,7 +4272,6 @@ const findNextPemGroupMatch = (bracket, current) => {
                 if (stage === current.stage && i === current.index) passedCurrent = true;
                 continue;
             }
-            // Same as findNextQualifierMatch: strictly sequential, so a TBD slot doesn't disqualify it
             const m = arr[i];
             if (!m.played) return { stage, index: i, id: m.id };
         }
@@ -12253,8 +12250,6 @@ function SpecialModePage() {
 
         const { stage, index } = currentPlayablePlayoffsMatch;
 
-        // Playoffs are played strictly in STAGE_ORDER, so after the last match of a round
-        // the first match of the following round is next, even with a TBD slot
         for (const s of STAGE_ORDER.slice(STAGE_ORDER.indexOf(stage))) {
             const stageMatches = playoffs[s] || [];
             for (let i = s === stage ? index + 1 : 0; i < stageMatches.length; i++) {
