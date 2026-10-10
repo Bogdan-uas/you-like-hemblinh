@@ -396,7 +396,7 @@ const STAT_EXPLANATIONS = [
             {
                 name: "Upset Pedigree",
                 meta: ["Starts at 0", KEPT],
-                when: <>One team is a clear favourite before the match: if the predicted winning chances differ by at least 7% (e.g. 53.5% vs 46.5%). Otherwise, the stat shows <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span> for both teams (it can be shown also only for one team: if a team is a favorite and has 0 points in Upset Pedigree).</>,
+                when: <>One team is a clear favourite before the match: if the predicted winning chances differ by at least 12% (e.g. 56% vs 44%). Otherwise, the stat shows <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span> for both teams (it can be shown also only for one team: if a team is a favorite and has 0 points in Upset Pedigree).</>,
                 up: <>The underdog gets +1 to +5 for every set it wins against the favourite. The bigger the difference in chances, the bigger the gain.</>,
                 down: <>The favourite gets -1 to -3 for every set it loses to the underdog, scaled the same way.</>,
                 effect: <>Helps only the underdog, only in that match. It can at most bring the underdog level with the favourite, but never ahead of it. The percentage bar in the match modal already includes this bonus (up to +0.05 at 100).</>,
@@ -533,9 +533,9 @@ const StatExplanations = () => (
             Before going through them, a few simple rules:
             <br />• For stats starting at <b>50</b>, 50 is neutral: above 50 the stat helps the team, below 50 it hurts it. Stats starting at <b>0</b> can only help.
             <br />• A stat only works in the situations it's made for. When it doesn't apply to the current match, the stats panel shows it as <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span>.
-            <br />• The numbers in &quot;What it does&quot; are added to the team&apos;s multiplier on every roll. They look tiny, but a match is decided by dozens of mini-rounds in a row, so even +0.1 makes a team a clear favourite. That&apos;s why all the pushes of one team together can never be more than <b>±0.10</b>.
-            <br />• The Leaderboard points count as well: being 100 points ahead is worth about +0.02 per roll.
-            <br />• Every time a new tournament is started, every stat moves <b>15% of the way back</b> to its starting value, so a team can&apos;t stay on top forever just because it once collected a lot.
+            <br />• The numbers in &quot;What it does&quot; are added to the team&apos;s multiplier on every roll. They look tiny, but a match is decided by dozens of mini-rounds in a row, so even a small difference makes a team a clear favourite. What counts is only the <b>difference</b> between both teams: all pushes of each team are added up, and if one team is ahead by more than <b>0.20</b>, the difference is limited to 0.20. So two strong teams still keep their real difference, and even the most one-sided match is never a sure thing.
+            <br />• The Leaderboard points count as well: 100 points ahead is worth about +0.04 against the opponent, roughly a 59/41 Bo1.
+            <br />• The stats that are mostly earned by winning (Big-Stage Pedigree, Battle-Tested, Elimination Nerve, Finisher and Unbeaten Nerve) move <b>15% of the way back</b> to their starting value every time a new tournament is started, so a team can&apos;t stay on top forever just because it once collected a lot. All the other stats only change through matches.
             <br />• All the changes a team collects during a match are added to its stats once the match is over. The finished match modal shows them as green and red numbers:
         </p>
         <div className={css.image_container}>

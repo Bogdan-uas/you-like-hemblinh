@@ -730,7 +730,12 @@ const parseStatInput = (value) => {
     return Number.isFinite(n) ? n : null;
 };
 
-const ROLL_BONUS_CAP = 0.1;
+const ROLL_GAP_CAP = 0.2;
+
+const splitRollEdge = (leftBonus, rightBonus) => {
+    const gap = Math.max(-ROLL_GAP_CAP, Math.min(ROLL_GAP_CAP, (leftBonus || 0) - (rightBonus || 0)));
+    return { left: gap / 2, right: -gap / 2 };
+};
 
 const clutchRollEffect = (value) => ((value - 50) / 50) * 0.08;
 
@@ -855,7 +860,7 @@ const computeRollBonus = (side, rawRoll, ctx) => {
         !!active.unbeatenStreakBreaker
     );
 
-    return Math.max(-ROLL_BONUS_CAP, Math.min(ROLL_BONUS_CAP, bonus));
+    return bonus;
 };
 
 const upsetGapScale = (gapPct) =>
@@ -1184,7 +1189,7 @@ const applyOtStaminaPenaltyAttempt = (liveStats, attackerSide, attackerSucceeded
 const ELIMINATION_NETS = ["0:2", "1:2", "2:2"];
 const PLAYOFF_ROUND_INDEX = { ro16: 0, qf: 1, sf: 2, gf: 3 };
 
-const UPSET_GAP_THRESHOLD_PCT = 7;
+const UPSET_GAP_THRESHOLD_PCT = 12;
 const UPSET_GAP_FULL_PCT = 80;
 const UPSET_PEDIGREE_EFFECT_SCALE = 0.05;
 const TOP_SEED_RANK_LIMIT = 10;
@@ -1261,12 +1266,13 @@ const battleTestedDelta = ({ won, difficulty, experience }) => {
 };
 
 const STAT_SEASON_PULL = 0.15;
+const STAT_SEASON_PULL_KEYS = ["bigStage", "battleTested", "elimNerve", "finisher", "unbeatenNerve"];
 
 const pullStatsTowardStart = (teamStats) => {
     const out = {};
     Object.entries(teamStats ?? {}).forEach(([id, stats]) => {
         const next = { ...stats };
-        STAT_DEFINITIONS.forEach(({ key }) => {
+        STAT_SEASON_PULL_KEYS.forEach((key) => {
             const start = DEFAULT_TEAM_STAT_VALUES[key];
             const value = Number(stats?.[key]);
             if (!Number.isFinite(value) || !Number.isFinite(start)) return;
@@ -2059,13 +2065,13 @@ const predictRoundWin = (env, { streakSide, streakLen, lastLoser, armed, otBlock
         finisherActive: env.finisherActive,
     };
 
-    const bounds = (side) => {
-        const lo = MULTIPLIER_MIN + computeRollBonus(side, MULTIPLIER_MIN, ctx);
-        const hi = MULTIPLIER_MAX + computeRollBonus(side, MULTIPLIER_MAX, ctx);
-        return { lo, width: Math.max(0.5, hi - lo) };
-    };
-    const left = bounds("left");
-    const right = bounds("right");
+    const edge = splitRollEdge(
+        computeRollBonus("left", MULTIPLIER_MIN, ctx),
+        computeRollBonus("right", MULTIPLIER_MIN, ctx)
+    );
+    const width = MULTIPLIER_MAX - MULTIPLIER_MIN;
+    const left = { lo: MULTIPLIER_MIN + edge.left, width };
+    const right = { lo: MULTIPLIER_MIN + edge.right, width };
 
     const pLeft = miniBeatProbability(left.lo, left.width, right.lo, right.width);
     const pRight = miniBeatProbability(right.lo, right.width, left.lo, left.width);
@@ -12667,11 +12673,13 @@ function SpecialModePage() {
         const b = round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN));
 
         const ctx = buildRollContext();
-        const leftBonus = computeSideRollBonus("left", a, ctx);
-        const rightBonus = computeSideRollBonus("right", b, ctx);
+        const edge = splitRollEdge(
+            computeSideRollBonus("left", a, ctx),
+            computeSideRollBonus("right", b, ctx)
+        );
 
-        const a2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, a + leftBonus)));
-        const b2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, b + rightBonus)));
+        const a2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, a + edge.left)));
+        const b2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, b + edge.right)));
 
         if (!forceWinner) return { left: a2, right: b2 };
 
