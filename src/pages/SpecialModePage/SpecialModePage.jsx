@@ -4776,9 +4776,8 @@ const PemGroupBracketLayout = ({ bracket, renderMatch }) => {
             {column("usf", css.columnQuarters)}
             {column("uf", css.columnGrandFinal)}
 
-            {/* Both rows are equally tall, so every Lower match sits right below its Upper counterpart */}
-            {column("lr1", css.columnQuarters)}
-            {column("lsf", css.columnQuarters)}
+            {column("lr1", css.columnPemLower)}
+            {column("lsf", css.columnPemLower)}
             {column("lf", css.columnGrandFinal)}
         </div>
     );

@@ -3141,12 +3141,20 @@
     position: relative;
     display: grid;
     grid-template-columns: repeat(3, 170px);
-    grid-auto-rows: 1fr;
     column-gap: 72px;
-    row-gap: 18px;
+    row-gap: 12px;
     align-items: center;
     justify-items: center;
     transition: none;
+}
+
+.columnPemLower {
+    min-width: 170px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
 }
 
 .pem_playoffs_wrapper {
