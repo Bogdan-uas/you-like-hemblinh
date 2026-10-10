@@ -730,25 +730,27 @@ const parseStatInput = (value) => {
     return Number.isFinite(n) ? n : null;
 };
 
-const clutchRollEffect = (value) => ((value - 50) / 50) * 0.5;
+const ROLL_BONUS_CAP = 0.1;
 
-const composureRollEffect = (roll, value) =>
-    (2.5 - roll) * ((value / 100) * 0.4);
+const clutchRollEffect = (value) => ((value - 50) / 50) * 0.08;
+
+const composureRollEffect = (value, leading) =>
+    leading ? ((value - 50) / 50) * 0.06 : 0;
 
 const bigStageRollEffect = (value, active) => {
     if (!active) return 0;
-    return (value / 100) * 0.45;
+    return (value / 100) * 0.08;
 };
 
 const momentumRollEffect = (streak) => {
     if (!streak || streak < 5) return 0;
-    return Math.min((streak - 4) * 0.05, 0.4);
+    return Math.min((streak - 4) * 0.0125, 0.1);
 };
 
 const otStaminaRollEffect = (value, { active, depth }) => {
     if (!active || !depth) return 0;
-    const raw = ((value - 50) / 50) * 0.08 * depth;
-    return Math.max(-0.4, Math.min(0.4, raw));
+    const raw = ((value - 50) / 50) * 0.015 * depth;
+    return Math.max(-0.06, Math.min(0.06, raw));
 };
 
 const upsetPedigreeRollEffect = (value, active, cap) => {
@@ -759,57 +761,57 @@ const upsetPedigreeRollEffect = (value, active, cap) => {
 
 const bounceBackRollEffect = (value, active) => {
     if (!active) return 0;
-    return ((value - 50) / 50) * 0.25;
+    return ((value - 50) / 50) * 0.05;
 };
 
 const antiTiltRollEffect = (value, active) => {
     if (!active) return 0;
-    return ((value - 50) / 50) * 0.15;
+    return ((value - 50) / 50) * 0.03;
 };
 
 const finisherRollEffect = (value, active) => {
     if (!active) return 0;
-    return ((value - 50) / 50) * 0.2;
+    return ((value - 50) / 50) * 0.04;
 };
 
 const elimNerveRollEffect = (value, active) => {
     if (!active) return 0;
-    return ((value - 50) / 50) * 0.35;
+    return ((value - 50) / 50) * 0.07;
 };
 
 const unbeatenNerveRollEffect = (value, active) => {
     if (!active) return 0;
-    return ((value - 50) / 50) * 0.25;
+    return ((value - 50) / 50) * 0.05;
 };
 
-const battleTestedRollEffect = (value) => (value / 100) * 0.3;
+const battleTestedRollEffect = (value) => (value / 100) * 0.05;
 
 const topSeedRollEffect = (value, active) => {
     if (!active) return 0;
-    return ((value - 50) / 50) * 0.2;
+    return ((value - 50) / 50) * 0.04;
 };
 
 const streakBreakerRollEffect = (value, active) => {
     if (!active) return 0;
-    return (value / 100) * 0.25;
+    return ((value - 50) / 50) * 0.05;
 };
 
 const unbeatenStreakBreakerRollEffect = (value, active) => {
     if (!active) return 0;
-    return (value / 100) * 0.25;
+    return ((value - 50) / 50) * 0.05;
 };
 
 const UNBEATEN_BREAKER_STREAK_CAP = 14;
-
-const unbeatenBreakerWinGain = (streak) =>
-    Math.min(15, 1 + Math.max(1, Math.floor(streak)));
 
 const unbeatenBreakerLossAmount = (streak) => {
     const s = Math.min(UNBEATEN_BREAKER_STREAK_CAP, Math.max(1, Math.floor(streak)));
     return 1 + 4 * ((s - 1) / (UNBEATEN_BREAKER_STREAK_CAP - 1));
 };
 
-const RATING_EDGE_SCALE = 0.04;
+const unbeatenBreakerWinGain = (streak) =>
+    Math.round(unbeatenBreakerLossAmount(streak) * 1.5 * 100) / 100;
+
+const RATING_EDGE_SCALE = 0.15;
 
 const ratingRollEdge = (ownRating, oppRating) => {
     const own = Number(ownRating);
@@ -826,7 +828,7 @@ const computeRollBonus = (side, rawRoll, ctx) => {
 
     let bonus = 0;
     bonus += clutchRollEffect(stat.clutch);
-    bonus += composureRollEffect(rawRoll, stat.composure);
+    bonus += composureRollEffect(stat.composure, ctx.leadSide === side);
     bonus += bigStageRollEffect(stat.bigStage, !!active.bigStage);
     bonus += momentumRollEffect(stat.momentum);
     bonus += otStaminaRollEffect(stat.otStamina, ctx.otContext);
@@ -853,7 +855,7 @@ const computeRollBonus = (side, rawRoll, ctx) => {
         !!active.unbeatenStreakBreaker
     );
 
-    return bonus;
+    return Math.max(-ROLL_BONUS_CAP, Math.min(ROLL_BONUS_CAP, bonus));
 };
 
 const upsetGapScale = (gapPct) =>
@@ -1070,7 +1072,7 @@ const settleComebacks = (liveStats, tracker, outcomes, amountOf, failClutchShare
                 COMEBACK.closeCallFloor +
                 (1 - COMEBACK.closeCallFloor) *
                     Math.pow(1 - pulledBack, COMEBACK.closeCallPower);
-            stats = bumpStat(stats, foe, "composure", amount * tightness);
+            stats = bumpStat(stats, foe, "composure", amount * tightness * failClutchShare);
             stats = bumpStat(stats, side, "clutch", -amount * tightness * failClutchShare);
         }
     }
@@ -1101,10 +1103,10 @@ const resolveRoundConclusion = ({
     };
 
     if (prevLoserStreak >= 5) {
-        stats = bumpStat(stats, winnerSide, "streakBreaker", 2);
+        stats = bumpStat(stats, winnerSide, "streakBreaker", 1.5);
     }
     if (prevWinnerStreak >= 5) {
-        stats = bumpStat(stats, loserSide, "streakBreaker", -0.5);
+        stats = bumpStat(stats, loserSide, "streakBreaker", -1.5);
     }
 
     stats = settleComebacks(
@@ -1146,7 +1148,7 @@ const resolveRoundConclusion = ({
             stats,
             lastRoundLoserSide,
             "antiTilt",
-            winnerSide === lastRoundLoserSide ? 0.5 : -0.5
+            winnerSide === lastRoundLoserSide ? 0.25 : -0.25
         );
     }
 
@@ -1155,7 +1157,7 @@ const resolveRoundConclusion = ({
             stats,
             bounceBackArmedSide,
             "bounceBack",
-            winnerSide === bounceBackArmedSide ? 2 : -1
+            winnerSide === bounceBackArmedSide ? 1.5 : -1.5
         );
     }
 
@@ -1256,6 +1258,23 @@ const battleTestedDelta = ({ won, difficulty, experience }) => {
     const d = clampShare(difficulty);
     const weight = 0.6 + 0.4 * clampShare(experience / BATTLE_XP_FULL);
     return won ? 1 + 5 * d * weight : -(1 + 4 * (1 - d) * weight);
+};
+
+const STAT_SEASON_PULL = 0.15;
+
+const pullStatsTowardStart = (teamStats) => {
+    const out = {};
+    Object.entries(teamStats ?? {}).forEach(([id, stats]) => {
+        const next = { ...stats };
+        STAT_DEFINITIONS.forEach(({ key }) => {
+            const start = DEFAULT_TEAM_STAT_VALUES[key];
+            const value = Number(stats?.[key]);
+            if (!Number.isFinite(value) || !Number.isFinite(start)) return;
+            next[key] = Math.round((value + (start - value) * STAT_SEASON_PULL) * 100) / 100;
+        });
+        out[id] = next;
+    });
+    return out;
 };
 
 const resetBattleExperience = (teamStats) => {
@@ -11264,7 +11283,7 @@ function SpecialModePage() {
         saveCurrentTournamentType(nextTournamentType);
         setIsTournamentPickerOpen(false);
 
-        const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
+        const statsWithFreshExperience = resetBattleExperience(pullStatsTowardStart(teamStatsRef.current));
         setTeamStats(statsWithFreshExperience);
         teamStatsRef.current = statsWithFreshExperience;
         saveTeamStats(statsWithFreshExperience);
@@ -12625,9 +12644,15 @@ function SpecialModePage() {
             ? { active: true, depth: (s.penaltyLeftScore ?? 0) + (s.penaltyRightScore ?? 0) }
             : { active: otActive, depth: s.overtimeBlock };
 
+        const sideAhead = (left, right) => (left > right ? "left" : right > left ? "right" : null);
+        const leadSide = inPens || s.tiebreakerPhase === "extended"
+            ? null
+            : sideAhead(s.roundWins ?? 0, s.roundLosses ?? 0) ?? sideAhead(s.miniWins ?? 0, s.miniLosses ?? 0);
+
         return {
             liveStats,
             otContext,
+            leadSide,
             bounceBackArmedSide: inPens ? null : s.bounceBackArmedSide,
             lastRoundLoserSide: inPens ? null : s.lastRoundLoserSide,
             matchCtx: s.matchCtx ?? null,

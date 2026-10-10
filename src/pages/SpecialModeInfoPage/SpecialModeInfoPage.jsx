@@ -353,7 +353,7 @@ const STAT_EXPLANATIONS = [
                 when: <>Your team is behind: losing on mini-rounds inside a round, trailing by several rounds in a set (from a 5-round gap, like 7-12, or when the opponent already has a Set or Match Point), or trailing on sets in a Bo3 or longer.</>,
                 up: <>Your team completes the comeback. The bigger the comeback, the bigger the gain: turning a round around gives a little, turning a set around gives more (even more in deeper Overtimes) and turning a whole series around gives the most, especially in a Bo5, Bo7 or Bo9.</>,
                 down: <>Your team doesn't manage to turn it around. The loss grows the same way as the gain.</>,
-                effect: <>Always on. Above 50, all of the team's multipliers get a small push up; below 50, a small push down (up to ±0.50 at the extremes).</>,
+                effect: <>Always on. Above 50, all of the team's multipliers get a small push up; below 50, a small push down (up to ±0.08 at the extremes).</>,
             },
             {
                 name: "Composure",
@@ -361,7 +361,7 @@ const STAT_EXPLANATIONS = [
                 when: <>The mirror image of Clutch Factor: your team is ahead in a round, a set or a series.</>,
                 up: <>Your team closes out its lead. The cleaner, the better: winning a round 5-0 from 4-0 gives the most, while letting the opponent come close first and only then closing it out gives less.</>,
                 down: <>Your team lets the lead slip away. Throwing a big lead costs as much as the biggest possible gain; throwing a small one costs less.</>,
-                effect: <>Always on. It makes the team's multipliers steadier: very low rolls get pulled up a bit and very high rolls get pulled down a bit. The higher the stat, the stronger the pull.</>,
+                effect: <>Only while the team is ahead: it leads the set, or, with equal rounds, the current round. Then, above 50 it helps the team protect its lead, below 50 it hurts (up to ±0.06).</>,
             },
             {
                 name: "Big-Stage Pedigree",
@@ -383,7 +383,7 @@ const STAT_EXPLANATIONS = [
                     </>
                 ),
                 down: <><strong className={css.stat_loss}>-3</strong> when the team is eliminated in the same Stage, where they started the tournament.</>,
-                effect: <>Always on and only helps: the higher the stat, the bigger the push up for the multipliers (up to +0.45 at 100).</>,
+                effect: <>Only in big matches: every Playoffs match, the matches of a Group Stage bracket that can send a team further, and in the Swiss Stages the matches with 2 wins or 2 losses (2:0, 2:1, 2:2, 1:2 and 0:2). It only helps: the higher the stat, the bigger the push up (up to +0.08 at 100).</>,
             },
             {
                 name: "Overtime Stamina",
@@ -391,7 +391,7 @@ const STAT_EXPLANATIONS = [
                 when: <>Only in Overtimes and in the Penalty Series.</>,
                 up: <>+1 for every Overtime round won and for every successful penalty attempt.</>,
                 down: <>-1 for every Overtime round lost and for every unsuccessful penalty attempt.</>,
-                effect: <>Above 50 it helps, below 50 it hurts, and it matters more the deeper the Overtime goes (Double, Triple, Quadruple...). In the Penalty Series, it matters more the longer the series lasts. Never more than ±0.40.</>,
+                effect: <>Above 50 it helps, below 50 it hurts, and it matters more the deeper the Overtime goes (Double, Triple, Quadruple...). In the Penalty Series, it matters more the longer the series lasts. Never more than ±0.06.</>,
             },
             {
                 name: "Upset Pedigree",
@@ -399,23 +399,23 @@ const STAT_EXPLANATIONS = [
                 when: <>One team is a clear favourite before the match: if the predicted winning chances differ by at least 7% (e.g. 53.5% vs 46.5%). Otherwise, the stat shows <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span> for both teams (it can be shown also only for one team: if a team is a favorite and has 0 points in Upset Pedigree).</>,
                 up: <>The underdog gets +1 to +5 for every set it wins against the favourite. The bigger the difference in chances, the bigger the gain.</>,
                 down: <>The favourite gets -1 to -3 for every set it loses to the underdog, scaled the same way.</>,
-                effect: <>Helps only the underdog, only in that match. It can at most bring the underdog level with the favourite, but never ahead of it. The percentage bar in the match modal already includes this bonus.</>,
+                effect: <>Helps only the underdog, only in that match. It can at most bring the underdog level with the favourite, but never ahead of it. The percentage bar in the match modal already includes this bonus (up to +0.05 at 100).</>,
             },
             {
                 name: "Bounce-Back",
                 meta: ["Starts at 50", KEPT],
                 when: <>The first round right after the team loses a whole set.</>,
-                up: <>+2 for winning that round.</>,
-                down: <>-1 for losing that round too.</>,
-                effect: <>Only during that one round: above 50 it helps, below 50 it hurts (up to ±0.25).</>,
+                up: <>+1.5 for winning that round.</>,
+                down: <>-1.5 for losing that round too.</>,
+                effect: <>Only during that one round: above 50 it helps, below 50 it hurts (up to ±0.05).</>,
             },
             {
                 name: "Anti-Tilt",
                 meta: ["Starts at 50", KEPT],
                 when: <>Any round right after the team loses a round, no matter the score. It happens a lot, unlike Bounce-Back, which only cares about lost sets.</>,
-                up: <>+0.5 for winning that round.</>,
-                down: <>-0.5 for losing that round too.</>,
-                effect: <>Only during those rounds and kept small on purpose, because it comes up so often (up to ±0.15).</>,
+                up: <>+0.25 for winning that round.</>,
+                down: <>-0.25 for losing that round too.</>,
+                effect: <>Only during those rounds and kept small on purpose, because it comes up so often (up to ±0.03).</>,
             },
         ],
     },
@@ -428,7 +428,7 @@ const STAT_EXPLANATIONS = [
                 when: <>Only in Bo3 matches or longer. In a Bo1, it shows "Not activated".</>,
                 up: <>The team wins the series without ever being behind on sets (e.g. 2:0). The bigger the series, the bigger the gain. If the team dropped two or more sets on the way, nothing changes.</>,
                 down: <>The team loses the series without winning a single set (e.g. 0:2). The bigger the series, the bigger the loss. If the team won two or more sets, nothing changes.</>,
-                effect: <>Above 50 it helps, below 50 it hurts (up to ±0.20).</>,
+                effect: <>Above 50 it helps, below 50 it hurts (up to ±0.04).</>,
             },
             {
                 name: "Elimination Nerve",
@@ -436,7 +436,7 @@ const STAT_EXPLANATIONS = [
                 when: <>Matches where losing means going home: the 0:2, 1:2 and 2:2 nets of the Swiss Stages and every Playoffs match, except the Third Place Decider (both teams there are already out of the title race).</>,
                 up: <>Around +3 for surviving. A cleaner win (e.g. 2:0 instead of 2:1) gives more.</>,
                 down: <>Around -3 for being eliminated. Getting swept gives a bigger loss than a close defeat.</>,
-                effect: <>Only in those matches: above 50 it helps, below 50 it hurts (up to ±0.35).</>,
+                effect: <>Only in those matches: above 50 it helps, below 50 it hurts (up to ±0.07).</>,
             },
             {
                 name: "Unbeaten Nerve",
@@ -449,15 +449,15 @@ const STAT_EXPLANATIONS = [
                 ),
                 up: <>+1 for every Swiss Stage win. In the Playoffs, every win gives more: +3, then +4, +5 and so on.</>,
                 down: <>-3 for the first loss in a Swiss Stage (the stat then stays off until the team&apos;s next Stage). -5 for a loss in the Playoffs (the stat then stays off for the rest of the tournament).</>,
-                effect: <>Only while the team is still unbeaten: above 50 it helps, below 50 it hurts (up to ±0.25).</>,
+                effect: <>Only while the team is still unbeaten: above 50 it helps, below 50 it hurts (up to ±0.05).</>,
             },
             {
                 name: "Battle-Tested",
-                meta: ["Starts at 0", "Reset every tournament"],
-                when: <>The team gathers experience in the current tournament: the more matches it plays and the tougher the opponents are, the more experience it has. The experience starts from zero in every tournament.</>,
+                meta: ["Starts at 0", KEPT],
+                when: <>The team gathers experience in the current tournament: the more matches it plays and the tougher the opponents are, the more experience it has. The experience starts from zero in every tournament (the stat itself is kept).</>,
                 up: <>+1 to +6 for good results, especially against tough opponents.</>,
                 down: <>-1 to -5, mostly for losing to weaker opponents.</>,
-                effect: <>Only helps, once the team has gathered enough experience in the tournament (up to +0.30 at 100).</>,
+                effect: <>Only helps, once the team has gathered enough experience in the tournament (up to +0.05 at 100).</>,
             },
             {
                 name: "Top-Seed Pressure",
@@ -465,23 +465,23 @@ const STAT_EXPLANATIONS = [
                 when: <>The team is in the Top 10 of the Leaderboard.</>,
                 up: <>+1 for a win as #1, +0.5 for a win as #2-#10.</>,
                 down: <>-3 for a loss as #1, -1.5 for a loss as #2-#10.</>,
-                effect: <>While in the Top 10: above 50 it helps, below 50 it hurts (up to ±0.20).</>,
+                effect: <>While in the Top 10: above 50 it helps, below 50 it hurts (up to ±0.04).</>,
             },
             {
                 name: "Streak Breaker",
                 meta: ["Starts at 50", KEPT],
                 when: <>The opponent is on a Momentum streak of 5 or more rounds in a row (see Momentum below).</>,
-                up: <>+2 for winning the round that ends the opponent&apos;s streak.</>,
-                down: <>-0.5 for every round lost while the opponent&apos;s streak keeps going.</>,
-                effect: <>Only while facing such a streak, and it only helps: the higher the stat, the bigger the push (up to +0.25 at 100).</>,
+                up: <>+1.5 for winning the round that ends the opponent&apos;s streak.</>,
+                down: <>-1.5 for every round lost while the opponent&apos;s streak keeps going.</>,
+                effect: <>Only while facing such a streak: above 50 it helps, below 50 it hurts (up to ±0.05).</>,
             },
             {
                 name: "Unbeaten Streak Breaker",
                 meta: ["Starts at 50", KEPT],
                 when: <>The opponent is on an Unbeaten Streak (see Unbeaten Nerve).</>,
-                up: <>+2 to +15 for beating that opponent. The longer its streak was, the bigger the gain.</>,
-                down: <>-1 to -5 for losing to that opponent, scaled the same way.</>,
-                effect: <>Only in that match, and it only helps: the higher the stat, the bigger the push (up to +0.25 at 100).</>,
+                up: <>+1.5 to +7.5 for beating that opponent. The longer its streak was, the bigger the gain.</>,
+                down: <>-1 to -5 for losing to that opponent, scaled the same way (a win counts 1.5 times as much, because the team facing an unbeaten one is usually the underdog).</>,
+                effect: <>Only in that match: above 50 it helps, below 50 it hurts (up to ±0.05).</>,
             },
         ],
     },
@@ -496,7 +496,7 @@ const STAT_EXPLANATIONS = [
                 down: <>Back to 0 after any lost round.</>,
                 effect: (
                     <>
-                        Nothing until the team has won 5 rounds in a row. From there, the push up grows with every further round won: +0.05 at 5 in a row, +0.20 at 8 and at most +0.40 (around 12 in a row).
+                        Nothing until the team has won 5 rounds in a row. From there, the push up grows with every further round won: +0.0125 at 5 in a row, +0.05 at 8 and at most +0.10 (12 in a row).
                         From 5 in a row on, a small fire icon with the streak <MomentumStreakBadge /> inside shows up below the team&apos;s round score, and it&apos;s also shown in the Detailed Match Results for every round where Momentum was active.
                     </>
                 ),
@@ -533,6 +533,9 @@ const StatExplanations = () => (
             Before going through them, a few simple rules:
             <br />• For stats starting at <b>50</b>, 50 is neutral: above 50 the stat helps the team, below 50 it hurts it. Stats starting at <b>0</b> can only help.
             <br />• A stat only works in the situations it's made for. When it doesn't apply to the current match, the stats panel shows it as <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span>.
+            <br />• The numbers in &quot;What it does&quot; are added to the team&apos;s multiplier on every roll. They look tiny, but a match is decided by dozens of mini-rounds in a row, so even +0.1 makes a team a clear favourite. That&apos;s why all the pushes of one team together can never be more than <b>±0.10</b>.
+            <br />• The Leaderboard points count as well: being 100 points ahead is worth about +0.02 per roll.
+            <br />• Every time a new tournament is started, every stat moves <b>15% of the way back</b> to its starting value, so a team can&apos;t stay on top forever just because it once collected a lot.
             <br />• All the changes a team collects during a match are added to its stats once the match is over. The finished match modal shows them as green and red numbers:
         </p>
         <div className={css.image_container}>
