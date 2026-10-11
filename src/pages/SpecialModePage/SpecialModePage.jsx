@@ -11761,6 +11761,10 @@ function SpecialModePage() {
         saveCurrentTournamentType(nextTournamentType);
         setIsTournamentPickerOpen(false);
 
+        const statsBeforeStart = normalizeTeamStats(allTeams, teamStatsRef.current);
+        statsSnapshotRef.current = statsBeforeStart;
+        saveStatsSnapshot(statsBeforeStart);
+
         const statsWithFreshExperience = resetBattleExperience(pullStatsTowardStart(teamStatsRef.current));
         setTeamStats(statsWithFreshExperience);
         teamStatsRef.current = statsWithFreshExperience;
