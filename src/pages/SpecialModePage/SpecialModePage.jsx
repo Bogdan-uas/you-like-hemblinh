@@ -4941,7 +4941,7 @@ const QualifierBadge = ({ height = 30, color = "#2e2f42", textColor = "#ffffff",
 const StickyBelow = ({ anchor, style, children }) => {
     const ref = useRef(null);
     const joinedRef = useRef(false);
-    const [layout, setLayout] = useState({ top: null, reach: 0, stuck: false });
+    const [layout, setLayout] = useState({ top: null, reach: 0 });
 
     useLayoutEffect(() => {
         const element = document.querySelector(anchor);
@@ -4956,11 +4956,10 @@ const StickyBelow = ({ anchor, style, children }) => {
 
             if (stuck) element.setAttribute("data-joined", "true");
             else if (joinedRef.current) element.removeAttribute("data-joined");
+            ref.current?.setAttribute("data-stuck", String(stuck));
             joinedRef.current = stuck;
 
-            setLayout((prev) => (
-                prev.top === top && prev.reach === reach && prev.stuck === stuck ? prev : { top, reach, stuck }
-            ));
+            setLayout((prev) => (prev.top === top && prev.reach === reach ? prev : { top, reach }));
         };
 
         measure();
@@ -4983,7 +4982,6 @@ const StickyBelow = ({ anchor, style, children }) => {
         <div
             ref={ref}
             className={css.sticky_join}
-            data-stuck={layout.stuck}
             style={{ top: layout.top ?? 0, "--join-reach": `${layout.reach}px`, ...style }}
         >
             {children}
