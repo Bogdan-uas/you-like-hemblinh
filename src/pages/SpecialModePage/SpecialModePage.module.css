@@ -805,6 +805,56 @@
     color: #2e2f42;
 }
 
+.bo1_team_name {
+    min-width: 0;
+    padding-right: 30px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tieScoreShadow {
+    text-shadow:
+        1px 0 #ffffff,
+        -1px 0 #ffffff,
+        0 1px #ffffff,
+        0 -1px #ffffff,
+        1px 1px #ffffff,
+        1px -1px #ffffff,
+        -1px 1px #ffffff,
+        -1px -1px #ffffff,
+        2px 0 #5a5a5a,
+        -2px 0 #5a5a5a,
+        0 2px #5a5a5a,
+        0 -2px #5a5a5a,
+        2px 2px #5a5a5a,
+        2px -2px #5a5a5a,
+        -2px 2px #5a5a5a,
+        -2px -2px #5a5a5a;
+}
+
+.tiebreak_divider_row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 17px;
+}
+
+.tiebreak_divider_segment {
+    flex: 1;
+}
+
+.tiebreak_label {
+    position: relative;
+    z-index: 3;
+    color: #2e2f42;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 17px;
+    white-space: nowrap;
+    background: transparent;
+}
+
 .score_text {
     font-weight: 700;
 }
@@ -3155,6 +3205,55 @@
     gap: 10px;
     align-items: center;
     justify-content: center;
+}
+
+.pem_stage1_bracket {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, 170px);
+    column-gap: 96px;
+    row-gap: 12px;
+    align-items: center;
+    justify-items: center;
+    transition: none;
+}
+
+.pem_stage1_area {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 116px;
+    transition: none;
+}
+
+.ecl_header {
+    position: sticky;
+    top: 50px;
+    z-index: 18;
+    width: calc(100% + 48px);
+    margin: 0 -24px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(255, 255, 255, 0.92) calc(100% - 24px),
+            rgba(255, 255, 255, 0.55) calc(100% - 12px),
+            rgba(255, 255, 255, 0) 100%);
+    transition: none;
+}
+
+.ecl_bracket {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, 170px);
+    column-gap: 56px;
+    row-gap: 18px;
+    align-items: center;
+    justify-items: center;
+    transition: none;
 }
 
 .pem_playoffs_wrapper {

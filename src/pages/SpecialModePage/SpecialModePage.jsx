@@ -68,7 +68,6 @@ const TOURNAMENT_NUMBERS_LS_KEY = "specialMode_tournamentNumbers_v1";
 const HALL_TEAM_SORT_LS_KEY = "specialMode_hallTeamSort_v1";
 const TEAM_STATS_LS_KEY = "specialMode_teamStats_v1";
 const LEADERBOARD_SORT_LS_KEY = "specialMode_leaderboardSort_v1";
-const LAST_FINALIZED_TOURNAMENT_LS_KEY = "specialMode_lastFinalizedTournament_v1";
 const RATING_BASED_STATS_LS_KEY = "specialMode_ratingBasedStats_v1";
 const TOURNAMENT_PICKER_LS_KEY = "specialMode_tournamentPicker_v1";
 const CURRENT_TOURNAMENT_TYPE_LS_KEY = "specialMode_currentTournamentType_v1";
@@ -123,8 +122,8 @@ const TournamentTierBadge = ({ tier, size = 20 }) => {
 
 const TOURNAMENT_TIER_EXPLANATIONS = [
     { tier: "official", text: <>The biggest tournament. The winner gets an Official trophy, 2nd and 3rd place get 🥈 and 🥉.</> },
-    { tier: "tier1", text: <>A big tournament, like the PEM Small Tournament main event. The winner gets a unique Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
-    { tier: "tier2", text: <>A smaller tournament, like the Champions Series Tour. The winner gets a 🥇, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier1", text: <>A big tournament, like the main event of the PEM Small or PEM Big Tournament. The winner gets that tournament's own Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier2", text: <>A smaller tournament, like the Champions Series Tour or the Elite Competition League. The winner gets a 🥇, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
     { tier: "qualifier", text: <>A qualifier for a bigger tournament. It gives no medals: its best teams qualify to the event it belongs to.</> },
 ];
 
@@ -163,7 +162,9 @@ const TournamentTierInfo = () => {
 };
 
 const PEM_SMALL_TYPE_ID = "PEM Small Tournament";
+const PEM_BIG_TYPE_ID = "PEM Big Tournament";
 const CST_TYPE_ID = "Champions Series Tour";
+const ECL_TYPE_ID = "Elite Competition League";
 
 const PemSmallEventLine = ({ tier, children }) => (
     <span style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 6 }}>
@@ -197,6 +198,30 @@ const PemSmallDescription = () => (
     </>
 );
 
+const PemBigDescription = () => (
+    <>
+        Three tournaments, played one after another:
+        <PemSmallEventLine tier="qualifier">
+            <b>PEM Big Tournament Qualifier</b> — places 17-48 of the Leaderboard, split into Group A and
+            Group B (16 teams each). Every Group is a Double Elimination bracket (all Bo3; Upper Final and
+            Consolidation Final are Bo5) and every group's top 2 teams qualify to the main event.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier2">
+            <b>Elite Competition League</b> — places 49-64 of the Leaderboard in one Double Elimination bracket
+            with a Grand Final. The Upper Bracket is Bo1 (the Upper Final is Bo3), the Lower Bracket is Bo3 and the
+            Grand Final, between the Upper Final and Consolidation Final winners, is Bo5.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>PEM Big Tournament</b> — the main event. <b>Stage I</b>: places 13-16 of the Leaderboard plus the 4
+            teams from the Qualifier, split into Group A and Group B (4 teams each). Every Group is a Double
+            Elimination bracket (all Bo3) and
+            its top 2 teams go to <b>Stage II</b>, where they join places 1-12: a Group Stage like the PEM Small
+            Tournament's, followed by the same 6-team Playoffs. Quarterfinals are Bo5, Semifinals and Third Place
+            Decider are Bo7, the Grand Final is Bo9.
+        </PemSmallEventLine>
+    </>
+);
+
 const TOURNAMENT_TYPES = [
     {
         id: "Official",
@@ -225,10 +250,18 @@ const TOURNAMENT_TYPES = [
         tier: "tier1",
         descriptionNode: <PemSmallDescription />,
     },
+    {
+        id: PEM_BIG_TYPE_ID,
+        label: "PEM Big Tournament",
+        longLabel: "Pro Extreme Masters Big Tournament",
+        tier: "tier1",
+        descriptionNode: <PemBigDescription />,
+    },
 ];
 
 const EVENT_TOURNAMENT_TYPES = [
     { id: CST_TYPE_ID, label: "Champions Series Tour", tier: "tier2" },
+    { id: ECL_TYPE_ID, label: "Elite Competition League", tier: "tier2" },
 ];
 
 const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAMENT_TYPES];
@@ -336,23 +369,6 @@ const normalizeTournamentRef = (value) => {
     };
 };
 
-const loadLastFinalizedTournament = () => {
-    try {
-        const raw = localStorage.getItem(LAST_FINALIZED_TOURNAMENT_LS_KEY);
-        if (raw === null) return undefined;
-        return normalizeTournamentRef(JSON.parse(raw));
-    } catch {
-        return undefined;
-    }
-};
-
-const saveLastFinalizedTournament = (value) => {
-    try {
-        localStorage.setItem(LAST_FINALIZED_TOURNAMENT_LS_KEY, JSON.stringify(value ?? null));
-    } catch {
-        console.error("Couldn't save the last finalized tournament");
-    }
-};
 const HALL_OF_FAME_DB_NAME = "specialModeHallOfFame";
 const HALL_OF_FAME_STORE = "tournaments";
 
@@ -1232,17 +1248,31 @@ const statKindOfContext = (context) =>
             ? "qualifier"
             : context?.type === "pemGroup"
                 ? "pemGroup"
-                : "playoffs";
+                : context?.type === "ecl"
+                    ? "ecl"
+                    : context?.type === "pemStage1"
+                        ? "pemStage1"
+                        : "playoffs";
+
+const BRACKET_STAT_KINDS = ["qualifier", "pemGroup", "ecl", "pemStage1"];
+
+const isBracketStatKind = (kind) => BRACKET_STAT_KINDS.includes(kind);
 
 const bracketGroupStagesOf = (kind) =>
     kind === "pemGroup"
         ? { upper: PEM_GROUP_UPPER_STAGES, elimination: PEM_GROUP_ELIMINATION_STAGES, qualifying: PEM_GROUP_QUALIFYING_STAGES }
-        : { upper: QUALIFIER_UPPER_STAGES, elimination: QUALIFIER_ELIMINATION_STAGES, qualifying: QUALIFIER_QUALIFYING_STAGES };
+        : kind === "ecl"
+            ? { upper: ECL_UNBEATEN_STAGES, elimination: ECL_ELIMINATION_STAGES, qualifying: Object.keys(ECL_BIG_STAGE_GAINS) }
+            : kind === "pemStage1"
+                ? { upper: PEM_STAGE1_UPPER_STAGES, elimination: PEM_STAGE1_ELIMINATION_STAGES, qualifying: PEM_STAGE1_QUALIFYING_STAGES }
+                : { upper: QUALIFIER_UPPER_STAGES, elimination: QUALIFIER_ELIMINATION_STAGES, qualifying: QUALIFIER_QUALIFYING_STAGES };
 
 const battleStakesOf = ({ kind, swissStageKey, net, playoffsStage }) => {
     if (kind === "playoffs") return BATTLE_PLAYOFF_STAKES[playoffsStage] ?? BATTLE_PLAYOFF_STAKES.ro16;
     if (kind === "qualifier") return QUALIFIER_BATTLE_STAKES[playoffsStage] ?? QUALIFIER_BATTLE_STAKES.uo;
     if (kind === "pemGroup") return PEM_GROUP_BATTLE_STAKES[playoffsStage] ?? PEM_GROUP_BATTLE_STAKES.uo;
+    if (kind === "ecl") return ECL_BATTLE_STAKES[playoffsStage] ?? ECL_BATTLE_STAKES.uo;
+    if (kind === "pemStage1") return PEM_STAGE1_BATTLE_STAKES[playoffsStage] ?? PEM_STAGE1_BATTLE_STAKES.uo;
     const base = BATTLE_SWISS_STAKES[swissStageKey] ?? BATTLE_SWISS_STAKES.stage1;
     return clampShare(base + (isProgressionOrEliminationNet(net) ? BATTLE_DECISIVE_NET_STAKES : 0));
 };
@@ -1293,7 +1323,7 @@ const resetBattleExperience = (teamStats) => {
 
 const deriveStatActivation = ({ kind, net, playoffsStage, bestOf, streak, upset, rank, values }) => {
     const isSwiss = kind === "swiss";
-    const isQualifier = kind === "qualifier" || kind === "pemGroup";
+    const isQualifier = isBracketStatKind(kind);
     const groupStages = bracketGroupStagesOf(kind);
     const isThirdPlace = !isSwiss && !isQualifier && playoffsStage === "thirdPlace";
     const [winsInStage, lossesInStage] = isSwiss
@@ -1469,7 +1499,7 @@ const buildMatchStatContext = ({
     unbeatenEligibleBySide = null,
 }) => {
     const isSwiss = kind === "swiss";
-    const isQualifier = kind === "qualifier" || kind === "pemGroup";
+    const isQualifier = isBracketStatKind(kind);
     const engineKind = isSwiss ? "swiss" : isQualifier ? kind : "playoffs";
     const isThirdPlace = !isSwiss && !isQualifier && playoffsStage === "thirdPlace";
     const lossesInStage = isSwiss ? Number(String(net ?? "").split(":")[1]) || 0 : 0;
@@ -2671,7 +2701,11 @@ const buildModalStatsKey = ({ modalContext, currentModalMatch, hallRecordId, tou
                     ? `cst:${modalContext.group}`
                     : modalContext.type === "pemGroup"
                         ? `pemGroup:${modalContext.group}:${modalContext.stage}`
-                        : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : "playoffs"}:${modalContext.stage}`;
+                        : modalContext.type === "ecl"
+                            ? `ecl:${modalContext.stage}`
+                            : modalContext.type === "pemStage1"
+                                ? `pemStage1:${modalContext.group}:${modalContext.stage}`
+                                : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : modalContext.kind === "pemBig" ? "pemBigPlayoffs" : "playoffs"}:${modalContext.stage}`;
     const originPart = modalContext.isArchivedHallOfFame
         ? `hall:${hallRecordId ?? ""}:`
         : `t${tournamentNumber}:`;
@@ -2896,7 +2930,7 @@ const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) => {
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
+            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000 + (p?.pemBigWins ?? 0) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
             case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
             case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;
@@ -2971,7 +3005,15 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
                             ? (CST_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
                             : phase === "pemPlayoffs"
                                 ? (PEM_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
-                                : playoffsWeight(playoffsStage);
+                                : phase === "ecl"
+                                    ? (ECL_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                    : phase === "pemStage1"
+                                        ? (PEM_STAGE1_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                        : phase === "pemBigGroup"
+                                            ? (PEM_BIG_GROUP_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                            : phase === "pemBigPlayoffs"
+                                                ? (PEM_BIG_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                                : playoffsWeight(playoffsStage);
 
     return stage * boWeight(bestOf) * marginMultiplier({ bestOf, loserSetsWon });
 };
@@ -3090,7 +3132,8 @@ const applyRatings = ({
         )
     );
 
-    const isGrandFinal = (phase === "playoffs" || phase === "cstPlayoffs" || phase === "pemPlayoffs") && playoffsStage === "gf";
+    const isGrandFinal =
+        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "ecl"].includes(phase) && playoffsStage === "gf";
 
     if (isGrandFinal) {
         losePoints = Math.round(winPoints * 0.2);
@@ -3581,6 +3624,7 @@ const stageLabelPlayoffs = (stage) => {
 const getBestOfForPlayoffs = (stage, kind = null) => {
     if (kind === "cst") return CST_PLAYOFFS_BEST_OF[stage] ?? 3;
     if (kind === "pem") return PEM_PLAYOFFS_BEST_OF[stage] ?? 5;
+    if (kind === "pemBig") return PEM_BIG_PLAYOFFS_BEST_OF[stage] ?? 5;
     if (stage === "gf") return 9;
     if (stage === "sf") return 7;
     if (stage === "thirdPlace") return 7;
@@ -3694,16 +3738,140 @@ const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
 };
 
 
-const PEM_SMALL_MAIN_AUTO_COUNT = 12;
-const PEM_SMALL_QUALIFIER_COUNT = 32;
+const buildBracketRoutes = (stageOrder, sizes, slotSource) => {
+    const routes = {};
+    stageOrder.forEach((stage) => {
+        for (let idx = 0; idx < sizes[stage]; idx++) {
+            ["slotA", "slotB"].forEach((slotKey) => {
+                const source = slotSource(stage, idx, slotKey);
+                if (!source) return;
+                const key = `${source.stage}-${source.idx}`;
+                routes[key] = { ...(routes[key] || {}), [source.want]: { stage, idx, slotKey } };
+            });
+        }
+    });
+    return routes;
+};
 
-const buildPemSmallSeeds = (teams, ratings) => {
+const buildBracketConnectorLinks = (stageOrder, sizes, slotSource) => {
+    const links = [];
+    stageOrder.forEach((stage) => {
+        for (let idx = 0; idx < sizes[stage]; idx++) {
+            ["slotA", "slotB"].forEach((slotKey) => {
+                const source = slotSource(stage, idx, slotKey);
+                if (!source || source.want !== "winner") return;
+                links.push({ from: `${source.stage}-${source.idx}`, to: `${stage}-${idx}`, toY: slotKey === "slotB" ? 0.75 : 0.25 });
+            });
+        }
+    });
+    return links;
+};
+
+const canOpenBracketMatch = (stageOrder, bracket, stage, idx) => {
+    const match = bracket?.[stage]?.[idx];
+    if (!match || !match.slotA || !match.slotB || match.played) return false;
+
+    for (const s of stageOrder) {
+        const arr = bracket[s] || [];
+        if (s === stage) return arr.slice(0, idx).every((m) => m.played);
+        if (arr.some((m) => !m.played)) return false;
+    }
+
+    return false;
+};
+
+const findCurrentBracketMatch = (stageOrder, bracket) => {
+    if (!bracket) return null;
+
+    for (const stage of stageOrder) {
+        const arr = bracket[stage] || [];
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i].played) continue;
+            return canOpenBracketMatch(stageOrder, bracket, stage, i) ? { stage, index: i, id: arr[i].id } : null;
+        }
+    }
+
+    return null;
+};
+
+const findNextBracketMatch = (stageOrder, bracket, current) => {
+    if (!bracket || !current) return null;
+
+    let passedCurrent = false;
+    for (const stage of stageOrder) {
+        const arr = bracket[stage] || [];
+        for (let i = 0; i < arr.length; i++) {
+            if (!passedCurrent) {
+                if (stage === current.stage && i === current.index) passedCurrent = true;
+                continue;
+            }
+            const m = arr[i];
+            if (!m.played) return { stage, index: i, id: m.id };
+        }
+    }
+
+    return null;
+};
+
+const advanceBracket = (routes, bracket, stage, idx, winner, loser) => {
+    const route = routes[`${stage}-${idx}`] || {};
+
+    const place = (target, team) => {
+        if (!target || !team) return;
+        const arr = [...bracket[target.stage]];
+        arr[target.idx] = { ...arr[target.idx], [target.slotKey]: toBaseTeam(team) };
+        bracket[target.stage] = arr;
+    };
+
+    place(route.winner, winner);
+    place(route.loser, loser);
+};
+
+const isBracketFinished = (stageOrder, bracket) =>
+    stageOrder.every((stage) => (bracket?.[stage] || []).length > 0 && bracket[stage].every((m) => m.played));
+
+const copyBracketStages = (stageOrder, bracket) => {
+    const copy = { ...bracket };
+    stageOrder.forEach((stage) => {
+        copy[stage] = [...(bracket?.[stage] || [])];
+    });
+    return copy;
+};
+
+const makeBracketMatch = (id, group, stage, extra = {}) => ({
+    id,
+    group,
+    stage,
+    slotA: null,
+    slotB: null,
+    played: false,
+    scoreLeft: null,
+    scoreRight: null,
+    winnerTeamId: null,
+    loserTeamId: null,
+    pickTeamId: null,
+    setHistory: [],
+    ...extra,
+});
+
+const bracketMatchPoints = (match, bestOf) => {
+    if (!match?.played || !match.pickTeamId) return 0;
+    if (match.winnerTeamId === match.pickTeamId) return bestOf;
+    if (bestOf === 1) return 0;
+
+    const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
+    const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
+    return (pickedSets || 0) * 2;
+};
+
+const buildPemSeeds = (teams, ratings, type = PEM_SMALL_TYPE_ID) => {
+    const { mainEventCount, qualifierCount, secondEvent } = getPemSeriesConfig(type);
     const { sorted } = buildLeaderboard(teams, ratings);
-    const qualifierEnd = PEM_SMALL_MAIN_AUTO_COUNT + PEM_SMALL_QUALIFIER_COUNT;
+    const qualifierEnd = mainEventCount + qualifierCount;
     return {
-        mainEvent: sorted.slice(0, PEM_SMALL_MAIN_AUTO_COUNT).map(toBaseTeam),
-        qualifier: sorted.slice(PEM_SMALL_MAIN_AUTO_COUNT, qualifierEnd).map(toBaseTeam),
-        cst: sorted.slice(qualifierEnd).map(toBaseTeam),
+        mainEvent: sorted.slice(0, mainEventCount).map(toBaseTeam),
+        qualifier: sorted.slice(mainEventCount, qualifierEnd).map(toBaseTeam),
+        [secondEvent]: sorted.slice(qualifierEnd).map(toBaseTeam),
     };
 };
 
@@ -3719,7 +3887,7 @@ const QUALIFIER_STAGE_ORDER = ["uo", "uqf", "lr1", "lr2", "lr3", "usf", "lsf", "
 const QUALIFIER_STAGE_SIZES = { uo: 8, uqf: 4, lr1: 4, lr2: 4, lr3: 2, usf: 2, lsf: 2, lf: 1, uf: 1, cf: 1 };
 
 const QUALIFIER_STAGE_LABELS = {
-    uo: "Upper Opening Rd.",
+    uo: "Opening Round",
     uqf: "Upper Quarterfinal",
     usf: "Upper Semifinal",
     uf: "Upper Final",
@@ -3732,7 +3900,7 @@ const QUALIFIER_STAGE_LABELS = {
 };
 
 const QUALIFIER_COLUMN_TITLES = {
-    uo: "Upper Opening Rd.",
+    uo: "Opening Round",
     uqf: "Upper Quarterfinals",
     usf: "Upper Semifinals",
     uf: "Upper Final",
@@ -3780,35 +3948,9 @@ const qualifierSlotSource = (stage, idx, slotKey) => {
     }
 };
 
-const QUALIFIER_ROUTES = (() => {
-    const routes = {};
-    QUALIFIER_STAGE_ORDER.forEach((stage) => {
-        for (let idx = 0; idx < QUALIFIER_STAGE_SIZES[stage]; idx++) {
-            ["slotA", "slotB"].forEach((slotKey) => {
-                const source = qualifierSlotSource(stage, idx, slotKey);
-                if (!source) return;
-                const key = `${source.stage}-${source.idx}`;
-                routes[key] = { ...(routes[key] || {}), [source.want]: { stage, idx, slotKey } };
-            });
-        }
-    });
-    return routes;
-})();
+const QUALIFIER_ROUTES = buildBracketRoutes(QUALIFIER_STAGE_ORDER, QUALIFIER_STAGE_SIZES, qualifierSlotSource);
 
-const makeQualifierMatch = (group, stage, idx) => ({
-    id: `q${group}-${stage}-${idx + 1}`,
-    group,
-    stage,
-    slotA: null,
-    slotB: null,
-    played: false,
-    scoreLeft: null,
-    scoreRight: null,
-    winnerTeamId: null,
-    loserTeamId: null,
-    pickTeamId: null,
-    setHistory: [],
-});
+const makeQualifierMatch = (group, stage, idx) => makeBracketMatch(`q${group}-${stage}-${idx + 1}`, group, stage);
 
 const buildQualifierGroupBracket = (group, teams16) => {
     const bracket = { group, teams: teams16.map(toBaseTeam) };
@@ -3831,65 +3973,14 @@ const buildQualifierGroupBracket = (group, teams16) => {
 const buildQualifier = (groups) =>
     Object.fromEntries(QUALIFIER_GROUPS.map((group) => [group, buildQualifierGroupBracket(group, groups[group] || [])]));
 
-const canOpenQualifierMatch = (bracket, stage, idx) => {
-    const match = bracket?.[stage]?.[idx];
-    if (!match || !match.slotA || !match.slotB || match.played) return false;
+const canOpenQualifierMatch = (bracket, stage, idx) => canOpenBracketMatch(QUALIFIER_STAGE_ORDER, bracket, stage, idx);
 
-    for (const s of QUALIFIER_STAGE_ORDER) {
-        const arr = bracket[s] || [];
-        if (s === stage) return arr.slice(0, idx).every((m) => m.played);
-        if (arr.some((m) => !m.played)) return false;
-    }
+const findCurrentQualifierMatch = (bracket) => findCurrentBracketMatch(QUALIFIER_STAGE_ORDER, bracket);
 
-    return false;
-};
+const findNextQualifierMatch = (bracket, current) => findNextBracketMatch(QUALIFIER_STAGE_ORDER, bracket, current);
 
-const findCurrentQualifierMatch = (bracket) => {
-    if (!bracket) return null;
-
-    for (const stage of QUALIFIER_STAGE_ORDER) {
-        const arr = bracket[stage] || [];
-        for (let i = 0; i < arr.length; i++) {
-            if (arr[i].played) continue;
-            return canOpenQualifierMatch(bracket, stage, i) ? { stage, index: i, id: arr[i].id } : null;
-        }
-    }
-
-    return null;
-};
-
-const findNextQualifierMatch = (bracket, current) => {
-    if (!bracket || !current) return null;
-
-    let passedCurrent = false;
-    for (const stage of QUALIFIER_STAGE_ORDER) {
-        const arr = bracket[stage] || [];
-        for (let i = 0; i < arr.length; i++) {
-            if (!passedCurrent) {
-                if (stage === current.stage && i === current.index) passedCurrent = true;
-                continue;
-            }
-            const m = arr[i];
-            if (!m.played) return { stage, index: i, id: m.id };
-        }
-    }
-
-    return null;
-};
-
-const advanceQualifierBracket =(bracket, stage, idx, winner, loser) => {
-    const route = QUALIFIER_ROUTES[`${stage}-${idx}`] || {};
-
-    const place = (target, team) => {
-        if (!target || !team) return;
-        const arr = [...bracket[target.stage]];
-        arr[target.idx] = { ...arr[target.idx], [target.slotKey]: toBaseTeam(team) };
-        bracket[target.stage] = arr;
-    };
-
-    place(route.winner, winner);
-    place(route.loser, loser);
-};
+const advanceQualifierBracket = (bracket, stage, idx, winner, loser) =>
+    advanceBracket(QUALIFIER_ROUTES, bracket, stage, idx, winner, loser);
 
 const getMatchWinnerTeam = (match) =>
     match?.played ? [match.slotA, match.slotB].find((team) => team?.id === match.winnerTeamId) ?? null : null;
@@ -3910,16 +4001,7 @@ const getQualifierMatches = (qualifier) =>
         QUALIFIER_STAGE_ORDER.flatMap((stage) => qualifier?.[group]?.[stage] || [])
     );
 
-const qualifierMatchPoints = (match) => {
-    if (!match?.played || !match.pickTeamId) return 0;
-
-    const bestOf = getBestOfForQualifier(match.stage);
-    if (match.winnerTeamId === match.pickTeamId) return bestOf;
-
-    const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
-    const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
-    return (pickedSets || 0) * 2;
-};
+const qualifierMatchPoints = (match) => bracketMatchPoints(match, getBestOfForQualifier(match?.stage));
 
 const QUALIFIER_PICKEM_ROUNDS = [
     { stage: "uo", label: "Opening Rounds" },
@@ -3952,6 +4034,141 @@ const getQualifierStakeTexts = (stage) => {
         case "cf": return { winner: <><b>qualifies</b> to the main event</>, loser: "doesn't make it into the main event" };
         default: return { winner: null, loser: null };
     }
+};
+
+const ECL_STAGE_ORDER = [...QUALIFIER_STAGE_ORDER, "gf"];
+
+const ECL_STAGE_SIZES = { ...QUALIFIER_STAGE_SIZES, gf: 1 };
+
+const ECL_STAGE_LABELS = { ...QUALIFIER_STAGE_LABELS, gf: "Grand Final" };
+
+const ECL_COLUMN_TITLES = { ...QUALIFIER_COLUMN_TITLES, gf: "Grand Final" };
+
+const ECL_UPPER_STAGES = ["uo", "uqf", "usf", "uf"];
+const ECL_UNBEATEN_STAGES = [...ECL_UPPER_STAGES, "gf"];
+const ECL_ELIMINATION_STAGES = ["lr1", "lr2", "lr3", "lsf", "lf", "cf", "gf"];
+
+const ECL_BEST_OF = { uo: 1, uqf: 1, usf: 1, uf: 3, lr1: 3, lr2: 3, lr3: 3, lsf: 3, lf: 3, cf: 3, gf: 5 };
+
+const ECL_BIG_STAGE_GAINS = {
+    lsf: { winner: 2 },
+    lf: { winner: 3, loser: 2 },
+    uf: { winner: 3 },
+    cf: { winner: 3, loser: 3 },
+    gf: { winner: 5, loser: 4 },
+};
+
+const ECL_BATTLE_STAKES = { uo: 0.15, uqf: 0.25, lr1: 0.15, lr2: 0.2, lr3: 0.25, usf: 0.35, lsf: 0.4, lf: 0.5, uf: 0.5, cf: 0.6, gf: 0.8 };
+const ECL_RATING_WEIGHTS = { uo: 0.9, uqf: 0.95, usf: 1.0, uf: 1.08, lr1: 0.88, lr2: 0.92, lr3: 0.96, lsf: 1.0, lf: 1.05, cf: 1.12, gf: 1.25 };
+
+const ECL_MIN_NEEDED_PICKEM = 39;
+const ECL_MAX_NEEDED_PICKEM = 64;
+
+const getRandomEclNeededPickemPoints = () =>
+    Math.floor(Math.random() * (ECL_MAX_NEEDED_PICKEM - ECL_MIN_NEEDED_PICKEM + 1)) +
+    ECL_MIN_NEEDED_PICKEM;
+
+const eclStageLabel = (stage) => ECL_STAGE_LABELS[stage] ?? "";
+
+const isSingleEclStage = (stage) => ECL_STAGE_SIZES[stage] === 1;
+
+const getBestOfForEcl = (stage) => ECL_BEST_OF[stage] ?? 3;
+
+const eclSlotSource = (stage, idx, slotKey) =>
+    stage === "gf"
+        ? { stage: slotKey === "slotB" ? "cf" : "uf", idx: 0, want: "winner" }
+        : qualifierSlotSource(stage, idx, slotKey);
+
+const ECL_ROUTES = buildBracketRoutes(ECL_STAGE_ORDER, ECL_STAGE_SIZES, eclSlotSource);
+
+const ECL_CONNECTOR_LINKS = buildBracketConnectorLinks(ECL_STAGE_ORDER, ECL_STAGE_SIZES, eclSlotSource);
+
+const buildEclBracket = (teams16) => {
+    const bracket = { group: null, teams: teams16.map(toBaseTeam) };
+
+    ECL_STAGE_ORDER.forEach((stage) => {
+        bracket[stage] = Array.from(
+            { length: ECL_STAGE_SIZES[stage] },
+            (_, i) => makeBracketMatch(`ecl-${stage}-${i + 1}`, null, stage)
+        );
+    });
+
+    bracketOrder.forEach(([a, b], i) => {
+        bracket.uo[i].slotA = bracket.teams[a] ?? null;
+        bracket.uo[i].slotB = bracket.teams[b] ?? null;
+    });
+
+    return bracket;
+};
+
+const canOpenEclMatch = (bracket, stage, idx) => canOpenBracketMatch(ECL_STAGE_ORDER, bracket, stage, idx);
+
+const findCurrentEclMatch = (bracket) => findCurrentBracketMatch(ECL_STAGE_ORDER, bracket);
+
+const findNextEclMatch = (bracket, current) => findNextBracketMatch(ECL_STAGE_ORDER, bracket, current);
+
+const getEclMatches = (bracket) => ECL_STAGE_ORDER.flatMap((stage) => bracket?.[stage] || []);
+
+const eclMatchPoints = (match) => bracketMatchPoints(match, getBestOfForEcl(match?.stage));
+
+const ECL_PICKEM_ROUNDS = [
+    { stage: "uo", label: "Opening Rounds" },
+    { stage: "uqf", label: "Upper Quarterfinals" },
+    { stage: "lr1", label: "Lower Rounds 1" },
+    { stage: "lr2", label: "Lower Rounds 2" },
+    { stage: "lr3", label: "Lower Rounds 3" },
+    { stage: "usf", label: "Upper Semifinals" },
+    { stage: "lsf", label: "Lower Semifinals" },
+    { stage: "lf", label: "the Lower Final" },
+    { stage: "uf", label: "the Upper Final" },
+    { stage: "cf", label: "the Consolidation Final" },
+    { stage: "gf", label: "the Grand Final" },
+].map((round) => ({
+    ...round,
+    key: `ecl_${round.stage}`,
+    total: ECL_STAGE_SIZES[round.stage],
+}));
+
+const ECL_ELIMINATED_TEXT = "flies out of this tournament";
+
+const getEclStakeTexts = (stage) => {
+    switch (stage) {
+        case "uo": return { winner: <>goes to <b>Upper Quarterfinals</b></>, loser: <>drops to <b>Lower Round 1</b></> };
+        case "uqf": return { winner: <>goes to <b>Upper Semifinals</b></>, loser: <>drops to <b>Lower Round 2</b></> };
+        case "usf": return { winner: <>goes to the <b>Upper Final</b></>, loser: <>drops to <b>Lower Semifinals</b></> };
+        case "uf": return { winner: <>goes to the <b>Grand Final</b></>, loser: <>drops to the <b>Consolidation Final</b></> };
+        case "lr1": return { winner: <>goes to <b>Lower Round 2</b></>, loser: ECL_ELIMINATED_TEXT };
+        case "lr2": return { winner: <>goes to <b>Lower Round 3</b></>, loser: ECL_ELIMINATED_TEXT };
+        case "lr3": return { winner: <>goes to <b>Lower Semifinals</b></>, loser: ECL_ELIMINATED_TEXT };
+        case "lsf": return { winner: <>goes to the <b>Lower Final</b></>, loser: ECL_ELIMINATED_TEXT };
+        case "lf": return { winner: <>goes to the <b>Consolidation Final</b></>, loser: "still had a good run!" };
+        case "cf": return { winner: <>goes to the <b>Grand Final</b></>, loser: <>earns <b>Third Place Medal</b>!</> };
+        case "gf": return { winner: <><b>WINS</b> the tournament!</>, loser: "second place is still wonderful!" };
+        default: return { winner: null, loser: null };
+    }
+};
+
+const getEclResults = (bracket) => ({
+    winner: getMatchWinnerTeam(bracket?.gf?.[0]),
+    runnerUp: getMatchLoserTeam(bracket?.gf?.[0]),
+    thirdPlace: getMatchLoserTeam(bracket?.cf?.[0]),
+    fourthPlace: getMatchLoserTeam(bracket?.lf?.[0]),
+});
+
+const getEclPlaces = (bracket) => {
+    const results = getEclResults(bracket);
+    const losersOf = (stage) => (bracket?.[stage] || []).map(getMatchLoserTeam).filter(Boolean);
+
+    return [
+        results.winner,
+        results.runnerUp,
+        results.thirdPlace,
+        results.fourthPlace,
+        ...losersOf("lsf"),
+        ...losersOf("lr3"),
+        ...losersOf("lr2"),
+        ...losersOf("lr1"),
+    ].filter(Boolean);
 };
 
 const CST_GROUPS = ["A", "B", "C", "D"];
@@ -4161,19 +4378,80 @@ const PEM_GROUP_QUALIFYING_STAGES = ["usf", "lf"];
 const PEM_GROUP_BATTLE_STAKES = { uo: 0.35, usf: 0.5, lr1: 0.35, lsf: 0.5, uf: 0.6, lf: 0.6 };
 const PEM_GROUP_RATING_WEIGHTS = { uo: 1.32, usf: 1.52, lr1: 1.24, lsf: 1.44, uf: 1.7, lf: 1.6 };
 
+const PEM_BIG_GROUP_RATING_WEIGHTS = { uo: 1.49, usf: 1.71, lr1: 1.4, lsf: 1.62, uf: 1.91, lf: 1.8 };
+
 const PEM_PLAYOFFS_BEST_OF = { qf: 5, sf: 5, thirdPlace: 5, gf: 7 };
 const PEM_PLAYOFFS_RATING_WEIGHTS = { qf: 2.0, sf: 3.2, thirdPlace: 3.47, gf: 6.0 };
+
+const PEM_BIG_PLAYOFFS_BEST_OF = { qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+const PEM_BIG_PLAYOFFS_RATING_WEIGHTS = { qf: 2.25, sf: 2.7, thirdPlace: 2.93, gf: 4.5 };
+
+const PEM_PLAYOFFS_BIG_STAGE = {
+    qf: { winner: 4 },
+    sf: { winner: 4 },
+    thirdPlace: { winner: 5, loser: 4 },
+    gf: { winner: 7, loser: 6 },
+};
+
+const PEM_BIG_PLAYOFFS_BIG_STAGE = {
+    qf: { winner: 5 },
+    sf: { winner: 5 },
+    thirdPlace: { winner: 6, loser: 5 },
+    gf: { winner: 8, loser: 7 },
+};
+
+const isPemPlayoffsKind = (kind) => kind === "pem" || kind === "pemBig";
 
 const PEM_MIN_NEEDED_PICKEM = 67;
 const PEM_MAX_NEEDED_PICKEM = 110;
 
+const PEM_BIG_MIN_NEEDED_PICKEM = 92;
+const PEM_BIG_MAX_NEEDED_PICKEM = 150;
+
 const PEM_TROPHY_SILVER = "linear-gradient(180deg, #ffffff 0%, #d9d9d9 30%, #a9a9a9 62%, #7d7d7d 100%)";
+const PEM_TROPHY_GOLD = "linear-gradient(180deg, #fffbe0 0%, #ffe066 30%, #f2b705 62%, #a87400 100%)";
 
 const PEM_QUALIFIED_HIGHLIGHT = { boxShadow: "0 0 10px rgba(255, 215, 0, 0.9)", borderColor: "#ffd700" };
 
-const getRandomPemNeededPickemPoints = () =>
-    Math.floor(Math.random() * (PEM_MAX_NEEDED_PICKEM - PEM_MIN_NEEDED_PICKEM + 1)) +
-    PEM_MIN_NEEDED_PICKEM;
+const PEM_SERIES = {
+    [PEM_SMALL_TYPE_ID]: {
+        label: "PEM Small Tournament",
+        longLabel: "Pro Extreme Masters Small Tournament",
+        sizeWord: "Small",
+        mainEventCount: 12,
+        qualifierCount: 32,
+        secondEvent: "cst",
+        playoffsKind: "pem",
+        trophyColor: PEM_TROPHY_SILVER,
+        winsKey: "tier1Wins",
+        statsKeyPrefix: "pem",
+        hallIdPrefix: "pem-small",
+        neededPickem: [PEM_MIN_NEEDED_PICKEM, PEM_MAX_NEEDED_PICKEM],
+    },
+    [PEM_BIG_TYPE_ID]: {
+        label: "PEM Big Tournament",
+        longLabel: "Pro Extreme Masters Big Tournament",
+        sizeWord: "Big",
+        mainEventCount: 16,
+        qualifierCount: 32,
+        secondEvent: "ecl",
+        playoffsKind: "pemBig",
+        trophyColor: PEM_TROPHY_GOLD,
+        winsKey: "pemBigWins",
+        statsKeyPrefix: "pemBig",
+        hallIdPrefix: "pem-big",
+        neededPickem: [PEM_BIG_MIN_NEEDED_PICKEM, PEM_BIG_MAX_NEEDED_PICKEM],
+    },
+};
+
+const isPemSeriesType = (type) => Object.hasOwn(PEM_SERIES, type);
+
+const getPemSeriesConfig = (type) => PEM_SERIES[type] ?? PEM_SERIES[PEM_SMALL_TYPE_ID];
+
+const getRandomPemNeededPickemPoints = (type = PEM_SMALL_TYPE_ID) => {
+    const [min, max] = getPemSeriesConfig(type).neededPickem;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
 const pemGroupStageLabel = (stage) => PEM_GROUP_STAGE_LABELS[stage] ?? "";
 
@@ -4200,35 +4478,9 @@ const pemGroupSlotSource = (stage, idx, slotKey) => {
     }
 };
 
-const PEM_GROUP_ROUTES = (() => {
-    const routes = {};
-    PEM_GROUP_STAGE_ORDER.forEach((stage) => {
-        for (let idx = 0; idx < PEM_GROUP_STAGE_SIZES[stage]; idx++) {
-            ["slotA", "slotB"].forEach((slotKey) => {
-                const source = pemGroupSlotSource(stage, idx, slotKey);
-                if (!source) return;
-                const key = `${source.stage}-${source.idx}`;
-                routes[key] = { ...(routes[key] || {}), [source.want]: { stage, idx, slotKey } };
-            });
-        }
-    });
-    return routes;
-})();
+const PEM_GROUP_ROUTES = buildBracketRoutes(PEM_GROUP_STAGE_ORDER, PEM_GROUP_STAGE_SIZES, pemGroupSlotSource);
 
-const makePemGroupMatch = (group, stage, idx) => ({
-    id: `pem${group}-${stage}-${idx + 1}`,
-    group,
-    stage,
-    slotA: null,
-    slotB: null,
-    played: false,
-    scoreLeft: null,
-    scoreRight: null,
-    winnerTeamId: null,
-    loserTeamId: null,
-    pickTeamId: null,
-    setHistory: [],
-});
+const makePemGroupMatch = (group, stage, idx) => makeBracketMatch(`pem${group}-${stage}-${idx + 1}`, group, stage);
 
 const buildPemGroupBracket = (group, teams8) => {
     const bracket = { group, teams: teams8.map(toBaseTeam) };
@@ -4248,79 +4500,27 @@ const buildPemGroupBracket = (group, teams8) => {
     return bracket;
 };
 
-const buildPemMainEventTeams = (pemSmall) => {
-    const qualifierOrder = new Map((pemSmall?.seeds?.qualifier || []).map((team, index) => [team.id, index]));
-    const qualified = [...(pemSmall?.qualified || [])].sort(
+const buildPemMainEventTeams = (pemSeries) => {
+    const qualifierOrder = new Map((pemSeries?.seeds?.qualifier || []).map((team, index) => [team.id, index]));
+    const qualified = [...(pemSeries?.qualified || [])].sort(
         (a, b) => (qualifierOrder.get(a.id) ?? 99) - (qualifierOrder.get(b.id) ?? 99)
     );
-    return [...(pemSmall?.seeds?.mainEvent || []), ...qualified].map(toBaseTeam);
+    return [...(pemSeries?.seeds?.mainEvent || []), ...qualified].map(toBaseTeam);
 };
 
 const buildPemMainGroupStage = (groups) =>
     Object.fromEntries(PEM_MAIN_GROUPS.map((group) => [group, buildPemGroupBracket(group, groups[group] || [])]));
 
-const canOpenPemGroupMatch = (bracket, stage, idx) => {
-    const match = bracket?.[stage]?.[idx];
-    if (!match || !match.slotA || !match.slotB || match.played) return false;
+const canOpenPemGroupMatch = (bracket, stage, idx) => canOpenBracketMatch(PEM_GROUP_STAGE_ORDER, bracket, stage, idx);
 
-    for (const s of PEM_GROUP_STAGE_ORDER) {
-        const arr = bracket[s] || [];
-        if (s === stage) return arr.slice(0, idx).every((m) => m.played);
-        if (arr.some((m) => !m.played)) return false;
-    }
+const findCurrentPemGroupMatch = (bracket) => findCurrentBracketMatch(PEM_GROUP_STAGE_ORDER, bracket);
 
-    return false;
-};
+const findNextPemGroupMatch = (bracket, current) => findNextBracketMatch(PEM_GROUP_STAGE_ORDER, bracket, current);
 
-const findCurrentPemGroupMatch = (bracket) => {
-    if (!bracket) return null;
+const advancePemGroupBracket = (bracket, stage, idx, winner, loser) =>
+    advanceBracket(PEM_GROUP_ROUTES, bracket, stage, idx, winner, loser);
 
-    for (const stage of PEM_GROUP_STAGE_ORDER) {
-        const arr = bracket[stage] || [];
-        for (let i = 0; i < arr.length; i++) {
-            if (arr[i].played) continue;
-            return canOpenPemGroupMatch(bracket, stage, i) ? { stage, index: i, id: arr[i].id } : null;
-        }
-    }
-
-    return null;
-};
-
-const findNextPemGroupMatch = (bracket, current) => {
-    if (!bracket || !current) return null;
-
-    let passedCurrent = false;
-    for (const stage of PEM_GROUP_STAGE_ORDER) {
-        const arr = bracket[stage] || [];
-        for (let i = 0; i < arr.length; i++) {
-            if (!passedCurrent) {
-                if (stage === current.stage && i === current.index) passedCurrent = true;
-                continue;
-            }
-            const m = arr[i];
-            if (!m.played) return { stage, index: i, id: m.id };
-        }
-    }
-
-    return null;
-};
-
-const advancePemGroupBracket = (bracket, stage, idx, winner, loser) => {
-    const route = PEM_GROUP_ROUTES[`${stage}-${idx}`] || {};
-
-    const place = (target, team) => {
-        if (!target || !team) return;
-        const arr = [...bracket[target.stage]];
-        arr[target.idx] = { ...arr[target.idx], [target.slotKey]: toBaseTeam(team) };
-        bracket[target.stage] = arr;
-    };
-
-    place(route.winner, winner);
-    place(route.loser, loser);
-};
-
-const isPemGroupFinished = (bracket) =>
-    PEM_GROUP_STAGE_ORDER.every((stage) => (bracket?.[stage] || []).length > 0 && bracket[stage].every((m) => m.played));
+const isPemGroupFinished = (bracket) => isBracketFinished(PEM_GROUP_STAGE_ORDER, bracket);
 
 const isPemGroupStageFinished = (groupStage) =>
     !!groupStage && PEM_MAIN_GROUPS.every((group) => isPemGroupFinished(groupStage[group]));
@@ -4330,16 +4530,7 @@ const getPemGroupMatches = (groupStage) =>
         PEM_GROUP_STAGE_ORDER.flatMap((stage) => groupStage?.[group]?.[stage] || [])
     );
 
-const pemGroupMatchPoints = (match) => {
-    if (!match?.played || !match.pickTeamId) return 0;
-
-    const bestOf = getBestOfForPemGroup(match.stage);
-    if (match.winnerTeamId === match.pickTeamId) return bestOf;
-
-    const pickedIsLeft = match.slotA && match.pickTeamId === match.slotA.id;
-    const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
-    return (pickedSets || 0) * 2;
-};
+const pemGroupMatchPoints = (match) => bracketMatchPoints(match, getBestOfForPemGroup(match?.stage));
 
 const PEM_GROUP_PICKEM_ROUNDS = [
     { stage: "uo", label: "Opening Rounds" },
@@ -4368,10 +4559,11 @@ const getPemGroupStakeTexts = (stage) => {
     }
 };
 
-const makePemPlayoffsMatch = (stage, i, slotA = null, slotB = null) => ({
+const makePemPlayoffsMatch = (stage, i, slotA = null, slotB = null, kind = "pem") => ({
     id: `${stage}-${i + 1}`,
     stage,
     pem: true,
+    ...(kind === "pemBig" ? { pemBig: true } : {}),
     slotA,
     slotB,
     played: false,
@@ -4383,25 +4575,147 @@ const makePemPlayoffsMatch = (stage, i, slotA = null, slotB = null) => ({
     setHistory: [],
 });
 
-const buildPemPlayoffs = (groupStage) => {
+const buildPemPlayoffs = (groupStage, kind = "pem") => {
     const a = groupStage?.A;
     const b = groupStage?.B;
     const seed = (team) => (team ? toBaseTeam(team) : null);
+    const match = (stage, i, slotA = null, slotB = null) => makePemPlayoffsMatch(stage, i, slotA, slotB, kind);
 
     return {
-        kind: "pem",
+        kind,
         ro16: [],
         qf: [
-            makePemPlayoffsMatch("qf", 0, seed(getMatchWinnerTeam(a?.lf?.[0])), seed(getMatchLoserTeam(b?.uf?.[0]))),
-            makePemPlayoffsMatch("qf", 1, seed(getMatchLoserTeam(a?.uf?.[0])), seed(getMatchWinnerTeam(b?.lf?.[0]))),
+            match("qf", 0, seed(getMatchWinnerTeam(a?.lf?.[0])), seed(getMatchLoserTeam(b?.uf?.[0]))),
+            match("qf", 1, seed(getMatchLoserTeam(a?.uf?.[0])), seed(getMatchWinnerTeam(b?.lf?.[0]))),
         ],
         sf: [
-            makePemPlayoffsMatch("sf", 0, seed(getMatchWinnerTeam(a?.uf?.[0]))),
-            makePemPlayoffsMatch("sf", 1, seed(getMatchWinnerTeam(b?.uf?.[0]))),
+            match("sf", 0, seed(getMatchWinnerTeam(a?.uf?.[0]))),
+            match("sf", 1, seed(getMatchWinnerTeam(b?.uf?.[0]))),
         ],
-        thirdPlace: [makePemPlayoffsMatch("thirdPlace", 0)],
-        gf: [makePemPlayoffsMatch("gf", 0)],
+        thirdPlace: [match("thirdPlace", 0)],
+        gf: [match("gf", 0)],
     };
+};
+
+const PEM_BIG_STAGE2_AUTO_COUNT = 12;
+
+const PEM_STAGE1_STAGE_ORDER = ["uo", "lr1", "uf", "lr2"];
+
+const PEM_STAGE1_STAGE_SIZES = { uo: 2, lr1: 1, uf: 1, lr2: 1 };
+
+const PEM_STAGE1_STAGE_LABELS = {
+    uo: "Opening Round",
+    lr1: "Lower Round 1",
+    uf: "Upper Final",
+    lr2: "Lower Round 2",
+};
+
+const PEM_STAGE1_UPPER_STAGES = ["uo", "uf"];
+const PEM_STAGE1_ELIMINATION_STAGES = ["lr1", "lr2"];
+const PEM_STAGE1_QUALIFYING_STAGES = ["uf", "lr2"];
+
+const PEM_STAGE1_BATTLE_STAKES = { uo: 0.3, lr1: 0.3, uf: 0.45, lr2: 0.45 };
+const PEM_STAGE1_RATING_WEIGHTS = { uo: 1.28, lr1: 1.2, uf: 1.44, lr2: 1.4 };
+
+const pemStage1StageLabel = (stage) => PEM_STAGE1_STAGE_LABELS[stage] ?? "";
+
+const isSinglePemStage1Stage = (stage) => PEM_STAGE1_STAGE_SIZES[stage] === 1;
+
+const getBestOfForPemStage1 = () => 3;
+
+const PEM_STAGE1_BRACKET_ORDER = [
+    [0, 3],
+    [1, 2],
+];
+
+const pemStage1SlotSource = (stage, idx, slotKey) => {
+    const second = slotKey === "slotB";
+    switch (stage) {
+        case "uf": return { stage: "uo", idx: second ? 1 : 0, want: "winner" };
+        case "lr1": return { stage: "uo", idx: second ? 1 : 0, want: "loser" };
+        case "lr2": return second ? { stage: "uf", idx: 0, want: "loser" } : { stage: "lr1", idx: 0, want: "winner" };
+        default: return null;
+    }
+};
+
+const PEM_STAGE1_ROUTES = buildBracketRoutes(PEM_STAGE1_STAGE_ORDER, PEM_STAGE1_STAGE_SIZES, pemStage1SlotSource);
+
+const PEM_STAGE1_CONNECTOR_LINKS = buildBracketConnectorLinks(PEM_STAGE1_STAGE_ORDER, PEM_STAGE1_STAGE_SIZES, pemStage1SlotSource);
+
+const buildPemStage1GroupBracket = (group, teams4) => {
+    const bracket = { group, teams: teams4.map(toBaseTeam) };
+
+    PEM_STAGE1_STAGE_ORDER.forEach((stage) => {
+        bracket[stage] = Array.from(
+            { length: PEM_STAGE1_STAGE_SIZES[stage] },
+            (_, i) => makeBracketMatch(`ps1${group}-${stage}-${i + 1}`, group, stage)
+        );
+    });
+
+    PEM_STAGE1_BRACKET_ORDER.forEach(([a, b], i) => {
+        bracket.uo[i].slotA = bracket.teams[a] ?? null;
+        bracket.uo[i].slotB = bracket.teams[b] ?? null;
+    });
+
+    return bracket;
+};
+
+const buildPemStage1 = (groups) =>
+    Object.fromEntries(PEM_MAIN_GROUPS.map((group) => [group, buildPemStage1GroupBracket(group, groups[group] || [])]));
+
+const canOpenPemStage1Match = (bracket, stage, idx) => canOpenBracketMatch(PEM_STAGE1_STAGE_ORDER, bracket, stage, idx);
+
+const findCurrentPemStage1Match = (bracket) => findCurrentBracketMatch(PEM_STAGE1_STAGE_ORDER, bracket);
+
+const findNextPemStage1Match = (bracket, current) => findNextBracketMatch(PEM_STAGE1_STAGE_ORDER, bracket, current);
+
+const advancePemStage1Bracket = (bracket, stage, idx, winner, loser) =>
+    advanceBracket(PEM_STAGE1_ROUTES, bracket, stage, idx, winner, loser);
+
+const isPemStage1Finished = (stage1) =>
+    !!stage1 && PEM_MAIN_GROUPS.every((group) => isBracketFinished(PEM_STAGE1_STAGE_ORDER, stage1[group]));
+
+const getPemStage1Matches = (stage1) =>
+    PEM_MAIN_GROUPS.flatMap((group) =>
+        PEM_STAGE1_STAGE_ORDER.flatMap((stage) => stage1?.[group]?.[stage] || [])
+    );
+
+const getPemStage1GroupQualifiers = (bracket) =>
+    [getMatchWinnerTeam(bracket?.uf?.[0]), getMatchWinnerTeam(bracket?.lr2?.[0])].filter(Boolean);
+
+const pemStage1MatchPoints = (match) => bracketMatchPoints(match, getBestOfForPemStage1(match?.stage));
+
+const PEM_STAGE1_PICKEM_ROUNDS = [
+    { stage: "uo", label: "Opening Rounds of Stage I" },
+    { stage: "lr1", label: "Lower Rounds 1 of Stage I" },
+    { stage: "uf", label: "Upper Finals of Stage I" },
+    { stage: "lr2", label: "Lower Rounds 2 of Stage I" },
+].map((round) => ({
+    ...round,
+    key: `ps1_${round.stage}`,
+    total: PEM_STAGE1_STAGE_SIZES[round.stage] * PEM_MAIN_GROUPS.length,
+}));
+
+const PEM_STAGE1_ELIMINATED_TEXT = "flies out of this tournament";
+
+const getPemStage1StakeTexts = (stage) => {
+    switch (stage) {
+        case "uo": return { winner: <>goes to the <b>Upper Final</b></>, loser: <>drops to <b>Lower Round 1</b></> };
+        case "uf": return { winner: <><b>qualifies</b> to Stage II</>, loser: <>drops to <b>Lower Round 2</b></> };
+        case "lr1": return { winner: <>goes to <b>Lower Round 2</b></>, loser: PEM_STAGE1_ELIMINATED_TEXT };
+        case "lr2": return { winner: <><b>qualifies</b> to Stage II</>, loser: PEM_STAGE1_ELIMINATED_TEXT };
+        default: return { winner: null, loser: null };
+    }
+};
+
+const buildPemStage1Teams = (pemSeries) => buildPemMainEventTeams(pemSeries).slice(PEM_BIG_STAGE2_AUTO_COUNT);
+
+const buildPemBigStage2Teams = (pemSeries, stage1) => {
+    const stage1Order = new Map(buildPemStage1Teams(pemSeries).map((team, index) => [team.id, index]));
+    const qualified = PEM_MAIN_GROUPS
+        .flatMap((group) => getPemStage1GroupQualifiers(stage1?.[group]))
+        .sort((a, b) => (stage1Order.get(a.id) ?? 99) - (stage1Order.get(b.id) ?? 99));
+    return [...(pemSeries?.seeds?.mainEvent || []).slice(0, PEM_BIG_STAGE2_AUTO_COUNT), ...qualified].map(toBaseTeam);
 };
 
 const PEM_GROUP_CONNECTOR_LINKS = (() => {
@@ -4626,6 +4940,7 @@ const QualifierBadge = ({ height = 30, color = "#2e2f42", textColor = "#ffffff",
 
 const StickyBelow = ({ anchor, style, children }) => {
     const ref = useRef(null);
+    const joinedRef = useRef(false);
     const [layout, setLayout] = useState({ top: null, reach: 0, stuck: false });
 
     useLayoutEffect(() => {
@@ -4640,7 +4955,8 @@ const StickyBelow = ({ anchor, style, children }) => {
             const stuck = !!rect && rect.top <= top + 1 && rect.bottom > top + 1;
 
             if (stuck) element.setAttribute("data-joined", "true");
-            else element.removeAttribute("data-joined");
+            else if (joinedRef.current) element.removeAttribute("data-joined");
+            joinedRef.current = stuck;
 
             setLayout((prev) => (
                 prev.top === top && prev.reach === reach && prev.stuck === stuck ? prev : { top, reach, stuck }
@@ -4658,7 +4974,8 @@ const StickyBelow = ({ anchor, style, children }) => {
             observer?.disconnect();
             window.removeEventListener("resize", measure);
             window.removeEventListener("scroll", measure);
-            element.removeAttribute("data-joined");
+            if (joinedRef.current) element.removeAttribute("data-joined");
+            joinedRef.current = false;
         };
     }, [anchor]);
 
@@ -4783,6 +5100,62 @@ const PemGroupBracketLayout = ({ bracket, renderMatch }) => {
     );
 };
 
+const PemStage1BracketLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{PEM_STAGE1_STAGE_LABELS[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={css.pem_stage1_bracket}>
+            <BracketConnectors links={PEM_STAGE1_CONNECTOR_LINKS} />
+
+            {column("uo", css.columnRo16)}
+            {column("uf", css.columnGrandFinal)}
+
+            {column("lr1", css.columnGrandFinal)}
+            {column("lr2", css.columnGrandFinal)}
+        </div>
+    );
+};
+
+const EclBracketLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass, style = null) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none", ...style }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{ECL_COLUMN_TITLES[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={css.ecl_bracket}>
+            <BracketConnectors links={ECL_CONNECTOR_LINKS} />
+
+            {column("gf", css.columnGrandFinal, { gridColumn: 7, gridRow: "1 / span 2" })}
+
+            {column("uo", css.columnRo16)}
+            {column("uqf", css.columnQuarters)}
+            <div />
+            {column("usf", css.columnSemis)}
+            <div />
+            {column("uf", css.columnGrandFinal)}
+
+            {column("lr1", css.columnRo16)}
+            {column("lr2", css.columnRo16)}
+            {column("lr3", css.columnQuarters)}
+            {column("lsf", css.columnQuarters)}
+            {column("lf", css.columnGrandFinal)}
+            {column("cf", css.columnGrandFinal)}
+        </div>
+    );
+};
+
 const PemPlayoffsLayout = ({ bracket, renderMatch }) => (
     <div className={css.bracket_container} style={{ transition: "none", height: "max-content" }}>
         <div className={css.bracket_inner} style={{ position: "relative", transition: "none" }}>
@@ -4828,6 +5201,7 @@ const EMPTY_TEAM_PLACINGS = {
     seconds: 0,
     thirds: 0,
     tier1Wins: 0,
+    pemBigWins: 0,
     tier1Seconds: 0,
     tier1Thirds: 0,
     tier2Wins: 0,
@@ -4861,6 +5235,7 @@ const loadTeamPlacings = (teams) => {
                 seconds: Math.max(0, Number(v.seconds) || 0),
                 thirds: Math.max(0, Number(v.thirds) || 0),
                 tier1Wins: Math.max(0, Number(v.tier1Wins) || 0),
+                pemBigWins: Math.max(0, Number(v.pemBigWins) || 0),
                 tier1Seconds: Math.max(0, Number(v.tier1Seconds) || 0),
                 tier1Thirds: Math.max(0, Number(v.tier1Thirds) || 0),
                 tier2Wins: Math.max(0, Number(v.tier2Wins) || 0),
@@ -4900,11 +5275,27 @@ const PemSilverTrophy = ({ style, ...props }) => (
     />
 );
 
+const PemGoldTrophy = ({ style, ...props }) => (
+    <PemTrophyIcon
+        color={PEM_TROPHY_GOLD}
+        style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
+        {...props}
+    />
+);
+
+const PemSeriesTrophy = ({ type, ...props }) =>
+    type === PEM_BIG_TYPE_ID ? <PemGoldTrophy {...props} /> : <PemSilverTrophy {...props} />;
+
+const pemTrophyTitle = (type, n) => `${n} from ${getPemSeriesConfig(type).label}${n === 1 ? "" : "s"}`;
+
 const buildPlacingItems = (p, trophyIcon, tier1TrophyIcon = <PemSilverTrophy />) => {
     const items = [];
     if ((p?.wins ?? 0) > 0) items.push({ key: "wins", icon: trophyIcon, value: p.wins, title: null });
+    if ((p?.pemBigWins ?? 0) > 0) {
+        items.push({ key: "pemBigWins", icon: <PemGoldTrophy />, value: p.pemBigWins, title: pemTrophyTitle(PEM_BIG_TYPE_ID, p.pemBigWins) });
+    }
     if ((p?.tier1Wins ?? 0) > 0) {
-        items.push({ key: "tier1Wins", icon: tier1TrophyIcon, value: p.tier1Wins, title: medalBreakdownText(0, p.tier1Wins, 0) });
+        items.push({ key: "tier1Wins", icon: tier1TrophyIcon, value: p.tier1Wins, title: pemTrophyTitle(PEM_SMALL_TYPE_ID, p.tier1Wins) });
     }
     if ((p?.tier2Wins ?? 0) > 0) {
         items.push({ key: "tier2Wins", icon: "🥇", value: p.tier2Wins, title: medalBreakdownText(0, 0, p.tier2Wins) });
@@ -6672,6 +7063,22 @@ const buildExtendedRoundWinnerList = (extendedRounds) => {
         { label: "Triple OT", winner: findOt(3) },
         { label: "Quadruple OT", winner: findOt(4) },
     ];
+};
+
+const getBo1Tiebreak = (history) => {
+    if (!history?.extendedRounds || history.wins !== history.losses) return null;
+
+    const { penalties } = history.extendedRounds;
+    if (penalties) return { type: "Pens", left: penalties.leftScore, right: penalties.rightScore };
+
+    let left = 0;
+    let right = 0;
+    buildExtendedRoundWinnerList(history.extendedRounds).forEach(({ winner }) => {
+        if (winner === "left") left++;
+        else if (winner === "right") right++;
+    });
+
+    return left || right ? { type: "ERs", left, right } : null;
 };
 
 const MatchRect = ({
@@ -8713,7 +9120,7 @@ function SpecialModePage() {
     const [stage3, setStage3] = useState(null);
     const [playoffs, setPlayoffs] = useState(null);
 
-    const [pemSmall, setPemSmall] = useState(null);
+    const [pemSeries, setPemSeries] = useState(null);
     const [qualifier, setQualifier] = useState(null);
     const [qualifierGroupView, setQualifierGroupView] = useState("A");
     const qualifierRef = useRef(qualifier);
@@ -8731,8 +9138,24 @@ function SpecialModePage() {
         cstRef.current = cst;
     }, [cst]);
 
-    const isCstPhase = pemSmall?.event === "cst" && !!cst;
+    const isCstPhase = pemSeries?.event === "cst" && !!cst;
     const isCstPlayoffs = isCstPhase && playoffs?.kind === "cst";
+
+    const [ecl, setEcl] = useState(null);
+    const eclRef = useRef(ecl);
+
+    useEffect(() => {
+        eclRef.current = ecl;
+    }, [ecl]);
+
+    const isEclPhase = pemSeries?.event === "ecl" && !!ecl;
+
+    const [pemStage1, setPemStage1] = useState(null);
+    const pemStage1Ref = useRef(pemStage1);
+
+    useEffect(() => {
+        pemStage1Ref.current = pemStage1;
+    }, [pemStage1]);
 
     const [pemMain, setPemMain] = useState(null);
     const [pemGroupView, setPemGroupView] = useState("A");
@@ -8742,8 +9165,12 @@ function SpecialModePage() {
         pemMainRef.current = pemMain;
     }, [pemMain]);
 
-    const isPemMainPhase = pemSmall?.event === "main" && !!pemMain;
-    const isPemPlayoffs = isPemMainPhase && playoffs?.kind === "pem";
+    const pemType = pemSeries?.type ?? PEM_SMALL_TYPE_ID;
+    const pemConfig = getPemSeriesConfig(pemType);
+    const isPemBigSeries = !!pemSeries && pemType === PEM_BIG_TYPE_ID;
+
+    const isPemMainPhase = pemSeries?.event === "main" && (!!pemMain || !!pemStage1);
+    const isPemPlayoffs = isPemMainPhase && isPemPlayoffsKind(playoffs?.kind);
 
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
     const [modalContext, setModalContext] = useState(null);
@@ -8819,6 +9246,7 @@ function SpecialModePage() {
     const [hallOfFame, setHallOfFame] = useState([]);
     const [selectedHallTournament, setSelectedHallTournament] = useState(null);
     const [hallQualifierGroup, setHallQualifierGroup] = useState("A");
+    const [hallStage1Group, setHallStage1Group] = useState("A");
     const [hallPendingScroll, setHallPendingScroll] = useState(null);
     const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
     const statsSnapshotRef = useRef(loadStatsSnapshot());
@@ -8965,7 +9393,6 @@ function SpecialModePage() {
     const [placingsAdminCode, setPlacingsAdminCode] = useState("");
 
     const [tournamentNumber, setTournamentNumber] = useState(() => loadTournamentNumber());
-    const [lastFinalizedTournament, setLastFinalizedTournament] = useState(loadLastFinalizedTournament);
 
     useEffect(() => {
         saveStatsPanelMemory(statsPanelMemory);
@@ -9360,15 +9787,27 @@ function SpecialModePage() {
             return arr.find((m) => m.id === modalContext.matchId) || null;
         }
 
+        if (modalContext.type === "ecl") {
+            const arr = ecl?.[modalContext.stage] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
+        if (modalContext.type === "pemStage1") {
+            const arr = pemStage1?.[modalContext.group]?.[modalContext.stage] || [];
+            return arr.find((m) => m.id === modalContext.matchId) || null;
+        }
+
         return null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalContext, stage1, stage2, stage3, playoffs, qualifier, cst, pemMain, selectedHallMatch]);
+    }, [modalContext, stage1, stage2, stage3, playoffs, qualifier, cst, ecl, pemStage1, pemMain, selectedHallMatch]);
 
     const modalBestOf = useMemo(() => {
         if (!modalContext) return null;
         if (modalContext.type === "swiss") return getBestOfForSwissNet(modalContext.net, modalContext.stageKey);
         if (modalContext.type === "qualifier") return getBestOfForQualifier(modalContext.stage);
         if (modalContext.type === "pemGroup") return getBestOfForPemGroup(modalContext.stage);
+        if (modalContext.type === "ecl") return getBestOfForEcl(modalContext.stage);
+        if (modalContext.type === "pemStage1") return getBestOfForPemStage1(modalContext.stage);
         if (modalContext.type === "cstGroup") return 1;
         return getBestOfForPlayoffs(modalContext.stage, modalContext.kind);
     }, [modalContext]);
@@ -9816,13 +10255,18 @@ function SpecialModePage() {
             setStage3(parsed.stage3 ?? null);
             setPlayoffs(parsed.playoffs ?? null);
 
-            const isLegacyPemMainPlaceholder = parsed.pemSmall?.event === "main" && !parsed.pemMain;
-            setPemSmall(isLegacyPemMainPlaceholder ? { ...parsed.pemSmall, event: "cst" } : parsed.pemSmall ?? null);
+            const savedPemSeries = parsed.pemSeries ?? parsed.pemSmall ?? null;
+            const isLegacyPemMainPlaceholder = savedPemSeries?.event === "main" && !parsed.pemMain && !parsed.pemStage1;
+            setPemSeries(isLegacyPemMainPlaceholder ? { ...savedPemSeries, event: "cst" } : savedPemSeries);
             setQualifier(parsed.qualifier ?? null);
             qualifierRef.current = parsed.qualifier ?? null;
             setQualifierGroupView(QUALIFIER_GROUPS.includes(parsed.qualifierGroupView) ? parsed.qualifierGroupView : "A");
             setCst(parsed.cst ?? null);
             cstRef.current = parsed.cst ?? null;
+            setEcl(parsed.ecl ?? null);
+            eclRef.current = parsed.ecl ?? null;
+            setPemStage1(parsed.pemStage1 ?? null);
+            pemStage1Ref.current = parsed.pemStage1 ?? null;
             setPemMain(parsed.pemMain ?? null);
             pemMainRef.current = parsed.pemMain ?? null;
             setPemGroupView(PEM_MAIN_GROUPS.includes(parsed.pemGroupView) ? parsed.pemGroupView : "A");
@@ -9869,10 +10313,12 @@ function SpecialModePage() {
             stage2,
             stage3,
             playoffs,
-            pemSmall,
+            pemSeries,
             qualifier,
             qualifierGroupView,
             cst,
+            ecl,
+            pemStage1,
             pemMain,
             pemGroupView,
             seriesState,
@@ -9910,10 +10356,12 @@ function SpecialModePage() {
         stage2,
         stage3,
         playoffs,
-        pemSmall,
+        pemSeries,
         qualifier,
         qualifierGroupView,
         cst,
+        ecl,
+        pemStage1,
         pemMain,
         pemGroupView,
         seriesState,
@@ -9961,18 +10409,20 @@ function SpecialModePage() {
         </>
     ), [tournamentNumber, tournamentTheme]);
 
-    const pemSmallEdition = pemSmall?.edition ?? (tournamentNumbers?.[PEM_SMALL_TYPE_ID] ?? 0);
+    const pemEdition = pemSeries?.edition ?? (tournamentNumbers?.[pemType] ?? 0);
 
-    const pemSmallLabel = useMemo(() => (
+    const pemLabel = useMemo(() => (
         <>
-            PEM Small Tournament{" "}
-            <span style={getTournamentNumberStyle(getTournamentTheme(pemSmallEdition))}>
-                #{pemSmallEdition}
+            {pemConfig.label}{" "}
+            <span style={getTournamentNumberStyle(getTournamentTheme(pemEdition))}>
+                #{pemEdition}
             </span>
         </>
-    ), [pemSmallEdition]);
+    ), [pemEdition, pemConfig.label]);
 
-    const cstNumber = pemSmall?.cstNumber ?? (tournamentNumbers?.[CST_TYPE_ID] ?? 0);
+    const pemStatsKey = `${pemConfig.statsKeyPrefix}${pemEdition}`;
+
+    const cstNumber = pemSeries?.cstNumber ?? (tournamentNumbers?.[CST_TYPE_ID] ?? 0);
 
     const cstLabel = useMemo(() => (
         <>
@@ -9983,7 +10433,18 @@ function SpecialModePage() {
         </>
     ), [cstNumber]);
 
-    const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = pemSmallLabel, gap = 6 } = {}) => (
+    const eclNumber = pemSeries?.eclNumber ?? (tournamentNumbers?.[ECL_TYPE_ID] ?? 0);
+
+    const eclLabel = useMemo(() => (
+        <>
+            Elite Competition League{" "}
+            <span style={getTournamentNumberStyle(getTournamentTheme(eclNumber))}>
+                #{eclNumber}
+            </span>
+        </>
+    ), [eclNumber]);
+
+    const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = pemLabel, gap = 6 } = {}) => (
         <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
             <QualifierBadge height={badgeHeight} />
             <span>{label}</span>
@@ -10079,7 +10540,7 @@ function SpecialModePage() {
         });
     };
 
-    const renderTournamentLabelFor = (typeId, number, { highlightName = true } = {}) => {
+    const renderTournamentLabelFor = (typeId, number, { highlightName = true, qualifier = false } = {}) => {
         const config = getTournamentTypeConfig(typeId);
         const highlight = highlightName && config.highlightCard;
         return (
@@ -10090,7 +10551,7 @@ function SpecialModePage() {
                         color: highlight ? "rgba(255, 215, 0, 0.9)" : "",
                     }}
                 >
-                    {config.label}
+                    {config.label}{qualifier ? " Qualifier" : ""}
                 </span>{" "}
                 <span style={getTournamentNumberStyle(getTournamentTheme(number))}>
                     #{number}
@@ -10099,12 +10560,22 @@ function SpecialModePage() {
         );
     };
 
-    const leaderboardTitleTournament = lastFinalizedTournament !== undefined
-        ? lastFinalizedTournament
-        : (() => {
-            const number = showIntro ? tournamentNumber : tournamentNumber - 1;
-            return number >= 1 ? { type: ACTIVE_TOURNAMENT_TYPE, number } : null;
-        })();
+    const finishedTournamentRef = tournamentResults
+        ? normalizeTournamentRef(tournamentResults.tournament)
+        : null;
+    const finishedIsQualifier = tournamentResults?.kind === "pemQualifier";
+    const isFinishedTournamentRecord = (record) =>
+        !!finishedTournamentRef &&
+        record.type === finishedTournamentRef.type &&
+        record.number === finishedTournamentRef.number &&
+        (record.event === "qualifier") === finishedIsQualifier;
+    const latestHallTournament = hallOfFame.find((record) => pickemSummarySeen || !isFinishedTournamentRecord(record));
+
+    const leaderboardTitleTournament = finishedTournamentRef && pickemSummarySeen
+        ? { ...finishedTournamentRef, qualifier: finishedIsQualifier }
+        : latestHallTournament
+            ? { type: latestHallTournament.type, number: latestHallTournament.number, qualifier: latestHallTournament.event === "qualifier" }
+            : null;
 
     const hallTeamById = (id) => allTeams.find((team) => team.id === id) || null;
 
@@ -10588,12 +11059,14 @@ function SpecialModePage() {
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
         if (!tournamentResults) {
-            if (pemSmall?.event === "cst") {
+            if (pemSeries?.event === "cst") {
                 setTypeNumber(CST_TYPE_ID, Math.max(0, getTypeNumber(CST_TYPE_ID) - 1));
-            } else if (pemSmall?.event === "main") {
+            } else if (pemSeries?.event === "ecl") {
+                setTypeNumber(ECL_TYPE_ID, Math.max(0, getTypeNumber(ECL_TYPE_ID) - 1));
+            } else if (pemSeries?.event === "main") {
                 // ignore
-            } else if (pemSmall) {
-                setTypeNumber(PEM_SMALL_TYPE_ID, Math.max(0, getTypeNumber(PEM_SMALL_TYPE_ID) - 1));
+            } else if (pemSeries) {
+                setTypeNumber(pemType, Math.max(0, getTypeNumber(pemType) - 1));
             } else {
                 setTournamentNumber((prev) => {
                     const next = Math.max(0, prev - 1);
@@ -10601,11 +11074,6 @@ function SpecialModePage() {
                     return next;
                 });
             }
-        } else {
-            const finalized = normalizeTournamentRef(tournamentResults.tournament)
-                ?? { type: currentTournamentType, number: tournamentNumber };
-            setLastFinalizedTournament(finalized);
-            saveLastFinalizedTournament(finalized);
         }
 
         tournamentSeedsRef.current = null;
@@ -10638,10 +11106,14 @@ function SpecialModePage() {
         setStage3(null);
         setPlayoffs(null);
 
-        setPemSmall(null);
+        setPemSeries(null);
         setQualifier(null);
         setCst(null);
         cstRef.current = null;
+        setEcl(null);
+        eclRef.current = null;
+        setPemStage1(null);
+        pemStage1Ref.current = null;
         qualifierRef.current = null;
         setQualifierGroupView("A");
         setPemMain(null);
@@ -10724,10 +11196,14 @@ function SpecialModePage() {
         setStage3(null);
         setPlayoffs(null);
 
-        setPemSmall(null);
+        setPemSeries(null);
         setQualifier(null);
         setCst(null);
         cstRef.current = null;
+        setEcl(null);
+        eclRef.current = null;
+        setPemStage1(null);
+        pemStage1Ref.current = null;
         qualifierRef.current = null;
         setQualifierGroupView("A");
         setPemMain(null);
@@ -10802,9 +11278,6 @@ function SpecialModePage() {
 
         setTournamentNumbers({});
         saveTournamentNumbers({});
-
-        setLastFinalizedTournament(null);
-        saveLastFinalizedTournament(null);
 
         const seeded = classifyTeamsForStages(allTeams, defaults);
 
@@ -11293,17 +11766,23 @@ function SpecialModePage() {
         teamStatsRef.current = statsWithFreshExperience;
         saveTeamStats(statsWithFreshExperience);
 
-        if (nextTournamentType === PEM_SMALL_TYPE_ID) {
-            const edition = getTypeNumber(PEM_SMALL_TYPE_ID) + 1;
-            setTypeNumber(PEM_SMALL_TYPE_ID, edition);
+        if (isPemSeriesType(nextTournamentType)) {
+            const edition = getTypeNumber(nextTournamentType) + 1;
+            setTypeNumber(nextTournamentType, edition);
 
-            const seeds = buildPemSmallSeeds(allTeams, teamRatingsRef.current);
+            const seeds = buildPemSeeds(allTeams, teamRatingsRef.current, nextTournamentType);
             const groups = splitQualifierGroups(seeds.qualifier);
             const builtQualifier = buildQualifier(groups);
 
-            setPemSmall({ edition, seeds, groups, event: "qualifier", qualified: [] });
+            setPemSeries({ type: nextTournamentType, edition, seeds, groups, event: "qualifier", qualified: [] });
             setQualifier(builtQualifier);
             qualifierRef.current = builtQualifier;
+            setCst(null);
+            cstRef.current = null;
+            setEcl(null);
+            eclRef.current = null;
+            setPemStage1(null);
+            pemStage1Ref.current = null;
             setPemMain(null);
             pemMainRef.current = null;
             setPemGroupView("A");
@@ -11314,10 +11793,14 @@ function SpecialModePage() {
         } else {
             tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
 
-            setPemSmall(null);
+            setPemSeries(null);
             setQualifier(null);
             setCst(null);
             cstRef.current = null;
+            setEcl(null);
+            eclRef.current = null;
+            setPemStage1(null);
+            pemStage1Ref.current = null;
             qualifierRef.current = null;
             setPemMain(null);
             pemMainRef.current = null;
@@ -11432,9 +11915,11 @@ function SpecialModePage() {
         if (!match.played || !match.pickTeamId) return 0;
         const baseMap = match.cst
             ? CST_PLAYOFFS_BEST_OF
-            : match.pem
-                ? PEM_PLAYOFFS_BEST_OF
-                : { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+            : match.pemBig
+                ? PEM_BIG_PLAYOFFS_BEST_OF
+                : match.pem
+                    ? PEM_PLAYOFFS_BEST_OF
+                    : { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
         const base = baseMap[match.stage] ?? 0;
 
         if (match.winnerTeamId === match.pickTeamId) return base;
@@ -11478,7 +11963,13 @@ function SpecialModePage() {
         }
     };
 
-    const recomputePickemTotals = (qualifierOverride = undefined, cstOverride = undefined, pemMainOverride = undefined, playoffsOverride = undefined) => {
+    const recomputePickemTotals = (
+        qualifierOverride = undefined,
+        cstOverride = undefined,
+        pemMainOverride = undefined,
+        playoffsOverride = undefined,
+        { ecl: eclOverride = undefined, pemStage1: pemStage1Override = undefined } = {}
+    ) => {
         let total = 0;
         const nextCounts = {
             stage1: 0,
@@ -11498,6 +11989,12 @@ function SpecialModePage() {
             nextCounts[`cst_${group}`] = 0;
         });
         PEM_GROUP_PICKEM_ROUNDS.forEach(({ key }) => {
+            nextCounts[key] = 0;
+        });
+        ECL_PICKEM_ROUNDS.forEach(({ key }) => {
+            nextCounts[key] = 0;
+        });
+        PEM_STAGE1_PICKEM_ROUNDS.forEach(({ key }) => {
             nextCounts[key] = 0;
         });
 
@@ -11573,13 +12070,28 @@ function SpecialModePage() {
             });
         };
 
+        const applyBracketMatches = (matches, pointsOf, countPrefix) => {
+            matches.forEach((m) => {
+                if (!m.played || !m.pickTeamId) return;
+                const points = pointsOf(m);
+                total += points;
+                if (m.winnerTeamId === m.pickTeamId) {
+                    nextCounts[`${countPrefix}_${m.stage}`] += 1;
+                    nextCounts.correct += points;
+                }
+            });
+        };
+
         const currentPlayoffs = playoffsOverride ?? playoffs;
 
         if (activePhase === "qualifier" || qualifierOverride) {
             applyQualifier(qualifierOverride ?? qualifier);
-        } else if (pemMainOverride || isPemMainPhase) {
+        } else if (pemMainOverride || pemStage1Override || isPemMainPhase) {
+            applyBracketMatches(getPemStage1Matches(pemStage1Override ?? pemStage1), pemStage1MatchPoints, "ps1");
             applyPemGroups(pemMainOverride ?? pemMain);
-            if (currentPlayoffs?.kind === "pem") applyPlayoffs(currentPlayoffs);
+            if (isPemPlayoffsKind(currentPlayoffs?.kind)) applyPlayoffs(currentPlayoffs);
+        } else if (eclOverride || isEclPhase) {
+            applyBracketMatches(getEclMatches(eclOverride ?? ecl), eclMatchPoints, "ecl");
         } else if (cstOverride || isCstPhase) {
             applyCstGroups(cstOverride ?? cst);
             if (playoffs?.kind === "cst") applyPlayoffs(playoffs);
@@ -11715,6 +12227,64 @@ function SpecialModePage() {
             group,
             stage,
             matchId: match.id || `hall-pem${group}-${stage}-${index}`,
+            readOnly: true,
+            isArchivedHallOfFame: true,
+            pemType: record?.type ?? PEM_SMALL_TYPE_ID,
+        });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openEclMatchModal = (_group, stage, matchId, readOnly = false) => {
+        const match = (ecl?.[stage] || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type: "ecl", stage, matchId, readOnly });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openArchivedEclMatchModal = (record, _group, stage, index, match) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, stage, index, match });
+        setModalContext({
+            type: "ecl",
+            stage,
+            matchId: match.id || `hall-ecl-${stage}-${index}`,
+            readOnly: true,
+            isArchivedHallOfFame: true,
+        });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openPemStage1MatchModal = (group, stage, matchId, readOnly = false) => {
+        const match = (pemStage1?.[group]?.[stage] || []).find((m) => m.id === matchId);
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type: "pemStage1", group, stage, matchId, readOnly });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openArchivedPemStage1MatchModal = (record, group, stage, index, match) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, group, stage, index, match });
+        setModalContext({
+            type: "pemStage1",
+            group,
+            stage,
+            matchId: match.id || `hall-ps1${group}-${stage}-${index}`,
             readOnly: true,
             isArchivedHallOfFame: true,
         });
@@ -12001,6 +12571,117 @@ function SpecialModePage() {
             return;
         }
 
+        if (modalContext.type === "ecl") {
+            const { stage, matchId } = modalContext;
+            const bestOf = getBestOfForEcl(stage);
+
+            const stageArr = ecl?.[stage] || [];
+            const eclMatchNumber = Math.max(1, stageArr.findIndex((m) => m.id === matchId) + 1);
+
+            setEcl((prev) => {
+                if (!prev?.[stage]) return prev;
+                const arr = [...prev[stage]];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                const next = { ...prev, [stage]: arr };
+                eclRef.current = next;
+                return next;
+            });
+
+            clearRoundLog();
+
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: "ecl",
+                    eclStage: stage,
+                    eclMatchId: matchId,
+                    eclMatchNumber,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "ecl",
+                        playoffsStage: stage,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
+
+            closeMatchModal();
+            return;
+        }
+
+        if (modalContext.type === "pemStage1") {
+            const { group, stage, matchId } = modalContext;
+            const bestOf = getBestOfForPemStage1(stage);
+
+            const stageArr = pemStage1?.[group]?.[stage] || [];
+            const pemStage1MatchNumber = Math.max(1, stageArr.findIndex((m) => m.id === matchId) + 1);
+
+            setPemStage1((prev) => {
+                if (!prev?.[group]) return prev;
+                const arr = [...(prev[group][stage] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                const next = { ...prev, [group]: { ...prev[group], [stage]: arr } };
+                pemStage1Ref.current = next;
+                return next;
+            });
+
+            clearRoundLog();
+
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: "pemStage1",
+                    pemStage1Group: group,
+                    pemStage1Stage: stage,
+                    pemStage1MatchId: matchId,
+                    pemStage1MatchNumber,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: "pemStage1",
+                        playoffsStage: stage,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
+
+            closeMatchModal();
+            return;
+        }
+
         if (modalContext.type === "playoffs") {
             const { stage, matchId } = modalContext;
             const bestOf = getBestOfForPlayoffs(stage, playoffs?.kind);
@@ -12128,6 +12809,39 @@ function SpecialModePage() {
                 arr[idx] = { ...arr[idx], setHistory: setEntry(arr[idx].setHistory) };
                 const next = { ...prev, [group]: { ...prev[group], [stageKey]: arr } };
                 pemMainRef.current = next;
+                return next;
+            });
+            return;
+        }
+        if (seriesState.phase === "ecl" && seriesState.eclStage && seriesState.eclMatchId) {
+            const stageKey = seriesState.eclStage;
+            const matchId = seriesState.eclMatchId;
+
+            setEcl((prev) => {
+                if (!prev?.[stageKey]) return prev;
+                const arr = [...prev[stageKey]];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], setHistory: setEntry(arr[idx].setHistory) };
+                const next = { ...prev, [stageKey]: arr };
+                eclRef.current = next;
+                return next;
+            });
+            return;
+        }
+        if (seriesState.phase === "pemStage1" && seriesState.pemStage1Group && seriesState.pemStage1Stage && seriesState.pemStage1MatchId) {
+            const group = seriesState.pemStage1Group;
+            const stageKey = seriesState.pemStage1Stage;
+            const matchId = seriesState.pemStage1MatchId;
+
+            setPemStage1((prev) => {
+                if (!prev?.[group]) return prev;
+                const arr = [...(prev[group][stageKey] || [])];
+                const idx = arr.findIndex((m) => m.id === matchId);
+                if (idx < 0) return prev;
+                arr[idx] = { ...arr[idx], setHistory: setEntry(arr[idx].setHistory) };
+                const next = { ...prev, [group]: { ...prev[group], [stageKey]: arr } };
+                pemStage1Ref.current = next;
                 return next;
             });
             return;
@@ -13992,7 +14706,7 @@ function SpecialModePage() {
             teams: allTeams,
             winnerId: winner.id,
             loserId: loser.id,
-            phase: "pemGroup",
+            phase: isPemBigSeries ? "pemBigGroup" : "pemGroup",
             swissStageKey: null,
             swissNet: null,
             playoffsStage: stage,
@@ -14065,7 +14779,7 @@ function SpecialModePage() {
         pemMainRef.current = nextPemMain;
 
         if (isPemGroupStageFinished(nextPemMain)) {
-            const builtPlayoffs = buildPemPlayoffs(nextPemMain);
+            const builtPlayoffs = buildPemPlayoffs(nextPemMain, pemConfig.playoffsKind);
             setPlayoffs(builtPlayoffs);
             setActivePhase("playoffs");
             setViewPhase("playoffs");
@@ -14076,20 +14790,268 @@ function SpecialModePage() {
         recomputePickemTotals(undefined, undefined, nextPemMain);
     };
 
+    const commitBracketMatchResult = ({
+        match,
+        bestOf,
+        phase,
+        stage,
+        leftTeam,
+        rightTeam,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+        bigStage = null,
+    }) => {
+        const m = match;
+        const { scoreLeft, scoreRight } = getCommittedSeriesScore({
+            bestOf,
+            seriesState,
+            matchObj: m,
+            seriesLeftSets,
+            seriesRightSets,
+        });
+
+        m.played = true;
+        m.scoreLeft = scoreLeft;
+        m.scoreRight = scoreRight;
+        m.winnerTeamId = winner.id;
+        m.loserTeamId = loser.id;
+
+        const applied = applyRatings({
+            ratings: teamRatingsRef.current,
+            teams: allTeams,
+            winnerId: winner.id,
+            loserId: loser.id,
+            phase,
+            swissStageKey: null,
+            swissNet: null,
+            playoffsStage: stage,
+            bestOf,
+            loserSetsWon: bestOf === 1 ? 0 : Math.min(scoreLeft, scoreRight),
+            playedAtMs,
+        });
+
+        m.ratingMeta = applied.meta;
+
+        setTeamRatings(applied.nextRatings);
+        teamRatingsRef.current = applied.nextRatings;
+        saveTeamRatings(applied.nextRatings);
+
+        const winnerSideKey = winner.id === leftTeam.id ? "left" : "right";
+        const loserSideKey = otherSide(winnerSideKey);
+
+        let liveStatsAfter =
+            seriesState.liveStats ?? {
+                left: { ...DEFAULT_TEAM_STAT_VALUES },
+                right: { ...DEFAULT_TEAM_STAT_VALUES },
+            };
+
+        if (bigStage?.winner) liveStatsAfter = bumpStat(liveStatsAfter, winnerSideKey, "bigStage", bigStage.winner);
+        if (bigStage?.loser) liveStatsAfter = bumpStat(liveStatsAfter, loserSideKey, "bigStage", bigStage.loser);
+
+        liveStatsAfter = resolveSeriesEndStats({
+            liveStats: liveStatsAfter,
+            winnerSide: winnerSideKey,
+            ctx: seriesState.matchCtx,
+            winnerSets: winnerSideKey === "left" ? seriesLeftSets : seriesRightSets,
+            loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
+        });
+
+        m.statsMeta = {
+            before: {
+                [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
+                [rightTeam.id]: seriesState.initialStats?.right ?? { ...DEFAULT_TEAM_STAT_VALUES },
+            },
+            after: {
+                [leftTeam.id]: liveStatsAfter.left,
+                [rightTeam.id]: liveStatsAfter.right,
+            },
+            statActivation: seriesState.matchCtx?.active
+                ? {
+                    version: STAT_ACTIVATION_VERSION,
+                    byTeam: {
+                        [leftTeam.id]: seriesState.matchCtx.active.left,
+                        [rightTeam.id]: seriesState.matchCtx.active.right,
+                    },
+                }
+                : null,
+            upset: buildStoredUpsetMeta(seriesState.matchCtx?.upset, leftTeam, rightTeam),
+        };
+
+        const nextTeamStats = {
+            ...teamStatsRef.current,
+            [leftTeam.id]: { ...liveStatsAfter.left, momentum: 0 },
+            [rightTeam.id]: { ...liveStatsAfter.right, momentum: 0 },
+        };
+        setTeamStats(nextTeamStats);
+        teamStatsRef.current = nextTeamStats;
+        saveTeamStats(nextTeamStats);
+    };
+
+    const awardPlacings = ({ winsKey, secondsKey, thirdsKey }, { winner, runnerUp, thirdPlace }) => {
+        setTeamPlacings((prev) => {
+            const next = { ...prev };
+
+            const inc = (id, key) => {
+                if (!id) return;
+                const cur = next[id] ?? { ...EMPTY_TEAM_PLACINGS };
+                next[id] = { ...cur, [key]: (cur[key] ?? 0) + 1 };
+            };
+
+            inc(winner?.id, winsKey);
+            inc(runnerUp?.id, secondsKey);
+            inc(thirdPlace?.id, thirdsKey);
+
+            saveTeamPlacings(next);
+            return next;
+        });
+    };
+
+    const commitEclSeries = ({
+        stage,
+        matchId,
+        leftTeam,
+        rightTeam,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+    }) => {
+        const current = eclRef.current;
+        if (!current?.[stage]) return;
+
+        const bracket = copyBracketStages(ECL_STAGE_ORDER, current);
+        const idx = bracket[stage].findIndex((m) => m.id === matchId);
+        if (idx < 0) return;
+
+        const m = { ...bracket[stage][idx] };
+        commitBracketMatchResult({
+            match: m,
+            bestOf: getBestOfForEcl(stage),
+            phase: "ecl",
+            stage,
+            leftTeam,
+            rightTeam,
+            winner,
+            loser,
+            seriesLeftSets,
+            seriesRightSets,
+            playedAtMs,
+            bigStage: ECL_BIG_STAGE_GAINS[stage] ?? null,
+        });
+
+        bracket[stage][idx] = m;
+        advanceBracket(ECL_ROUTES, bracket, stage, idx, winner, loser);
+
+        setEcl(bracket);
+        eclRef.current = bracket;
+
+        recomputePickemTotals(undefined, undefined, undefined, undefined, { ecl: bracket });
+
+        if (stage === "gf") finishEcl(bracket);
+    };
+
+    const finishEcl = (finishedEcl) => {
+        const results = getEclResults(finishedEcl);
+
+        setTournamentResults({
+            kind: "ecl",
+            ...results,
+            tournament: { type: ECL_TYPE_ID, number: eclNumber },
+        });
+        saveFinishedEclToHallOfFame(finishedEcl, results);
+        awardPlacings({ winsKey: "tier2Wins", secondsKey: "tier2Seconds", thirdsKey: "tier2Thirds" }, results);
+
+        setShowWinnersScreen(true);
+        ratingsSnapshotRef.current = null;
+        clearRatingsSnapshot();
+        statsSnapshotRef.current = null;
+        clearStatsSnapshot();
+    };
+
+    const commitPemStage1Series = ({
+        group,
+        stage,
+        matchId,
+        leftTeam,
+        rightTeam,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+    }) => {
+        const current = pemStage1Ref.current;
+        const groupBracket = current?.[group];
+        if (!groupBracket?.[stage]) return;
+
+        const bracket = copyBracketStages(PEM_STAGE1_STAGE_ORDER, groupBracket);
+        const idx = bracket[stage].findIndex((m) => m.id === matchId);
+        if (idx < 0) return;
+
+        const m = { ...bracket[stage][idx] };
+        commitBracketMatchResult({
+            match: m,
+            bestOf: getBestOfForPemStage1(stage),
+            phase: "pemStage1",
+            stage,
+            leftTeam,
+            rightTeam,
+            winner,
+            loser,
+            seriesLeftSets,
+            seriesRightSets,
+            playedAtMs,
+            bigStage: PEM_STAGE1_QUALIFYING_STAGES.includes(stage) ? { winner: 3 } : null,
+        });
+
+        bracket[stage][idx] = m;
+        advancePemStage1Bracket(bracket, stage, idx, winner, loser);
+
+        const nextStage1 = { ...current, [group]: bracket };
+        setPemStage1(nextStage1);
+        pemStage1Ref.current = nextStage1;
+
+        if (isPemStage1Finished(nextStage1)) {
+            const builtPemMain = startPemBigStage2(nextStage1);
+            recomputePickemTotals(undefined, undefined, builtPemMain, undefined, { pemStage1: nextStage1 });
+            return;
+        }
+
+        recomputePickemTotals(undefined, undefined, undefined, undefined, { pemStage1: nextStage1 });
+    };
+
+    const startPemBigStage2 = (finishedStage1) => {
+        const groups = splitQualifierGroups(buildPemBigStage2Teams(pemSeries, finishedStage1));
+        const builtPemMain = buildPemMainGroupStage(groups);
+
+        setPemMain(builtPemMain);
+        pemMainRef.current = builtPemMain;
+        setPemGroupView("A");
+        setPemSeries((prev) => (prev ? { ...prev, mainGroups: groups } : prev));
+        setActivePhase("pemGroups");
+        setViewPhase("pemGroups");
+
+        return builtPemMain;
+    };
+
 
     const finishQualifier = (finishedQualifier) => {
         const qualifiers = Object.fromEntries(
             QUALIFIER_GROUPS.map((group) => [group, getQualifierGroupQualifiers(finishedQualifier[group])])
         );
-        const edition = pemSmall?.edition ?? getTypeNumber(PEM_SMALL_TYPE_ID);
+        const edition = pemSeries?.edition ?? getTypeNumber(pemType);
 
         setTournamentResults({
             kind: "pemQualifier",
             qualifiers,
-            tournament: { type: PEM_SMALL_TYPE_ID, number: edition },
+            tournament: { type: pemType, number: edition },
         });
 
-        setPemSmall((prev) => (prev
+        setPemSeries((prev) => (prev
             ? { ...prev, qualified: QUALIFIER_GROUPS.flatMap((group) => qualifiers[group]).map(toBaseTeam) }
             : prev));
 
@@ -14200,6 +15162,39 @@ function SpecialModePage() {
                 setSeriesState(defaultSeriesState);
                 return;
             }
+            if (phase === "ecl") {
+                commitEclSeries({
+                    stage: seriesState.eclStage,
+                    matchId: seriesState.eclMatchId,
+                    leftTeam,
+                    rightTeam,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
+            if (phase === "pemStage1") {
+                commitPemStage1Series({
+                    group: seriesState.pemStage1Group,
+                    stage: seriesState.pemStage1Stage,
+                    matchId: seriesState.pemStage1MatchId,
+                    leftTeam,
+                    rightTeam,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
             if (phase === "playoffs") {
                 setPlayoffs((prev) => {
                     if (!prev) return prev;
@@ -14219,7 +15214,8 @@ function SpecialModePage() {
 
                     const m = { ...arr[idx] };
                     const isCstBracket = prev.kind === "cst";
-                    const isPemBracket = prev.kind === "pem";
+                    const isPemBracket = isPemPlayoffsKind(prev.kind);
+                    const isPemBigBracket = prev.kind === "pemBig";
                     const bigStageScale = isCstBracket ? CST_BIG_STAGE_SCALE : 1;
                     const bigStageBump = (value) => Math.round(value * bigStageScale);
                     const bestOf = getBestOfForPlayoffs(playoffsStage, prev.kind);
@@ -14243,7 +15239,13 @@ function SpecialModePage() {
                         teams: allTeams,
                         winnerId: winner.id,
                         loserId: loser.id,
-                        phase: isCstBracket ? "cstPlayoffs" : isPemBracket ? "pemPlayoffs" : "playoffs",
+                        phase: isCstBracket
+                            ? "cstPlayoffs"
+                            : isPemBigBracket
+                                ? "pemBigPlayoffs"
+                                : isPemBracket
+                                    ? "pemPlayoffs"
+                                    : "playoffs",
                         swissStageKey: null,
                         swissNet: null,
                         playoffsStage,
@@ -14268,12 +15270,7 @@ function SpecialModePage() {
                         };
 
                     if (isPemBracket) {
-                        const pemBigStage = {
-                            qf: { winner: 4 },
-                            sf: { winner: 4 },
-                            thirdPlace: { winner: 5, loser: 4 },
-                            gf: { winner: 7, loser: 6 },
-                        }[playoffsStage] ?? {};
+                        const pemBigStage = (isPemBigBracket ? PEM_BIG_PLAYOFFS_BIG_STAGE : PEM_PLAYOFFS_BIG_STAGE)[playoffsStage] ?? {};
 
                         if (pemBigStage.winner) {
                             liveStatsAfterBigStage = bumpStat(liveStatsAfterBigStage, winnerSideKey, "bigStage", pemBigStage.winner);
@@ -14418,7 +15415,7 @@ function SpecialModePage() {
                             setTournamentResults({
                                 kind: "pem",
                                 ...finishedResults,
-                                tournament: { type: PEM_SMALL_TYPE_ID, number: pemSmallEdition },
+                                tournament: { type: pemType, number: pemEdition },
                             });
                             saveFinishedPemMainToHallOfFame(copy, finishedResults);
                         } else {
@@ -14428,23 +15425,14 @@ function SpecialModePage() {
                             });
                             saveFinishedTournamentToHallOfFame(copy, finishedResults);
                         }
-                        setTeamPlacings((prev) => {
-                            const next = { ...prev };
-
-                            const inc = (id, key) => {
-                                if (!id) return;
-                                const cur = next[id] ?? { ...EMPTY_TEAM_PLACINGS };
-                                next[id] = { ...cur, [key]: (cur[key] ?? 0) + 1 };
-                            };
-
-                            const tierPrefix = isCstBracket ? "tier2" : isPemBracket ? "tier1" : null;
-                            inc(winner?.id, tierPrefix ? `${tierPrefix}Wins` : "wins");
-                            inc(loser?.id, tierPrefix ? `${tierPrefix}Seconds` : "seconds");
-                            inc(thirdPlaceWinner?.id, tierPrefix ? `${tierPrefix}Thirds` : "thirds");
-
-                            saveTeamPlacings(next);
-                            return next;
-                        });
+                        awardPlacings(
+                            isCstBracket
+                                ? { winsKey: "tier2Wins", secondsKey: "tier2Seconds", thirdsKey: "tier2Thirds" }
+                                : isPemBracket
+                                    ? { winsKey: pemConfig.winsKey, secondsKey: "tier1Seconds", thirdsKey: "tier1Thirds" }
+                                    : { winsKey: "wins", secondsKey: "seconds", thirdsKey: "thirds" },
+                            finishedResults
+                        );
                         setShowWinnersScreen(true);
                         ratingsSnapshotRef.current = null;
                         clearRatingsSnapshot();
@@ -14879,8 +15867,8 @@ function SpecialModePage() {
         if (!showWinnersScreen || !tournamentResults) return;
 
         if (tournamentResults.kind === "pemQualifier") {
-            const edition = tournamentResults.tournament?.number ?? pemSmallEdition;
-            const finalText = `The 4 qualifiers of PEM Small Tournament #${edition}:`;
+            const edition = tournamentResults.tournament?.number ?? pemEdition;
+            const finalText = `The 4 qualifiers of ${pemConfig.label} #${edition}:`;
 
             setShowProceed(false);
             setShowPodium(true);
@@ -14907,9 +15895,11 @@ function SpecialModePage() {
 
         const championText = tournamentResults.kind === "cst"
             ? `And the WINNER of Champions Series Tour #${tournamentResults.tournament?.number ?? cstNumber} is:`
-            : tournamentResults.kind === "pem"
-                ? `And the CHAMPION of PEM Small Tournament #${tournamentResults.tournament?.number ?? pemSmallEdition} is:`
-                : `And the CHAMPION of Official #${tournamentNumber} is:`;
+            : tournamentResults.kind === "ecl"
+                ? `And the WINNER of Elite Competition League #${tournamentResults.tournament?.number ?? eclNumber} is:`
+                : tournamentResults.kind === "pem"
+                    ? `And the CHAMPION of ${pemConfig.label} #${tournamentResults.tournament?.number ?? pemEdition} is:`
+                    : `And the CHAMPION of Official #${tournamentNumber} is:`;
 
         setShowProceed(false);
         setShowPodium(true);
@@ -15068,20 +16058,45 @@ function SpecialModePage() {
 
             return qualifierParts;
         }
-        if (isPemMainPhase) {
-            const items = PEM_GROUP_PICKEM_ROUNDS.map(({ key, label, total }) => {
-                const value = guessedCounts?.[key] ?? 0;
-                const isAwful = total >= 4 ? value <= Math.floor(total / 4) : value === 0;
+        const countItem = ({ key, label, total }) => {
+            const value = guessedCounts?.[key] ?? 0;
+            const isAwful = total >= 4 ? value <= Math.floor(total / 4) : value === 0;
 
-                return (
+            return (
+                <>
+                    <span style={{ fontWeight: 900, color: value === total ? green : isAwful ? "red" : undefined }}>
+                        {value}/{total}
+                    </span>{" "}
+                    {label}
+                </>
+            );
+        };
+
+        if (isEclPhase) {
+            const items = ECL_PICKEM_ROUNDS
+                .filter(({ key, total }) => total > 1 || (guessedCounts?.[key] ?? 0) > 0)
+                .map((round) => (round.total > 1
+                    ? countItem(round)
+                    : <span style={{ fontWeight: 900, color: green }}>{round.label}</span>));
+
+            return [
+                <>YOU guessed{" "}</>,
+                ...items.map((node, idx) => (
                     <>
-                        <span style={{ fontWeight: 900, color: value === total ? green : isAwful ? "red" : undefined }}>
-                            {value}/{total}
-                        </span>{" "}
-                        {label}
+                        {idx === items.length - 1 && items.length > 1 ? "and " : ""}
+                        {node}
+                        {idx < items.length - 2 ? ", " : " "}
                     </>
-                );
-            });
+                )),
+            ];
+        }
+        if (isPemMainPhase) {
+            const items = [
+                ...(isPemBigSeries ? PEM_STAGE1_PICKEM_ROUNDS.map(countItem) : []),
+                ...PEM_GROUP_PICKEM_ROUNDS.map((round) =>
+                    countItem(isPemBigSeries ? { ...round, label: `${round.label} of Stage II` } : round)
+                ),
+            ];
 
             const pemRoundDefs = {
                 qf: { total: 2, label: "Quarterfinals", awfulMax: 0 },
@@ -15248,29 +16263,18 @@ function SpecialModePage() {
             </span>
         ));
 
-    const startChampionsSeriesTour = () => {
-        const number = getTypeNumber(CST_TYPE_ID) + 1;
-        setTypeNumber(CST_TYPE_ID, number);
-
-        const groups = splitCstGroups(pemSmall?.seeds?.cst || []);
-        const builtCst = buildCstGroupStage(groups);
-
+    const resetBattleExperienceForNextEvent = () => {
         const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
         setTeamStats(statsWithFreshExperience);
         teamStatsRef.current = statsWithFreshExperience;
         saveTeamStats(statsWithFreshExperience);
+    };
 
-        setCst(builtCst);
-        cstRef.current = builtCst;
-        setPlayoffs(null);
-        setPemSmall((prev) => (prev ? { ...prev, event: "cst", cstNumber: number, cstGroups: groups } : prev));
-        setActivePhase("cstGroups");
-        setViewPhase("cstGroups");
-
+    const openNextPemEvent = (neededPoints) => {
         setSeriesState(defaultSeriesState);
         clearRoundLog();
 
-        setNeededPickemPoints(getRandomCstNeededPickemPoints());
+        setNeededPickemPoints(neededPoints);
         setFinalPickemPoints(0);
         setGuessedCounts({ stage1: 0, stage2: 0, stage3: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0, correct: 0 });
         setShowPickemSummary(false);
@@ -15291,57 +16295,84 @@ function SpecialModePage() {
         window.scrollTo({ top: 0 });
     };
 
+    const startChampionsSeriesTour = () => {
+        const number = getTypeNumber(CST_TYPE_ID) + 1;
+        setTypeNumber(CST_TYPE_ID, number);
+
+        const groups = splitCstGroups(pemSeries?.seeds?.cst || []);
+        const builtCst = buildCstGroupStage(groups);
+
+        resetBattleExperienceForNextEvent();
+
+        setCst(builtCst);
+        cstRef.current = builtCst;
+        setPlayoffs(null);
+        setPemSeries((prev) => (prev ? { ...prev, event: "cst", cstNumber: number, cstGroups: groups } : prev));
+        setActivePhase("cstGroups");
+        setViewPhase("cstGroups");
+
+        openNextPemEvent(getRandomCstNeededPickemPoints());
+    };
+
+    const startEliteCompetitionLeague = () => {
+        const number = getTypeNumber(ECL_TYPE_ID) + 1;
+        setTypeNumber(ECL_TYPE_ID, number);
+
+        const builtEcl = buildEclBracket(pemSeries?.seeds?.ecl || []);
+
+        resetBattleExperienceForNextEvent();
+
+        setEcl(builtEcl);
+        eclRef.current = builtEcl;
+        setPlayoffs(null);
+        setPemSeries((prev) => (prev ? { ...prev, event: "ecl", eclNumber: number } : prev));
+        setActivePhase("ecl");
+        setViewPhase("ecl");
+
+        openNextPemEvent(getRandomEclNeededPickemPoints());
+    };
+
     const startPemMainEvent = () => {
-        const groups = splitQualifierGroups(buildPemMainEventTeams(pemSmall));
-        const builtPemMain = buildPemMainGroupStage(groups);
-
-        const statsWithFreshExperience = resetBattleExperience(teamStatsRef.current);
-        setTeamStats(statsWithFreshExperience);
-        teamStatsRef.current = statsWithFreshExperience;
-        saveTeamStats(statsWithFreshExperience);
-
-        setPemMain(builtPemMain);
-        pemMainRef.current = builtPemMain;
+        resetBattleExperienceForNextEvent();
         setPemGroupView("A");
         setPlayoffs(null);
-        setPemSmall((prev) => (prev ? { ...prev, event: "main", mainGroups: groups } : prev));
-        setActivePhase("pemGroups");
-        setViewPhase("pemGroups");
 
-        setSeriesState(defaultSeriesState);
-        clearRoundLog();
+        if (isPemBigSeries) {
+            const groups = splitQualifierGroups(buildPemStage1Teams(pemSeries));
+            const builtStage1 = buildPemStage1(groups);
 
-        setNeededPickemPoints(getRandomPemNeededPickemPoints());
-        setFinalPickemPoints(0);
-        setGuessedCounts({ stage1: 0, stage2: 0, stage3: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0, correct: 0 });
-        setShowPickemSummary(false);
-        setShowPickemLine2(false);
-        setShowPickemResult(false);
-        setPickemSummarySeen(false);
+            setPemStage1(builtStage1);
+            pemStage1Ref.current = builtStage1;
+            setPemMain(null);
+            pemMainRef.current = null;
+            setPemSeries((prev) => (prev ? { ...prev, event: "main", stage1Groups: groups } : prev));
+            setActivePhase("pemStage1");
+            setViewPhase("pemStage1");
+        } else {
+            const groups = splitQualifierGroups(buildPemMainEventTeams(pemSeries));
+            const builtPemMain = buildPemMainGroupStage(groups);
 
-        setShowWinnersScreen(false);
-        setTournamentResults(null);
-        setShowWinnerText(false);
-        setShowPodium(false);
-        setShowProceed(false);
-        setHasPlayedWinnerAnimation(false);
-        setWinnersText("And the Fourth Place is:");
+            setPemMain(builtPemMain);
+            pemMainRef.current = builtPemMain;
+            setPemSeries((prev) => (prev ? { ...prev, event: "main", mainGroups: groups } : prev));
+            setActivePhase("pemGroups");
+            setViewPhase("pemGroups");
+        }
 
-        ensureRatingsSnapshot();
-        setShowTournamentIntro(true);
-        window.scrollTo({ top: 0 });
+        openNextPemEvent(getRandomPemNeededPickemPoints(pemType));
     };
 
     const handlePemProceedToNextEvent = () => {
         setShowPickemSummary(false);
         setShowWinnersScreen(false);
 
-        if (pemSmall?.event === "qualifier" || (activePhase === "qualifier" && !cst)) {
-            startChampionsSeriesTour();
+        if (pemSeries?.event === "qualifier" || (activePhase === "qualifier" && !cst && !ecl)) {
+            if (getPemSeriesConfig(pemType).secondEvent === "ecl") startEliteCompetitionLeague();
+            else startChampionsSeriesTour();
             return;
         }
 
-        if (pemSmall?.event === "cst") startPemMainEvent();
+        if (pemSeries?.event === "cst" || pemSeries?.event === "ecl") startPemMainEvent();
     };
 
     const handleProceed = () => {
@@ -15439,7 +16470,7 @@ function SpecialModePage() {
             type: CST_TYPE_ID,
             event: "cst",
             number: cstNumber,
-            pemSmallEdition,
+            pemSmallEdition: pemEdition,
             finishedAt: new Date().toISOString(),
             neededPickemPoints,
             achievedPickemPoints,
@@ -15464,8 +16495,8 @@ function SpecialModePage() {
         setFinalPickemPoints(achievedPickemPoints);
 
         const record = {
-            id: `pem-small-qualifier-${edition}-${Date.now()}`,
-            type: PEM_SMALL_TYPE_ID,
+            id: `${pemConfig.hallIdPrefix}-qualifier-${edition}-${Date.now()}`,
+            type: pemType,
             event: "qualifier",
             number: edition,
             finishedAt: new Date().toISOString(),
@@ -15484,9 +16515,36 @@ function SpecialModePage() {
             .catch((error) => console.error("Couldn't save the Qualifier to Hall of Fame:", error));
     };
 
+    const saveFinishedEclToHallOfFame = (finishedEcl, finishedResults) => {
+        const achievedPickemPoints = getEclMatches(finishedEcl).reduce((sum, match) => sum + eclMatchPoints(match), 0);
+        setFinalPickemPoints(achievedPickemPoints);
+
+        const record = {
+            id: `ecl-${eclNumber}-${Date.now()}`,
+            type: ECL_TYPE_ID,
+            event: "ecl",
+            number: eclNumber,
+            pemBigEdition: pemEdition,
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints,
+            pickemWon: achievedPickemPoints >= neededPickemPoints,
+            results: finishedResults,
+            places: getEclPlaces(finishedEcl).map((team, index) => ({ place: index + 1, team })),
+            teams: (finishedEcl?.teams || []).map(toBaseTeam),
+            bracket: finishedEcl,
+        };
+
+        saveHallTournament(record)
+            .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
+            .catch((error) => console.error("Couldn't save the Elite Competition League to Hall of Fame:", error));
+    };
+
     const saveFinishedPemMainToHallOfFame = (finishedPlayoffs, finishedResults) => {
         const groupStage = pemMainRef.current;
+        const stage1 = isPemBigSeries ? pemStage1Ref.current : null;
         const achievedPickemPoints =
+            getPemStage1Matches(stage1).reduce((sum, match) => sum + pemStage1MatchPoints(match), 0) +
             getPemGroupMatches(groupStage).reduce((sum, match) => sum + pemGroupMatchPoints(match), 0) +
             Object.values(finishedPlayoffs || {})
                 .filter(Array.isArray)
@@ -15504,28 +16562,37 @@ function SpecialModePage() {
         ].filter(Boolean);
 
         const record = {
-            id: `pem-small-${pemSmallEdition}-${Date.now()}`,
-            type: PEM_SMALL_TYPE_ID,
+            id: `${pemConfig.hallIdPrefix}-${pemEdition}-${Date.now()}`,
+            type: pemType,
             event: "main",
-            number: pemSmallEdition,
+            number: pemEdition,
             finishedAt: new Date().toISOString(),
             neededPickemPoints,
             achievedPickemPoints,
             pickemWon: achievedPickemPoints >= neededPickemPoints,
             results: finishedResults,
             places: orderedPlaces.map((team, index) => ({ place: index + 1, team })),
-            teams: buildPemMainEventTeams(pemSmall),
-            qualifiedTeamIds: (pemSmall?.qualified || []).map((team) => team.id),
+            teams: buildPemMainEventTeams(pemSeries),
+            qualifiedTeamIds: (pemSeries?.qualified || []).map((team) => team.id),
             groups: Object.fromEntries(
                 PEM_MAIN_GROUPS.map((group) => [group, (groupStage?.[group]?.teams || []).map(toBaseTeam)])
             ),
             groupStage,
+            ...(stage1
+                ? {
+                    stage1Teams: buildPemStage1Teams(pemSeries),
+                    stage1Groups: Object.fromEntries(
+                        PEM_MAIN_GROUPS.map((group) => [group, (stage1?.[group]?.teams || []).map(toBaseTeam)])
+                    ),
+                    stage1,
+                }
+                : {}),
             playoffs: finishedPlayoffs,
         };
 
         saveHallTournament(record)
             .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
-            .catch((error) => console.error("Couldn't save the PEM Small Tournament to Hall of Fame:", error));
+            .catch((error) => console.error(`Couldn't save the ${pemConfig.label} to Hall of Fame:`, error));
     };
 
     const hallTeamCircle = (team, size = 52, highlighted = false) => (
@@ -15621,17 +16688,17 @@ function SpecialModePage() {
 
     const hallRecordLabel = (item) =>
         item?.event === "qualifier"
-            ? `PEM Small Tournament Qualifier #${item.number}`
+            ? `${getPemSeriesConfig(item.type).label} Qualifier #${item.number}`
             : item?.event === "main"
-                ? `Pro Extreme Masters Small Tournament #${item.number}`
+                ? `${getPemSeriesConfig(item.type).longLabel} #${item.number}`
                 : `${getTournamentTypeConfig(item?.type).label} #${item?.number}`;
 
-    const renderPemHallCardName = (number) => (
+    const renderPemHallCardName = (number, type = PEM_SMALL_TYPE_ID) => (
         <>
             <span style={{ display: "block" }}>Pro</span>
             <span style={{ display: "block" }}>Extreme</span>
             <span style={{ display: "block" }}>Masters</span>
-            <span style={{ fontSize: 44, fontStyle: "normal" }}>Small</span>
+            <span style={{ fontSize: 44, fontStyle: "normal" }}>{getPemSeriesConfig(type).sizeWord}</span>
             <span style={{ display: "block", whiteSpace: "nowrap" }}>
                 <span>Tournament</span>{" "}
                 <span style={getTournamentNumberStyle(getTournamentTheme(number))}>#{number}</span>
@@ -15779,7 +16846,7 @@ function SpecialModePage() {
                         fontSize: 20,
                     }}
                 >
-                    {renderPemHallCardName(item.number)}
+                    {renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div style={{ position: "relative", zIndex: 2, marginTop: 12 }}>
@@ -15815,7 +16882,7 @@ function SpecialModePage() {
         );
     };
 
-    const renderCstHallCard = (item) => {
+    const renderTier2HallCard = (item, [firstWord, secondWord, lastWord]) => {
         const won = item.pickemWon;
         const results = item.results || {};
 
@@ -15880,10 +16947,10 @@ function SpecialModePage() {
                         fontSize: 30,
                     }}
                 >
-                    <span style={{ display: "block" }}>Champions</span>
-                    <span style={{ display: "block" }}>Series</span>
+                    <span style={{ display: "block" }}>{firstWord}</span>
+                    <span style={{ display: "block" }}>{secondWord}</span>
                     <span style={{ display: "block", whiteSpace: "nowrap" }}>
-                        Tour{" "}
+                        {lastWord}{" "}
                         <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
                     </span>
                 </div>
@@ -15957,6 +17024,7 @@ function SpecialModePage() {
                 key={item.id}
                 onClick={() => {
                     setHallQualifierGroup("A");
+                    setHallStage1Group("A");
                     setSelectedHallTournament(item);
                 }}
                 className={won ? css.cardPickemWin : css.cardPickemLoss}
@@ -15997,7 +17065,7 @@ function SpecialModePage() {
                             display: "flex",
                         }}
                     >
-                        <PemSilverTrophy size={28} />
+                        <PemSeriesTrophy type={item.type} size={28} />
                     </span>
                     <span
                         style={{
@@ -16026,7 +17094,7 @@ function SpecialModePage() {
                         fontSize: 20,
                     }}
                 >
-                    {renderPemHallCardName(item.number)}
+                    {renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div
@@ -16089,7 +17157,8 @@ function SpecialModePage() {
 
     const renderHallCard = (item) => {
         if (item.event === "qualifier") return renderQualifierHallCard(item);
-        if (item.event === "cst") return renderCstHallCard(item);
+        if (item.event === "cst") return renderTier2HallCard(item, ["Champions", "Series", "Tour"]);
+        if (item.event === "ecl") return renderTier2HallCard(item, ["Elite", "Competition", "League"]);
         if (item.event === "main") return renderPemMainHallCard(item);
 
         const won = item.pickemWon;
@@ -16871,7 +17940,7 @@ function SpecialModePage() {
             );
         };
 
-        if (bracketKind === "pem") {
+        if (isPemPlayoffsKind(bracketKind)) {
             const pemRectClasses = {
                 qf: css.quarters_rect,
                 sf: css.semis_rect,
@@ -16939,7 +18008,7 @@ function SpecialModePage() {
         const finishedAt = hallRecordTime(record);
         return hallOfFame
             .filter((item) =>
-                item.type === PEM_SMALL_TYPE_ID &&
+                item.type === (record.type ?? PEM_SMALL_TYPE_ID) &&
                 item.event === event &&
                 item.number === record.number &&
                 (event === "main" ? hallRecordTime(item) >= finishedAt : hallRecordTime(item) <= finishedAt)
@@ -16949,6 +18018,7 @@ function SpecialModePage() {
 
     const openLinkedHallRecord = (record, scrollToSection = null) => {
         setHallQualifierGroup("A");
+        setHallStage1Group("A");
         setSelectedHallTournament(record);
         setHallPendingScroll(scrollToSection ?? "top");
     };
@@ -17327,7 +18397,7 @@ function SpecialModePage() {
                         <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
                         {renderCstGroupStage(record.groupStage, { archived: true, record })}
 
-                        <HallOfFameSectionTitle text="Playoffs bracket" marginTop="64px" marginBottom="88px" />
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" marginBottom="88px" />
                         <div>{renderArchivedPlayoffsBracket(record)}</div>
 
                         <HallOfFameSectionTitle text="Podium" marginTop="102px" />
@@ -17349,6 +18419,191 @@ function SpecialModePage() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "ecl") {
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+            const placementColors = {
+                5: "#40e0d0",
+                6: "#ba68c8",
+                7: "#ff5e2d",
+                8: "#81c784",
+                9: "#f9e4a1",
+                10: "#b0bec5",
+            };
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header}>
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span>
+                                    Elite Competition League{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        #{record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams?.length ? record.teams : record.bracket?.teams)}
+
+                        <HallOfFameSectionTitle text="Bracket" marginTop="64px" />
+                        {renderEclBracket(record.bracket, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium)}
+
+                        <HallOfFameSectionTitle text="5th - 16th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "main" && record.type === PEM_BIG_TYPE_ID) {
+            const groups = record.groups || {};
+            const stage1Groups = record.stage1Groups || {};
+            const qualifiedTeamIds = new Set(record.qualifiedTeamIds || []);
+            const qualifierRecord = findPemCounterpartRecord(record, "qualifier");
+            const stage2AutoTeams = (record.teams || []).slice(0, PEM_BIG_STAGE2_AUTO_COUNT);
+            const stage1Teams = record.stage1Teams?.length
+                ? record.stage1Teams
+                : (record.teams || []).slice(PEM_BIG_STAGE2_AUTO_COUNT);
+            const stage2Teams = Array.from({ length: 8 }).flatMap((_, i) =>
+                PEM_MAIN_GROUPS.map((group) => groups[group]?.[i]).filter(Boolean)
+            );
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+            const placementColors = { 5: "#40e0d0", 6: "#ba68c8" };
+
+            const renderGroupRows = (groupTeams) => (
+                <div style={{ display: "flex", gap: 64, marginTop: 24, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
+                    {PEM_MAIN_GROUPS.map((group) => (
+                        <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                Group {group}
+                            </h4>
+                            {renderHallTeamRow(groupTeams[group], 38, qualifiedTeamIds)}
+                        </div>
+                    ))}
+                </div>
+            );
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header} data-sticky-anchor="hall-pem-big">
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span>
+                                    {getPemSeriesConfig(record.type).longLabel}{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        #{record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Tournament start" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content" }}>
+                            <div>
+                                <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                    Auto-qualifiers to Stage II
+                                </h4>
+                                {renderHallTeamRow(stage2AutoTeams)}
+                            </div>
+                            <div>
+                                <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                    Qualifiers to Stage I
+                                </h4>
+                                {renderHallTeamRow(stage1Teams, 38, qualifiedTeamIds)}
+                            </div>
+                        </div>
+
+                        {qualifierRecord && (
+                            <div style={{ marginTop: 20 }}>
+                                {renderHallLink(
+                                    "See how the glowing teams came through the Qualifier",
+                                    () => openLinkedHallRecord(qualifierRecord, "qualifier-bracket")
+                                )}
+                            </div>
+                        )}
+
+                        {renderGroupRows(stage1Groups)}
+
+                        <HallOfFameSectionTitle text="Stage I" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <StickyBelow
+                                anchor='[data-sticky-anchor="hall-pem-big"]'
+                                style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                            >
+                                <QualifierGroupNav value={hallStage1Group} onChange={setHallStage1Group} />
+                            </StickyBelow>
+                            {renderPemStage1Bracket(record.stage1?.[hallStage1Group], { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams to Stage II" marginTop="64px" />
+                        {renderHallTeamRow(stage2Teams, 38, qualifiedTeamIds)}
+                        {renderGroupRows(groups)}
+
+                        <HallOfFameSectionTitle text="Stage II" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <StickyBelow
+                                anchor='[data-sticky-anchor="hall-pem-big"]'
+                                style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                            >
+                                <QualifierGroupNav value={hallQualifierGroup} onChange={setHallQualifierGroup} />
+                            </StickyBelow>
+                            {renderPemGroupBracket(record.groupStage?.[hallQualifierGroup], { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record)}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, <PemGoldTrophy style={{ marginLeft: "6px", marginTop: "-52px" }} />)}
+                        <div style={{ display: "flex", gap: 96, justifyContent: "center", alignItems: "flex-start", marginTop: 48 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
                         </div>
 
                         {renderHallManagerModals()}
@@ -17434,7 +18689,7 @@ function SpecialModePage() {
                             {renderPemGroupBracket(record.groupStage?.[hallQualifierGroup], { archived: true, record })}
                         </div>
 
-                        <HallOfFameSectionTitle text="Playoffs bracket" marginTop="64px" marginBottom="88px" />
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" marginBottom="88px" />
                         <div>{renderArchivedPlayoffsBracket(record)}</div>
 
                         <HallOfFameSectionTitle text="Podium" marginTop="102px" />
@@ -17478,7 +18733,7 @@ function SpecialModePage() {
                                     badgeHeight: 36,
                                     label: (
                                         <>
-                                            Pro Extreme Masters Small Tournament{" "}
+                                            {getPemSeriesConfig(record.type).longLabel}{" "}
                                             <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
                                                 #{record.number}
                                             </span>
@@ -17719,7 +18974,7 @@ function SpecialModePage() {
 
                     {Object.keys(record.playoffs || {}).length > 0 && (
                         <>
-                            <HallOfFameSectionTitle text="Playoffs bracket" marginBottom="88px" />
+                            <HallOfFameSectionTitle text="Playoffs" marginBottom="88px" />
                             <div>
                                 {renderArchivedPlayoffsBracket(record)}
                             </div>
@@ -17983,23 +19238,38 @@ function SpecialModePage() {
         currentModalMatch,
         hallRecordId: selectedHallMatch?.record?.id,
         tournamentNumber: modalContext?.type === "qualifier"
-            ? `pem${pemSmallEdition}`
-            : modalContext?.type === "pemGroup" || modalContext?.kind === "pem"
-                ? `pemMain${pemSmallEdition}`
+            ? pemStatsKey
+            : modalContext?.type === "pemGroup" || modalContext?.type === "pemStage1" || isPemPlayoffsKind(modalContext?.kind)
+                ? `${pemConfig.statsKeyPrefix}Main${pemEdition}`
                 : modalContext?.type === "cstGroup" || modalContext?.kind === "cst"
                     ? `cst${cstNumber}`
-                    : tournamentNumber,
+                    : modalContext?.type === "ecl"
+                        ? `ecl${eclNumber}`
+                        : tournamentNumber,
         isPlayed: isPlayedModal,
     });
 
+    const modalPemType = modalContext?.isArchivedHallOfFame
+        ? (modalContext.pemType ?? selectedHallMatch?.record?.type ?? PEM_SMALL_TYPE_ID)
+        : pemType;
+    const isPemBigModal = modalPemType === PEM_BIG_TYPE_ID;
+
     const isEliminationModal =
-        modalContext?.type === "playoffs" || modalContext?.type === "qualifier" || modalContext?.type === "pemGroup";
+        modalContext?.type === "playoffs" ||
+        modalContext?.type === "qualifier" ||
+        modalContext?.type === "pemGroup" ||
+        modalContext?.type === "ecl" ||
+        modalContext?.type === "pemStage1";
 
     const showModalMatchNumber = modalContext?.type === "qualifier"
         ? !isSingleQualifierStage(modalContext.stage)
         : modalContext?.type === "pemGroup"
             ? !isSinglePemGroupStage(modalContext.stage)
-            : modalContext?.stage !== "gf" && modalContext?.stage !== "thirdPlace";
+            : modalContext?.type === "ecl"
+                ? !isSingleEclStage(modalContext.stage)
+                : modalContext?.type === "pemStage1"
+                    ? !isSinglePemStage1Stage(modalContext.stage)
+                    : modalContext?.stage !== "gf" && modalContext?.stage !== "thirdPlace";
 
     const modalStatsPanels = (modalStatsKey && statsPanelMemory[modalStatsKey]) || DEFAULT_STATS_PANELS_STATE;
 
@@ -18052,6 +19322,10 @@ function SpecialModePage() {
             wonPickemPoints = qualifierMatchPoints(currentModalMatch);
         } else if (modalContext?.type === "pemGroup") {
             wonPickemPoints = pemGroupMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "ecl") {
+            wonPickemPoints = eclMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "pemStage1") {
+            wonPickemPoints = pemStage1MatchPoints(currentModalMatch);
         } else if (modalContext?.type === "cstGroup") {
             wonPickemPoints = cstGroupMatchPoints(currentModalMatch);
         }
@@ -18266,7 +19540,7 @@ function SpecialModePage() {
                 return pickFromMatch(playoffs.ro16[srcIdx], "winner");
             }
 
-            if (stageKey === "sf" && bracketKind === "pem") {
+            if (stageKey === "sf" && isPemPlayoffsKind(bracketKind)) {
                 return slotKey === "slotB" ? pickFromMatch(playoffs.qf[idx], "winner") : [];
             }
 
@@ -18647,7 +19921,7 @@ function SpecialModePage() {
             );
         };
 
-        if (bracketKind === "pem") {
+        if (isPemPlayoffsKind(bracketKind)) {
             const pemRectClasses = {
                 qf: css.quarters_rect,
                 sf: css.semis_rect,
@@ -18829,6 +20103,24 @@ function SpecialModePage() {
         openArchived: openArchivedPemGroupMatchModal,
     };
 
+    const eclMatchFormat = {
+        slotSource: eclSlotSource,
+        canOpen: canOpenEclMatch,
+        bestOf: getBestOfForEcl,
+        isSingle: isSingleEclStage,
+        open: openEclMatchModal,
+        openArchived: openArchivedEclMatchModal,
+    };
+
+    const pemStage1MatchFormat = {
+        slotSource: pemStage1SlotSource,
+        canOpen: canOpenPemStage1Match,
+        bestOf: getBestOfForPemStage1,
+        isSingle: isSinglePemStage1Stage,
+        open: openPemStage1MatchModal,
+        openArchived: openArchivedPemStage1MatchModal,
+    };
+
     const getQualifierSlotContenders = (bracket, stage, idx, slotKey, slotSource = qualifierSlotSource) => {
         const source = slotSource(stage, idx, slotKey);
         const sourceMatch = source ? bracket?.[source.stage]?.[source.idx] : null;
@@ -18933,8 +20225,18 @@ function SpecialModePage() {
         const leftTeam = shouldSwap ? m.slotB : m.slotA;
         const rightTeam = shouldSwap ? m.slotA : m.slotB;
 
-        const displayScoreLeft = shouldSwap ? m.scoreRight : m.scoreLeft;
-        const displayScoreRight = shouldSwap ? m.scoreLeft : m.scoreRight;
+        const isBo1 = format.bestOf(stage) === 1;
+        const bo1History = isBo1 && isPlayed && m.pickTeamId ? m.setHistory?.[0] ?? null : null;
+        const bo1Tiebreak = getBo1Tiebreak(bo1History);
+
+        const displayScoreLeft = bo1History ? bo1History.wins : shouldSwap ? m.scoreRight : m.scoreLeft;
+        const displayScoreRight = bo1History ? bo1History.losses : shouldSwap ? m.scoreLeft : m.scoreRight;
+        const isBo1Tie = !!bo1History && bo1History.wins === bo1History.losses;
+        const isCornerScore = (score) => isBo1 && String(score ?? "").length > 1;
+        const scorePositions = [
+            isCornerScore(displayScoreLeft) ? { top: 4, right: -4 } : { left: "85%" },
+            isCornerScore(displayScoreRight) ? { bottom: 4, right: -4 } : { left: "83%" },
+        ];
 
         const resultClass = isPlayed ? (isUserWin ? css.playoffs_match_win : css.playoffs_match_loss) : "";
         const boLabelResultClass = isPlayed
@@ -18978,7 +20280,7 @@ function SpecialModePage() {
             format.open(bracket.group, stage, m.id);
         };
 
-        const renderTeamRow = (team, slotKey, isWinner, isLoser, score, scoreLeftPct) => (
+        const renderTeamRow = (team, slotKey, isWinner, isLoser, score, scorePosition) => (
             <div className={css.team_row}>
                 <div className={css.team_cell}>
                     {team ? (
@@ -18994,22 +20296,23 @@ function SpecialModePage() {
 
                 <div
                     style={{ color: !isPlayed ? "" : isWinner ? "#2e7d32" : "red" }}
-                    className={css.team_name_placeholder}
+                    className={`${css.team_name_placeholder} ${isCornerScore(score) ? css.bo1_team_name : ""}`}
                 >
                     {team?.name ? `Team ${team.name}` : "TBD"}
                 </div>
                 <span
                     style={{
-                        color: isWinner ? "#2e7d32" : "red",
+                        color: isBo1Tie ? "#5a5a5a" : isWinner ? "#2e7d32" : "red",
                         fontWeight: 800,
                         fontStyle: "italic",
                         position: "absolute",
-                        left: scoreLeftPct,
+                        ...scorePosition,
                         zIndex: 1,
-                        fontSize: 72,
-                        opacity: isLoser ? 0.4 : 1,
+                        fontSize: isCornerScore(score) ? 40 : 72,
+                        lineHeight: isCornerScore(score) ? 1 : undefined,
+                        opacity: isLoser && !isBo1Tie ? 0.4 : 1,
                     }}
-                    className={isWinner ? css.winnerScoreShadow : css.loserScoreShadow}
+                    className={isBo1Tie ? css.tieScoreShadow : isWinner ? css.winnerScoreShadow : css.loserScoreShadow}
                 >
                     {score}
                 </span>
@@ -19043,21 +20346,39 @@ function SpecialModePage() {
                         </div>
                     ) : null}
                     <div className={css.match_content}>
-                        {renderTeamRow(leftTeam, shouldSwap ? "slotB" : "slotA", winnerIsLeft, isLeftLoser, displayScoreLeft, "85%")}
+                        {renderTeamRow(leftTeam, shouldSwap ? "slotB" : "slotA", winnerIsLeft, isLeftLoser, displayScoreLeft, scorePositions[0])}
 
-                        <div className={css.vs_row}>
-                            <div
-                                style={{ backgroundColor: isPlayed ? (isUserWin ? "#2e7d32" : "red") : "rgb(90, 90, 90)" }}
-                                className={css.divider}
-                            />
-                            {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                <span style={{ textShadow: QUALIFIER_VS_TEXT_SHADOW }} className={css.vs_text}>
-                                    VS
+                        {bo1Tiebreak ? (
+                            <div className={css.tiebreak_divider_row}>
+                                <div
+                                    style={{ backgroundColor: isUserWin ? "#2e7d32" : "red" }}
+                                    className={`${css.divider} ${css.tiebreak_divider_segment}`}
+                                />
+                                <span className={css.tiebreak_label}>
+                                    <span style={{ color: winnerIsLeft ? "#2e7d32" : "red" }}>{bo1Tiebreak.left}</span>
+                                    {" "}{bo1Tiebreak.type}{" "}
+                                    <span style={{ color: winnerIsRight ? "#2e7d32" : "red" }}>{bo1Tiebreak.right}</span>
                                 </span>
-                            ) : null}
-                        </div>
+                                <div
+                                    style={{ backgroundColor: isUserWin ? "#2e7d32" : "red" }}
+                                    className={`${css.divider} ${css.tiebreak_divider_segment}`}
+                                />
+                            </div>
+                        ) : (
+                            <div className={css.vs_row}>
+                                <div
+                                    style={{ backgroundColor: isPlayed ? (isUserWin ? "#2e7d32" : "red") : "rgb(90, 90, 90)" }}
+                                    className={css.divider}
+                                />
+                                {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
+                                    <span style={{ textShadow: QUALIFIER_VS_TEXT_SHADOW }} className={css.vs_text}>
+                                        VS
+                                    </span>
+                                ) : null}
+                            </div>
+                        )}
 
-                        {renderTeamRow(rightTeam, shouldSwap ? "slotA" : "slotB", winnerIsRight, isRightLoser, displayScoreRight, "83%")}
+                        {renderTeamRow(rightTeam, shouldSwap ? "slotA" : "slotB", winnerIsRight, isRightLoser, displayScoreRight, scorePositions[1])}
                     </div>
                 </div>
             </div>
@@ -19110,8 +20431,56 @@ function SpecialModePage() {
         );
     };
 
+    const renderPemStage1Bracket = (bracket, { archived = false, record = null } = {}) => {
+        if (!bracket) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    This Group has not been drawn yet.
+                </div>
+            );
+        }
+
+        const current = archived ? null : findCurrentPemStage1Match(bracket);
+        const next = archived ? null : findNextPemStage1Match(bracket, current);
+
+        return (
+            <PemStage1BracketLayout
+                key={`${archived ? "hall" : "live"}-${bracket.group}`}
+                bracket={bracket}
+                renderMatch={(m, stage, idx) =>
+                    renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next, format: pemStage1MatchFormat })
+                }
+            />
+        );
+    };
+
+    const renderEclBracket = (bracket, { archived = false, record = null } = {}) => {
+        if (!bracket) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    This bracket has not been drawn yet.
+                </div>
+            );
+        }
+
+        const current = archived ? null : findCurrentEclMatch(bracket);
+        const next = archived ? null : findNextEclMatch(bracket, current);
+
+        return (
+            <EclBracketLayout
+                key={archived ? "hall" : "live"}
+                bracket={bracket}
+                renderMatch={(m, stage, idx) =>
+                    renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next, format: eclMatchFormat })
+                }
+            />
+        );
+    };
+
     const renderPemMainPage = () => {
         const showingPlayoffs = viewPhase === "playoffs" && isPemPlayoffs;
+        const showingStage1 = isPemBigSeries && (viewPhase === "pemStage1" || !pemMain);
+        const groupStageTitle = isPemBigSeries ? (showingStage1 ? "Stage I" : "Stage II") : "Group Stage";
         const champion = tournamentResults?.kind === "pem" ? tournamentResults.winner : null;
         const showEndButtons = showPickemLine2 && !!champion;
 
@@ -19170,7 +20539,7 @@ function SpecialModePage() {
                     )}
 
                     <div className={css.stage_title} style={{ marginBottom: 0 }}>
-                        {pemSmallLabel} | Playoffs
+                        {pemLabel} | Playoffs
                     </div>
 
                     <div style={{ width: "100%", marginTop: "180px" }}>{renderPlayoffsBracket()}</div>
@@ -19190,7 +20559,7 @@ function SpecialModePage() {
                         style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: "6px 0 16px" }}
                     >
                         <div className={css.stage_title} style={{ marginBottom: 0, marginTop: "-28px" }}>
-                            {pemSmallLabel} | Group Stage
+                            {pemLabel} | {groupStageTitle}
                         </div>
 
                         {!endButtons && (
@@ -19210,9 +20579,87 @@ function SpecialModePage() {
                         )}
                     </StickyBelow>
 
-                    {renderPemGroupBracket(pemMain?.[pemGroupView])}
+                    {showingStage1 ? (
+                        <div className={css.pem_stage1_area}>
+                            {renderPemStage1Bracket(pemStage1?.[pemGroupView])}
+                        </div>
+                    ) : (
+                        renderPemGroupBracket(pemMain?.[pemGroupView])
+                    )}
                 </div>
             </>
+        );
+    };
+
+    const renderEclPage = () => {
+        const champion = tournamentResults?.kind === "ecl" ? tournamentResults.winner : null;
+        const showEndButtons = showPickemLine2 && !!champion;
+
+        return (
+            <div className={css.cst_page} style={{ paddingTop: 56 }}>
+                <div className={css.ecl_header} style={showEndButtons ? { minHeight: 176, padding: "18px 0 36px" } : { padding: "6px 0 16px" }}>
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {eclLabel}
+                    </div>
+
+                    {showEndButtons ? (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 12,
+                                right: "calc(50% - 670px)",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                gap: 10,
+                            }}
+                        >
+                            <button
+                                className={`${css.gamble_button} ${css.back_button}`}
+                                onClick={() => setShowPickemSummary(true)}
+                            >
+                                Back to the Pick'em challenge summary
+                            </button>
+                            <button
+                                className={`${css.gamble_button} ${css.back_back_button}`}
+                                style={{ backgroundColor: hover ? champion.hoverOn : champion.color }}
+                                onMouseEnter={() => setHover(true)}
+                                onMouseLeave={() => setHover(false)}
+                                onClick={() => setShowWinnersScreen(true)}
+                            >
+                                Back to the Winners' screen
+                            </button>
+                            <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                                Proceed
+                            </button>
+                        </div>
+                    ) : (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: "50%",
+                                right: "calc(50% - 670px)",
+                                transform: "translateY(-50%)",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                            }}
+                        >
+                            <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                            <span className={css.points}>
+                                <CountUp
+                                    start={0}
+                                    duration={1.2}
+                                    end={neededPickemPoints}
+                                    key={neededPickemPoints}
+                                />
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ marginTop: 24 }}>{renderEclBracket(ecl)}</div>
+            </div>
         );
     };
 
@@ -19409,14 +20856,24 @@ function SpecialModePage() {
 
     const renderCstNav = () => (isCstPlayoffs ? renderGroupStageNav("cstGroups") : null);
 
-    const renderPemNav = () => (isPemPlayoffs ? renderGroupStageNav("pemGroups") : null);
+    const renderPemNav = () => {
+        if (!isPemBigSeries) return isPemPlayoffs ? renderGroupStageNav("pemGroups") : null;
 
-    const renderGroupStageNav = (groupStageViewId) => {
         const entries = [
-            { id: "playoffs", label: "Playoffs" },
-            { id: groupStageViewId, label: "Group Stage" },
-        ];
+            isPemPlayoffs && { id: "playoffs", label: "Playoffs" },
+            !!pemMain && { id: "pemGroups", label: "Stage II" },
+            { id: "pemStage1", label: "Stage I" },
+        ].filter(Boolean);
 
+        return entries.length > 1 ? renderPhaseNav(entries) : null;
+    };
+
+    const renderGroupStageNav = (groupStageViewId) => renderPhaseNav([
+        { id: "playoffs", label: "Playoffs" },
+        { id: groupStageViewId, label: "Group Stage" },
+    ]);
+
+    const renderPhaseNav = (entries) => {
         return (
             <div
                 ref={navRef}
@@ -19424,7 +20881,7 @@ function SpecialModePage() {
                     position: "absolute",
                     top: "10%",
                     left: "2%",
-                    zIndex: 5,
+                    zIndex: 19,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "flex-end",
@@ -19596,10 +21053,14 @@ function SpecialModePage() {
             }
         }
 
-        if (type === "qualifier" || type === "pemGroup") {
+        if (type === "qualifier" || type === "pemGroup" || type === "ecl" || type === "pemStage1") {
             const texts = type === "pemGroup"
                 ? getPemGroupStakeTexts(playoffsStage)
-                : getQualifierStakeTexts(playoffsStage);
+                : type === "ecl"
+                    ? getEclStakeTexts(playoffsStage)
+                    : type === "pemStage1"
+                        ? getPemStage1StakeTexts(playoffsStage)
+                        : getQualifierStakeTexts(playoffsStage);
 
             if (winnerIsLeft) {
                 leftText = texts.winner;
@@ -19706,6 +21167,14 @@ function SpecialModePage() {
             return pemGroupStageLabel(modalContext.stage);
         }
 
+        if (modalContext.type === "ecl") {
+            return eclStageLabel(modalContext.stage);
+        }
+
+        if (modalContext.type === "pemStage1") {
+            return pemStage1StageLabel(modalContext.stage);
+        }
+
         if (modalContext.type === "cstGroup") {
             return `Group ${modalContext.group}`;
         }
@@ -19727,15 +21196,19 @@ function SpecialModePage() {
                 ? (qualifier?.[modalContext.group]?.[modalContext.stage] ?? [])
                 : modalContext.type === "pemGroup"
                     ? (pemMain?.[modalContext.group]?.[modalContext.stage] ?? [])
-                    : modalContext.type === "cstGroup"
-                        ? (cst?.[modalContext.group]?.matches ?? [])
-                        : (playoffs?.[modalContext.stage] ?? []);
+                    : modalContext.type === "ecl"
+                        ? (ecl?.[modalContext.stage] ?? [])
+                        : modalContext.type === "pemStage1"
+                            ? (pemStage1?.[modalContext.group]?.[modalContext.stage] ?? [])
+                            : modalContext.type === "cstGroup"
+                                ? (cst?.[modalContext.group]?.matches ?? [])
+                                : (playoffs?.[modalContext.stage] ?? []);
         const index = modalContext.isArchivedHallOfFame
             ? selectedHallMatch?.index ?? -1
             : matches.findIndex((m) => m.id === modalContext.matchId);
 
         return index >= 0 ? index + 1 : 1;
-    }, [modalContext, currentModalMatch, playoffs, qualifier, cst, pemMain, selectedHallMatch]);
+    }, [modalContext, currentModalMatch, playoffs, qualifier, cst, ecl, pemStage1, pemMain, selectedHallMatch]);
 
     const breakdownPointLabel = useMemo(() => {
         if (!modalContext) return "MATCH POINT!!!";
@@ -19745,6 +21218,12 @@ function SpecialModePage() {
         }
         if (modalContext.type === "pemGroup") {
             return PEM_GROUP_QUALIFYING_STAGES.includes(modalContext.stage) ? "PLAYOFFS POINT!!!" : "MATCH POINT!!!";
+        }
+        if (modalContext.type === "ecl") {
+            return modalContext.stage === "uf" || modalContext.stage === "cf" ? "GRAND FINAL POINT!!!" : "MATCH POINT!!!";
+        }
+        if (modalContext.type === "pemStage1") {
+            return PEM_STAGE1_QUALIFYING_STAGES.includes(modalContext.stage) ? "STAGE II POINT!!!" : "MATCH POINT!!!";
         }
 
         const pointNet = ["2:0", "2:1", "2:2"];
@@ -19761,13 +21240,15 @@ function SpecialModePage() {
         if (!modalContext) return "";
         if (modalContext.type === "playoffs") return "";
         if (modalContext.type === "qualifier") return `Group ${modalContext.group}`;
-        if (modalContext.type === "pemGroup") return `Group ${modalContext.group}`;
+        if (modalContext.type === "pemGroup") return isPemBigModal ? `Stage II | Group ${modalContext.group}` : `Group ${modalContext.group}`;
+        if (modalContext.type === "pemStage1") return `Stage I | Group ${modalContext.group}`;
+        if (modalContext.type === "ecl") return "";
         if (modalContext.type === "cstGroup") return "Group Stage";
         if (modalContext.stageKey === "stage1") return "Stage I";
         if (modalContext.stageKey === "stage2") return "Stage II";
         if (modalContext.stageKey === "stage3") return "Stage III";
         return "";
-    }, [modalContext]);
+    }, [modalContext, isPemBigModal]);
 
     const displayedMiniSquares =
         seriesState.roundNumber === 1 ||
@@ -19791,17 +21272,27 @@ function SpecialModePage() {
         if (seriesState.phase === "qualifier") {
             small = (
                 <>
-                    {pemSmallLabel} | Group {seriesState.qualifierGroup}
+                    {pemLabel} | Group {seriesState.qualifierGroup}
                 </>
             );
             big = qualifierStageLabel(seriesState.qualifierStage);
         } else if (seriesState.phase === "pemGroup") {
             small = (
                 <>
-                    {pemSmallLabel} | Group {seriesState.pemGroup}
+                    {pemLabel} | {isPemBigSeries ? "Stage II | " : ""}Group {seriesState.pemGroup}
                 </>
             );
             big = pemGroupStageLabel(seriesState.pemGroupStage);
+        } else if (seriesState.phase === "pemStage1") {
+            small = (
+                <>
+                    {pemLabel} | Stage I | Group {seriesState.pemStage1Group}
+                </>
+            );
+            big = pemStage1StageLabel(seriesState.pemStage1Stage);
+        } else if (seriesState.phase === "ecl") {
+            small = eclLabel;
+            big = eclStageLabel(seriesState.eclStage);
         } else if (seriesState.phase === "cstGroup") {
             small = (
                 <>
@@ -19810,7 +21301,7 @@ function SpecialModePage() {
             );
             big = `Group ${seriesState.cstGroup}`;
         } else if (seriesState.phase === "playoffs") {
-            small = isCstPhase ? cstLabel : isPemMainPhase ? pemSmallLabel : tournamentLabel;
+            small = isCstPhase ? cstLabel : isPemMainPhase ? pemLabel : tournamentLabel;
             big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "stage1") {
             small = (
@@ -19837,8 +21328,11 @@ function SpecialModePage() {
 
         const isQualifierSeries = seriesState.phase === "qualifier";
         const isPemGroupSeries = seriesState.phase === "pemGroup";
-        const isCstSeries = isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs");
-        const isPemSeries = isPemMainPhase && (isPemGroupSeries || seriesState.phase === "playoffs");
+        const isPemStage1Series = seriesState.phase === "pemStage1";
+        const isEclSeries = seriesState.phase === "ecl";
+        const isCstSeries =
+            (isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs")) || isEclSeries;
+        const isPemSeries = isPemMainPhase && (isPemGroupSeries || isPemStage1Series || seriesState.phase === "playoffs");
 
         const seriesMatchNumber =
             seriesState.phase === "playoffs"
@@ -19847,22 +21341,30 @@ function SpecialModePage() {
                     ? seriesState.qualifierMatchNumber ?? 1
                     : isPemGroupSeries
                         ? seriesState.pemGroupMatchNumber ?? 1
-                        : seriesState.phase === "cstGroup"
-                            ? seriesState.cstMatchNumber ?? 1
-                            : seriesState.swissMatchNumber ?? 1;
+                        : isPemStage1Series
+                            ? seriesState.pemStage1MatchNumber ?? 1
+                            : isEclSeries
+                                ? seriesState.eclMatchNumber ?? 1
+                                : seriesState.phase === "cstGroup"
+                                    ? seriesState.cstMatchNumber ?? 1
+                                    : seriesState.swissMatchNumber ?? 1;
 
         const showSeriesMatchNumber = isQualifierSeries
             ? !isSingleQualifierStage(seriesState.qualifierStage)
             : isPemGroupSeries
                 ? !isSinglePemGroupStage(seriesState.pemGroupStage)
-                : seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace";
+                : isPemStage1Series
+                    ? !isSinglePemStage1Stage(seriesState.pemStage1Stage)
+                    : isEclSeries
+                        ? !isSingleEclStage(seriesState.eclStage)
+                        : seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace";
 
         return (
             <>
                 <span className={css.series_label}>
                     <span className={css.series_upper_label}>
                         <motion.span
-                            key={`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage ?? seriesState.qualifierStage ?? seriesState.pemGroupStage}`}
+                            key={`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage ?? seriesState.qualifierStage ?? seriesState.pemGroupStage ?? seriesState.pemStage1Stage ?? seriesState.eclStage}`}
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 40 }}
@@ -19910,7 +21412,7 @@ function SpecialModePage() {
                                 className={css.round_text}
                                 style={{ fontSize: "28px", position: "absolute", left: "50%", x: "-50%", display: "flex", transition: 'none' }}
                             >
-                                <PemSilverTrophy />
+                                <PemSeriesTrophy type={pemType} />
                             </motion.span>
                         ) : (
                             <motion.span
@@ -20200,7 +21702,7 @@ function SpecialModePage() {
                 </span>
             </>
         );
-    }, [seriesState, tournamentLabel, pemSmallLabel, cstLabel, isCstPhase, isPemMainPhase]);
+    }, [seriesState, tournamentLabel, pemLabel, cstLabel, eclLabel, isCstPhase, isPemMainPhase, isPemBigSeries, pemType]);
 
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
@@ -20325,7 +21827,7 @@ function SpecialModePage() {
                         }}>
                             To the bracket
                         </button>
-                        {activePhase === "qualifier" || isCstPhase ? (
+                        {activePhase === "qualifier" || isCstPhase || isEclPhase ? (
                             <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
                                 Proceed
                             </button>
@@ -20367,7 +21869,7 @@ function SpecialModePage() {
                     >
                         {hasPlayedWinnerAnimation ? (
                             <span>
-                                The 4 qualifiers of {pemSmallLabel}
+                                The 4 qualifiers of {pemLabel}
                             </span>
                         ) : winnersText}
                     </motion.h2>
@@ -20392,7 +21894,7 @@ function SpecialModePage() {
     }
 
     if (showWinnersScreen && tournamentResults) {
-        const isCstResults = tournamentResults.kind === "cst";
+        const isTier2Results = tournamentResults.kind === "cst" || tournamentResults.kind === "ecl";
         const isPemResults = tournamentResults.kind === "pem";
 
         return (
@@ -20407,7 +21909,7 @@ function SpecialModePage() {
                         >
                             {hasPlayedWinnerAnimation ? (
                                 <span>
-                                    The Top 4 of {isCstResults ? cstLabel : isPemResults ? pemSmallLabel : tournamentLabel}
+                                    The Top 4 of {tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : isPemResults ? pemLabel : tournamentLabel}
                                 </span>
                             ) : winnersText}
                         </motion.h2>
@@ -20443,7 +21945,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.runnerUp.name}</b>
                                             </ReactFitty>
                                             <span className={css.runnerUpLabel}>RunnerUp</span>
-                                            {!isCstResults && (
+                                            {!isTier2Results && (
                                                 <span className={css.runnerUpQuote}>"{pickQuote(PODIUM_QUOTES.runnerUp, tournamentResults.runnerUp?.id ?? 0)}"</span>
                                             )}
                                         </div>
@@ -20472,9 +21974,9 @@ function SpecialModePage() {
                                             }}
                                         />
                                         <span className={css.winnerMedal}>🥇</span>
-                                        {!isCstResults && (
+                                        {!isTier2Results && (
                                             <span className={css.winnerTrophy}>
-                                                {isPemResults ? <PemSilverTrophy style={{ marginLeft: "6px", marginTop: "-52px" }} /> : <FaTrophy />}
+                                                {isPemResults ? <PemSeriesTrophy type={pemType} style={{ marginLeft: "6px", marginTop: "-52px" }} /> : <FaTrophy />}
                                             </span>
                                         )}
                                         <div className={css.firstPodium}>
@@ -20482,7 +21984,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.winner.name}</b>
                                             </ReactFitty>
                                             <span className={css.firstPlaceLabel}>Winner</span>
-                                            {!isCstResults && (
+                                            {!isTier2Results && (
                                                 <span className={css.firstPlaceQuote}>"{pickQuote(PODIUM_QUOTES.winner, tournamentResults.winner?.id ?? 0)}"</span>
                                             )}
                                         </div>
@@ -20513,7 +22015,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.thirdPlace.name}</b>
                                             </ReactFitty>
                                             <span className={css.thirdPlaceLabel}>3rd</span>
-                                            {!isCstResults && (
+                                            {!isTier2Results && (
                                                 <span className={css.thirdPlaceQuote}>"{pickQuote(PODIUM_QUOTES.thirdPlace, tournamentResults.thirdPlace?.id ?? 0)}"</span>
                                             )}
                                         </div>
@@ -20545,7 +22047,7 @@ function SpecialModePage() {
                                                 Team <b>{tournamentResults.fourthPlace.name}</b>
                                             </ReactFitty>
                                             <span className={css.fourthPlaceLabel}>4th</span>
-                                            {!isCstResults && (
+                                            {!isTier2Results && (
                                                 <span className={css.fourthPlaceQuote}>"{pickQuote(PODIUM_QUOTES.fourthPlace, tournamentResults.fourthPlace?.id ?? 0)}"</span>
                                             )}
                                         </div>
@@ -20584,6 +22086,18 @@ function SpecialModePage() {
         if (seriesState.phase === "pemGroup") {
             return PEM_GROUP_QUALIFYING_STAGES.includes(seriesState.pemGroupStage)
                 ? "PLAYOFFS POINT!!!"
+                : "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "pemStage1") {
+            return PEM_STAGE1_QUALIFYING_STAGES.includes(seriesState.pemStage1Stage)
+                ? "STAGE II POINT!!!"
+                : "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "ecl") {
+            return seriesState.eclStage === "uf" || seriesState.eclStage === "cf"
+                ? "GRAND FINAL POINT!!!"
                 : "MATCH POINT!!!";
         }
 
@@ -23424,7 +24938,7 @@ function SpecialModePage() {
 
                         let stageLabel = "Start Match";
 
-                        if (modalContext?.type === "playoffs" || modalContext?.type === "qualifier" || modalContext?.type === "pemGroup") {
+                        if (isEliminationModal) {
                             stageLabel = `Start this ${boLabel} ${modalTitle}`;
                         } else if (modalContext?.type === "cstGroup") {
                             stageLabel = `Start this ${boLabel} ${modalTitle} Match`;
@@ -23460,14 +24974,20 @@ function SpecialModePage() {
                                 : modalContext?.type === "qualifier"
                                     ? "qualifier"
                                     : modalContext?.type === "pemGroup"
-                                        ? "pemGroup"
-                                        : modalContext?.type === "cstGroup"
-                                            ? "cstGroup"
-                                            : modalContext?.kind === "cst"
-                                                ? "cstPlayoffs"
-                                                : modalContext?.kind === "pem"
-                                                    ? "pemPlayoffs"
-                                                    : "playoffs",
+                                        ? (isPemBigModal ? "pemBigGroup" : "pemGroup")
+                                        : modalContext?.type === "ecl"
+                                            ? "ecl"
+                                            : modalContext?.type === "pemStage1"
+                                                ? "pemStage1"
+                                                : modalContext?.type === "cstGroup"
+                                                    ? "cstGroup"
+                                                    : modalContext?.kind === "cst"
+                                                        ? "cstPlayoffs"
+                                                        : modalContext?.kind === "pemBig"
+                                                            ? "pemBigPlayoffs"
+                                                            : modalContext?.kind === "pem"
+                                                                ? "pemPlayoffs"
+                                                                : "playoffs",
 
                             swissStageKey:
                                 modalContext?.type === "swiss"
@@ -23479,10 +24999,7 @@ function SpecialModePage() {
                                     ? modalContext?.net
                                     : null,
 
-                            playoffsStage:
-                                modalContext?.type === "playoffs" || modalContext?.type === "qualifier" || modalContext?.type === "pemGroup"
-                                    ? modalContext?.stage
-                                    : null,
+                            playoffsStage: isEliminationModal ? modalContext?.stage : null,
 
                             bestOf: modalBestOf,
                             loserSetsWon: 0,
@@ -23911,17 +25428,17 @@ function SpecialModePage() {
 
                             const getPlacementBadge = (isWinner, isLoser) => {
                                 if (isGrandFinal) {
-                                    if (isWinner && modalContext?.kind === "cst") {
+                                    if (isWinner && (modalContext?.kind === "cst" || modalContext?.type === "ecl")) {
                                         return (
                                             <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
                                                 🥇+
                                             </span>
                                         );
                                     }
-                                    if (isWinner && modalContext?.kind === "pem") {
+                                    if (isWinner && isPemPlayoffsKind(modalContext?.kind)) {
                                         return (
                                             <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
-                                                <PemSilverTrophy />+
+                                                <PemSeriesTrophy type={modalContext.kind === "pemBig" ? PEM_BIG_TYPE_ID : PEM_SMALL_TYPE_ID} />+
                                             </span>
                                         );
                                     }
@@ -23941,7 +25458,7 @@ function SpecialModePage() {
                                     }
                                 }
 
-                                if (isThirdPlace && isWinner) {
+                                if ((isThirdPlace && isWinner) || (modalContext?.type === "ecl" && stage === "cf" && isLoser)) {
                                     return (
                                         <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
                                             🥉+
@@ -25508,7 +27025,7 @@ function SpecialModePage() {
                                     {renderTournamentLabelFor(
                                         leaderboardTitleTournament.type,
                                         leaderboardTitleTournament.number,
-                                        { highlightName: false }
+                                        { highlightName: false, qualifier: leaderboardTitleTournament.qualifier }
                                     )}
                                 </span>
                             )}
@@ -25573,9 +27090,13 @@ function SpecialModePage() {
                             const p = teamPlacings?.[t.id] ?? EMPTY_TEAM_PLACINGS;
                             const trophyDisplay = trophyCountToDisplay(p.wins);
                             const tier1TrophyDisplay = trophyCountToDisplay(p.tier1Wins);
-                            const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay;
+                            const pemBigTrophyDisplay = trophyCountToDisplay(p.pemBigWins);
+                            const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay;
 
-                            const isCountMode = trophyDisplay?.mode === "count" || tier1TrophyDisplay?.mode === "count";
+                            const isCountMode =
+                                trophyDisplay?.mode === "count" ||
+                                tier1TrophyDisplay?.mode === "count" ||
+                                pemBigTrophyDisplay?.mode === "count";
                             const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
                             const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
@@ -25688,6 +27209,16 @@ function SpecialModePage() {
                                                         transition: "none"
                                                     }}
                                                 >
+                                                    {pemBigTrophyDisplay &&
+                                                        (pemBigTrophyDisplay.mode === "icons" ? (
+                                                            Array.from({ length: pemBigTrophyDisplay.n }).map((_, k) => (
+                                                                <PemGoldTrophy key={k} style={{ transition: "none" }} />
+                                                            ))
+                                                        ) : (
+                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
+                                                                {pemBigTrophyDisplay.n} <PemGoldTrophy />
+                                                            </span>
+                                                        ))}
                                                     {tier1TrophyDisplay &&
                                                         (tier1TrophyDisplay.mode === "icons" ? (
                                                             Array.from({ length: tier1TrophyDisplay.n }).map((_, k) => (
@@ -25735,7 +27266,7 @@ function SpecialModePage() {
                                                     transition: "none"
                                                 }}>
                                                     {buildPlacingItems(p, null)
-                                                        .filter((item) => item.key !== "wins" && item.key !== "tier1Wins")
+                                                        .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins")
                                                         .map((item, itemIndex) => (
                                                             <MedalWithBreakdown
                                                                 key={item.key}
@@ -26571,7 +28102,8 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
-                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="pemBigWins">🏆 (PEM Big)</option>
+                                <option value="tier1Wins">🏆 (PEM Small)</option>
                                 <option value="tier1Seconds">🥈 (Tier 1)</option>
                                 <option value="tier1Thirds">🥉 (Tier 1)</option>
                                 <option value="tier2Wins">🥇 (Tier 2)</option>
@@ -26748,7 +28280,8 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
-                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="pemBigWins">🏆 (PEM Big)</option>
+                                <option value="tier1Wins">🏆 (PEM Small)</option>
                                 <option value="tier1Seconds">🥈 (Tier 1)</option>
                                 <option value="tier1Thirds">🥉 (Tier 1)</option>
                                 <option value="tier2Wins">🥇 (Tier 2)</option>
@@ -27006,6 +28539,8 @@ function SpecialModePage() {
                     renderQualifierPage()
                 ) : isCstPhase ? (
                     renderCstPage()
+                ) : isEclPhase ? (
+                    renderEclPage()
                 ) : (
                     <>
                         {renderResultsNav()}
@@ -27296,7 +28831,8 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
-                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="pemBigWins">🏆 (PEM Big)</option>
+                                <option value="tier1Wins">🏆 (PEM Small)</option>
                                 <option value="tier1Seconds">🥈 (Tier 1)</option>
                                 <option value="tier1Thirds">🥉 (Tier 1)</option>
                                 <option value="tier2Wins">🥇 (Tier 2)</option>
@@ -27473,7 +29009,8 @@ function SpecialModePage() {
                                 <option value="wins">🏆</option>
                                 <option value="seconds">🥈</option>
                                 <option value="thirds">🥉</option>
-                                <option value="tier1Wins">🏆 (Tier 1)</option>
+                                <option value="pemBigWins">🏆 (PEM Big)</option>
+                                <option value="tier1Wins">🏆 (PEM Small)</option>
                                 <option value="tier1Seconds">🥈 (Tier 1)</option>
                                 <option value="tier1Thirds">🥉 (Tier 1)</option>
                                 <option value="tier2Wins">🥇 (Tier 2)</option>
@@ -27626,7 +29163,135 @@ function SpecialModePage() {
                         </div>
                     </div>
                 )}
-                {showTournamentIntro && isPemMainPhase && (
+                {showTournamentIntro && isEclPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {eclLabel}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay}>
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    All teams
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "60%", margin: "0 auto" }}>
+                                    {(ecl?.teams || []).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {showTournamentIntro && isPemMainPhase && isPemBigSeries && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {pemLabel}
+                                </div>
+
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Auto-qualifiers to Stage II
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "36%", margin: "0 auto" }}>
+                                    {(pemSeries?.seeds?.mainEvent || []).slice(0, PEM_BIG_STAGE2_AUTO_COUNT).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay} style={{ marginTop: 22 }}>
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Qualifiers to Stage I
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", margin: "0 auto" }}>
+                                    {buildPemStage1Teams(pemSeries).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{
+                                                width: "48px",
+                                                height: "48px",
+                                                ...((pemSeries?.qualified || []).some((q) => q.id === t.id) ? PEM_QUALIFIED_HIGHLIGHT : {}),
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 72, justifyContent: "center", marginTop: 22 }}>
+                                {PEM_MAIN_GROUPS.map((group) => (
+                                    <div key={group} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                        <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                            Group {group}
+                                        </div>
+
+                                        <div style={{ display: "flex", flexDirection: "row", gap: 10, alignItems: "center" }}>
+                                            {(pemStage1?.[group]?.teams || []).map((t) => (
+                                                <TeamCircle
+                                                    key={t.id}
+                                                    team={t}
+                                                    showRating
+                                                    ratingValue={teamRatings[t.id] ?? 0}
+                                                    specialStyle={{ width: "48px", height: "48px" }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {showTournamentIntro && isPemMainPhase && !isPemBigSeries && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>
@@ -27643,7 +29308,7 @@ function SpecialModePage() {
                                         gap: 10,
                                     }}
                                 >
-                                    <span>{pemSmallLabel}</span>
+                                    <span>{pemLabel}</span>
                                 </div>
 
                                 <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
@@ -27651,7 +29316,7 @@ function SpecialModePage() {
                                 </div>
 
                                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "100%", margin: "0 auto" }}>
-                                    {buildPemMainEventTeams(pemSmall).map((t) => (
+                                    {buildPemMainEventTeams(pemSeries).map((t) => (
                                         <TeamCircle
                                             key={t.id}
                                             team={t}
@@ -27660,7 +29325,7 @@ function SpecialModePage() {
                                             specialStyle={{
                                                 width: "48px",
                                                 height: "48px",
-                                                ...((pemSmall?.qualified || []).some((q) => q.id === t.id) ? PEM_QUALIFIED_HIGHLIGHT : {}),
+                                                ...((pemSeries?.qualified || []).some((q) => q.id === t.id) ? PEM_QUALIFIED_HIGHLIGHT : {}),
                                             }}
                                         />
                                     ))}
@@ -27697,7 +29362,7 @@ function SpecialModePage() {
                         </div>
                     </div>
                 )}
-                {showTournamentIntro && !isQualifierPhase && !isCstPhase && !isPemMainPhase && (
+                {showTournamentIntro && !isQualifierPhase && !isCstPhase && !isEclPhase && !isPemMainPhase && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>

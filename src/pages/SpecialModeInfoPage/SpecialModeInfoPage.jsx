@@ -65,6 +65,7 @@ import hallOfFameOfficialOnePartFive from "../../../assets/images/image-24.6.png
 import hallOfFameOfficialOnePartSix from "../../../assets/images/image-24.7.png";
 import tournamentIntroScreenImgTwo from "../../../assets/images/image-25.png";
 import hardChoiceToMake from "../../../assets/images/image-26.png";
+import hardChoiceToMakeTwo from "../../../assets/images/image-27.png";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import Lenis from "lenis";
@@ -260,6 +261,29 @@ const OFFICIAL_SECTIONS = [
         id: "finale",
         label: "Finale? Or not?"
     }
+];
+
+const PEM_BIG_SECTIONS = [
+    {
+        id: "big-overview",
+        label: "The bigger brother",
+    },
+    {
+        id: "big-qualifier",
+        label: "PEM Big Tournament Qualifier",
+    },
+    {
+        id: "big-ecl",
+        label: "Elite Competition League",
+    },
+    {
+        id: "big-main-event",
+        label: "PEM Big Tournament",
+    },
+    {
+        id: "big-rewards",
+        label: "The golden trophy and Hall of Fame",
+    },
 ];
 
 const PEM_SMALL_SECTIONS = [
@@ -1381,9 +1405,12 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
 const PEM_SMALL_IMAGES = import.meta.glob("../../../assets/images/pem-small-*.png", { eager: true, import: "default" });
 const pemImg = (n) => PEM_SMALL_IMAGES[`../../../assets/images/pem-small-${String(n).padStart(2, "0")}.png`];
 
-const PemShot = ({ n, alt, width = "34vw", caption }) => (
+const PEM_BIG_IMAGES = import.meta.glob("../../../assets/images/pem-big-*.png", { eager: true, import: "default" });
+const pemBigImg = (n) => PEM_BIG_IMAGES[`../../../assets/images/pem-big-${String(n).padStart(2, "0")}.png`];
+
+const PemShot = ({ n, src, alt, width = "34vw", caption }) => (
     <div className={css.image_container}>
-        <img src={pemImg(n)} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+        <img src={src ?? pemImg(n)} alt={alt} className={css.image} style={{ width, height: "auto" }} />
         {caption && (
             <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                 {caption}
@@ -1442,7 +1469,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             </p>
             <PemShot n={2} alt="Tournament Intro Screen of the Qualifier with Group A and Group B" />
             <p className={css.info_text}>
-                After "Continue", every Group is its own <b>Double Elimination</b> bracket. Above, there is the <b>Upper Bracket</b>: Upper Opening Round, Upper Quarterfinals, Upper Semifinals and the Upper Final.
+                After "Continue", every Group is its own <b>Double Elimination</b> bracket. Above, there is the <b>Upper Bracket</b>: Opening Round, Upper Quarterfinals, Upper Semifinals and the Upper Final.
                 Below, there is the <b>Lower Bracket</b>, where every team lands after its first loss: Lower Rounds 1, 2 and 3, Lower Semifinals, Lower Final and, at the very end, the <b>Consolidation Final</b>.
                 A second loss and a team flies out of the Qualifier.
             </p>
@@ -1461,7 +1488,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
                 so I can decide by myself, which Group I continue with.
                 The match modal looks as usual, it only tells the Group and the round now:
             </p>
-            <PemShot n={5} alt="Match modal of an Upper Opening Round in Group A" width="35vw" height="27vh" />
+            <PemShot n={5} alt="Match modal of an Opening Round in Group A" width="35vw" height="27vh" />
             <PemShot n={6} alt="Series screen of a Qualifier match with the Qualifier badge" width="30vw" caption="(The trophy icon in the series screen is replaced by the Qualifier badge here)" />
             <p className={css.info_text}>
                 In my Qualifier, Team Rose and Team Moss won their Upper Finals, while Team Periwinkle and Team Sunflower went the long way and won the Consolidation Finals.
@@ -1623,6 +1650,220 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
     </>
 );
 
+const BigShot = ({ n, ...props }) => <PemShot src={pemBigImg(n)} {...props} />;
+
+const PemBigSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="big-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The bigger brother</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                If there is a "Small" one, there has to be a "Big" one as well. <b>Pro Extreme Masters Big Tournament</b> (PEM Big Tournament) is the second Tier 1 tournament and it can be picked
+                in the "Choose how you want to play" modal or come up by "Random", same as the other two. And same as the PEM Small Tournament, it is three tournaments, played one after another: <br />
+                • <b>PEM Big Tournament Qualifier</b> (Qualifier) <br />
+                • <b>Elite Competition League</b> (Tier 2) <br />
+                • <b>PEM Big Tournament</b> itself, the main event (Tier 1)
+            </p>
+            <BigShot n={1} alt="Choose how you want to play modal with the PEM Big Tournament picked" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                All the teams are seeded by the Leaderboard at the moment the PEM Big Tournament is chosen: <br />
+                • Top 1-12 → Autoqualify to <b>Stage II</b> of the main event <br />
+                • Top 13-16 → Autoqualify to <b>Stage I</b> of the main event <br />
+                • Top 17-48 → Play in the <b>Qualifier</b> for the 4 remaining places of Stage I <br />
+                • Top 49-64 → Play in the <b>Elite Competition League</b>
+            </p>
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                Again, "Proceed" starts the next tournament right after the last match of the previous one, and how a match itself is played is explained in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. Here, I will tell you about the <b>PEM Big Tournament #1</b>, which I played right after{" "}
+                <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">PEM Small Tournament #1</InfoLink>.
+            </p>
+        </section>
+        <section>
+            <div id="big-qualifier" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>PEM Big Tournament Qualifier</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The Qualifier is the exact same as the{" "}
+                <InfoLink onClick={scrollToAnchor("pem-qualifier", "pem-small")} href="?page=pem-small#pem-qualifier">PEM Small Tournament Qualifier</InfoLink>:
+                Group A and Group B with 16 teams each, two Double Elimination brackets and the winners of the Upper Finals and the Consolidation Finals qualify.
+                The only difference is who plays in it: places 17-48 instead of 13-44, so it&apos;s a bit weaker.
+            </p>
+            <BigShot n={2} alt="Tournament Intro Screen of the PEM Big Tournament Qualifier" />
+            <BigShot n={3} alt="Group A of the PEM Big Tournament Qualifier before the first match" />
+            <p className={css.info_text}>
+                And it was a bad Qualifier for the favourites. Team Azure, the champion of{" "}
+                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, lost both of its matches, each of them 1:2, and flew out right away.
+                In Group A, Team Orange won all of its matches, but it was close: the Upper Final against Team Blue went to the Decider and ended 3:2.
+                Team Blue then fought back through the Consolidation Final with a 3:0 against Team Chartreuse.
+                In Group B, it was the same story: Team Violet beat Team Copper 3:1 in the Upper Final and Team Copper then beat Team Sand 3:1 in the Consolidation Final:
+            </p>
+            <BigShot n={4} alt="The 4 qualifiers of PEM Big Tournament #1" />
+            <p className={css.info_text}>
+                The Pick&apos;em summary looks the same as in the PEM Small Tournament Qualifier. With only 5/16 Opening Rounds, this one was over pretty early for me:
+            </p>
+            <BigShot n={5} alt="Pick'em summary of the PEM Big Tournament Qualifier" />
+            <BigShot n={6} alt="Finished Group B of the Qualifier with the Proceed button" />
+        </section>
+        <section>
+            <div id="big-ecl" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Elite Competition League</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The second tournament is the <b>Elite Competition League</b>, a Tier 2 tournament with its own number (Elite Competition League #1), same as the Champions Series Tour.
+                It&apos;s for the 16 lowest placed teams (places 49-64). This time, there are no Groups: the Tournament Intro Screen only shows all 16 teams, because all of them play in one bracket:
+            </p>
+            <BigShot n={7} alt="Tournament Intro Screen of the Elite Competition League" />
+            <p className={css.info_text}>
+                That bracket is a <b>Double Elimination</b> bracket again, built like a Group of the Qualifier: Opening Round, Upper Quarterfinals, Upper Semifinals and Upper Final above,
+                Lower Rounds 1-3, Lower Semifinals, Lower Final and Consolidation Final below. But here, nobody qualifies anywhere, so there is one more match at the very end:
+                the <b>Grand Final</b>, between the winner of the Upper Final and the winner of the Consolidation Final.
+            </p>
+            <BigShot n={8} alt="Elite Competition League bracket before the first match" />
+            <p className={css.info_text}>
+                The formats are different from all the other brackets: the whole Upper Bracket is <b>Best of 1</b>, except the Upper Final, which is <b>Best of 3</b>.
+                The whole Lower Bracket is <b>Best of 3</b> and the Grand Final is <b>Best of 5</b>. So, a team can lose its only Bo1 in the Upper Bracket and still get a full Bo3 in the Lower Bracket.
+                The very first match was the top seed Team Forest against the last seed Team Midnight:
+            </p>
+            <BigShot n={9} alt="Match modal of the first Opening Round of the Elite Competition League" width="35vw" />
+            <BigShot n={10} alt="Series screen of a Bo1 Opening Round" width="30vw" caption="(It's not Playoffs, so the series screen keeps the usual HUD)" />
+            <p className={css.info_text}>
+                Since a Bo1 has only one set, its match rect shows the rounds of that set, e.g. 13-10, instead of 1-0. If a Bo1 is decided via Extended Rounds or Penalties,
+                both scores turn gray (it was a tie after all) and the result of the tiebreaker shows up on the divider between both teams (see{" "}
+                <InfoLink onClick={scrollToAnchor("tiebreaker-system", "official")} href="?page=official#tiebreaker-system">Tiebreaker system after Quadruple Overtime</InfoLink>
+                ).
+            </p>
+            <p className={css.info_text}>
+                Team Forest won 13-10, but it lost its next match 3-13 against Team Apricot and then Team Midnight again in Lower Round 2, which went the long way:
+                four Lower Bracket wins in a row, up until the Lower Final. There, Team Bronze stopped it. And Team Bronze is the real story of this Elite Competition League:
+                it lost its very first match 5-13 against Team Charcoal and then won six Lower Bracket matches in a row, including the Consolidation Final against Team Honey,
+                which had lost the Upper Final against Team Charcoal before.
+            </p>
+            <BigShot n={13} alt="Finished Upper Bracket of the Elite Competition League with the Grand Final" />
+            <BigShot n={14} alt="Finished Lower Bracket of the Elite Competition League" />
+            <p className={css.info_text}>
+                And in the Grand Final, Team Charcoal met Team Bronze again. Team Charcoal won the first two sets, Team Bronze took the third one 13-8,
+                but the fourth went to Overtime and Team Charcoal won it 22-19. So, Team Charcoal won the Grand Final 3:1, without losing a single match.
+                The placements are different from the other Playoffs as well: the loser of the Grand Final is 2nd, the loser of the Consolidation Final 3rd and the loser of the Lower Final 4th.
+                The Winners&apos; screen is the same as in the Champions Series Tour, without quotes and without a trophy:
+            </p>
+            <BigShot n={11} alt="Winners' screen of Elite Competition League #1" width="28vw" />
+            <p className={css.info_text}>
+                The Pick&apos;em summary counts every round of the bracket. The single matches (Lower Final, Upper Final, Consolidation Final and Grand Final) are only mentioned, if I guessed them:
+            </p>
+            <BigShot n={12} alt="Pick'em summary of the Elite Competition League" />
+        </section>
+        <section>
+            <div id="big-main-event" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>PEM Big Tournament</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The main event has three Stages: <b>Stage I</b>, <b>Stage II</b> and the <b>Playoffs</b>. Its Tournament Intro Screen shows the 12 auto-qualifiers to Stage II,
+                then the 8 teams of Stage I (the places 13-16 and the 4 teams from the Qualifier, which glow golden again) and how those 8 are dealt into Group A and Group B:
+            </p>
+            <BigShot n={15} alt="Tournament Intro Screen of PEM Big Tournament #1" />
+            <p className={css.info_text}>
+                Every Group of Stage I is the smallest Double Elimination bracket there is: two Opening Rounds, the Upper Final, Lower Round 1 for the losers of the Opening Rounds
+                and Lower Round 2 for the winner of Lower Round 1 and the loser of the Upper Final. All of them are <b>Best of 3</b>.
+                The winner of the Upper Final and the winner of Lower Round 2 go to Stage II, so a team needs two wins to get through and two losses to fly out:
+            </p>
+            <BigShot n={16} alt="Group A of Stage I before the first match" />
+            <BigShot n={17} alt="Match modal of the first Opening Round of Stage I" width="35vw" />
+            <p className={css.info_text}>
+                In Group A, both teams from the Qualifier made it: Team Orange won both of its matches and Team Copper came back through Lower Round 2.
+                Team Red, the 13th team of the Leaderboard, lost both of its matches. In Group B, Team Gray won the Upper Final and Team Violet, the third qualifier, beat Team Cyan in Lower Round 2.
+                Only Team Blue, the fourth qualifier, lost both of its matches and flew out:
+            </p>
+            <BigShot n={18} alt="Finished Group A of Stage I" />
+            <BigShot n={19} alt="Finished Group B of Stage I" />
+            <p className={css.info_text}>
+                Once the last match of the last Group is played, <b>Stage II</b> starts right away, without any extra screen. Its 16 teams (the 12 auto-qualifiers and the 4 teams from Stage I) are dealt into Group A and Group B,
+                and from here on, everything is exactly like the Group Stage of the{" "}
+                <InfoLink onClick={scrollToAnchor("pem-main-event", "pem-small")} href="?page=pem-small#pem-main-event">PEM Small Tournament</InfoLink>.
+                With the navigation in the top left corner, I can look back at Stage I:
+            </p>
+            <BigShot n={20} alt="Group A of Stage II before the first match, with the Stage navigation" />
+            <p className={css.info_text}>
+                Team Seafoam, the champion of Official #1 and PEM Small Tournament #1, didn&apos;t lose a single set in Group A and beat Team Moss 3:0 in the Upper Final.
+                In Group B, Team Orange went even further: it beat Team Salmon and Team Periwinkle and only lost the Upper Final 0:3 against Team Yellow.
+                So a team, which started the whole PEM Big Tournament in the Qualifier, was in the Playoffs now:
+            </p>
+            <BigShot n={21} alt="Finished Group A of Stage II" />
+            <BigShot n={22} alt="Finished Group B of Stage II" caption="(Team Emerald won the Lower Final 3:2 against Team Periwinkle)" />
+            <p className={css.info_text}>
+                The Playoffs are the same 6-team bracket as in the PEM Small Tournament, but bigger: the Quarterfinals are <b>Best of 5</b>, the Semifinals and the Third Place Decider are <b>Best of 7</b>{" "}
+                and the Grand Final is <b>Best of 9</b>, exactly the same formats as in the Playoffs of Official.
+            </p>
+            <BigShot n={23} alt="Playoffs of PEM Big Tournament #1 before the Quarterfinals" />
+            <p className={css.info_text}>
+                Team Orange&apos;s run ended with a 1:3 against Team Rose in the Quarterfinals. Team Moss beat Team Emerald 3:0 and then Team Yellow 4:2 in a Semifinal with a 17-19 set in Overtime,
+                while Team Seafoam beat Team Rose 4:1. And so, the Grand Final was Team Seafoam against Team Moss, a Best of 9:
+            </p>
+            <BigShot n={24} alt="Match modal of the Grand Final of PEM Big Tournament #1" width="35vw" />
+            <BigShot n={25} alt="Series screen of the Bo9 Grand Final with the golden PEM trophy" width="30vw" caption="(The trophy icon in the series screen is the golden PEM trophy now)" />
+            <p className={css.info_text}>
+                Team Moss won the first set 13-9, but then Team Seafoam won five sets in a row: 5:1. Team Yellow beat Team Rose 4:1 in the Third Place Decider.
+                Every Tier 1 tournament has its own trophy: the PEM Small Tournament has the silver one, the PEM Big Tournament has the <b>golden PEM trophy</b>:
+            </p>
+            <BigShot n={26} alt="Winners' screen of PEM Big Tournament #1 with the golden PEM trophy" width="28vw" />
+            <p className={css.info_text}>
+                And the Pick&apos;em challenge was the closest one I&apos;ve had so far: 125 out of 130 needed Pick&apos;em points.
+            </p>
+            <BigShot n={27} alt="Pick'em summary of PEM Big Tournament #1" width="30vw" />
+            <BigShot n={28} alt="Finished Playoffs of PEM Big Tournament #1 with the end buttons" />
+        </section>
+        <section>
+            <div id="big-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The golden trophy and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                In the Leaderboard, the golden trophy gets its own icon, the same way the silver one does, and it&apos;s placed before it.
+                Team Seafoam has all three trophies now: the golden PEM trophy, the silver PEM trophy and the Official trophy. Its Unbeaten Streak went up to 8 as well.
+                The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with the PEM Small Tournament (see{" "}
+                <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">Trophies, medals and Hall of Fame</InfoLink>
+                ):
+            </p>
+            <BigShot n={29} alt="Leaderboard after PEM Big Tournament #1" />
+            <p className={css.info_text}>
+                In the Hall of Fame, there are three new cards again: the PEM Big Tournament card with the golden trophy on top, the Elite Competition League card and the Qualifier card.
+                I lost all three Pick&apos;em challenges this time, so the Pick&apos;em points score went down:
+            </p>
+            <BigShot n={30} alt="Hall of Fame with the cards of PEM Big Tournament #1" />
+            <p className={css.info_text}>
+                The Qualifier&apos;s summary is the same as the one of the PEM Small Tournament Qualifier. The Elite Competition League&apos;s summary has all teams,
+                the whole bracket with all the results, the podium and the whole top from the 5th to the 16th place. The order of the places comes from the round, in which a team lost its second match:
+                the losers of the Lower Semifinals are 5th and 6th, the losers of Lower Round 3 are 7th and 8th and so on:
+            </p>
+            <BigShot n={31} alt="Hall of Fame, Elite Competition League #1: all teams" />
+            <BigShot n={32} alt="Hall of Fame, Elite Competition League #1: the bracket" />
+            <BigShot n={33} alt="Hall of Fame, Elite Competition League #1: the podium" />
+            <BigShot n={34} alt="Hall of Fame, Elite Competition League #1: the places 5-16" />
+            <p className={css.info_text}>
+                The PEM Big Tournament&apos;s summary starts with the Tournament start: the auto-qualifiers to Stage II, the teams of Stage I with the glowing qualifiers, the link to the Qualifier and the Groups of Stage I.
+                Then comes the whole Stage I, all teams of Stage II, the whole Stage II, the Playoffs and the podium with the 5th and 6th places:
+            </p>
+            <BigShot n={35} alt="Hall of Fame, PEM Big Tournament #1: Tournament start" />
+            <BigShot n={36} alt="Hall of Fame, PEM Big Tournament #1: Stage I" />
+            <BigShot n={37} alt="Hall of Fame, PEM Big Tournament #1: all teams to Stage II" />
+            <BigShot n={38} alt="Hall of Fame, PEM Big Tournament #1: Stage II" />
+            <BigShot n={39} alt="Hall of Fame, PEM Big Tournament #1: the Playoffs" />
+            <BigShot n={40} alt="Hall of Fame, PEM Big Tournament #1: the podium" />
+            <p className={css.info_text}>
+                Afterwards, there are three tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b> and <b>PEM Big Tournament</b>. Which #2 is coming next? (Or I&apos;ll go it via "Random" again, who knows):
+            </p>
+            <div className={css.image_container}>
+                <img src={hardChoiceToMakeTwo} alt="Hard choice to make: Official #2 or PEM Small Tournament #2 or PEM Big Tournament #2?" className={css.image} style={{ width: '35vw', height: '35vh' }} />
+            </div>
+        </section>
+    </>
+);
+
 const INFO_SUB_PAGES = [
     {
         id: "official",
@@ -1635,6 +1876,12 @@ const INFO_SUB_PAGES = [
         label: <>PEM Small Tournament Qualifier /<br />Champions Series Tour /<br />PEM Small Tournament</>,
         sections: PEM_SMALL_SECTIONS,
         Content: PemSmallSubPage,
+    },
+    {
+        id: "pem-big",
+        label: <>PEM Big Tournament Qualifier /<br />Elite Competition League /<br />PEM Big Tournament</>,
+        sections: PEM_BIG_SECTIONS,
+        Content: PemBigSubPage,
     },
 ];
 

@@ -10,8 +10,6 @@
     padding-bottom: 12px;
 }
 
-/* Fixed instead of sticky, because the page's column is only as wide as its text;
-   a spacer of the same height keeps the content below it */
 .second_header {
     position: fixed;
     top: 0;
