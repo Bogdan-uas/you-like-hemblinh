@@ -101,29 +101,29 @@
     flex: 1 1 auto;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     overflow: hidden;
     position: relative;
 }
 
 .marquee_track {
     display: flex;
-    gap: 12px;
     align-items: center;
-    width: 100%;
+    width: max-content;
+    animation: scrollLeft 150s linear infinite;
+    will-change: transform;
 }
 
 .marquee_group {
     display: flex;
     gap: 12px;
     align-items: center;
-    transform: translateX(0%);
-    animation: scrollLeft 75s linear infinite;
+    padding-right: 12px;
 }
 
 @keyframes scrollLeft {
     from {
-        transform: translateX(0%);
+        transform: translateX(0);
     }
 
     to {
@@ -165,10 +165,6 @@
     padding: 28px;
     color: #ddd;
     text-align: center;
-}
-
-.marquee_group+.marquee_group {
-    margin-left: 18px;
 }
 
 .bracket_container {
@@ -886,6 +882,38 @@
     to {
         opacity: 1;
         transform: translate(-50%, -50%);
+    }
+}
+
+.modal_closing {
+    animation: fadeOutScale 0.25s ease-in forwards !important;
+    pointer-events: none;
+}
+
+@keyframes fadeOutScale {
+    from {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, -150%);
+    }
+}
+
+.overlay_closing {
+    animation: overlayFadeOut 0.35s ease forwards;
+    pointer-events: none;
+}
+
+@keyframes overlayFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
     }
 }
 
