@@ -15,7 +15,7 @@ const big = pemCutoffs(PEM_BIG_TYPE_ID);
 export const LEADERBOARD_DIVIDER_SETS = [
     {
         value: ACTIVE_TOURNAMENT_TYPE,
-        label: "Official",
+        label: "Official (default)",
         tier: "official",
         dividers: [
             { rank: 17, above: "Autoqualifiers to Stage III", below: "Autoqualifiers to Stage II" },
