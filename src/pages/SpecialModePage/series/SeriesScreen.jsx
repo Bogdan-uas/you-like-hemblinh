@@ -12,7 +12,7 @@ import GradientDiamond from "../../../components/GradientIcon/GradientDiamond.js
 import { PenaltyCircles } from "../components/PenaltyCircles.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { MomentumStreakBadge } from "../components/StreakBadges.jsx";
-import { PemSeriesTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy } from "../components/Trophies.jsx";
 import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
 import { isSingleEclStage, eclStageLabel } from "../logic/ecl.jsx";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
@@ -20,7 +20,7 @@ import { isSinglePemGroupStage, pemGroupStageLabel, PEM_GROUP_QUALIFYING_STAGES 
 import { isSinglePemStage1Stage, pemStage1StageLabel, PEM_STAGE1_QUALIFYING_STAGES } from "../logic/pemStage1.jsx";
 import { stageLabelPlayoffs } from "../logic/playoffs.js";
 import { isSingleQualifierStage, qualifierStageLabel, QUALIFIER_QUALIFYING_STAGES } from "../logic/qualifier.jsx";
-import { swissNetTitle } from "../logic/swiss.js";
+import { swissNetTitle, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { GameControlModals } from "../screens/GameControlModals.jsx";
 
 export function SeriesScreen({ header, series, labels, actions }) {
@@ -70,6 +70,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
         isPemMainPhase,
         isPemBigSeries,
         pemType,
+        gccLabel,
+        isGccPhase,
+        isGplMainPhase,
         getOvertimeLabel,
         getPenaltyMessage,
         getMultiplierClass,
@@ -113,6 +116,13 @@ export function SeriesScreen({ header, series, labels, actions }) {
         } else if (seriesState.phase === "ecl") {
             small = eclLabel;
             big = eclStageLabel(seriesState.eclStage);
+        } else if (seriesState.phase === "gccLeague") {
+            small = (
+                <>
+                    {gccLabel} | League Phase
+                </>
+            );
+            big = `Matchday ${seriesState.gccMatchday}`;
         } else if (seriesState.phase === "cstGroup") {
             small = (
                 <>
@@ -121,7 +131,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
             );
             big = `Group ${seriesState.cstGroup}`;
         } else if (seriesState.phase === "playoffs") {
-            small = isCstPhase ? cstLabel : isPemMainPhase ? pemLabel : tournamentLabel;
+            small = isCstPhase ? cstLabel : isGccPhase ? gccLabel : isPemMainPhase ? pemLabel : tournamentLabel;
             big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "stage1") {
             small = (
@@ -150,8 +160,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
         const isPemGroupSeries = seriesState.phase === "pemGroup";
         const isPemStage1Series = seriesState.phase === "pemStage1";
         const isEclSeries = seriesState.phase === "ecl";
+        const isGccSeries = isGccPhase && (seriesState.phase === "gccLeague" || seriesState.phase === "playoffs");
         const isCstSeries =
-            (isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs")) || isEclSeries;
+            (isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs")) || isEclSeries || isGccSeries;
         const isPemSeries = isPemMainPhase && (isPemGroupSeries || isPemStage1Series || seriesState.phase === "playoffs");
 
         const seriesMatchNumber =
@@ -167,7 +178,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 ? seriesState.eclMatchNumber ?? 1
                                 : seriesState.phase === "cstGroup"
                                     ? seriesState.cstMatchNumber ?? 1
-                                    : seriesState.swissMatchNumber ?? 1;
+                                    : seriesState.phase === "gccLeague"
+                                        ? seriesState.gccMatchNumber ?? 1
+                                        : seriesState.swissMatchNumber ?? 1;
 
         const showSeriesMatchNumber = isQualifierSeries
             ? !isSingleQualifierStage(seriesState.qualifierStage)
@@ -223,7 +236,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             >
                                 &nbsp;
                             </motion.span>
-                        ) : isPemSeries ? (
+                        ) : isPemSeries || isGplMainPhase ? (
                             <motion.span
                                 initial={{ opacity: 0, y: -40 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -232,7 +245,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 className={css.round_text}
                                 style={{ fontSize: "28px", position: "absolute", left: "50%", x: "-50%", display: "flex", transition: 'none' }}
                             >
-                                <PemSeriesTrophy type={pemType} />
+                                {isGplMainPhase ? <GplTrophy /> : <PemSeriesTrophy type={pemType} />}
                             </motion.span>
                         ) : (
                             <motion.span
@@ -522,10 +535,10 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 </span>
             </>
         );
-    }, [seriesState, tournamentLabel, pemLabel, cstLabel, eclLabel, isCstPhase, isPemMainPhase, isPemBigSeries, pemType]);
+    }, [seriesState, tournamentLabel, pemLabel, cstLabel, eclLabel, gccLabel, isCstPhase, isGccPhase, isGplMainPhase, isPemMainPhase, isPemBigSeries, pemType]);
 
     const getPointLabel = () => {
-        if (seriesState.phase === "cstGroup") return "MATCH POINT!!!";
+        if (seriesState.phase === "cstGroup" || seriesState.phase === "gccLeague") return "MATCH POINT!!!";
 
         if (seriesState.phase === "qualifier") {
             return QUALIFIER_QUALIFYING_STAGES.includes(seriesState.qualifierStage)
@@ -562,7 +575,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 return "STAGE II POINT!!!";
 
             case "stage2":
-                return "STAGE III POINT!!!";
+                return seriesState.swissFormat === GPL_SWISS_FORMAT ? "PLAYOFFS POINT!!!" : "STAGE III POINT!!!";
 
             case "stage3":
                 return "PLAYOFFS POINT!!!";

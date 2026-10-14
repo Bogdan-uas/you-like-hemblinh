@@ -9,9 +9,9 @@ import { FadeOut } from "../components/FadeOut.jsx";
 
 export function TournamentIntros({ intro, phase, labels, tournament }) {
     const { showTournamentIntro, handleCloseTournamentIntro } = intro;
-    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries } = phase;
-    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, tournamentLabel } = labels;
-    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain } = tournament;
+    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase } = phase;
+    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, tournamentLabel } = labels;
+    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries } = tournament;
 
 
     return (
@@ -311,7 +311,129 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                         </div>
                     </div>
                 )}</FadeOut>
-                <FadeOut variant="overlay">{showTournamentIntro && !isQualifierPhase && !isCstPhase && !isEclPhase && !isPemMainPhase && (
+                <FadeOut variant="overlay">{showTournamentIntro && isGccPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {gccLabel}
+                                </div>
+
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    All teams
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "60%", margin: "0 auto" }}>
+                                    {(gcc?.teams || []).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay} style={{ flexDirection: "row", alignItems: "flex-start", gap: 56, justifyContent: "center", marginTop: 22 }}>
+                                {(gcc?.pots || []).map((pot, potIndex) => (
+                                    <div key={potIndex} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                        <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                            Pot {potIndex + 1}
+                                        </div>
+
+                                        <div style={{ display: "flex", flexDirection: "row", gap: 10, alignItems: "center" }}>
+                                            {pot.map((t) => (
+                                                <TeamCircle
+                                                    key={t.id}
+                                                    team={t}
+                                                    showRating
+                                                    ratingValue={teamRatings[t.id] ?? 0}
+                                                    specialStyle={{ width: "48px", height: "48px" }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isGplMainPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {tournamentLabel}
+                                </div>
+
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Auto-qualifiers to Stage II
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "36%", margin: "0 auto" }}>
+                                    {(gplSeries?.seeds?.stage2Auto || []).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay} style={{ marginTop: 22 }}>
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    Qualifiers to Stage I
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "60%", margin: "0 auto" }}>
+                                    {(gplSeries?.seeds?.stage1 || []).map((t) => (
+                                        <TeamCircle
+                                            key={t.id}
+                                            team={t}
+                                            showRating
+                                            ratingValue={teamRatings[t.id] ?? 0}
+                                            specialStyle={{ width: "48px", height: "48px" }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && !isQualifierPhase && !isCstPhase && !isEclPhase && !isPemMainPhase && !isGccPhase && !isGplMainPhase && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>

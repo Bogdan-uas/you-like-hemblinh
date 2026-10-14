@@ -8,10 +8,12 @@ import { LeaderboardDividerSelect } from "../components/LeaderboardDividerSelect
 import { getLeaderboardDividers } from "../logic/leaderboardDividers.js";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import { TeamStatsHoverPopover } from "../components/TeamStatsHoverPopover.jsx";
-import { PemGoldTrophy, PemSilverTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
+import { PemGoldTrophy, PemSilverTrophy, GplTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
 import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "../logic/placings.jsx";
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
+
+const NOT_PLAYING_RED = "#be3939";
 
 export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page }) {
     const { isTournamentNumberButtonArmed, handleTournamentNumberClick, setIsTournamentNumberButtonArmed } = tournamentNumberAdmin;
@@ -159,12 +161,14 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                     const trophyDisplay = trophyCountToDisplay(p.wins);
                     const tier1TrophyDisplay = trophyCountToDisplay(p.tier1Wins);
                     const pemBigTrophyDisplay = trophyCountToDisplay(p.pemBigWins);
-                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay;
+                    const gplTrophyDisplay = trophyCountToDisplay(p.gplWins);
+                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay;
 
                     const isCountMode =
                         trophyDisplay?.mode === "count" ||
                         tier1TrophyDisplay?.mode === "count" ||
-                        pemBigTrophyDisplay?.mode === "count";
+                        pemBigTrophyDisplay?.mode === "count" ||
+                        gplTrophyDisplay?.mode === "count";
                     const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
                     const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
@@ -185,11 +189,21 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                         {divider.above}
                                     </h4>
 
-                                    <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+                                    {divider.notPlayingBelow ? (
+                                        <div style={{ position: "relative", width: "600px", transition: "none" }}>
+                                            <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+                                            <hr
+                                                style={{ width: "600px", margin: 0, position: "absolute", top: 0, left: 0, borderTopColor: NOT_PLAYING_RED, clipPath: "inset(2px 0 0 0)" }}
+                                                className={css.dashed_divider}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
+                                    )}
 
                                     <h4
                                         className={css.game_title}
-                                        style={{ fontSize: "30px", color: "#999", marginTop: "16px" }}
+                                        style={{ fontSize: "30px", color: divider.notPlayingBelow ? NOT_PLAYING_RED : "#999", marginTop: "16px" }}
                                     >
                                         {divider.below}
                                     </h4>
@@ -257,6 +271,16 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                                 transition: "none"
                                             }}
                                         >
+                                            {gplTrophyDisplay &&
+                                                (gplTrophyDisplay.mode === "icons" ? (
+                                                    Array.from({ length: gplTrophyDisplay.n }).map((_, k) => (
+                                                        <GplTrophy key={k} style={{ transition: "none" }} />
+                                                    ))
+                                                ) : (
+                                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
+                                                        {gplTrophyDisplay.n} <GplTrophy />
+                                                    </span>
+                                                ))}
                                             {pemBigTrophyDisplay &&
                                                 (pemBigTrophyDisplay.mode === "icons" ? (
                                                     Array.from({ length: pemBigTrophyDisplay.n }).map((_, k) => (
@@ -314,7 +338,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                             transition: "none"
                                         }}>
                                             {buildPlacingItems(p, null)
-                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins")
+                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins")
                                                 .map((item, itemIndex) => (
                                                     <MedalWithBreakdown
                                                         key={item.key}

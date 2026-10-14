@@ -57,7 +57,9 @@ export const buildModalStatsKey = ({ modalContext, currentModalMatch, hallRecord
                             ? `ecl:${modalContext.stage}`
                             : modalContext.type === "pemStage1"
                                 ? `pemStage1:${modalContext.group}:${modalContext.stage}`
-                                : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : modalContext.kind === "pemBig" ? "pemBigPlayoffs" : "playoffs"}:${modalContext.stage}`;
+                                : modalContext.type === "gccLeague"
+                                    ? `gccLeague:${modalContext.matchday}`
+                                    : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : modalContext.kind === "pemBig" ? "pemBigPlayoffs" : modalContext.kind === "gpl" ? "gplPlayoffs" : modalContext.kind === "gcc" ? "gccPlayoffs" : "playoffs"}:${modalContext.stage}`;
     const originPart = modalContext.isArchivedHallOfFame
         ? `hall:${hallRecordId ?? ""}:`
         : `t${tournamentNumber}:`;
@@ -280,7 +282,7 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000 + (p?.pemBigWins ?? 0) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
+            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000 + ((p?.pemBigWins ?? 0) + (p?.gplWins ?? 0)) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
             case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
             case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;

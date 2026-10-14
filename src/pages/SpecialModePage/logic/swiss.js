@@ -18,8 +18,14 @@ export const isProgressionOrEliminationNet = (net) =>
     net === "2:1" ||
     net === "1:2" ||
     net === "2:2";
+    
+export const GPL_SWISS_FORMAT = "gpl";
 
-export const getBestOfForSwissNet = (net, stageKey) => {
+export const getBestOfForSwissNet = (net, stageKey, format = null) => {
+    if (format === GPL_SWISS_FORMAT) {
+        return stageKey === "stage2" && isProgressionOrEliminationNet(net) ? 5 : 3;
+    }
+
     if (stageKey === "stage3") {
         return isProgressionOrEliminationNet(net) ? 5 : 3;
     }
@@ -51,6 +57,18 @@ export const BOX_SLOTS = {
     "2:3": 6,
 };
 
+const GPL_BOX_SLOTS = {
+    "3:0": 2,
+    "3:1": 3,
+    "3:2": 3,
+    "0:3": 2,
+    "1:3": 3,
+    "2:3": 3,
+};
+
+export const getSwissBoxSlots = (title, format = null) =>
+    (format === GPL_SWISS_FORMAT ? GPL_BOX_SLOTS : BOX_SLOTS)[title] ?? 6;
+
 const makeSwissTeam = (t) => ({
     ...t,
     seed: 0,
@@ -78,7 +96,7 @@ const shuffleMatches = (matches) => {
     });
 };
 
-const buildNetMatches = (teams, stageKey, net) => {
+const buildNetMatches = (teams, stageKey, net, format = null) => {
     const [wStr, lStr] = net.split(":");
     const w = Number(wStr);
     const l = Number(lStr);
@@ -103,6 +121,7 @@ const buildNetMatches = (teams, stageKey, net) => {
         matches.push({
             id: `${stageKey}-${net}-${i / 2 + 1}`,
             stageKey,
+            ...(format ? { format } : {}),
             net,
             matchNoInNet: i / 2 + 1,
 
@@ -146,15 +165,16 @@ const buildNetMatches = (teams, stageKey, net) => {
     return matches;
 };
 
-export const buildSwissStage = (stageKey, teams) => {
+export const buildSwissStage = (stageKey, teams, format = null) => {
     const stageTeams = teams.map((t, i) =>
         makeSwissTeam(t, i + 1)
     );
     return {
         stageKey,
+        ...(format ? { format } : {}),
         teams: stageTeams,
         matchesByNet: {
-            "0:0": buildNetMatches(stageTeams, stageKey, "0:0"),
+            "0:0": buildNetMatches(stageTeams, stageKey, "0:0", format),
         },
         resultCounter: 0,
     };
@@ -183,7 +203,7 @@ export const tryBuildUnlockedNets = (stage) => {
         if (!canBuildColumn(stage, colIndex)) return;
         nets.forEach((net) => {
             if (!stage.matchesByNet[net]) {
-                stage.matchesByNet[net] = buildNetMatches(stage.teams, stage.stageKey, net);
+                stage.matchesByNet[net] = buildNetMatches(stage.teams, stage.stageKey, net, stage.format ?? null);
             }
         });
     });

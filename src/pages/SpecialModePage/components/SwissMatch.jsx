@@ -1,8 +1,9 @@
+import { useLayoutEffect, useRef } from "react";
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
 import { FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
 import { buildExtendedRoundWinnerList } from "../logic/series.js";
-import { BOX_SLOTS } from "../logic/swiss.js";
+import { getSwissBoxSlots, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 
 export const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingValue = 0, beforeRatingValue = 0, shouldPlaceholderCirclesBeRendered = false }) => {
     if (!team) {
@@ -53,6 +54,7 @@ export const MatchRect = ({
     className = "",
     dataNet,
     dataPos,
+    dataFormat,
     dataIdx,
     dataNotStarted,
     bestOf,
@@ -179,6 +181,7 @@ export const MatchRect = ({
             className={`${resultClass} ${css.ro32_rect} ${css.swiss_rect} ${className}`}
             data-net={dataNet}
             data-pos={dataPos}
+            data-format={dataFormat}
             data-idx={dataIdx}
             data-not-started={dataNotStarted}
             style={{
@@ -372,8 +375,8 @@ const BoxPlaceholderCircle = ({ tone = "green" }) => {
     );
 };
 
-export const SwissResultBox = ({ title, tone, teams }) => {
-    const slots = BOX_SLOTS[title] ?? 6;
+export const SwissResultBox = ({ title, tone, teams, format = null }) => {
+    const slots = getSwissBoxSlots(title, format);
     const items = Array.from({ length: slots }).map((_, i) => teams?.[i] || null);
 
     return (
@@ -381,6 +384,7 @@ export const SwissResultBox = ({ title, tone, teams }) => {
             className={`${css.swiss_result_box} ${tone === "green" ? css.swiss_result_box_green : css.swiss_result_box_red}`}
             style={{
                 maxWidth: title === "3:2" || title === "2:3" || title === '3:1' || title === '1:3' ? '79px' : '',
+                minWidth: format === GPL_SWISS_FORMAT && (title === "3:0" || title === "0:3") ? '157px' : '',
                 borderRadius: title === "3:0" || title === "0:3" ? '12px 0 0 12px' : title === "3:1" ? '0 0 0 12px' : title === "1:3" ? '12px 0 0 0' : title === "2:3" || title === "3:2" ? '0 12px 12px 0' : '',
             }}
         >
@@ -398,4 +402,44 @@ export const SwissResultBox = ({ title, tone, teams }) => {
             </div>
         </div>
     );
+};
+
+export const SwissResultBoxGradients = () => {
+    const anchorRef = useRef(null);
+
+    useLayoutEffect(() => {
+        const container = anchorRef.current?.parentElement;
+        if (!container) return undefined;
+
+        const unite = () => {
+            [css.swiss_result_box_green, css.swiss_result_box_red].forEach((toneClass) => {
+                const boxes = [...container.getElementsByClassName(toneClass)];
+                if (!boxes.length) return;
+                const rects = boxes.map((box) => box.getBoundingClientRect());
+                const left = Math.min(...rects.map((r) => r.left));
+                const top = Math.min(...rects.map((r) => r.top));
+                const width = Math.max(...rects.map((r) => r.right)) - left;
+                const height = Math.max(...rects.map((r) => r.bottom)) - top;
+                boxes.forEach((box, i) => {
+                    box.style.backgroundSize = `${width}px ${height}px`;
+                    box.style.backgroundPosition = `${left - rects[i].left}px ${top - rects[i].top}px`;
+                    box.style.backgroundRepeat = "no-repeat";
+                    box.style.transition = "none";
+                });
+            });
+        };
+
+        unite();
+
+        const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(unite) : null;
+        observer?.observe(container);
+        window.addEventListener("resize", unite);
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", unite);
+        };
+    });
+
+    return <span ref={anchorRef} aria-hidden="true" style={{ display: "none" }} />;
 };

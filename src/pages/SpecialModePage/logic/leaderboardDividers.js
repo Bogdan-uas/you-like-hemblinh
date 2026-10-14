@@ -1,7 +1,8 @@
 import { LEADERBOARD_DIVIDERS_LS_KEY } from "./storageKeys.js";
 import { getPemSeriesConfig } from "./pemConfig.js";
 import { PEM_BIG_STAGE2_AUTO_COUNT } from "./pemStage1.jsx";
-import { ACTIVE_TOURNAMENT_TYPE, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID, CST_TYPE_ID, ECL_TYPE_ID, getTournamentTypeConfig } from "./tournamentTypes.jsx";
+import { GPL_STAGE2_AUTO_COUNT, GPL_TEAM_COUNT, GPL_SERIES_TEAM_COUNT } from "./gpl.js";
+import { ACTIVE_TOURNAMENT_TYPE, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID, CST_TYPE_ID, ECL_TYPE_ID, GPL_TYPE_ID, GCC_TYPE_ID, getTournamentTypeConfig } from "./tournamentTypes.jsx";
 
 const pemCutoffs = (type) => {
     const { mainEventCount, qualifierCount, label, secondEvent } = getPemSeriesConfig(type);
@@ -39,6 +40,16 @@ export const LEADERBOARD_DIVIDER_SETS = [
             { rank: PEM_BIG_STAGE2_AUTO_COUNT + 1, above: "Autoqualifiers to Stage II", below: "Autoqualifiers to Stage I" },
             { rank: big.mainEventCount + 1, above: "Autoqualifiers to Stage I", below: big.qualifierLabel },
             { rank: big.mainEventCount + big.qualifierCount + 1, above: big.qualifierLabel, below: big.secondLabel },
+        ],
+    },
+    {
+        value: GPL_TYPE_ID,
+        label: getTournamentTypeConfig(GPL_TYPE_ID).label,
+        tier: "tier1",
+        dividers: [
+            { rank: GPL_STAGE2_AUTO_COUNT + 1, above: "Autoqualifiers to Stage II", below: "Qualifiers to Stage I" },
+            { rank: GPL_TEAM_COUNT + 1, above: "Qualifiers to Stage I", below: getTournamentTypeConfig(GCC_TYPE_ID).label },
+            { rank: GPL_SERIES_TEAM_COUNT + 1, above: getTournamentTypeConfig(GCC_TYPE_ID).label, below: "Teams NOT playing", notPlayingBelow: true },
         ],
     },
 ];

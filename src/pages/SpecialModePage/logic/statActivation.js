@@ -47,7 +47,7 @@ const CONDITIONAL_STAT_KEYS = [
 export const STAT_ACTIVATION_VERSION = 2;
 
 const BATTLE_XP_FULL = 30;
-const BATTLE_SWISS_STAKES = { stage1: 0.15, stage2: 0.3, stage3: 0.45 };
+const BATTLE_SWISS_STAKES = { stage1: 0.15, stage2: 0.3, stage3: 0.45, "gpl:stage1": 0.3, "gpl:stage2": 0.45 };
 const BATTLE_DECISIVE_NET_STAKES = 0.15;
 const BATTLE_PLAYOFF_STAKES = { ro16: 0.65, qf: 0.75, sf: 0.85, thirdPlace: 0.7, gf: 1 };
 
@@ -63,7 +63,7 @@ const readBattleXp = (stats) => {
 };
 
 const statKindOfContext = (context) =>
-    context?.type === "swiss" || context?.type === "cstGroup"
+    context?.type === "swiss" || context?.type === "cstGroup" || context?.type === "gccLeague"
         ? "swiss"
         : context?.type === "qualifier"
             ? "qualifier"

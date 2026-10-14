@@ -4,11 +4,11 @@ import Header from "../../../components/Header/Header.jsx";
 import { FaTrophy } from "react-icons/fa";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
-import { PemPlayoffsLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, GccKnockoutLayout } from "../components/BracketLayouts.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
-import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy } from "../components/Trophies.jsx";
 import { CST_GROUPS } from "../logic/cst.js";
 import { hallRecordTime } from "../logic/hallOfFameDb.js";
 import { PEM_QUALIFIED_HIGHLIGHT, getPemSeriesConfig } from "../logic/pemConfig.js";
@@ -18,7 +18,7 @@ import { getBestOfForPlayoffs } from "../logic/playoffs.js";
 import { QUALIFIER_GROUPS } from "../logic/qualifier.jsx";
 import { formatOrdinal } from "../logic/teamData.js";
 import { getTournamentTypeConfig, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
-import { getTournamentNumberStyle } from "../logic/winnersAndPickem.js";
+import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 import { HallManagerModals } from "./HallManagerModals.jsx";
 
 export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, page }) {
@@ -100,6 +100,8 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         renderQualifierTitle,
         renderQualifierBracket,
         renderQualifierWinnersBlock,
+        renderGccLeague,
+        renderSwissBracket,
         hallManagerScrollRef,
         getTypeNumber,
         allTeams,
@@ -475,9 +477,21 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         );
     };
 
+    const renderGplHallCardName = (number) => (
+        <span style={{ fontSize: 30 }}>
+            <span style={{ display: "block" }}>Global</span>
+            <span style={{ display: "block" }}>Pro</span>
+            <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                League{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(number))}>#{number}</span>
+            </span>
+        </span>
+    );
+
     const renderPemMainHallCard = (item) => {
         const won = item.pickemWon;
         const results = item.results || {};
+        const isGpl = item.event === "gpl";
 
         return (
             <button
@@ -526,7 +540,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             display: "flex",
                         }}
                     >
-                        <PemSeriesTrophy type={item.type} size={28} />
+                        {isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
                     </span>
                     <span
                         style={{
@@ -553,9 +567,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         lineHeight: 1,
                         textTransform: "none",
                         fontSize: 20,
+                        marginTop: isGpl ? "20px" : ""
                     }}
                 >
-                    {renderPemHallCardName(item.number, item.type)}
+                    {isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div
@@ -563,7 +578,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        marginTop: 36,
+                        marginTop: isGpl ? 52 : 36,
                         position: "relative"
                     }}
                 >
@@ -620,7 +635,8 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         if (item.event === "qualifier") return renderQualifierHallCard(item);
         if (item.event === "cst") return renderTier2HallCard(item, ["Champions", "Series", "Tour"]);
         if (item.event === "ecl") return renderTier2HallCard(item, ["Elite", "Competition", "League"]);
-        if (item.event === "main") return renderPemMainHallCard(item);
+        if (item.event === "main" || item.event === "gpl") return renderPemMainHallCard(item);
+        if (item.event === "gcc") return renderTier2HallCard(item, ["Global", "Challenger", "Cup"]);
 
         const won = item.pickemWon;
         const config = getTournamentTypeConfig(item.type);
@@ -978,6 +994,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 </div>
             );
         };
+
+        if (bracketKind === "gcc") {
+            const gccRectClasses = {
+                po: css.quarters_rect,
+                qf: css.quarters_rect,
+                sf: css.semis_rect,
+                thirdPlace: css.thirdPlace_rect,
+                gf: css.grandFinal_rect,
+            };
+
+            return (
+                <GccKnockoutLayout
+                    bracket={record.playoffs}
+                    renderMatch={(match, stage, index) =>
+                        renderArchivedMatch(match, stage, index, gccRectClasses[stage], true)
+                    }
+                />
+            );
+        }
 
         if (isPemPlayoffsKind(bracketKind)) {
             const pemRectClasses = {
@@ -1422,6 +1457,170 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                     </div>
                                 </div>
                             ))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "gcc") {
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5 && entry.place <= 12);
+            const placementColors = {
+                5: "#40e0d0",
+                6: "#ba68c8",
+                7: "#ff5e2d",
+                8: "#81c784",
+                9: "#f9e4a1",
+                10: "#b0bec5",
+            };
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header}>
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span>
+                                    Global Challenger Cup{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        #{record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams?.length ? record.teams : record.league?.teams)}
+
+                        <div style={{ display: "flex", gap: 56, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
+                            {(record.league?.pots || []).map((pot, potIndex) => (
+                                <div key={potIndex} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                    <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                        Pot {potIndex + 1}
+                                    </h4>
+                                    {renderHallTeamRow(pot)}
+                                </div>
+                            ))}
+                        </div>
+
+                        <HallOfFameSectionTitle text="League Phase" marginTop="64px" />
+                        {renderGccLeague(record.league, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Knockout Stage" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record)}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium)}
+
+                        <HallOfFameSectionTitle text="5th - 12th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "gpl") {
+            const qualifiers = record.qualifiers || {};
+            const allGplTeams = [...(qualifiers.stage2 || []), ...(qualifiers.stage1 || [])];
+            const stage2Lineup = record.stages?.stage2?.teams?.length
+                ? record.stages.stage2.teams
+                : (qualifiers.stage2 || []);
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+            const placementColors = {
+                5: "#40e0d0",
+                6: "#ba68c8",
+                7: "#ff5e2d",
+                8: "#81c784",
+            };
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header}>
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span>
+                                    Global Pro League{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        #{record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(allGplTeams)}
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content", marginTop: 36 }}>
+                            <div>
+                                <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                    Auto-qualifiers to Stage II
+                                </h4>
+                                {renderHallTeamRow(qualifiers.stage2)}
+                            </div>
+                            <div>
+                                <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                    Qualifiers to Stage I
+                                </h4>
+                                {renderHallTeamRow(qualifiers.stage1)}
+                            </div>
+                        </div>
+
+                        <HallOfFameSectionTitle text="Stage I" marginTop="64px" />
+                        {renderSwissBracket(record.stages?.stage1, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="All teams to Stage II" marginTop="64px" />
+                        {renderHallTeamRow(stage2Lineup)}
+
+                        <HallOfFameSectionTitle text="Stage II" marginTop="64px" />
+                        {renderSwissBracket(record.stages?.stage2, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="All teams to Playoffs" marginTop="64px" />
+                        {renderHallTeamRow(qualifiers.playoffs)}
+
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record)}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, <GplTrophy size={GPL_PODIUM_TROPHY_SIZE} style={GPL_PODIUM_TROPHY_STYLE} />)}
+
+                        <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
                         </div>
 
                         {renderHallManagerModals()}

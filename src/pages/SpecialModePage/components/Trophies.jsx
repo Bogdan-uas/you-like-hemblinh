@@ -1,6 +1,7 @@
 import { useState } from "react";
 import css from "../SpecialModePage.module.css";
 import PemTrophyIcon from "../../../components/PemTrophyIcon/PemTrophyIcon.jsx";
+import GplTrophyIcon from "../../../components/GplTrophyIcon/GplTrophyIcon.jsx";
 import { PEM_TROPHY_SILVER, PEM_TROPHY_GOLD } from "../logic/pemConfig.js";
 import { PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
 
@@ -15,6 +16,15 @@ export const PemSilverTrophy = ({ style, ...props }) => (
 export const PemGoldTrophy = ({ style, ...props }) => (
     <PemTrophyIcon
         color={PEM_TROPHY_GOLD}
+        style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
+        {...props}
+    />
+);
+
+export const GplTrophy = ({ style, ...props }) => (
+    <GplTrophyIcon
+        color="#2e2f42"
+        globeColor={PEM_TROPHY_GOLD}
         style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
         {...props}
     />

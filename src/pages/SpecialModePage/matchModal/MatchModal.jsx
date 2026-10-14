@@ -12,7 +12,8 @@ import { SetBreakdownOverlay } from "../components/SetBreakdownOverlay.jsx";
 import { MatchStatsOverlay } from "../components/StatsPanels.jsx";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
-import { PemSeriesTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy } from "../components/Trophies.jsx";
+import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isPemPlayoffsKind } from "../logic/pemSeries.jsx";
 import { EMPTY_TEAM_PLACINGS, buildPlacingItems } from "../logic/placings.jsx";
@@ -45,6 +46,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         breakdownSetIndex,
         isEliminationModal,
         isPemBigModal,
+        modalPotById,
         hasChosen,
         hoveredTeamId,
         setHoveredTeamId,
@@ -62,6 +64,19 @@ export function MatchModal({ modal, teams, actions, labels }) {
 
     const placementColorLeft = placementColors[rankById[modalLeftTeam?.id]] || "#ffffff";
     const placementColorRight = placementColors[rankById[modalRightTeam?.id]] || "#ffffff";
+
+    const withPotBadge = (team, circle) => {
+        const pot = modalPotById?.[team?.id];
+        if (!pot) return circle;
+        return (
+            <span style={{ position: "relative", display: "inline-block", transition: "none" }}>
+                {circle}
+                <span className={css.modal_team_pot} title={`Pot ${pot} of the League Phase`}>
+                    Pot {pot}
+                </span>
+            </span>
+        );
+    };
 
     const rankLeftSticker = () => {
         return (
@@ -359,7 +374,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
 
                         if (isEliminationModal) {
                             stageLabel = `Start this ${boLabel} ${modalTitle}`;
-                        } else if (modalContext?.type === "cstGroup") {
+                        } else if (modalContext?.type === "cstGroup" || modalContext?.type === "gccLeague") {
                             stageLabel = `Start this ${boLabel} ${modalTitle} Match`;
                         } else if (modalContext?.type === "swiss") {
                             const net = modalContext?.net;
@@ -389,7 +404,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             rightTeam: modalRightTeam,
 
                             phase: modalContext?.type === "swiss"
-                                ? "swiss"
+                                ? (modalContext?.format === GPL_SWISS_FORMAT ? "gplSwiss" : "swiss")
                                 : modalContext?.type === "qualifier"
                                     ? "qualifier"
                                     : modalContext?.type === "pemGroup"
@@ -400,13 +415,19 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 ? "pemStage1"
                                                 : modalContext?.type === "cstGroup"
                                                     ? "cstGroup"
-                                                    : modalContext?.kind === "cst"
-                                                        ? "cstPlayoffs"
-                                                        : modalContext?.kind === "pemBig"
-                                                            ? "pemBigPlayoffs"
-                                                            : modalContext?.kind === "pem"
-                                                                ? "pemPlayoffs"
-                                                                : "playoffs",
+                                                    : modalContext?.type === "gccLeague"
+                                                        ? "gccLeague"
+                                                        : modalContext?.kind === "cst"
+                                                            ? "cstPlayoffs"
+                                                            : modalContext?.kind === "gcc"
+                                                                ? "gccPlayoffs"
+                                                                : modalContext?.kind === "gpl"
+                                                                    ? "gplPlayoffs"
+                                                                    : modalContext?.kind === "pemBig"
+                                                                        ? "pemBigPlayoffs"
+                                                                        : modalContext?.kind === "pem"
+                                                                            ? "pemPlayoffs"
+                                                                            : "playoffs",
 
                             swissStageKey:
                                 modalContext?.type === "swiss"
@@ -595,27 +616,29 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 borderRadius: "50%"
                                             }}
                                         >
-                                            <TeamCircle
-                                                team={modalLeftTeam}
-                                                showRating
-                                                ratingValue={leftRating}
-                                                specialStyle={{
-                                                    width: "64px",
-                                                    height: "64px",
-                                                    border:
-                                                        hasChosen
-                                                            ? "3px solid #0d6aff"
-                                                            : "3px solid #999",
+                                            {withPotBadge(modalLeftTeam, (
+                                                <TeamCircle
+                                                    team={modalLeftTeam}
+                                                    showRating
+                                                    ratingValue={leftRating}
+                                                    specialStyle={{
+                                                        width: "64px",
+                                                        height: "64px",
+                                                        border:
+                                                            hasChosen
+                                                                ? "3px solid #0d6aff"
+                                                                : "3px solid #999",
 
-                                                    boxShadow:
-                                                        hasChosen
-                                                            ? "0 0 8px 2px #0d6aff"
-                                                            : hoveredTeamId === modalLeftTeam?.id
-                                                                ? "0 0 4px 1px #0d6aff"
-                                                                : "none",
-                                                    zIndex: 0
-                                                }}
-                                            />
+                                                        boxShadow:
+                                                            hasChosen
+                                                                ? "0 0 8px 2px #0d6aff"
+                                                                : hoveredTeamId === modalLeftTeam?.id
+                                                                    ? "0 0 4px 1px #0d6aff"
+                                                                    : "none",
+                                                        zIndex: 0
+                                                    }}
+                                                />
+                                            ))}
                                             <span
                                                 style={{
                                                     color: "#fff",
@@ -704,22 +727,24 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 borderRadius: "50%"
                                             }}
                                         >
-                                            <TeamCircle
-                                                team={modalRightTeam}
-                                                showRating
-                                                ratingValue={rightRating}
-                                                specialStyle={{
-                                                    width: "64px",
-                                                    height: "64px",
-                                                    border: "3px solid #999",
+                                            {withPotBadge(modalRightTeam, (
+                                                <TeamCircle
+                                                    team={modalRightTeam}
+                                                    showRating
+                                                    ratingValue={rightRating}
+                                                    specialStyle={{
+                                                        width: "64px",
+                                                        height: "64px",
+                                                        border: "3px solid #999",
 
-                                                    boxShadow:
-                                                        hoveredTeamId === modalRightTeam?.id
-                                                            ? "0 0 4px 1px #0d6aff"
-                                                            : "none",
-                                                    zIndex: 0
-                                                }}
-                                            />
+                                                        boxShadow:
+                                                            hoveredTeamId === modalRightTeam?.id
+                                                                ? "0 0 4px 1px #0d6aff"
+                                                                : "none",
+                                                        zIndex: 0
+                                                    }}
+                                                />
+                                            ))}
 
                                             <span
                                                 className={css.finished_modal_team_placing}
@@ -847,10 +872,17 @@ export function MatchModal({ modal, teams, actions, labels }) {
 
                             const getPlacementBadge = (isWinner, isLoser) => {
                                 if (isGrandFinal) {
-                                    if (isWinner && (modalContext?.kind === "cst" || modalContext?.type === "ecl")) {
+                                    if (isWinner && (modalContext?.kind === "cst" || modalContext?.kind === "gcc" || modalContext?.type === "ecl")) {
                                         return (
                                             <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
                                                 🥇+
+                                            </span>
+                                        );
+                                    }
+                                    if (isWinner && modalContext?.kind === "gpl") {
+                                        return (
+                                            <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <GplTrophy />+
                                             </span>
                                         );
                                     }
@@ -990,7 +1022,9 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                     pointerEvents: "none",
                                                 }}
                                             >
-                                                <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                {withPotBadge(modalPlayedLeft, (
+                                                    <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                ))}
                                                 <span className={css.modal_team_label}>
                                                     {(() => {
                                                         const meta = currentModalMatch?.ratingMeta;
@@ -1145,7 +1179,9 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                     pointerEvents: "none",
                                                 }}
                                             >
-                                                <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                {withPotBadge(modalPlayedRight, (
+                                                    <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                ))}
                                                 <span>
                                                     {(() => {
                                                         const meta = currentModalMatch?.ratingMeta;

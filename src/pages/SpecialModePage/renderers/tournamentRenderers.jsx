@@ -3,20 +3,29 @@ import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
-import { PemPlayoffsLayout, QualifierBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, QualifierBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout } from "../components/BracketLayouts.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
-import { PlaceholderRect, MatchRect, SwissResultBox } from "../components/SwissMatch.jsx";
+import { PlaceholderRect, MatchRect, SwissResultBox, SwissResultBoxGradients } from "../components/SwissMatch.jsx";
 import { getMatchWinnerTeam, getMatchLoserTeam } from "../logic/brackets.js";
 import { isCstGroupFinished, getCstStandings, CST_GROUPS, canOpenCstGroupMatch } from "../logic/cst.js";
 import { eclSlotSource, canOpenEclMatch, getBestOfForEcl, isSingleEclStage, findCurrentEclMatch, findNextEclMatch } from "../logic/ecl.jsx";
+import {
+    GCC_LEAGUE_BEST_OF,
+    canOpenGccLeagueMatch,
+    findCurrentGccLeagueMatch,
+    findNextGccLeagueMatch,
+    gccZoneOf,
+    getGccStandings,
+    isGccLeagueFinished,
+} from "../logic/gcc.js";
 import { isPemPlayoffsKind, pemGroupSlotSource, canOpenPemGroupMatch, getBestOfForPemGroup, isSinglePemGroupStage, findCurrentPemGroupMatch, findNextPemGroupMatch } from "../logic/pemSeries.jsx";
 import { pemStage1SlotSource, canOpenPemStage1Match, getBestOfForPemStage1, isSinglePemStage1Stage, findCurrentPemStage1Match, findNextPemStage1Match } from "../logic/pemStage1.jsx";
 import { canOpenPlayoffsMatch, getBestOfForPlayoffs } from "../logic/playoffs.js";
 import { qualifierSlotSource, canOpenQualifierMatch, getBestOfForQualifier, isSingleQualifierStage, findCurrentQualifierMatch, findNextQualifierMatch } from "../logic/qualifier.jsx";
 import { getQualifiedBy, getEliminatedBy, getBo1Tiebreak } from "../logic/series.js";
-import { isNetUnlocked, teamsInNet, getBestOfForSwissNet } from "../logic/swiss.js";
+import { isNetUnlocked, teamsInNet, getBestOfForSwissNet, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 
 export function createTournamentRenderers({
     pemLabel,
@@ -69,6 +78,13 @@ export function createTournamentRenderers({
     isCstPlayoffs,
     cstLabel,
     cst,
+    gcc,
+    gccLabel,
+    isGccKnockout,
+    isGplMainPhase,
+    openGccLeagueMatchModal,
+    openArchivedGccLeagueMatchModal,
+    openArchivedSwissMatchModal,
 }) {
     const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = pemLabel, gap = 6 } = {}) => (
         <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
@@ -107,6 +123,8 @@ export function createTournamentRenderers({
         ];
 
         const unlocked = phases.filter((phase) => {
+            if (isGplMainPhase && phase.id === "stage3") return false;
+
             switch (phase.id) {
                 case "playoffs":
                     return activePhase === "playoffs";
@@ -147,8 +165,8 @@ export function createTournamentRenderers({
                     gap: 10,
                     transition: "none",
                     marginRight:
-                        viewPhase === "playoffs" ||
-                            viewPhase === "results_playoffs"
+                        !isGplMainPhase && (viewPhase === "playoffs" ||
+                            viewPhase === "results_playoffs")
                             ? 86
                             : 0,
                 }}
@@ -248,7 +266,7 @@ export function createTournamentRenderers({
         return true;
     };
 
-    const buildLockedPlaceholdersForNet = (net) => {
+    const buildLockedPlaceholdersForNet = (net, format = null) => {
         const defaultCountByNet = {
             "0:0": 16,
             "1:0": 8,
@@ -261,7 +279,7 @@ export function createTournamentRenderers({
             "2:2": 6,
         };
 
-        const count = defaultCountByNet[net] || 4;
+        const count = (defaultCountByNet[net] || 4) / (format === GPL_SWISS_FORMAT ? 2 : 1);
 
         return Array.from({ length: count }, (_, i) => ({
             id: `locked-${net}-${i}`,
@@ -276,7 +294,9 @@ export function createTournamentRenderers({
         }));
     };
 
-    const getPlaceholderHeightForNet = (net) => {
+    const getPlaceholderHeightForNet = (net, format = null) => {
+        if (format === GPL_SWISS_FORMAT) return `${buildLockedPlaceholdersForNet(net, format).length * 40 - 8}px`;
+
         const map = {
             "1:0": '312px',
             "0:1": '312px',
@@ -294,9 +314,9 @@ export function createTournamentRenderers({
         return map[net] ?? 180;
     };
 
-    const renderSwissColumn = (stageObj, nets) => {
+    const renderSwissColumn = (stageObj, nets, { archived = false, record = null, format = null } = {}) => {
         return (
-            <div className={css.net_column_container} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div className={format === GPL_SWISS_FORMAT ? css.gpl_net_column_container : css.net_column_container} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 {nets.map((net) => {
                     const unlocked = stageObj ? isNetUnlocked(stageObj, net) : false;
                     const matches = stageObj?.matchesByNet?.[net] || [];
@@ -306,7 +326,7 @@ export function createTournamentRenderers({
                         !unlocked && placeholderTeams.length !== 0;
 
                     const { currentId, nextId } =
-                        unlocked && !isReadOnlyView
+                        unlocked && !isReadOnlyView && !archived
                             ? getSwissNetHighlights(stageObj, net)
                             : { currentId: null, nextId: null };
 
@@ -318,8 +338,10 @@ export function createTournamentRenderers({
 
                             <div className={css.net_stack}>
                                 <div className={css.net_base}>
-                                    {(unlocked ? matches : buildLockedPlaceholdersForNet(net)).map((m, idx, arr) => {
-                                        const isClickable = unlocked && !isMatchRectLocked && (m.played || canOpenSwissMatch(stageObj, net, m));
+                                    {(unlocked ? matches : buildLockedPlaceholdersForNet(net, stageObj?.format)).map((m, idx, arr) => {
+                                        const isClickable = archived
+                                            ? unlocked && !!m.played
+                                            : unlocked && !isMatchRectLocked && (m.played || canOpenSwissMatch(stageObj, net, m));
 
                                         const highlightClass =
                                             unlocked && m.id === currentId ? css.match_current :
@@ -336,18 +358,23 @@ export function createTournamentRenderers({
                                             <MatchRect
                                                 key={m.id}
                                                 match={m}
-                                                bestOf={getBestOfForSwissNet(net, stageObj.stageKey)}
+                                                bestOf={getBestOfForSwissNet(net, stageObj.stageKey, stageObj.format)}
                                                 shouldBestOfBeShown={!unlocked && lockedRects}
                                                 isClickable={isClickable}
-                                                isButtonLocked={!unlocked || isMatchRectLocked}
+                                                isButtonLocked={archived ? !unlocked : !unlocked || isMatchRectLocked}
                                                 shouldPlaceholderCirclesBeRendered={!unlocked && lockedRects}
                                                 onClick={
-                                                    unlocked
-                                                        ? () => openSwissMatchModal(stageObj.stageKey, net, m.id, isReadOnlyView)
-                                                        : () => { }
+                                                    !unlocked
+                                                        ? () => { }
+                                                        : archived
+                                                            ? () => {
+                                                                if (m.played) openArchivedSwissMatchModal(record, stageObj.stageKey, net, idx, m);
+                                                            }
+                                                            : () => openSwissMatchModal(stageObj.stageKey, net, m.id, isReadOnlyView)
                                                 }
                                                 className={highlightClass}
                                                 dataNet={net}
+                                                dataFormat={stageObj?.format ?? undefined}
                                                 dataIdx={idx + 1}
                                                 dataPos={idx === 0 ? "first" : idx === arr.length - 1 ? "last" : undefined}
                                                 dataNotStarted={notStartedEdge ? "true" : undefined}
@@ -358,7 +385,7 @@ export function createTournamentRenderers({
 
                                 {!unlocked && lockedRects && (
                                     <div className={css.net_overlay}>
-                                        <PlaceholderRect height={getPlaceholderHeightForNet(net)} teams={placeholderTeams} />
+                                        <PlaceholderRect height={getPlaceholderHeightForNet(net, stageObj?.format)} teams={placeholderTeams} />
                                     </div>
                                 )}
                             </div>
@@ -369,7 +396,9 @@ export function createTournamentRenderers({
         );
     };
 
-    const renderSwissBracket = (stageObj) => {
+    const GPL_SWISS_BRACKET_PADDING = { paddingTop: 52, paddingBottom: 52 };
+
+    const renderSwissBracket = (stageObj, { archived = false, record = null } = {}) => {
         if (!stageObj) {
             return (
                 <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
@@ -385,34 +414,38 @@ export function createTournamentRenderers({
         const e03 = getEliminatedBy(stageObj, "0:3");
         const e13 = getEliminatedBy(stageObj, "1:3");
         const e23 = getEliminatedBy(stageObj, "2:3");
+        const format = stageObj.format ?? null;
+        const columnOptions = { archived, record, format };
 
         return (
-            <div style={{ position: "relative", display: "flex", marginBottom: '48px', marginLeft: '156px', alignItems: "center", justifyContent: "center", transition: "none" }}>
-                <div style={{ position: 'absolute', left: '47.05%', top: '-13px' }}>
-                    <SwissResultBox title="3:0" tone="green" teams={q30} />
+            <div style={{ position: "relative", display: "flex", marginBottom: '48px', marginLeft: '156px', alignItems: "center", justifyContent: "center", transition: "none", ...(format === GPL_SWISS_FORMAT ? GPL_SWISS_BRACKET_PADDING : {}) }}>
+                <div style={{ position: 'absolute', left: '47.05%', top: format === GPL_SWISS_FORMAT ? '42px' : '-13px' }}>
+                    <SwissResultBox title="3:0" tone="green" teams={q30} format={format} />
                 </div>
-                <div style={{ position: 'absolute', left: '62.5%', top: '-13px' }}>
-                    <SwissResultBox title="3:1" tone="green" teams={q31} />
+                <div style={{ position: 'absolute', left: '62.5%', top: format === GPL_SWISS_FORMAT ? '42px' : '-13px' }}>
+                    <SwissResultBox title="3:1" tone="green" teams={q31} format={format} />
                 </div>
-                <div style={{ position: 'absolute', left: '70.2%', top: '-13px' }}>
-                    <SwissResultBox title="3:2" tone="green" teams={q32} />
+                <div style={{ position: 'absolute', left: '70.2%', top: format === GPL_SWISS_FORMAT ? '42px' : '-13px' }}>
+                    <SwissResultBox title="3:2" tone="green" teams={q32} format={format} />
                 </div>
-                <div style={{ position: 'absolute', left: '47.05%', bottom: '-25px' }}>
-                    <SwissResultBox title="0:3" tone="red" teams={e03} />
+                <div style={{ position: 'absolute', left: '47.05%', bottom: format === GPL_SWISS_FORMAT ? '35px' : '-25px' }}>
+                    <SwissResultBox title="0:3" tone="red" teams={e03} format={format} />
                 </div>
-                <div style={{ position: 'absolute', left: '62.5%', bottom: '-25px' }}>
-                    <SwissResultBox title="1:3" tone="red" teams={e13} />
+                <div style={{ position: 'absolute', left: '62.5%', bottom: format === GPL_SWISS_FORMAT ? '35px' : '-25px' }}>
+                    <SwissResultBox title="1:3" tone="red" teams={e13} format={format} />
                 </div>
-                <div style={{ position: 'absolute', left: '70.2%', bottom: '-25px' }}>
-                    <SwissResultBox title="2:3" tone="red" teams={e23} />
+                <div style={{ position: 'absolute', left: '70.2%', bottom: format === GPL_SWISS_FORMAT ? '35px' : '-25px' }}>
+                    <SwissResultBox title="2:3" tone="red" teams={e23} format={format} />
                 </div>
 
+                <SwissResultBoxGradients />
+
                 <div style={{ display: "flex", gap: 60, alignItems: "center", paddingRight: 250, transition: "none" }}>
-                    {renderSwissColumn(stageObj, ["0:0"])}
-                    {renderSwissColumn(stageObj, ["1:0", "0:1"])}
-                    {renderSwissColumn(stageObj, ["2:0", "1:1", "0:2"])}
-                    {renderSwissColumn(stageObj, ["2:1", "1:2"])}
-                    {renderSwissColumn(stageObj, ["2:2"])}
+                    {renderSwissColumn(stageObj, ["0:0"], columnOptions)}
+                    {renderSwissColumn(stageObj, ["1:0", "0:1"], columnOptions)}
+                    {renderSwissColumn(stageObj, ["2:0", "1:1", "0:2"], columnOptions)}
+                    {renderSwissColumn(stageObj, ["2:1", "1:2"], columnOptions)}
+                    {renderSwissColumn(stageObj, ["2:2"], columnOptions)}
                 </div>
             </div>
         );
@@ -450,7 +483,8 @@ export function createTournamentRenderers({
         const currentStageKey = currentPlayablePlayoffsMatch?.stage ?? null;
 
         const nextStageKey =
-            currentStageKey === "ro16" ? "qf"
+            currentStageKey === "po" ? "qf"
+            : currentStageKey === "ro16" ? "qf"
                 : currentStageKey === "qf" ? "sf"
                     : currentStageKey === "sf" ? "gf"
                         : null;
@@ -475,6 +509,10 @@ export function createTournamentRenderers({
 
                 return [m.slotA, m.slotB].filter(Boolean);
             };
+
+            if (stageKey === "qf" && bracketKind === "gcc") {
+                return slotKey === "slotB" ? pickFromMatch(playoffs.po?.[idx], "winner") : [];
+            }
 
             if (stageKey === "qf") {
                 const srcIdx = idx * 2 + (slotKey === "slotA" ? 0 : 1);
@@ -594,6 +632,7 @@ export function createTournamentRenderers({
         };
 
         const stageIndex = (k) => {
+            if (k === "po") return 0;
             if (k === "ro16") return 0;
             if (k === "qf") return 1;
             if (k === "sf") return 2;
@@ -610,6 +649,7 @@ export function createTournamentRenderers({
         const hasPreviewContenders = (stageKey, idx) => {
             const getMatch = () => {
                 if (!playoffs) return null;
+                if (stageKey === "po") return playoffs.po?.[idx] ?? null;
                 if (stageKey === "ro16") return playoffs.ro16?.[idx] ?? null;
                 if (stageKey === "qf") return playoffs.qf?.[idx] ?? null;
                 if (stageKey === "sf") return playoffs.sf?.[idx] ?? null;
@@ -862,6 +902,35 @@ export function createTournamentRenderers({
             );
         };
 
+        if (bracketKind === "gcc") {
+            const gccRectClasses = {
+                po: css.quarters_rect,
+                qf: css.quarters_rect,
+                sf: css.semis_rect,
+                thirdPlace: css.thirdPlace_rect,
+                gf: css.grandFinal_rect,
+            };
+
+            return (
+                <GccKnockoutLayout
+                    bracket={playoffs}
+                    renderMatch={(m, stageKey, idx) =>
+                        renderMatch(
+                            m,
+                            stageKey,
+                            idx,
+                            gccRectClasses[stageKey],
+                            css.next_rect,
+                            getBestOfForPlayoffs(stageKey, bracketKind),
+                            css.pem_playoffs_wrapper,
+                            stageKey === "gf" || stageKey === "thirdPlace",
+                            true
+                        )
+                    }
+                />
+            );
+        }
+
         if (isPemPlayoffsKind(bracketKind)) {
             const pemRectClasses = {
                 qf: css.quarters_rect,
@@ -922,7 +991,10 @@ export function createTournamentRenderers({
         ) : null;
 
         return (
-            <div className={css.bracket_container} style={{ transition: "none", marginLeft: hasRoundOf16 ? '28px' : 0 }}>
+            <div
+                className={css.bracket_container}
+                style={{ transition: "none", marginLeft: hasRoundOf16 ? '28px' : 0, minWidth: bracketKind === "gpl" ? 1171 : undefined }}
+            >
                 <div className={css.bracket_inner}>
                     {hasRoundOf16 && (
                         <div className={css.column_container}>
@@ -1931,7 +2003,208 @@ export function createTournamentRenderers({
         );
     };
 
+    const GCC_ZONES = {
+        qf: { live: css.gcc_row_qf, done: css.gcc_row_qf_done, label: "Quarterfinals" },
+        po: { live: css.gcc_row_po, done: css.gcc_row_po_done, label: "Knockout Play-offs" },
+        out: { live: "", done: css.cst_row_eliminated, label: "Out" },
+    };
+
+    const renderGccStandingsTable = (league) => {
+        const finished = isGccLeagueFinished(league);
+        const rows = getGccStandings(league);
+
+        return (
+            <table className={css.cst_table}>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th style={{ textAlign: "left" }}>Team</th>
+                        <th title="Pot">Pot</th>
+                        <th title="Matches">M</th>
+                        <th title="Wins">W</th>
+                        <th title="Losses">L</th>
+                        <th title="Sets Difference">SD</th>
+                        <th title="Rounds Difference">RD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row) => {
+                        const zone = gccZoneOf(row.position);
+                        const zoneConfig = GCC_ZONES[zone];
+
+                        return (
+                            <tr key={row.team.id} className={finished ? zoneConfig.done : zoneConfig.live}>
+                                <td>{row.position}</td>
+                                <td style={{ textAlign: "left" }}>
+                                    <div className={css.cst_team_cell}>
+                                        <span className={css.cst_team_dot} style={{ background: row.team.color }} />
+                                        <span className={css.cst_team_name}>Team {row.team.name}</span>
+                                        {finished && (
+                                            zone === "out" ? (
+                                                <FaXmark size={12} color="#be3939" title="Eliminated" style={{ flexShrink: 0 }} />
+                                            ) : (
+                                                <FaCheck
+                                                    size={11}
+                                                    color={zone === "qf" ? "#2e7d32" : "#a07800"}
+                                                    title={`Qualified to ${zoneConfig.label}`}
+                                                    style={{ flexShrink: 0 }}
+                                                />
+                                            )
+                                        )}
+                                    </div>
+                                </td>
+                                <td>{row.pot}</td>
+                                <td>{row.m}</td>
+                                <td>{row.w}</td>
+                                <td>{row.l}</td>
+                                <td style={{ color: row.sd > 0 ? "#2e7d32" : row.sd < 0 ? "red" : "" }}>
+                                    {row.sd > 0 ? `+${row.sd}` : row.sd}
+                                </td>
+                                <td style={{ color: row.rd > 0 ? "#2e7d32" : row.rd < 0 ? "red" : "" }}>
+                                    {row.rd > 0 ? `+${row.rd}` : row.rd}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        );
+    };
+
+    const renderGccLeague = (league, { archived = false, record = null } = {}) => {
+        if (!league) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    The League Phase has not been drawn yet.
+                </div>
+            );
+        }
+
+        const current = archived ? null : findCurrentGccLeagueMatch(league);
+        const next = archived ? null : findNextGccLeagueMatch(league, current);
+
+        return (
+            <div className={css.gcc_league}>
+                <div className={css.gcc_table}>
+                    <h3 className={css.cst_group_title}>League Table</h3>
+                    {renderGccStandingsTable(league)}
+                    <div className={css.gcc_zone_legend}>
+                        <span><i className={css.gcc_row_qf_done} /> Quarterfinals</span>
+                        <span><i className={css.gcc_row_po_done} /> Knockout Play-offs</span>
+                        <span><i className={css.cst_row_eliminated} /> Out</span>
+                    </div>
+                </div>
+
+                <div className={css.gcc_matchdays}>
+                    {(league.matchdays || []).map((day, dayIndex) => (
+                        <div key={dayIndex} className={css.gcc_matchday}>
+                            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Matchday {dayIndex + 1}</h4>
+                            <div className={css.cst_match_column}>
+                                {day.map((m, idx) => {
+                                    const isClickable = archived
+                                        ? m.played
+                                        : !isMatchRectLocked && (m.played || canOpenGccLeagueMatch(league, dayIndex, idx));
+                                    const highlightClass =
+                                        current?.id === m.id ? css.match_current : next?.id === m.id ? css.match_next : "";
+
+                                    return (
+                                        <MatchRect
+                                            key={m.id}
+                                            match={m}
+                                            bestOf={GCC_LEAGUE_BEST_OF}
+                                            shouldBestOfBeShown={false}
+                                            isClickable={isClickable}
+                                            isButtonLocked={!archived && isMatchRectLocked}
+                                            onClick={() => {
+                                                if (!isClickable) return;
+                                                if (archived) openArchivedGccLeagueMatchModal(record, dayIndex, idx, m);
+                                                else openGccLeagueMatchModal(m.id, false);
+                                            }}
+                                            className={highlightClass}
+                                            dataIdx={idx + 1}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const renderGccPage = () => {
+        const showingKnockout = viewPhase === "playoffs" && isGccKnockout;
+        const champion = tournamentResults?.kind === "gcc" ? tournamentResults.winner : null;
+        const showEndButtons = showPickemLine2 && !!champion;
+
+        return (
+            <div className={css.cst_page} style={{ paddingBottom: 16 }}>
+                {isGccKnockout
+                    ? renderPhaseNav([
+                        { id: "playoffs", label: "Knockout Stage" },
+                        { id: "gccLeague", label: "League Phase" },
+                    ])
+                    : null}
+
+                {showEndButtons ? (
+                    <div className={css.pickem_buttons} style={{ top: "96px", left: "auto", right: "3%" }}>
+                        <button
+                            className={`${css.gamble_button} ${css.back_button}`}
+                            onClick={() => setShowPickemSummary(true)}
+                        >
+                            Back to the Pick'em challenge summary
+                        </button>
+                        <button
+                            className={`${css.gamble_button} ${css.back_back_button}`}
+                            style={{ backgroundColor: hover ? champion.hoverOn : champion.color }}
+                            onMouseEnter={() => setHover(true)}
+                            onMouseLeave={() => setHover(false)}
+                            onClick={() => setShowWinnersScreen(true)}
+                        >
+                            Back to the Winners' screen
+                        </button>
+                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                            Proceed
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ gap: 0, top: "96px", left: "auto", right: "5%" }} className={css.pickem_buttons}>
+                        <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                        <span className={css.points}>
+                            <CountUp
+                                start={0}
+                                duration={1.2}
+                                end={neededPickemPoints}
+                                key={neededPickemPoints}
+                            />
+                        </span>
+                    </div>
+                )}
+
+                <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                    {gccLabel} | {showingKnockout ? "Knockout Stage" : "League Phase"}
+                </div>
+
+                {showingKnockout ? (
+                    <div style={{ width: "100%", marginTop: "24px" }}>{renderPlayoffsBracket()}</div>
+                ) : (
+                    <>
+                        <div className={css.info_text} style={{ fontSize: 14, color: "#777", marginBottom: showEndButtons ? 56 : 4, textAlign: "center", maxWidth: 620 }}>
+                            Every team plays one team of every Pot. Places 1-4 go straight to the Quarterfinals,
+                            places 5-12 play the Knockout Play-offs, places 13-16 are out. Ties in the table are broken
+                            by Sets Difference, Rounds Difference and then the opponents&apos; wins.
+                        </div>
+                        {renderGccLeague(gcc)}
+                    </>
+                )}
+            </div>
+        );
+    };
+
     return {
+        renderGccPage,
+        renderGccLeague,
         renderPemMainPage,
         renderQualifierPage,
         renderCstPage,

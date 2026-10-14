@@ -21,9 +21,9 @@ const PEM_STAGE1_STAGE_SIZES = { uo: 2, lr1: 1, uf: 1, lr2: 1 };
 
 export const PEM_STAGE1_STAGE_LABELS = {
     uo: "Opening Round",
-    lr1: "Lower Round 1",
-    uf: "Upper Final",
-    lr2: "Lower Round 2",
+    lr1: "Elimination Match",
+    uf: "Winners' Match",
+    lr2: "Decider Match",
 };
 
 export const PEM_STAGE1_UPPER_STAGES = ["uo", "uf"];
@@ -103,9 +103,9 @@ export const pemStage1MatchPoints = (match) => bracketMatchPoints(match, getBest
 
 export const PEM_STAGE1_PICKEM_ROUNDS = [
     { stage: "uo", label: "Opening Rounds of Stage I" },
-    { stage: "lr1", label: "Lower Rounds 1 of Stage I" },
-    { stage: "uf", label: "Upper Finals of Stage I" },
-    { stage: "lr2", label: "Lower Rounds 2 of Stage I" },
+    { stage: "lr1", label: "Elimination Matches of Stage I" },
+    { stage: "uf", label: "Winners' Matches of Stage I" },
+    { stage: "lr2", label: "Decider Matches of Stage I" },
 ].map((round) => ({
     ...round,
     key: `ps1_${round.stage}`,
@@ -116,9 +116,9 @@ const PEM_STAGE1_ELIMINATED_TEXT = "flies out of this tournament";
 
 export const getPemStage1StakeTexts = (stage) => {
     switch (stage) {
-        case "uo": return { winner: <>goes to the <b>Upper Final</b></>, loser: <>drops to <b>Lower Round 1</b></> };
-        case "uf": return { winner: <><b>qualifies</b> to Stage II</>, loser: <>drops to <b>Lower Round 2</b></> };
-        case "lr1": return { winner: <>goes to <b>Lower Round 2</b></>, loser: PEM_STAGE1_ELIMINATED_TEXT };
+        case "uo": return { winner: <>goes to the <b>Winners&apos; Match</b></>, loser: <>drops to the <b>Elimination Match</b></> };
+        case "uf": return { winner: <><b>qualifies</b> to Stage II</>, loser: <>drops to the <b>Decider Match</b></> };
+        case "lr1": return { winner: <>goes to the <b>Decider Match</b></>, loser: PEM_STAGE1_ELIMINATED_TEXT };
         case "lr2": return { winner: <><b>qualifies</b> to Stage II</>, loser: PEM_STAGE1_ELIMINATED_TEXT };
         default: return { winner: null, loser: null };
     }

@@ -468,7 +468,7 @@
     transform: rotate(-30deg);
     background:
         url(/assets/images/swiss-advance.webp) no-repeat top,
-        linear-gradient(270deg, rgba(116, 199, 123, 0.148), #375136);
+        linear-gradient(270deg, rgba(116, 199, 123, 0.148), #74ed71);
     background-size: 90px 8px;
 }
 
@@ -478,7 +478,7 @@
     transform: rotate(30deg);
     background:
         url(/assets/images/swiss-eliminate.webp) no-repeat top,
-        linear-gradient(270deg, rgba(188, 108, 108, 0.5), #513636);
+        linear-gradient(270deg, rgba(188, 108, 108, 0.5), #ed7171);
     background-size: 90px 8px;
 }
 
@@ -488,7 +488,7 @@
     width: 90px;
     transform: rotate(-30deg);
     background: url(/assets/images/swiss-neutral.webp) no-repeat top,
-        linear-gradient(270deg, hsla(0, 0%, 78%, 0.3), #364051);
+        linear-gradient(270deg, hsl(0, 0%, 91%), #9ca6bb);
     background-size: 90px 8px;
 }
 
@@ -498,52 +498,404 @@
     width: 90px;
     transform: rotate(30deg);
     background: url(/assets/images/swiss-neutral.webp) no-repeat top,
-        linear-gradient(270deg, hsla(0, 0%, 78%, 0.3), #364051);
+        linear-gradient(270deg, hsl(0, 0%, 91%), #9ca6bb);
     background-size: 90px 8px;
 }
 
-.swiss_rect[data-net="0:2"][data-pos="last"]::after {
-    width: 70px;
-    background-size: 65px 8px;
-    transform: rotate(20deg);
-    bottom: 15%;
+.swiss_rect[data-net="0:0"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 50px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-net="0:0"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 6px 0, 0 0;
+}
+
+.swiss_rect[data-net="1:0"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 50px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-net="1:0"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 6px 0, 0 0;
+}
+
+.swiss_rect[data-net="0:1"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 50px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-net="0:1"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 6px 0, 0 0;
 }
 
 .swiss_rect[data-net="2:0"][data-pos="first"]::after {
-    width: 70px;
-    background-size: 65px 8px;
-    transform: rotate(-20deg);
-    top: 15%;
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 44.2px;
+    transform-origin: 0 50%;
+    transform: rotate(-15.8deg);
+    background-size: 42px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-net="2:0"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-net="1:1"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 10px 0, 0 0;
+}
+
+.swiss_rect[data-net="1:1"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-net="0:2"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 10px 0, 0 0;
+}
+
+.swiss_rect[data-net="0:2"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 43.9px;
+    transform-origin: 0 50%;
+    transform: rotate(14.5deg);
+    background-size: 42px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
 }
 
 .swiss_rect[data-net="2:1"][data-pos="first"]::after {
-    width: 60px;
-    background-size: 50px 8px;
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 37.3px;
+    transform-origin: 0 50%;
     transform: rotate(0deg);
-    top: 40%;
+    background-size: 28px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
+}
+
+.swiss_rect[data-net="2:1"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 42px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
+}
+
+.swiss_rect[data-net="1:2"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
 }
 
 .swiss_rect[data-net="1:2"][data-pos="last"]::after {
-    width: 60px;
-    background-size: 50px 8px;
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 37.7px;
+    transform-origin: 0 50%;
     transform: rotate(0deg);
-    bottom: 40%;
+    background-size: 28px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
 }
 
 .swiss_rect[data-net="2:2"][data-pos="first"]::after {
-    left: auto;
-    right: 50%;
-    width: 25px;
-    transform: translate(50%, -125%) rotate(270deg);
-    background-size: 35px 8px;
+    left: 52.5px;
+    top: -4px;
+    bottom: auto;
+    width: 37.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-90deg);
+    background-size: 28px 8px, 100% 100%;
+    background-position: -2px 0, 0 0;
 }
 
 .swiss_rect[data-net="2:2"][data-pos="last"]::after {
-    left: auto;
-    right: 50%;
-    width: 25px;
-    transform: translate(50%, 125%) rotate(-270deg);
-    background-size: 35px 8px;
+    left: 52.5px;
+    top: 28px;
+    bottom: auto;
+    width: 37.7px;
+    transform-origin: 0 50%;
+    transform: rotate(90deg);
+    background-size: 28px 8px, 100% 100%;
+    background-position: -2px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="0:0"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 50px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="0:0"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 6px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="1:0"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 50px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="1:0"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 6px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="0:1"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-29.2deg);
+    background-size: 50px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="0:1"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 68.7px;
+    transform-origin: 0 50%;
+    transform: rotate(29.2deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 6px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="2:0"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 44px;
+    transform-origin: 0 50%;
+    transform: rotate(-11.9deg);
+    background-size: 42px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="2:0"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 67.5px;
+    transform-origin: 0 50%;
+    transform: rotate(27.3deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="1:1"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 70px;
+    transform-origin: 0 50%;
+    transform: rotate(-31deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 10px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="1:1"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 70px;
+    transform-origin: 0 50%;
+    transform: rotate(31deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="0:2"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 67.5px;
+    transform-origin: 0 50%;
+    transform: rotate(-27.3deg);
+    background-size: 48px 8px, 100% 100%;
+    background-position: 10px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="0:2"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 44px;
+    transform-origin: 0 50%;
+    transform: rotate(4deg);
+    background-size: 42px 8px, 100% 100%;
+    background-position: 8px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="2:1"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 52.7px;
+    transform-origin: 0 50%;
+    transform: rotate(0deg);
+    background-size: 28px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="2:1"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 62.1px;
+    transform-origin: 0 50%;
+    transform: rotate(14.9deg);
+    background-size: 38px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="1:2"][data-pos="first"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 62.1px;
+    transform-origin: 0 50%;
+    transform: rotate(-14.9deg);
+    background-size: 38px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="1:2"][data-pos="last"]::after {
+    left: 105px;
+    top: 12px;
+    bottom: auto;
+    width: 48.3px;
+    transform-origin: 0 50%;
+    transform: rotate(0deg);
+    background-size: 28px 8px, 100% 100%;
+    background-position: 12px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="2:2"][data-pos="first"]::after {
+    left: 52.5px;
+    top: -4px;
+    bottom: auto;
+    width: 57.7px;
+    transform-origin: 0 50%;
+    transform: rotate(-90deg);
+    background-size: 44px 8px, 100% 100%;
+    background-position: -1px 0, 0 0;
+}
+
+.swiss_rect[data-format="gpl"][data-net="2:2"][data-pos="last"]::after {
+    left: 52.5px;
+    top: 28px;
+    bottom: auto;
+    width: 53.5px;
+    transform-origin: 0 50%;
+    transform: rotate(90deg);
+    background-size: 44px 8px, 100% 100%;
+    background-position: -3px 0, 0 0;
 }
 
 .grandFinal_rect {
@@ -2298,6 +2650,18 @@
     gap: 126px;
 }
 
+.gpl_net_column_container:nth-child(2) {
+    gap: 46px;
+}
+
+.gpl_net_column_container:nth-child(3) {
+    gap: 46px;
+}
+
+.gpl_net_column_container:nth-child(4) {
+    gap: 51px;
+}
+
 .swiss_result_box {
     border: none;
     border-radius: 12px;
@@ -2315,11 +2679,11 @@
 }
 
 .swiss_result_box_green {
-    background: linear-gradient(0deg, #02a82e, #116902);
+    background: linear-gradient(0deg, rgb(59, 133, 59),#1bf70b);
 }
 
 .swiss_result_box_red {
-    background: linear-gradient(0deg, #a80202, #690202);
+    background: linear-gradient(0deg, rgb(133, 59, 59),#f70b0b);
 }
 
 .net_stack {
@@ -3538,5 +3902,105 @@
     font-weight: 700;
     white-space: nowrap;
     pointer-events: none;
+    transition: none;
+}
+
+.gcc_league {
+    display: flex;
+    gap: 56px;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 20px;
+    transition: none;
+}
+
+.gcc_table {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 400px;
+    transition: none;
+}
+
+.gcc_matchdays {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    transition: none;
+}
+
+.gcc_matchday {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: none;
+}
+
+.gcc_row_qf td {
+    background: #e2f5e7;
+}
+
+.gcc_row_qf_done td {
+    background: #b6edc6;
+}
+
+.gcc_row_po td {
+    background: #fbf3d6;
+}
+
+.gcc_row_po_done td {
+    background: #f6e3a1;
+}
+
+.gcc_zone_legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #777;
+}
+
+.gcc_zone_legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gcc_zone_legend i {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid #bbb;
+}
+
+.gcc_zone_legend i.gcc_row_qf_done {
+    background: #b6edc6;
+}
+
+.gcc_zone_legend i.gcc_row_po_done {
+    background: #f6e3a1;
+}
+
+.gcc_zone_legend i.cst_row_eliminated {
+    background: #f6dede;
+}
+
+.modal_team_pot {
+    position: absolute;
+    left: calc(100% - 14px);
+    top: -6px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #2e2f42;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+    z-index: 3;
+    pointer-events: none;
+    user-select: none;
     transition: none;
 }

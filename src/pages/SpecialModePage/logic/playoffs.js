@@ -1,8 +1,10 @@
 import { CST_PLAYOFFS_BEST_OF } from "./cst.js";
+import { GCC_KNOCKOUT_BEST_OF } from "./gcc.js";
 import { PEM_PLAYOFFS_BEST_OF, PEM_BIG_PLAYOFFS_BEST_OF } from "./pemConfig.js";
 
 export const stageLabelPlayoffs = (stage) => {
     switch (stage) {
+        case "po": return "Knockout Play-off";
         case "ro16": return "Round of 16";
         case "qf": return "Quarterfinal";
         case "sf": return "Semifinal";
@@ -15,7 +17,8 @@ export const stageLabelPlayoffs = (stage) => {
 export const getBestOfForPlayoffs = (stage, kind = null) => {
     if (kind === "cst") return CST_PLAYOFFS_BEST_OF[stage] ?? 3;
     if (kind === "pem") return PEM_PLAYOFFS_BEST_OF[stage] ?? 5;
-    if (kind === "pemBig") return PEM_BIG_PLAYOFFS_BEST_OF[stage] ?? 5;
+    if (kind === "pemBig" || kind === "gpl") return PEM_BIG_PLAYOFFS_BEST_OF[stage] ?? 5;
+    if (kind === "gcc") return GCC_KNOCKOUT_BEST_OF[stage] ?? 3;
     if (stage === "gf") return 9;
     if (stage === "sf") return 7;
     if (stage === "thirdPlace") return 7;
@@ -32,7 +35,7 @@ const qualificationValue = (team) => {
     };
 };
 
-const buildPlayoffSeeds = (qualifiedTeams) => {
+export const buildPlayoffSeeds = (qualifiedTeams) => {
     return [...qualifiedTeams].sort((a, b) => {
         const aRecord = qualificationValue(a);
         const bRecord = qualificationValue(b);
@@ -106,6 +109,35 @@ export const buildPlayoffsBracket = (teams16) => {
     };
 };
 
+const GPL_QUARTERFINAL_ORDER = [[0, 7], [3, 4], [1, 6], [2, 5]];
+
+export const buildGplPlayoffs = (qualifiedTeams) => {
+    const seeded = buildPlayoffSeeds(qualifiedTeams);
+    const mk = (stage, i, slotA = null, slotB = null) => ({
+        id: `${stage}-${i + 1}`,
+        stage,
+        gpl: true,
+        slotA,
+        slotB,
+        played: false,
+        scoreLeft: null,
+        scoreRight: null,
+        winnerTeamId: null,
+        loserTeamId: null,
+        pickTeamId: null,
+        setHistory: [],
+    });
+
+    return {
+        kind: "gpl",
+        ro16: [],
+        qf: GPL_QUARTERFINAL_ORDER.map(([a, b], i) => mk("qf", i, seeded[a] ?? null, seeded[b] ?? null)),
+        sf: [0, 1].map((i) => mk("sf", i)),
+        thirdPlace: [mk("thirdPlace", 0)],
+        gf: [mk("gf", 0)],
+    };
+};
+
 export const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
     const stageArr = bracket[stage];
     const match = stageArr[matchIndex];
@@ -116,7 +148,8 @@ export const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
         if (!stageArr[i].played) return false;
     }
 
-    if (stage === "qf" && bracket.ro16.some((m) => !m.played)) return false;
+    if (stage === "qf" && (bracket.ro16 || []).some((m) => !m.played)) return false;
+    if (stage === "qf" && (bracket.po || []).some((m) => !m.played)) return false;
     if (stage === "sf" && bracket.qf.some((m) => !m.played)) return false;
     if (stage === "thirdPlace" && bracket.sf.some((m) => !m.played)) return false;
 

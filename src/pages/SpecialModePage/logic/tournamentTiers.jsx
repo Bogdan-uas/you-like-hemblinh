@@ -7,8 +7,8 @@ export const TOURNAMENT_TIERS = {
 
 export const TOURNAMENT_TIER_EXPLANATIONS = [
     { tier: "official", text: <>The biggest tournament. The winner gets an Official trophy, 2nd and 3rd place get 🥈 and 🥉.</> },
-    { tier: "tier1", text: <>A big tournament, like the main event of the PEM Small or PEM Big Tournament. The winner gets that tournament's own Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
-    { tier: "tier2", text: <>A smaller tournament, like the Champions Series Tour or the Elite Competition League. The winner gets a 🥇, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier1", text: <>A big tournament, like the main event of the PEM Small or PEM Big Tournament or the Global Pro League. The winner gets that tournament's own Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier2", text: <>A smaller tournament, like the Champions Series Tour, the Elite Competition League or the Global Challenger Cup. The winner gets a 🥇, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
     { tier: "qualifier", text: <>A qualifier for a bigger tournament. It gives no medals: its best teams qualify to the event it belongs to.</> },
 ];
 

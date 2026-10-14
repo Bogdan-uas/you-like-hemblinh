@@ -1,10 +1,12 @@
-import { PemSmallDescription, PemBigDescription } from "../components/TournamentTypeInfo.jsx";
+import { PemSmallDescription, PemBigDescription, GplDescription } from "../components/TournamentTypeInfo.jsx";
 import { TOURNAMENT_NUMBERS_LS_KEY, TOURNAMENT_PICKER_LS_KEY, CURRENT_TOURNAMENT_TYPE_LS_KEY } from "./storageKeys.js";
 
 export const PEM_SMALL_TYPE_ID = "PEM Small Tournament";
 export const PEM_BIG_TYPE_ID = "PEM Big Tournament";
 export const CST_TYPE_ID = "Champions Series Tour";
 export const ECL_TYPE_ID = "Elite Competition League";
+export const GPL_TYPE_ID = "Global Pro League";
+export const GCC_TYPE_ID = "Global Challenger Cup";
 
 export const TOURNAMENT_TYPES = [
     {
@@ -41,11 +43,18 @@ export const TOURNAMENT_TYPES = [
         tier: "tier1",
         descriptionNode: <PemBigDescription />,
     },
+    {
+        id: GPL_TYPE_ID,
+        label: "Global Pro League",
+        tier: "tier1",
+        descriptionNode: <GplDescription />,
+    },
 ];
 
 const EVENT_TOURNAMENT_TYPES = [
     { id: CST_TYPE_ID, label: "Champions Series Tour", tier: "tier2" },
     { id: ECL_TYPE_ID, label: "Elite Competition League", tier: "tier2" },
+    { id: GCC_TYPE_ID, label: "Global Challenger Cup", tier: "tier2" },
 ];
 
 export const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAMENT_TYPES];

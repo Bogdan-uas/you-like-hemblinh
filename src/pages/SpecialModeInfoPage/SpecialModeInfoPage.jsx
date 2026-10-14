@@ -309,6 +309,25 @@ const PEM_SMALL_SECTIONS = [
     },
 ];
 
+const GPL_SECTIONS = [
+    {
+        id: "gpl-overview",
+        label: "Around the globe",
+    },
+    {
+        id: "gcc",
+        label: "Global Challenger Cup",
+    },
+    {
+        id: "gpl",
+        label: "Global Pro League",
+    },
+    {
+        id: "gpl-rewards",
+        label: "The globe trophy and Hall of Fame",
+    },
+];
+
 const TeamCircle = ({ team }) => {
     return (
         <div
@@ -1768,15 +1787,15 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             </p>
             <BigShot n={15} alt="Tournament Intro Screen of PEM Big Tournament #1" />
             <p className={css.info_text}>
-                Every Group of Stage I is the smallest Double Elimination bracket there is: two Opening Rounds, the Upper Final, Lower Round 1 for the losers of the Opening Rounds
-                and Lower Round 2 for the winner of Lower Round 1 and the loser of the Upper Final. All of them are <b>Best of 3</b>.
-                The winner of the Upper Final and the winner of Lower Round 2 go to Stage II, so a team needs two wins to get through and two losses to fly out:
+                Every Group of Stage I is the smallest Double Elimination bracket there is: two Opening Rounds, the Winners&apos; Match for the winners of the Opening Rounds, the Elimination Match for their losers
+                and the Decider Match for the winner of the Elimination Match and the loser of the Winners&apos; Match. All of them are <b>Best of 3</b>.
+                The winner of the Winners&apos; Match and the winner of the Decider Match go to Stage II, so a team needs two wins to get through and two losses to fly out:
             </p>
             <BigShot n={16} alt="Group A of Stage I before the first match" />
             <BigShot n={17} alt="Match modal of the first Opening Round of Stage I" width="35vw" />
             <p className={css.info_text}>
-                In Group A, both teams from the Qualifier made it: Team Orange won both of its matches and Team Copper came back through Lower Round 2.
-                Team Red, the 13th team of the Leaderboard, lost both of its matches. In Group B, Team Gray won the Upper Final and Team Violet, the third qualifier, beat Team Cyan in Lower Round 2.
+                In Group A, both teams from the Qualifier made it: Team Orange won both of its matches and Team Copper came back through the Decider Match.
+                Team Red, the 13th team of the Leaderboard, lost both of its matches. In Group B, Team Gray won the Winners&apos; Match and Team Violet, the third qualifier, beat Team Cyan in the Decider Match.
                 Only Team Blue, the fourth qualifier, lost both of its matches and flew out:
             </p>
             <BigShot n={18} alt="Finished Group A of Stage I" />
@@ -1864,6 +1883,201 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
     </>
 );
 
+const GPL_IMAGES = import.meta.glob("../../../assets/images/gpl-*.png", { eager: true, import: "default" });
+const gplImg = (n) => GPL_IMAGES[`../../../assets/images/gpl-${String(n).padStart(2, "0")}.png`];
+
+const GplShot = ({ n, ...props }) => <PemShot src={gplImg(n)} {...props} />;
+
+const GplSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="gpl-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Around the globe</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                After two PEM Tournaments, there is a fourth option in the "Choose how you want to play" modal: the <b>Global Pro League</b> (GPL), another Tier 1 tournament.
+                But this time, there is no Qualifier at all. Instead, there are only two tournaments, played one after another: <br />
+                • <b>Global Challenger Cup</b> (GCC), a Tier 2 tournament, comes first <br />
+                • <b>Global Pro League</b> itself (Tier 1) comes right after it
+            </p>
+            <GplShot n={1} alt="Choose how you want to play modal with the Global Pro League picked" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                As always, the teams are seeded by the Leaderboard at the moment the Global Pro League starts: <br />
+                • Top 1-8 → Autoqualify to <b>Stage II</b> of the Global Pro League <br />
+                • Top 9-24 → Start in <b>Stage I</b> of the Global Pro League <br />
+                • Top 25-40 → Play in the <b>Global Challenger Cup</b> <br />
+                • Top 41-64 → <i>— Wait, and what about them?</i> They don&apos;t play at all. Not every tournament needs every team, right?
+            </p>
+            <p className={css.info_text}>
+                That&apos;s why the "Stage dividers" select of the Leaderboard has its own "Global Pro League" option now. When you pick it, you see where every team starts
+                and, at the end, the edge between the Global Challenger Cup and the teams, which are NOT playing. This divider is half red, on the side of the not playing teams:
+            </p>
+            <GplShot n={2} alt="Leaderboard with the Global Pro League dividers between Stage I and the Global Challenger Cup" />
+            <GplShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                Both tournaments have their own numbers (Global Challenger Cup #1 and Global Pro League #1) and "Proceed" leads from the first one into the second one, same as in the PEM Tournaments.
+                How a match is played itself, you can see in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. I chose the Global Pro League explicitly and clicked "Start Game", right after{" "}
+                <InfoLink onClick={scrollToAnchor("big-rewards", "pem-big")} href="?page=pem-big#big-rewards">PEM Big Tournament #1</InfoLink>.
+            </p>
+        </section>
+        <section>
+            <div id="gcc" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Global Challenger Cup</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The Global Challenger Cup has a format, which doesn&apos;t exist anywhere else in this simulator: a <b>League Phase</b>. Its 16 teams are dealt into <b>4 Pots</b> of 4 teams,
+                Pot 1 with the best 4 of them and Pot 4 with the worst 4, and that&apos;s what the Tournament Intro Screen shows:
+            </p>
+            <GplShot n={4} alt="Tournament Intro Screen of Global Challenger Cup #1 with all teams and the 4 Pots" />
+            <p className={css.info_text}>
+                Every team plays <b>4 matches</b>, one on each of the 4 Matchdays, and on the first three Matchdays it meets a team of another Pot. On Matchday 4, it&apos;s the other way around: there, the teams of the same Pot play against each other.
+                <i> — So, it&apos;s like a Group Stage?</i> Not really. There are no Groups: all 16 teams share one big <b>League Table</b>, even though no team plays against everybody.
+                And the whole draw is known from the very beginning, so you can already see on the first Matchday, who will play whom on the last one. All League Phase matches are <b>Best of 3</b>:
+            </p>
+            <GplShot n={5} alt="League Phase of Global Challenger Cup #1 before the first match" />
+            <p className={css.info_text}>
+                The table is sorted by wins first. If two teams have the same amount of wins, the Sets Difference decides, then the Rounds Difference, then the wins of all the opponents a team had
+                (the same idea as the Buchholz score in{" "}
+                <InfoLink onClick={scrollToAnchor("distribution-explained", "official")} href="?page=official#distribution-explained">Distribution system in Swiss Stages</InfoLink>
+                ), then the match between both teams and only at the very end, the seed. The colors of the rows show where every team is at the moment:
+                green rows go straight to the Quarterfinals, yellow ones to the Knockout Play-offs and the rest flies out. <br />
+                Since the Pots matter here, the match modal of a Global Challenger Cup match shows the Pot of each team near its circle:
+            </p>
+            <GplShot n={6} alt="Match modal of the first League Phase match with the Pots of both teams" width="35vw" />
+            <p className={css.info_text}>
+                And the Pots didn&apos;t mean much in my Global Challenger Cup #1. Team Amber, the 36th team of the Leaderboard from Pot 3, won all four of its matches and finished first.
+                Team Indigo from Pot 2 did the same and had the same Sets Difference, so only the Rounds Difference put it second. And on the other side, Team Blue, the best seeded team of the whole Cup, lost all four of its matches.
+                Team Azure, the champion of{" "}
+                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, finished last with 0 wins:
+            </p>
+            <GplShot n={7} alt="Finished League Phase of Global Challenger Cup #1" />
+            <p className={css.info_text}>
+                After the last match of Matchday 4, the <b>Knockout Stage</b> starts right away. Places 1-4 of the table wait in the Quarterfinals, places 5-12 play the <b>Knockout Play-offs</b> for the other 4 places
+                (5th vs 12th, 6th vs 11th, 7th vs 10th and 8th vs 9th) and places 13-16 are out. The winner of each Play-off meets one of the top 4, so the 1st place plays against the winner of 8th vs 9th.
+                Then come the Semifinals, the Third Place Decider and the Grand Final. Everything is <b>Best of 3</b> again, only the Grand Final is <b>Best of 5</b>.
+                With the navigation in the top left corner, you can always go back to the League Phase:
+            </p>
+            <GplShot n={8} alt="Knockout Stage of Global Challenger Cup #1 before the first Knockout Play-off" />
+            <p className={css.info_text}>
+                Team Red, the 12th one, beat the 5th one, Team Lilac, 2:0 with an overtime set (16-13) and lost its Quarterfinal only in the Decider against Team Sapphire.
+                Team Amber won its Quarterfinal, the first set 19-17 in overtime, but in the Semifinal, Team Sapphire beat it 2:0. Team Indigo got through Team Plum and Team Steel.
+                And so, the Grand Final was Team Indigo against Team Sapphire: it went to the fifth set and Team Indigo won it 13-4. Team Amber still took the Third Place 2:1 against Team Steel.
+                Same as all the other Tier 2 tournaments, the Winners&apos; screen has neither quotes nor a trophy:
+            </p>
+            <GplShot n={9} alt="Winners' screen of Global Challenger Cup #1" width="28vw" />
+            <p className={css.info_text}>
+                The Pick&apos;em summary counts the League Phase matches together and then every round of the Knockout Stage. The Third Place Decider and the Grand Final are only mentioned, if I guessed them.
+                And this time, I won the Pick&apos;em challenge: 98 out of 88 needed Pick&apos;em points.
+            </p>
+            <GplShot n={10} alt="Pick'em summary of Global Challenger Cup #1" width="30vw" />
+        </section>
+        <section>
+            <div id="gpl" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Global Pro League</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                After "Proceed", the <b>Global Pro League #1</b> starts with its Tournament Intro Screen: the 8 auto-qualifiers to Stage II and the 16 teams, which start in Stage I:
+            </p>
+            <GplShot n={11} alt="Tournament Intro Screen of Global Pro League #1" />
+            <p className={css.info_text}>
+                If you have played Official already, then you know these Stages: they are <b>Swiss Stages</b> (see{" "}
+                <InfoLink onClick={scrollToAnchor("swiss-stage", "official")} href="?page=official#swiss-stage">What is this Swiss Stage even about!?</InfoLink>
+                ). <b>BUT</b>, they are half as big: only 16 teams in each Stage, 3 wins to go through, 3 losses to fly out, and only 8 teams go through.
+                That&apos;s why every net has half as many matches (8 matches in the 0:0 net, 2 matches in the 2:0 net and so on) and the boxes in the corners have only 2 or 3 places.
+                And there is no Best of 1 here at all: in Stage I, every single match is <b>Best of 3</b>:
+            </p>
+            <GplShot n={12} alt="Stage I of Global Pro League #1 before the first match" />
+            <GplShot n={13} alt="Match modal of the first Stage I match" width="35vw" />
+            <p className={css.info_text}>
+                Team Violet and Team Copper, both of them came through the{" "}
+                <InfoLink onClick={scrollToAnchor("big-qualifier", "pem-big")} href="?page=pem-big#big-qualifier">PEM Big Tournament Qualifier</InfoLink>{" "}
+                before, won Stage I with 3:0. The comeback of this Stage was Team Frost&apos;s, the 22nd team: it lost its first two matches and then won three in a row to 3:2.
+                The highest seeded team in Stage I, Team Sunflower, went through with 3:1:
+            </p>
+            <GplShot n={14} alt="Finished Stage I of Global Pro League #1" />
+            <p className={css.info_text}>
+                Then <b>Stage II</b> starts right away with the 8 auto-qualifiers and the 8 teams from Stage I. Here, it&apos;s the same as in Stage III of Official:
+                the 0:0, 1:0, 0:1 and 1:1 matches are <b>Best of 3</b>, all Progression and Elimination matches (2:0, 2:1, 1:2, 0:2 and 2:2) are <b>Best of 5</b>.
+                In the top left corner, the navigation lets you look back at Stage I:
+            </p>
+            <GplShot n={15} alt="Stage II of Global Pro League #1 before the first match, with the navigation" />
+            <p className={css.info_text}>
+                Team Seafoam and Team Yellow went through with 3:0. Seven auto-qualifiers made it to the Playoffs and only Team Emerald didn&apos;t: it lost its Deciding Match 0:3 against Team Orange.
+                And the eighth team was Team Copper again: it lost its first two matches, then won three Best of 5s in a row (3:1 against Team Frost, 3:0 against Team Green and 3:2 against Team Sunflower)
+                and was the only team from Stage I, which reached the Playoffs:
+            </p>
+            <GplShot n={16} alt="Finished Stage II of Global Pro League #1" />
+            <p className={css.info_text}>
+                The Playoffs are the standard 8-team ones: Quarterfinals, Semifinals, Third Place Decider and Grand Final. The teams are seeded by their records in Stage II,
+                so the 3:0 teams are on top and the best two of them could only meet in the Grand Final. The formats are the same as in the Official (but without Round of 16 :0):
+                the Quarterfinals are <b>Best of 5</b>, the Semifinals and the Third Place Decider are <b>Best of 7</b> and the Grand Final is <b>Best of 9</b>:
+            </p>
+            <GplShot n={17} alt="Playoffs of Global Pro League #1 before the Quarterfinals" />
+            <p className={css.info_text}>
+                And Team Copper just went on: it beat Team Yellow, one of the two 3:0 teams, 3:0 in the Quarterfinals and then Team Moss 4:2 in the Semifinals, with a 16-14 set in overtime.
+                On the other side, Team Seafoam didn&apos;t lose a single set: 3:0 against Team Orange and 4:0 against Team Rose.
+                So, the Grand Final was Team Copper, which started the PEM Big Tournament in its Qualifier, against Team Seafoam. The prediction gave Team Copper <b>0.4%</b>:
+            </p>
+            <GplShot n={18} alt="Match modal of the Grand Final of Global Pro League #1" width="35vw" />
+            <GplShot n={19} alt="Series screen of the Bo9 Grand Final with the Global Pro League trophy" width="30vw" caption="(The trophy icon in the series screen is the Global Pro League trophy now)" />
+            <p className={css.info_text}>
+                Team Copper even won two sets in a row (13-11 and 13-9), but Team Seafoam won the Grand Final 5:2. Team Moss won the Third Place 4:1 against Team Rose.
+                The Global Pro League has its own trophy: a black one with a <b>golden globe</b> on top, which Team Seafoam holds on the Winners&apos; screen the same way as all the other trophies:
+            </p>
+            <GplShot n={20} alt="Winners' screen of Global Pro League #1 with the Global Pro League trophy" width="28vw" />
+            <p className={css.info_text}>
+                The Pick&apos;em summary looks like the one of Official, only with 33 matches per Stage instead of 66. And again, it was super close: 228 out of 233 needed Pick&apos;em points:
+            </p>
+            <GplShot n={21} alt="Pick'em summary of Global Pro League #1" width="30vw" />
+            <GplShot n={22} alt="Finished Playoffs of Global Pro League #1 with the end buttons" />
+        </section>
+        <section>
+            <div id="gpl-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The globe trophy and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                In the Leaderboard, the Global Pro League trophy gets its own icon and it is placed before all the other trophies. It is worth the same as the golden PEM trophy, so when you sort by "Trophies and first places",
+                both of them count as much. Team Seafoam has four different trophies now and its Unbeaten Streak went up to 14. Team Indigo got a 🥇 for the Global Challenger Cup and,
+                same as with every other Tier 1 or Tier 2 tournament, the 2nd and 3rd places count into the 🥈 and 🥉 totals:
+            </p>
+            <GplShot n={23} alt="Leaderboard after Global Pro League #1" />
+            <p className={css.info_text}>
+                In the Hall of Fame, there are two new cards: the Global Pro League card with its trophy above the name and the top four, and the Global Challenger Cup card, the same as the other Tier 2 cards:
+            </p>
+            <GplShot n={24} alt="Hall of Fame with the cards of Global Pro League #1 and Global Challenger Cup #1" />
+            <p className={css.info_text}>
+                The Global Challenger Cup&apos;s summary starts with all teams and the 4 Pots. Then come the whole League Phase with its final table, the whole Knockout Stage and the podium.
+                At the end, there are the places 5-12: the losers of the Quarterfinals are 5th to 8th and the losers of the Knockout Play-offs are 9th to 12th, each of them in the order of the matches,
+                so the loser of Quarterfinal #1 is 5th:
+            </p>
+            <GplShot n={25} alt="Hall of Fame, Global Challenger Cup #1: all teams and the Pots" />
+            <GplShot n={26} alt="Hall of Fame, Global Challenger Cup #1: the League Phase" />
+            <GplShot n={27} alt="Hall of Fame, Global Challenger Cup #1: the Knockout Stage" />
+            <GplShot n={28} alt="Hall of Fame, Global Challenger Cup #1: the podium" />
+            <GplShot n={29} alt="Hall of Fame, Global Challenger Cup #1: the places 5-12" />
+            <p className={css.info_text}>
+                The Global Pro League&apos;s summary starts with all teams and how they were dealt into the Stages. Then comes the whole Stage I with every match, all teams to Stage II, the whole Stage II,
+                all teams to the Playoffs and the Playoffs themselves, the podium with the trophy and the 5th-8th places:
+            </p>
+            <GplShot n={30} alt="Hall of Fame, Global Pro League #1: all teams and their Stages" />
+            <GplShot n={31} alt="Hall of Fame, Global Pro League #1: Stage I" />
+            <GplShot n={32} alt="Hall of Fame, Global Pro League #1: all teams to Stage II" />
+            <GplShot n={34} alt="Hall of Fame, Global Pro League #1: all teams to the Playoffs and the Playoffs" />
+            <GplShot n={35} alt="Hall of Fame, Global Pro League #1: the podium with the Global Pro League trophy" />
+            <GplShot n={36} alt="Hall of Fame, Global Pro League #1: the places 5-8" />
+            <p className={css.info_text}>
+                And now, there are four tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b> and <b>Global Pro League</b>. Every single one of them has had its #1 already, so which #2 comes first?
+            </p>
+        </section>
+    </>
+);
+
 const INFO_SUB_PAGES = [
     {
         id: "official",
@@ -1882,6 +2096,12 @@ const INFO_SUB_PAGES = [
         label: <>PEM Big Tournament Qualifier /<br />Elite Competition League /<br />PEM Big Tournament</>,
         sections: PEM_BIG_SECTIONS,
         Content: PemBigSubPage,
+    },
+    {
+        id: "gpl",
+        label: <>Global Challenger Cup /<br />Global Pro League</>,
+        sections: GPL_SECTIONS,
+        Content: GplSubPage,
     },
 ];
 

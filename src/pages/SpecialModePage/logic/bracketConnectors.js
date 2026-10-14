@@ -19,6 +19,13 @@ export const PEM_PLAYOFFS_CONNECTOR_LINKS = [
     { from: "sf-1", to: "gf-0", toY: 0.75 },
 ];
 
+export const GCC_KNOCKOUT_CONNECTOR_LINKS = [
+    ...[0, 1, 2, 3].map((i) => ({ from: `po-${i}`, to: `qf-${i}`, toY: 0.75 })),
+    ...[0, 1, 2, 3].map((i) => ({ from: `qf-${i}`, to: `sf-${Math.floor(i / 2)}`, toY: i % 2 === 0 ? 0.25 : 0.75 })),
+    { from: "sf-0", to: "gf-0", toY: 0.25 },
+    { from: "sf-1", to: "gf-0", toY: 0.75 },
+];
+
 export const QUALIFIER_CONNECTOR_LINKS = (() => {
     const links = [];
     const add = (fromStage, fromIdx, toStage, toIdx, toSlot) =>

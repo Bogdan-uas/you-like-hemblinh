@@ -123,6 +123,25 @@ export const PemBigDescription = () => (
     </>
 );
 
+export const GplDescription = () => (
+    <>
+        Two tournaments, played one after another:
+        <PemSmallEventLine tier="tier2">
+            <b>Global Challenger Cup</b> — places 25-40 of the Leaderboard in one League Phase: 4 Pots of 4 teams
+            and 4 Matchdays, so every team plays one team of every Pot (all Bo3) and all 16 teams share one table.
+            The top 4 go straight to the Quarterfinals, places 5-12 play the Knockout Play-offs for the other 4
+            spots and places 13-16 are out. Knockout Play-offs, Quarterfinals, Semifinals and Third Place Decider
+            are Bo3, the Grand Final is Bo5. Places 41-64 don&apos;t play at all.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>Global Pro League</b> — places 9-24 of the Leaderboard start in <b>Stage I</b>, its 8 best teams join
+            places 1-8 in <b>Stage II</b>. Both Swiss Stages have 16 teams and 8 of them go through. Stage I is all
+            Bo3, in Stage II the Progression and Elimination matches are Bo5. The 8 teams from Stage II play the
+            Playoffs: Quarterfinals are Bo5, Semifinals and Third Place Decider are Bo7, the Grand Final is Bo9.
+        </PemSmallEventLine>
+    </>
+);
+
 export const WhiteCaretIcon = ({ size = 14, rotation = 0 }) => (
     <svg
         width={size}

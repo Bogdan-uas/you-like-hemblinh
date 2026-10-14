@@ -21,7 +21,7 @@ export function PickemSummary({ pickem, phase, actions }) {
         isPickemWin,
         setPickemCountSettled,
     } = pickem;
-    const { activePhase, isCstPhase, isEclPhase } = phase;
+    const { activePhase, isCstPhase, isEclPhase, isGccPhase } = phase;
     const { handlePemProceedToNextEvent, resetSpecialModeState, setShowPickemSummary, setShowWinnersScreen, navigate } = actions;
 
     const lossBasedPoints =
@@ -147,7 +147,7 @@ export function PickemSummary({ pickem, phase, actions }) {
                     }}>
                         To the bracket
                     </button>
-                    {activePhase === "qualifier" || isCstPhase || isEclPhase ? (
+                    {activePhase === "qualifier" || isCstPhase || isEclPhase || isGccPhase ? (
                         <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
                             Proceed
                         </button>

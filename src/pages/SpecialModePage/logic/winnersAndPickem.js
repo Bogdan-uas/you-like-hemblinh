@@ -1,3 +1,6 @@
+export const GPL_PODIUM_TROPHY_SIZE = 100;
+export const GPL_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
+
 export const PODIUM_QUOTES = {
     winner: [
         "The best of the best",
