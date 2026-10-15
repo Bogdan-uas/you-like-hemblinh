@@ -23,6 +23,7 @@ import {
     getGccClinchStatus,
 } from "../logic/gcc.js";
 import { lightenHex, darkenHex } from "../logic/colors.js";
+import { GccTableInfo } from "../components/GccTableInfo.jsx";
 import { isPemPlayoffsKind, pemGroupSlotSource, canOpenPemGroupMatch, getBestOfForPemGroup, isSinglePemGroupStage, findCurrentPemGroupMatch, findNextPemGroupMatch } from "../logic/pemSeries.jsx";
 import { pemStage1SlotSource, canOpenPemStage1Match, getBestOfForPemStage1, isSinglePemStage1Stage, findCurrentPemStage1Match, findNextPemStage1Match } from "../logic/pemStage1.jsx";
 import { canOpenPlayoffsMatch, getBestOfForPlayoffs } from "../logic/playoffs.js";
@@ -2139,7 +2140,10 @@ export function createTournamentRenderers({
         return (
             <div className={css.gcc_league}>
                 <div className={css.gcc_table}>
-                    <h3 className={css.cst_group_title}>League Table</h3>
+                    <div className={css.gcc_table_title}>
+                        <h3 className={css.cst_group_title}>League Table</h3>
+                        <GccTableInfo />
+                    </div>
                     {renderGccStandingsTable(league, playingIds)}
                     <div className={css.gcc_zone_legend}>
                         <span><i className={css.gcc_row_qf_done} /> Quarterfinals</span>
