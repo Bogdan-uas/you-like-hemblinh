@@ -209,6 +209,94 @@ export const getGccStandings = (league) => {
 export const gccZoneOf = (position) =>
     position <= GCC_DIRECT_QF_COUNT ? "qf" : position <= GCC_KNOCKOUT_COUNT ? "po" : "out";
 
+const GCC_CLINCH_ENUMERATION_LIMIT = 16;
+const gccClinchCache = new WeakMap();
+
+export const getGccClinchStatus = (league) => {
+    if (!league) return {};
+    if (gccClinchCache.has(league)) return gccClinchCache.get(league);
+
+    const rows = getGccStandings(league);
+    const ids = rows.map((row) => row.team.id);
+    const indexOf = new Map(ids.map((id, i) => [id, i]));
+    const baseWins = rows.map((row) => row.w);
+    const remaining = getGccLeagueMatches(league)
+        .filter((m) => !m.played && m.slotA && m.slotB)
+        .map((m) => [indexOf.get(m.slotA.id), indexOf.get(m.slotB.id)])
+        .filter(([a, b]) => a !== undefined && b !== undefined);
+
+    const status = {};
+
+    if (remaining.length === 0) {
+        rows.forEach((row) => {
+            const zone = gccZoneOf(row.position);
+            status[row.team.id] = { qf: zone === "qf", top12: zone !== "out", noQf: zone !== "qf", out: zone === "out" };
+        });
+        gccClinchCache.set(league, status);
+        return status;
+    }
+
+    const n = ids.length;
+    const lockedQf = Array(n).fill(true);
+    const lockedTop12 = Array(n).fill(true);
+    const noQf = Array(n).fill(true);
+    const out = Array(n).fill(true);
+
+    const evaluate = (wins) => {
+        for (let x = 0; x < n; x++) {
+            let atLeast = 0;
+            let above = 0;
+            for (let y = 0; y < n; y++) {
+                if (y === x) continue;
+                if (wins[y] >= wins[x]) atLeast++;
+                if (wins[y] > wins[x]) above++;
+            }
+            if (atLeast > GCC_DIRECT_QF_COUNT - 1) lockedQf[x] = false;
+            if (atLeast > GCC_KNOCKOUT_COUNT - 1) lockedTop12[x] = false;
+            if (above < GCC_DIRECT_QF_COUNT) noQf[x] = false;
+            if (above < GCC_KNOCKOUT_COUNT) out[x] = false;
+        }
+    };
+
+    if (remaining.length <= GCC_CLINCH_ENUMERATION_LIMIT) {
+        const wins = [...baseWins];
+        const combos = 1 << remaining.length;
+        for (let mask = 0; mask < combos; mask++) {
+            for (let i = 0; i < n; i++) wins[i] = baseWins[i];
+            remaining.forEach(([a, b], i) => {
+                if (mask & (1 << i)) wins[a]++;
+                else wins[b]++;
+            });
+            evaluate(wins);
+        }
+    } else {
+        const left = Array(n).fill(0);
+        remaining.forEach(([a, b]) => {
+            left[a]++;
+            left[b]++;
+        });
+        for (let x = 0; x < n; x++) {
+            let couldReach = 0;
+            let surelyAbove = 0;
+            for (let y = 0; y < n; y++) {
+                if (y === x) continue;
+                if (baseWins[y] + left[y] >= baseWins[x]) couldReach++;
+                if (baseWins[y] > baseWins[x] + left[x]) surelyAbove++;
+            }
+            lockedQf[x] = couldReach <= GCC_DIRECT_QF_COUNT - 1;
+            lockedTop12[x] = couldReach <= GCC_KNOCKOUT_COUNT - 1;
+            noQf[x] = surelyAbove >= GCC_DIRECT_QF_COUNT;
+            out[x] = surelyAbove >= GCC_KNOCKOUT_COUNT;
+        }
+    }
+
+    ids.forEach((id, i) => {
+        status[id] = { qf: lockedQf[i], top12: lockedTop12[i], noQf: noQf[i], out: out[i] };
+    });
+    gccClinchCache.set(league, status);
+    return status;
+};
+
 const makeGccKnockoutMatch = (stage, i, slotA = null, slotB = null) => ({
     id: `gcc-${stage}-${i + 1}`,
     stage,

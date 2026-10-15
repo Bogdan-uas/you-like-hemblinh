@@ -13,13 +13,16 @@ import { isCstGroupFinished, getCstStandings, CST_GROUPS, canOpenCstGroupMatch }
 import { eclSlotSource, canOpenEclMatch, getBestOfForEcl, isSingleEclStage, findCurrentEclMatch, findNextEclMatch } from "../logic/ecl.jsx";
 import {
     GCC_LEAGUE_BEST_OF,
+    GCC_DIRECT_QF_COUNT,
+    GCC_KNOCKOUT_COUNT,
     canOpenGccLeagueMatch,
     findCurrentGccLeagueMatch,
     findNextGccLeagueMatch,
     gccZoneOf,
     getGccStandings,
-    isGccLeagueFinished,
+    getGccClinchStatus,
 } from "../logic/gcc.js";
+import { lightenHex, darkenHex } from "../logic/colors.js";
 import { isPemPlayoffsKind, pemGroupSlotSource, canOpenPemGroupMatch, getBestOfForPemGroup, isSinglePemGroupStage, findCurrentPemGroupMatch, findNextPemGroupMatch } from "../logic/pemSeries.jsx";
 import { pemStage1SlotSource, canOpenPemStage1Match, getBestOfForPemStage1, isSinglePemStage1Stage, findCurrentPemStage1Match, findNextPemStage1Match } from "../logic/pemStage1.jsx";
 import { canOpenPlayoffsMatch, getBestOfForPlayoffs } from "../logic/playoffs.js";
@@ -2009,18 +2012,64 @@ export function createTournamentRenderers({
         out: { live: "", done: css.cst_row_eliminated, label: "Out" },
     };
 
-    const renderGccStandingsTable = (league) => {
-        const finished = isGccLeagueFinished(league);
+    const GCC_FORM_GRADIENT = (color) => `linear-gradient(180deg, ${lightenHex(color, 0.18)} 0%, ${color} 45%, ${darkenHex(color, 0.35)} 100%)`;
+
+    const renderGccForm = (league, teamId) => (
+        <div className={css.gcc_form}>
+            {(league.matchdays || []).map((day, dayIndex) => {
+                const m = day.find((x) => x.slotA?.id === teamId || x.slotB?.id === teamId);
+                if (!m) return <span key={dayIndex} className={css.gcc_form_slot} />;
+                const opponent = m.slotA?.id === teamId ? m.slotB : m.slotA;
+
+                if (!m.played) {
+                    return (
+                        <span
+                            key={dayIndex}
+                            className={`${css.gcc_form_slot} ${css.gcc_form_next}`}
+                            style={{ background: opponent?.color }}
+                            title={`Matchday ${dayIndex + 1}: vs Team ${opponent?.name}`}
+                        />
+                    );
+                }
+
+                const won = m.winnerTeamId === teamId;
+                return (
+                    <span
+                        key={dayIndex}
+                        className={css.gcc_form_slot}
+                        style={{ backgroundImage: GCC_FORM_GRADIENT(won ? "#54CC54" : "#983333") }}
+                        title={`Matchday ${dayIndex + 1}: ${won ? "won" : "lost"} against Team ${opponent?.name}`}
+                    >
+                        {won ? <FaCheck size={8} color="#fff" /> : <FaXmark size={9} color="#fff" />}
+                    </span>
+                );
+            })}
+        </div>
+    );
+
+    const gccClinchView = (status, position) => {
+        if (status?.qf) return { row: css.gcc_row_qf_done, icon: "qf", title: "Quarterfinals clinched" };
+        if (status?.top12 && status?.noQf) return { row: css.gcc_row_po_done, icon: "po", title: "Knockout Play-offs clinched" };
+        if (status?.out) return { row: css.cst_row_eliminated, icon: "out", title: "Eliminated" };
+        return {
+            row: GCC_ZONES[gccZoneOf(position)].live,
+            icon: status?.top12 ? "safe" : null,
+            title: status?.top12 ? "At least the Knockout Play-offs clinched" : "",
+        };
+    };
+
+    const renderGccStandingsTable = (league, playingIds = []) => {
         const rows = getGccStandings(league);
+        const clinch = getGccClinchStatus(league);
 
         return (
-            <table className={css.cst_table}>
+            <table className={`${css.cst_table} ${css.gcc_standings}`}>
                 <thead>
                     <tr>
                         <th>#</th>
                         <th style={{ textAlign: "left" }}>Team</th>
                         <th title="Pot">Pot</th>
-                        <th title="Matches">M</th>
+                        <th title="Matchdays 1-4">Form</th>
                         <th title="Wins">W</th>
                         <th title="Losses">L</th>
                         <th title="Sets Difference">SD</th>
@@ -2029,32 +2078,34 @@ export function createTournamentRenderers({
                 </thead>
                 <tbody>
                     {rows.map((row) => {
-                        const zone = gccZoneOf(row.position);
-                        const zoneConfig = GCC_ZONES[zone];
+                        const view = gccClinchView(clinch[row.team.id], row.position);
+                        const isCut = row.position === GCC_DIRECT_QF_COUNT || row.position === GCC_KNOCKOUT_COUNT;
+                        const isPlaying = playingIds.includes(row.team.id);
 
                         return (
-                            <tr key={row.team.id} className={finished ? zoneConfig.done : zoneConfig.live}>
+                            <tr
+                                key={row.team.id}
+                                className={`${view.row} ${isCut ? css.gcc_row_cut : ""} ${isPlaying ? css.gcc_row_playing : ""}`}
+                            >
                                 <td>{row.position}</td>
                                 <td style={{ textAlign: "left" }}>
                                     <div className={css.cst_team_cell}>
                                         <span className={css.cst_team_dot} style={{ background: row.team.color }} />
                                         <span className={css.cst_team_name}>Team {row.team.name}</span>
-                                        {finished && (
-                                            zone === "out" ? (
-                                                <FaXmark size={12} color="#be3939" title="Eliminated" style={{ flexShrink: 0 }} />
-                                            ) : (
-                                                <FaCheck
-                                                    size={11}
-                                                    color={zone === "qf" ? "#2e7d32" : "#a07800"}
-                                                    title={`Qualified to ${zoneConfig.label}`}
-                                                    style={{ flexShrink: 0 }}
-                                                />
-                                            )
-                                        )}
+                                        {view.icon === "out" ? (
+                                            <FaXmark size={12} color="#be3939" title={view.title} style={{ flexShrink: 0 }} />
+                                        ) : view.icon ? (
+                                            <FaCheck
+                                                size={11}
+                                                color={view.icon === "qf" ? "#2e7d32" : "#a07800"}
+                                                title={view.title}
+                                                style={{ flexShrink: 0, opacity: view.icon === "safe" ? 0.5 : 1 }}
+                                            />
+                                        ) : null}
                                     </div>
                                 </td>
-                                <td>{row.pot}</td>
-                                <td>{row.m}</td>
+                                <td><span className={css.gcc_pot}>{row.pot}</span></td>
+                                <td>{renderGccForm(league, row.team.id)}</td>
                                 <td>{row.w}</td>
                                 <td>{row.l}</td>
                                 <td style={{ color: row.sd > 0 ? "#2e7d32" : row.sd < 0 ? "red" : "" }}>
@@ -2082,16 +2133,20 @@ export function createTournamentRenderers({
 
         const current = archived ? null : findCurrentGccLeagueMatch(league);
         const next = archived ? null : findNextGccLeagueMatch(league, current);
+        const currentMatch = current ? league.matchdays?.[current.day]?.[current.index] : null;
+        const playingIds = currentMatch ? [currentMatch.slotA?.id, currentMatch.slotB?.id] : [];
 
         return (
             <div className={css.gcc_league}>
                 <div className={css.gcc_table}>
                     <h3 className={css.cst_group_title}>League Table</h3>
-                    {renderGccStandingsTable(league)}
+                    {renderGccStandingsTable(league, playingIds)}
                     <div className={css.gcc_zone_legend}>
                         <span><i className={css.gcc_row_qf_done} /> Quarterfinals</span>
                         <span><i className={css.gcc_row_po_done} /> Knockout Play-offs</span>
                         <span><i className={css.cst_row_eliminated} /> Out</span>
+                        <span><FaCheck size={11} color="#2e7d32" /><FaCheck size={11} color="#a07800" /> Clinched</span>
+                        <span><FaXmark size={12} color="#be3939" /> Eliminated</span>
                     </div>
                 </div>
 
