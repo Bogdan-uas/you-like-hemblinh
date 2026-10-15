@@ -133,7 +133,18 @@ export const ExtendedRoundsTrack = ({
                             className={`${css.ert_tile} ${css.ert_tile_back} ${isNext ? `${css.match_current} ${css.ert_tile_next}` : ""}`}
                         >
                             <span className={`${css.info_text} ${css.ert_tile_label}`}>{round.label}</span>
-                            <TeamCircle team={null} />
+                            <span className={css.ert_tile_winner}>
+                                <TeamCircle team={null} />
+                            </span>
+                            <span className={css.info_text} style={{ fontSize: "14px", fontWeight: 900, visibility: "hidden" }}>
+                                ?
+                            </span>
+                            {round.miniLeft != null && round.miniRight != null && (
+                                <span className={css.vs} style={{ fontSize: "20px", visibility: "hidden" }}>?</span>
+                            )}
+                            {showRoundNumbers && round.roundNumber != null && (
+                                <span className={`${css.info_text} ${css.ert_tile_round}`} style={{ visibility: "hidden" }}>?</span>
+                            )}
                         </div>
                     )}
 
