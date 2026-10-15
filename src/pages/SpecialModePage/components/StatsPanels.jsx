@@ -175,6 +175,29 @@ const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "8px", no
     );
 };
 
+const StatAverageLine = ({ statsNow, statsBefore }) => {
+    const average = getTeamStatAverage(statsNow);
+    const diff = statsBefore ? Math.round((average - getTeamStatAverage(statsBefore)) * 100) / 100 : null;
+
+    return (
+        <>
+            Average: {average}
+            {diff != null && diff !== 0 && (
+                <span
+                    style={{
+                        marginLeft: "6px",
+                        color: diff > 0 ? "#4caf50" : "#e53935",
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                    }}
+                >
+                    {diff > 0 ? "+" : ""}{diff}
+                </span>
+            )}
+        </>
+    );
+};
+
 export const StatsTabLink = ({ side, tab, total, onClick, interactive = true }) => {
     if (!(total > 1)) return null;
 
@@ -280,7 +303,7 @@ export const StatsFactorPanelBody = ({ team, statsNow, statsBefore, tab = 0 }) =
                     opacity: 0.7,
                 }}
             >
-                Average: {getTeamStatAverage(statsNow)}
+                <StatAverageLine statsNow={statsNow} statsBefore={statsBefore} />
             </div>
             {defs.map((def) => {
                 const val = statsNow?.[def.key] ?? DEFAULT_TEAM_STAT_VALUES[def.key];
@@ -368,7 +391,7 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
                     opacity: 0.7,
                 }}
             >
-                Average: {getTeamStatAverage(statsNow)}
+                <StatAverageLine statsNow={statsNow} statsBefore={statsBefore} />
             </div>
             <div
                 style={{
