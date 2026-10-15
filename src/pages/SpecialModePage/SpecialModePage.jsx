@@ -7615,6 +7615,7 @@ function SpecialModePage() {
                     arePlacingButtonsArmed={arePlacingButtonsArmed}
                     hasAnyPlacings={hasAnyPlacings}
                     onInfoPage={() => navigate("/special-mode-info")}
+                    onHallOfFame={() => setIsHallOfFameOpen(true)}
                 />
                 <LeaderboardView tournamentNumberAdmin={tournamentNumberAdmin} leaderboardState={leaderboardState} page={{
                         isTournamentNumberButtonLocked,
@@ -7663,6 +7664,7 @@ function SpecialModePage() {
                 arePlacingButtonsArmed={arePlacingButtonsArmed}
                 hasAnyPlacings={hasAnyPlacings}
                 onInfoPage={() => navigate("/special-mode-info")}
+                onHallOfFame={() => setIsHallOfFameOpen(true)}
             />
 
             <div className={css.page_container} style={{ transition: "none" }}>

@@ -19,6 +19,7 @@ const Header = ({
     arePlacingButtonsArmed = false,
     hasAnyPlacings = false,
     onInfoPage,
+    onHallOfFame,
 }) => {
     const armedStyle = { opacity: 1, pointerEvents: "auto" };
     const unarmedStyle = { opacity: 0, pointerEvents: "auto", cursor: "default" };
@@ -96,6 +97,17 @@ const Header = ({
                     </button>
                 ) : null}
 
+                {onHallOfFame && !isHallOfFameOpen ? (
+                    <button
+                        className={`${css.gamble_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}
+                        onClick={onHallOfFame}
+                        disabled={isScoreBoardButtonLocked}
+                        style={{ pointerEvents: isGameWon ? "none" : "auto" }}
+                    >
+                        Hall of Fame
+                    </button>
+                ) : null}
+
                 {isLeaderboardOpen && !isHallOfFameOpen ? (
                     <>
                         <button
@@ -104,7 +116,7 @@ const Header = ({
                             disabled={isScoreBoardButtonLocked}
                             style={{
                                 pointerEvents: isGameWon ? "none" : "auto",
-                                marginLeft: "512px",
+                                marginLeft: onHallOfFame ? "345px" : "512px",
                                 ...(arePlacingButtonsArmed ? armedStyle : unarmedStyle),
                             }}
                         >

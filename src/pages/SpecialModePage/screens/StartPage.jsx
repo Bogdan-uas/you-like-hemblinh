@@ -15,7 +15,7 @@ export function StartPage({ intro, picker, actions }) {
         setIsTournamentPickerOpen,
         handleToggleTournamentType,
     } = picker;
-    const { handleTournamentStart, navigate, setIsHallOfFameOpen } = actions;
+    const { handleTournamentStart, navigate } = actions;
 
 
     return (
@@ -173,18 +173,6 @@ export function StartPage({ intro, picker, actions }) {
                     </div>
                 </motion.div>
             )}</AnimatePresence>
-            <button
-                type="button"
-                className={css.gamble_button}
-                onClick={() => setIsHallOfFameOpen(true)}
-                style={{
-                    position: "absolute",
-                    top: "6%",
-                    left: "49.2%",
-                }}
-            >
-                Hall of Fame
-            </button>
         </>
     );
 }
