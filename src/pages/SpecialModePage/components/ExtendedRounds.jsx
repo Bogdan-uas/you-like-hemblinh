@@ -222,7 +222,7 @@ export const ExtendedRoundsStatus = ({
         content = (
             <>
                 {renderTeamLabel(leftScore > rightScore ? leftTeam : rightTeam)} wins{" "}
-                {seriesOver || setsToWin === 1 ? "the match" : `Set ${setNumber}`} on Extended Rounds!
+                <b>{seriesOver || setsToWin === 1 ? "the match" : `Set ${setNumber}`}</b> on Extended Rounds!
             </>
         );
     } else if (resolved && allRevealed) {

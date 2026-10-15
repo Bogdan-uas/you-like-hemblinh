@@ -731,6 +731,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                             format="d"
                                         />
                                     </span>
+                                    <BreakdownSquares team={seriesState.leftTeam} lit={Math.min(seriesState.extRoundLeftScore, 4)} total={4} side="left" />
                                     <div className={css.lines}>
                                         {!isPlayoffsStyleSeries && setsToWin === 3 ? (
                                             <>
@@ -1004,7 +1005,6 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         </div>
                                     ) : null}
                                 </div>
-                                <BreakdownSquares team={seriesState.leftTeam} lit={Math.min(seriesState.extRoundLeftScore, 4)} total={4} side="left" />
                             </div>
 
                             <div>
@@ -1131,6 +1131,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                             format="d"
                                         />
                                     </span>
+                                    <BreakdownSquares team={seriesState.rightTeam} lit={Math.min(seriesState.extRoundRightScore, 4)} total={4} side="right" />
                                     <div className={css.lossLines}>
                                         {!isPlayoffsStyleSeries && setsToWin === 3 ? (
                                             <>
@@ -1405,7 +1406,6 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         </div>
                                     ) : null}
                                 </div>
-                                <BreakdownSquares team={seriesState.rightTeam} lit={Math.min(seriesState.extRoundRightScore, 4)} total={4} side="right" />
                             </div>
                         </div>
 
