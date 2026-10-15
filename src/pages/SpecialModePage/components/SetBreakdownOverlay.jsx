@@ -581,7 +581,7 @@ export const SetBreakdownOverlay = ({
                             Extended Round
                         </button>
                     ) : (
-                        <span className={css.ert_round_tag}>Extended Round</span>
+                            <span className={css.ert_round_tag} style={{ pointerEvents: "none" }}>Extended Round</span>
                     )
                 )}
 
