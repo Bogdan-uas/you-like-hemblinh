@@ -6916,7 +6916,7 @@ function SpecialModePage() {
         : pemType;
     const isPemBigModal = modalPemType === PEM_BIG_TYPE_ID;
 
-    const modalGccPots = modalContext?.type === "gccLeague" || modalContext?.kind === "gcc"
+    const modalGccPots = modalContext?.type === "gccLeague"
         ? (modalContext.isArchivedHallOfFame ? selectedHallMatch?.record?.league?.pots : gcc?.pots) ?? null
         : null;
     const modalPotById = modalGccPots
