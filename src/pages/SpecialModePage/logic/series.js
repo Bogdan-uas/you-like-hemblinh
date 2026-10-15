@@ -89,6 +89,47 @@ export const buildExtendedRoundWinnerList = (extendedRounds) => {
     ];
 };
 
+export const EXTENDED_ROUNDS_TO_WIN = 4;
+
+const EXTENDED_ROUND_TITLES = [
+    "1st Half",
+    "2nd Half",
+    "Overtime",
+    "Double Overtime",
+    "Triple Overtime",
+    "Quadruple Overtime",
+];
+
+const EXTENDED_ROUND_PARTS = ["firstHalf", "secondHalf", "ot1", "ot2", "ot3", "ot4"];
+
+export const buildExtendedRoundDetails = (extendedRounds, roundLog = []) => {
+    const log = Array.isArray(roundLog) ? roundLog : [];
+    let left = 0;
+    let right = 0;
+    let clinchIndex = null;
+
+    const rounds = buildExtendedRoundWinnerList(extendedRounds).map((item, i) => {
+        const logged = log.find((r) => r.squares === 10 && r.part === EXTENDED_ROUND_PARTS[i]) ?? null;
+        if (item.winner === "left") left++;
+        else if (item.winner === "right") right++;
+        if (clinchIndex === null && (left >= EXTENDED_ROUNDS_TO_WIN || right >= EXTENDED_ROUNDS_TO_WIN)) {
+            clinchIndex = i;
+        }
+        return {
+            ...item,
+            title: EXTENDED_ROUND_TITLES[i],
+            miniLeft: logged?.miniLeft ?? null,
+            miniRight: logged?.miniRight ?? null,
+            roundNumber: logged?.roundNumber ?? null,
+            roundKey: logged?.key ?? null,
+            tallyLeft: left,
+            tallyRight: right,
+        };
+    });
+
+    return { rounds, clinchIndex, left, right };
+};
+
 export const getBo1Tiebreak = (history) => {
     if (!history?.extendedRounds || history.wins !== history.losses) return null;
 

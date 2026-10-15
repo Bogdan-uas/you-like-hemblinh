@@ -506,7 +506,7 @@
     left: 105px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 71.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 50px 8px, 100% 100%;
@@ -517,7 +517,7 @@
     left: 105px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 71.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -525,10 +525,10 @@
 }
 
 .swiss_rect[data-net="1:0"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 50px 8px, 100% 100%;
@@ -536,10 +536,10 @@
 }
 
 .swiss_rect[data-net="1:0"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -547,10 +547,10 @@
 }
 
 .swiss_rect[data-net="0:1"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 50px 8px, 100% 100%;
@@ -558,10 +558,10 @@
 }
 
 .swiss_rect[data-net="0:1"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -569,21 +569,21 @@
 }
 
 .swiss_rect[data-net="2:0"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 44.2px;
+    width: 47.2px;
     transform-origin: 0 50%;
     transform: rotate(-15.8deg);
     background-size: 42px 8px, 100% 100%;
-    background-position: 8px 0, 0 0;
+    background-position: 12px 0, 0 0;
 }
 
 .swiss_rect[data-net="2:0"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -591,10 +591,10 @@
 }
 
 .swiss_rect[data-net="1:1"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -602,10 +602,10 @@
 }
 
 .swiss_rect[data-net="1:1"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -613,10 +613,10 @@
 }
 
 .swiss_rect[data-net="0:2"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -624,32 +624,32 @@
 }
 
 .swiss_rect[data-net="0:2"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 43.9px;
+    width: 47.2px;
     transform-origin: 0 50%;
     transform: rotate(14.5deg);
     background-size: 42px 8px, 100% 100%;
-    background-position: 8px 0, 0 0;
-}
-
-.swiss_rect[data-net="2:1"][data-pos="first"]::after {
-    left: 105px;
-    top: 12px;
-    bottom: auto;
-    width: 37.3px;
-    transform-origin: 0 50%;
-    transform: rotate(0deg);
-    background-size: 28px 8px, 100% 100%;
     background-position: 12px 0, 0 0;
 }
 
-.swiss_rect[data-net="2:1"][data-pos="last"]::after {
-    left: 105px;
+.swiss_rect[data-net="2:1"][data-pos="first"]::after {
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 40.3px;
+    transform-origin: 0 50%;
+    transform: rotate(0deg);
+    background-size: 28px 8px, 100% 100%;
+    background-position: 14px 0, 0 0;
+}
+
+.swiss_rect[data-net="2:1"][data-pos="last"]::after {
+    left: 102px;
+    top: 12px;
+    bottom: auto;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 42px 8px, 100% 100%;
@@ -657,10 +657,10 @@
 }
 
 .swiss_rect[data-net="1:2"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -668,14 +668,14 @@
 }
 
 .swiss_rect[data-net="1:2"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 37.7px;
+    width: 40.3px;
     transform-origin: 0 50%;
     transform: rotate(0deg);
     background-size: 28px 8px, 100% 100%;
-    background-position: 12px 0, 0 0;
+    background-position: 14px 0, 0 0;
 }
 
 .swiss_rect[data-net="2:2"][data-pos="first"]::after {
@@ -701,10 +701,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="0:0"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 50px 8px, 100% 100%;
@@ -712,10 +712,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="0:0"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -723,10 +723,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="1:0"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 50px 8px, 100% 100%;
@@ -734,10 +734,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="1:0"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -745,10 +745,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="0:1"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(-29.2deg);
     background-size: 50px 8px, 100% 100%;
@@ -756,10 +756,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="0:1"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 68.7px;
+    width: 74.7px;
     transform-origin: 0 50%;
     transform: rotate(29.2deg);
     background-size: 48px 8px, 100% 100%;
@@ -767,21 +767,21 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="2:0"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 44px;
+    width: 47px;
     transform-origin: 0 50%;
     transform: rotate(-11.9deg);
     background-size: 42px 8px, 100% 100%;
-    background-position: 8px 0, 0 0;
+    background-position: 12px 0, 0 0;
 }
 
 .swiss_rect[data-format="gpl"][data-net="2:0"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 67.5px;
+    width: 73.5px;
     transform-origin: 0 50%;
     transform: rotate(27.3deg);
     background-size: 48px 8px, 100% 100%;
@@ -789,10 +789,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="1:1"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 70px;
+    width: 76px;
     transform-origin: 0 50%;
     transform: rotate(-31deg);
     background-size: 48px 8px, 100% 100%;
@@ -800,10 +800,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="1:1"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 70px;
+    width: 76px;
     transform-origin: 0 50%;
     transform: rotate(31deg);
     background-size: 48px 8px, 100% 100%;
@@ -811,10 +811,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="0:2"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 67.5px;
+    width: 73.5px;
     transform-origin: 0 50%;
     transform: rotate(-27.3deg);
     background-size: 48px 8px, 100% 100%;
@@ -822,10 +822,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="0:2"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 44px;
+    width: 47px;
     transform-origin: 0 50%;
     transform: rotate(4deg);
     background-size: 42px 8px, 100% 100%;
@@ -833,10 +833,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="2:1"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 52.7px;
+    width: 58.7px;
     transform-origin: 0 50%;
     transform: rotate(0deg);
     background-size: 28px 8px, 100% 100%;
@@ -844,10 +844,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="2:1"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 62.1px;
+    width: 68.1px;
     transform-origin: 0 50%;
     transform: rotate(14.9deg);
     background-size: 38px 8px, 100% 100%;
@@ -855,10 +855,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="1:2"][data-pos="first"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 62.1px;
+    width: 68.1px;
     transform-origin: 0 50%;
     transform: rotate(-14.9deg);
     background-size: 38px 8px, 100% 100%;
@@ -866,10 +866,10 @@
 }
 
 .swiss_rect[data-format="gpl"][data-net="1:2"][data-pos="last"]::after {
-    left: 105px;
+    left: 102px;
     top: 12px;
     bottom: auto;
-    width: 48.3px;
+    width: 54.3px;
     transform-origin: 0 50%;
     transform: rotate(0deg);
     background-size: 28px 8px, 100% 100%;
@@ -4003,4 +4003,139 @@
     pointer-events: none;
     user-select: none;
     transition: none;
+}
+
+.ert_track {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    perspective: 900px;
+}
+
+.ert_slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.ert_clinch {
+    font-size: 14px;
+    font-weight: 700;
+    height: 20px;
+    transition: none;
+}
+
+.ert_tile {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-height: 124px;
+    padding: 14px 4px 10px;
+    border: none;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    font: inherit;
+    cursor: default;
+    transition: none;
+}
+
+.ert_tile_back {
+    background: #cccccc;
+    box-shadow: none;
+}
+
+.ert_tile_back .placeholder_circle {
+    margin-top: 12px;
+}
+
+.ert_tile_bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+}
+
+.ert_tile_winner {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+}
+
+.ert_tile_next {
+    animation: ert-next-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ert-next-pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(255, 215, 0, 0.9); }
+    50% { box-shadow: 0 0 4px rgba(255, 215, 0, 0.35); }
+}
+
+.ert_tile_link {
+    cursor: pointer;
+}
+
+.ert_tile_label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+}
+
+.ert_tile_round {
+    font-size: 12px;
+    color: #555;
+    text-decoration: underline;
+}
+
+.ert_round_tag {
+    margin: 2px 0 4px;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #d4a000;
+    white-space: nowrap;
+}
+
+.ert_round_tag:hover {
+    color: #664c00;
+    transform: translateY(-1px);
+}
+
+.ert_card_flash .ert_tile {
+    animation: ert-card-flash 1.8s ease-out 1;
+}
+
+@keyframes ert-card-flash {
+    0%, 35% { box-shadow: 0 0 0 3px #ffd700, 0 0 14px rgba(255, 215, 0, 0.9); }
+    100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18); }
+}
+
+.ert_round_flash {
+    animation: ert-round-flash 1.6s ease-out 1;
+}
+
+@keyframes ert-round-flash {
+    0%, 30% { background: rgba(255, 215, 0, 0.25); }
+    100% { background: rgba(255, 215, 0, 0); }
+}
+
+.breakdown_scroll .squareLit,
+.breakdown_scroll .lossSquareLit,
+.breakdown_scroll .lineLit,
+.breakdown_scroll .lossLineLit,
+.breakdown_scroll .verticalLineLit,
+.breakdown_scroll .verticalLossLineLit {
+    will-change: auto;
 }

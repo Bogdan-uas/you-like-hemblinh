@@ -9,7 +9,7 @@ import { MomentumStreakBadge } from "./StreakBadges.jsx";
 import { BREAKDOWN_GLOW, TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "../logic/breakdownStyles.js";
 import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
 
-const BreakdownSquares = ({ team, lit, total, side }) => (
+export const BreakdownSquares = ({ team, lit, total, side }) => (
     <div
         className={css.miniSquares}
         style={side === "right" ? { flexDirection: "row-reverse" } : undefined}

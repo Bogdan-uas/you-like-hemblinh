@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
@@ -8,8 +8,103 @@ import Lenis from "lenis";
 import { BreakdownSectionTitle, BreakdownDivider, BreakdownScoreRow } from "./BreakdownParts.jsx";
 import { BREAKDOWN_OT_NAMES, BREAKDOWN_GLOW, BREAKDOWN_OT_SHORT } from "../logic/breakdownStyles.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
-import { buildExtendedRoundWinnerList } from "../logic/series.js";
+import { buildExtendedRoundWinnerList, buildExtendedRoundDetails } from "../logic/series.js";
+import { ExtendedRoundsTrack } from "./ExtendedRounds.jsx";
 import { BREAKDOWN_HIDDEN_LS_KEY } from "../logic/storageKeys.js";
+
+const createActiveSectionStore = () => {
+    let value = null;
+    const listeners = new Set();
+    return {
+        get: () => value,
+        set: (next) => {
+            if (next === value) return;
+            value = next;
+            listeners.forEach((listener) => listener());
+        },
+        subscribe: (listener) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+        },
+    };
+};
+
+const useActiveSection = (store) => useSyncExternalStore(store.subscribe, store.get);
+
+const ActiveSectionConsumer = ({ store, children }) => children(useActiveSection(store));
+
+const BreakdownNav = ({ sections, store, onSelect }) => {
+    const activeSection = useActiveSection(store);
+    const navRef = useRef(null);
+    const [indicator, setIndicator] = useState({ top: 0, height: 0 });
+
+    const updateIndicator = useCallback(() => {
+        if (!navRef.current) return;
+
+        const active = navRef.current.querySelector(
+            "[data-breakdown-active='true']"
+        );
+
+        if (!active) {
+            setIndicator({
+                top: 0,
+                height: 0,
+            });
+            return;
+        }
+
+        const rect = active.getBoundingClientRect();
+        const parent = navRef.current.getBoundingClientRect();
+
+        setIndicator({
+            top: rect.top - parent.top,
+            height: rect.height,
+        });
+    }, []);
+
+    useLayoutEffect(() => {
+        requestAnimationFrame(updateIndicator);
+    }, [activeSection, sections, updateIndicator]);
+
+    useEffect(() => {
+        window.addEventListener("resize", updateIndicator);
+        return () => window.removeEventListener("resize", updateIndicator);
+    }, [updateIndicator]);
+
+    return (
+        <div
+            ref={navRef}
+            className={css.infoNavigation}
+        >
+            {sections.map((section) => (
+                <button
+                    key={section.id}
+                    data-breakdown-active={activeSection === section.id}
+                    type="button"
+                    onClick={() => onSelect(section.id)}
+                    className={`${css.resultsNavigationButton} ${activeSection === section.id
+                        ? css.resultsNavigationButtonActive
+                        : ""
+                        }`}
+                >
+                    {section.label}
+                </button>
+            ))}
+            <motion.div
+                className={css.resultsNavigationIndicator}
+                initial={false}
+                animate={{
+                    top: indicator.top,
+                    height: indicator.height,
+                }}
+                transition={{
+                    duration: 0.22,
+                    ease: "easeInOut",
+                }}
+            />
+        </div>
+    );
+};
 
 export const SetBreakdownOverlay = ({
     sets,
@@ -33,7 +128,7 @@ export const SetBreakdownOverlay = ({
     const contentRef = useRef(null);
     const sectionRefs = useRef({});
     const modalRef = useRef(null);
-    const [activeSection, setActiveSection] = useState(null);
+    const [activeSectionStore] = useState(createActiveSectionStore);
     const [fullModalHeight, setFullModalHeight] = useState(300);
 
     useEffect(() => {
@@ -83,13 +178,6 @@ export const SetBreakdownOverlay = ({
             return next;
         });
     };
-
-    const navRef = useRef(null);
-
-    const [indicator, setIndicator] = useState({
-        top: 0,
-        height: 0,
-    });
 
     const plan = useMemo(() => {
         if (!entry) return null;
@@ -158,8 +246,10 @@ export const SetBreakdownOverlay = ({
         if (penalties) sections.push({ id: "penalties", label: "Pens" });
 
         const lastLogged = log.length ? log[log.length - 1] : null;
+        const extDetails = hasExtended ? buildExtendedRoundDetails(extendedRounds, log) : null;
 
         return {
+            extDetails,
             firstHalf,
             secondHalf,
             overtimes,
@@ -174,41 +264,6 @@ export const SetBreakdownOverlay = ({
             tieRightScore,
         };
     }, [entry]);
-
-    const updateIndicator = useCallback(() => {
-        if (!navRef.current) return;
-
-        const active = navRef.current.querySelector(
-            "[data-breakdown-active='true']"
-        );
-
-        if (!active) {
-            setIndicator({
-                top: 0,
-                height: 0,
-            });
-            return;
-        }
-
-        const rect = active.getBoundingClientRect();
-        const parent = navRef.current.getBoundingClientRect();
-
-        setIndicator({
-            top: rect.top - parent.top,
-            height: rect.height,
-        });
-    }, []);
-
-    useLayoutEffect(() => {
-        requestAnimationFrame(updateIndicator);
-    }, [activeSection, plan, updateIndicator]);
-
-    useEffect(() => {
-        const handleResize = () => updateIndicator();
-
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [updateIndicator]);
 
     const setsWonByLeft = useMemo(
         () =>
@@ -268,8 +323,8 @@ export const SetBreakdownOverlay = ({
             }
         });
 
-        setActiveSection(current);
-    }, [plan, fullModalHeight]);
+        activeSectionStore.set(current);
+    }, [plan, fullModalHeight, activeSectionStore]);
 
     useEffect(() => {
         if (!lenisRef.current) return;
@@ -326,6 +381,40 @@ export const SetBreakdownOverlay = ({
                     : 1 - Math.pow(-2 * t + 2, 3) / 2,
         }
         );
+    };
+
+    const scrollToRound = (round) => {
+        const node = contentRef.current?.querySelector(`[data-round-key="${round.roundKey}"]`);
+        if (!node) return;
+        lenisRef.current?.scrollTo(
+            Math.max(0, node.offsetTop - fullModalHeight - 120), {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        }
+        );
+        node.classList.remove(css.ert_round_flash);
+        setTimeout(() => node.classList.add(css.ert_round_flash), 1500);
+    };
+
+    const scrollToExtendedCard = (roundKey) => {
+        const node = contentRef.current?.querySelector(`[data-ext-round-key="${roundKey}"]`);
+        if (!node) return;
+        let top = 0;
+        for (let el = node; el && el !== scrollRef.current; el = el.offsetParent) top += el.offsetTop;
+        lenisRef.current?.scrollTo(
+            Math.max(0, top - fullModalHeight - 160), {
+            duration: 1.8,
+            easing: (t) =>
+                t < 0.5
+                    ? 4 * t * t * t
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        }
+        );
+        node.classList.remove(css.ert_card_flash);
+        setTimeout(() => node.classList.add(css.ert_card_flash), 1500);
     };
 
     if (!entry || !plan) return null;
@@ -420,12 +509,16 @@ export const SetBreakdownOverlay = ({
         return (
             <div
                 key={key}
+                data-round-key={round.key}
                 style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     gap: "2px",
-                    marginTop: "48px",
+                    maxWidth: "720px",
+                    margin: "42px auto 0",
+                    padding: "6px 0",
+                    borderRadius: "16px",
                 }}
             >
                 <div
@@ -477,6 +570,20 @@ export const SetBreakdownOverlay = ({
                         />
                     )}
                 </div>
+
+                {round.squares === 10 && (
+                    plan.hasExtended ? (
+                        <button
+                            type="button"
+                            className={`${css.link_button} ${css.ert_round_tag}`}
+                            onClick={() => scrollToExtendedCard(round.key)}
+                        >
+                            Extended Round
+                        </button>
+                    ) : (
+                        <span className={css.ert_round_tag}>Extended Round</span>
+                    )
+                )}
 
                 <BreakdownScoreRow
                     leftTeam={leftTeam}
@@ -543,6 +650,7 @@ export const SetBreakdownOverlay = ({
         <>
             <motion.div
                 ref={scrollRef}
+                className={css.breakdown_scroll}
                 onScroll={updateActiveSection}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -557,37 +665,11 @@ export const SetBreakdownOverlay = ({
                 }}
             >
                 {plan.sections.length > 1 && (
-                    <div
-                        ref={navRef}
-                        className={css.infoNavigation}
-                    >
-                        {plan.sections.map((section) => (
-                            <button
-                                key={section.id}
-                                data-breakdown-active={activeSection === section.id}
-                                type="button"
-                                onClick={() => scrollToSection(section.id)}
-                                className={`${css.resultsNavigationButton} ${activeSection === section.id
-                                    ? css.resultsNavigationButtonActive
-                                    : ""
-                                    }`}
-                            >
-                                {section.label}
-                            </button>
-                        ))}
-                        <motion.div
-                            className={css.resultsNavigationIndicator}
-                            initial={false}
-                            animate={{
-                                top: indicator.top,
-                                height: indicator.height,
-                            }}
-                            transition={{
-                                duration: 0.22,
-                                ease: "easeInOut",
-                            }}
-                        />
-                    </div>
+                    <BreakdownNav
+                        sections={plan.sections}
+                        store={activeSectionStore}
+                        onSelect={scrollToSection}
+                    />
                 )}
 
                 <div
@@ -635,7 +717,7 @@ export const SetBreakdownOverlay = ({
                         );
                     })}
 
-                    {plan.hasExtended && (
+                    {plan.hasExtended && plan.extDetails && (
                         <div ref={(node) => { sectionRefs.current.extended = node; }}>
                             <BreakdownDivider
                                 from={
@@ -649,44 +731,57 @@ export const SetBreakdownOverlay = ({
                             />
 
                             {(() => {
-                                let left = 0;
-                                let right = 0;
+                                const { rounds, clinchIndex, left, right } = plan.extDetails;
+                                const extDecisive = plan.tieDecidedBy === "extended";
+                                const isMatchDecidingExtendedRound = isFinalSet && extDecisive;
+                                const winnerTeam = left > right ? leftTeam : rightTeam;
+                                const clinchRound = clinchIndex !== null ? rounds[clinchIndex] : null;
 
-                                return plan.extWinners.map((item, i) => {
-                                    if (item.winner === "left") left += 1;
-                                    else right += 1;
+                                return (
+                                    <div style={{ marginTop: "18px" }}>
+                                        <p
+                                            className={css.info_text}
+                                            style={{ fontSize: "15px", color: "#555", fontWeight: 600, margin: "0 auto 4px", maxWidth: "620px" }}
+                                        >
+                                            Still {entry.wins}:{entry.losses} after Quadruple Overtime, so every Extended Round winner was compared.
+                                            {rounds.some((r) => r.roundKey) ? " Click a card to jump to that round." : ""}
+                                        </p>
 
-                                    const winnerTeam =
-                                        item.winner === "left" ? leftTeam : rightTeam;
+                                        <ExtendedRoundsTrack
+                                            rounds={rounds}
+                                            clinchIndex={clinchIndex}
+                                            decidedWinner={extDecisive ? (left > right ? "left" : "right") : null}
+                                            leftTeam={leftTeam}
+                                            rightTeam={rightTeam}
+                                            showRoundNumbers
+                                            animate={false}
+                                            onTileClick={scrollToRound}
+                                        />
 
-                                    const extDecisive =
-                                        plan.tieDecidedBy === "extended" &&
-                                        i === plan.extWinners.length - 1;
-
-                                    const isFinalSet = index === (sets?.length ?? 0) - 1;
-
-                                    const isMatchDecidingExtendedRound =
-                                        isFinalSet && extDecisive;
-
-                                    return (
                                         <div
-                                            key={`ext-${i}`}
                                             style={{
                                                 display: "flex",
                                                 flexDirection: "column",
                                                 alignItems: "center",
                                                 gap: "2px",
-                                                marginTop: "14px",
+                                                marginTop: "26px",
                                             }}
                                         >
                                             <span
                                                 className={css.info_text}
                                                 style={{ fontSize: "15px", color: "#555", fontWeight: 600 }}
                                             >
-                                                {item.label} Extended Round winner is{" "}
-                                                <span style={{ color: winnerTeam?.color, fontWeight: 900 }}>
-                                                    Team {winnerTeam?.name}
-                                                </span>
+                                                {extDecisive ? (
+                                                    <>
+                                                        <span style={{ color: winnerTeam?.color, fontWeight: 900 }}>
+                                                            Team {winnerTeam?.name}
+                                                        </span>
+                                                        {" "}won the Extended Rounds {Math.max(left, right)}:{Math.min(left, right)}
+                                                        {clinchRound ? `, clinched in the ${clinchRound.title}` : ""}
+                                                    </>
+                                                ) : (
+                                                    <>{left}:{right}, tied again, so Penalties had to decide it</>
+                                                )}
                                             </span>
 
                                             <BreakdownScoreRow
@@ -697,7 +792,7 @@ export const SetBreakdownOverlay = ({
                                                 scoreSize={44}
                                                 scoreWidth={49}
                                                 center="text"
-                                                centerText="VS"
+                                                centerText={extDecisive ? "VS" : "="}
                                                 centerColor="#2e2f42"
                                                 isPlayoffs={isPlayoffs}
                                                 setLinesTotal={extDecisive ? setLinesTotal : 0}
@@ -715,8 +810,8 @@ export const SetBreakdownOverlay = ({
                                                     : { leftOpacity: 1, rightOpacity: 1 })}
                                             />
                                         </div>
-                                    );
-                                });
+                                    </div>
+                                );
                             })()}
                         </div>
                     )}
@@ -959,27 +1054,31 @@ export const SetBreakdownOverlay = ({
                         >
                             {plan.tieLeftScore}
                         </span>
-                        <button
-                            type="button"
-                            onClick={() => scrollToSection(plan.tieDecidedBy)}
-                            className={css.link_button}
-                            style={{
-                                pointerEvents:
-                                    activeSection === "penalties" ||
-                                        activeSection === "extended"
-                                        ? "none"
-                                        : "auto",
-                                cursor:
-                                    activeSection === "penalties" ||
-                                        activeSection === "extended"
-                                        ? "default"
-                                        : "pointer",
-                            }}
-                        >
-                            {plan.tieDecidedBy === "penalties"
-                                ? "Penalties"
-                                : "Extended Rounds"}
-                        </button>
+                        <ActiveSectionConsumer store={activeSectionStore}>
+                            {(activeSection) => (
+                                <button
+                                    type="button"
+                                    onClick={() => scrollToSection(plan.tieDecidedBy)}
+                                    className={css.link_button}
+                                    style={{
+                                        pointerEvents:
+                                            activeSection === "penalties" ||
+                                                activeSection === "extended"
+                                                ? "none"
+                                                : "auto",
+                                        cursor:
+                                            activeSection === "penalties" ||
+                                                activeSection === "extended"
+                                                ? "default"
+                                                : "pointer",
+                                    }}
+                                >
+                                    {plan.tieDecidedBy === "penalties"
+                                        ? "Penalties"
+                                        : "Extended Rounds"}
+                                </button>
+                            )}
+                        </ActiveSectionConsumer>
                         <span
                             style={{
                                 color: rightTeam?.color,

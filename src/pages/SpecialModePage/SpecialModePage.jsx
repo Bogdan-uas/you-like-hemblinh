@@ -147,7 +147,7 @@ import {
     qualifierStageLabel,
 } from "./logic/qualifier.jsx";
 import { applyRatings, applyTieRatings } from "./logic/ratings.js";
-import { defaultSeriesState, buildExtendedRoundWinnerList, round2 } from "./logic/series.js";
+import { defaultSeriesState, buildExtendedRoundWinnerList, buildExtendedRoundDetails, round2 } from "./logic/series.js";
 import {
     resetBattleExperience,
     pullStatsTowardStart,
@@ -2960,9 +2960,9 @@ function SpecialModePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [playoffs, currentPlayablePlayoffsMatch]);
 
-    const revealedExtendedRounds =
-        buildExtendedRoundWinnerList(seriesState.extendedRounds)
-            .slice(0, seriesState.extRoundRevealIndex);
+    const extendedRoundDetails = seriesState.tiebreakerPhase === "extended"
+        ? buildExtendedRoundDetails(seriesState.extendedRounds, roundLogRef.current)
+        : null;
 
     const getExtendedRoundsScore = (extendedRounds) => {
         let left = 0;
@@ -5805,6 +5805,7 @@ function SpecialModePage() {
                                 0 0 7px ${winner.color}66,
                                 0 1px 3px rgba(0,0,0,0.4)`,
                                 color: winner.color,
+                                gradient: winner.gradient,
                             },
                         };
                     }
@@ -7477,7 +7478,7 @@ function SpecialModePage() {
                     activePhase,
                     setsToWin,
                     loserOpacity,
-                    revealedExtendedRounds,
+                    extendedRoundDetails,
                     isSeriesPointWins,
                     isSetPointWins,
                     overtimeTarget,

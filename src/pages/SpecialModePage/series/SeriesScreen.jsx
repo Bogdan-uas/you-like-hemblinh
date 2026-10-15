@@ -10,6 +10,8 @@ import GradientCaretLeft from "../../../components/GradientIcon/GradientCaretLef
 import GradientCaretRight from "../../../components/GradientIcon/GradientCaretRight.jsx";
 import GradientDiamond from "../../../components/GradientIcon/GradientDiamond.jsx";
 import { PenaltyCircles } from "../components/PenaltyCircles.jsx";
+import { ExtendedRoundsTrack, ExtendedRoundsStatus } from "../components/ExtendedRounds.jsx";
+import { BreakdownSectionTitle, BreakdownSquares } from "../components/BreakdownParts.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { MomentumStreakBadge } from "../components/StreakBadges.jsx";
 import { PemSeriesTrophy, GplTrophy } from "../components/Trophies.jsx";
@@ -52,7 +54,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
         activePhase,
         setsToWin,
         loserOpacity,
-        revealedExtendedRounds,
+        extendedRoundDetails,
         isSeriesPointWins,
         isSetPointWins,
         overtimeTarget,
@@ -668,7 +670,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                     Secret
                 </button>
                 {seriesLabelNode}
-                {seriesState.tiebreakerPhase === "extended" && (
+                {seriesState.tiebreakerPhase === "extended" && extendedRoundDetails && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -688,6 +690,10 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             animation: "fade-in 0.4s ease-out",
                         }}
                     >
+                        <BreakdownSectionTitle text="Extended Rounds" marginTop="0px" marginBottom="4px" />
+                        <span className={css.info_text} style={{ fontSize: "15px", color: "#555", fontWeight: 600, marginBottom: "6px" }}>
+                            {roundWins}:{roundLosses} after Quadruple Overtime
+                        </span>
                         <div
                             className={css.scoreboard}
                         >
@@ -998,6 +1004,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         </div>
                                     ) : null}
                                 </div>
+                                <BreakdownSquares team={seriesState.leftTeam} lit={Math.min(seriesState.extRoundLeftScore, 4)} total={4} side="left" />
                             </div>
 
                             <div>
@@ -1398,133 +1405,53 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         </div>
                                     ) : null}
                                 </div>
+                                <BreakdownSquares team={seriesState.rightTeam} lit={Math.min(seriesState.extRoundRightScore, 4)} total={4} side="right" />
                             </div>
                         </div>
 
-                        {seriesState.tiebreakerPhase === "extended" && seriesState.extRoundCommentaryShown ? (
-                            <motion.p
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5 }}
-                                style={{
-                                    textAlign: "center",
-                                    maxWidth: "640px",
-                                    fontSize: "16px",
-                                    lineHeight: 1.5,
-                                    marginTop: 16,
-                                    height: "120px"
-                                }}
-                                className={css.info_text}
-                            >
-                                The winner of this set could not be determined even after Quadruple Overtime.
-                                Therefore, the system will compare every Extended Round winner.
-                                There were six Extended Rounds in total: the 1st Half, the 2nd Half and four Overtimes, that's why 4+ Extended Rounds are required to win, 3 to tie again.
-                                We'll reveal them one by one:
-                            </motion.p>
-                        ) : (
-                            <motion.p
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5 }}
-                                style={{
-                                    textAlign: "center",
-                                    maxWidth: "640px",
-                                    fontSize: "16px",
-                                    lineHeight: 1.5,
-                                    marginTop: 16,
-                                    height: "120px",
-                                    opacity: 0
-                                }}
-                                className={css.info_text}
-                            >
-                                The winner of this set could not be determined even after Quadruple Overtime.
-                                Therefore, the system will compare every Extended Round winner.
-                                There were six Extended Rounds in total: the 1st Half, the 2nd Half and four Overtimes, that's why 4+ Extended Rounds are required to win, 3 to tie again.
-                                We'll reveal them one by one:
-                            </motion.p>
-                        )}
-                        {seriesState.extRoundCommentaryShown ? (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.4 }}
-                                style={{
-                                    marginTop: "20px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "8px",
-                                    width: "100%",
-                                    maxWidth: "640px",
-                                    height: "224.8px"
-                                }}
-                            >
-                                {revealedExtendedRounds.map((round) => {
-                                    const isLeft = round.winner === "left";
-
-                                    return (
-                                        <motion.div
-                                            key={round.label}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ duration: 0.35 }}
-                                            style={{
-                                                color: "#2e2f42",
-                                                fontSize: "20px",
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            <strong>{round.label}</strong> Extended Round winner is{" "}
-                                            {renderTeamLabel(
-                                                isLeft
-                                                    ? seriesState.leftTeam
-                                                    : seriesState.rightTeam
-                                            )}
-                                        </motion.div>
-                                    );
-                                })}
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.4 }}
-                                style={{
-                                    marginTop: "20px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "8px",
-                                    width: "100%",
-                                    maxWidth: "640px",
-                                    height: "224.8px",
-                                    opacity: 0
-                                }}
-                            >
-                                {revealedExtendedRounds.map((round) => {
-                                    const isLeft = round.winner === "left";
-
-                                    return (
-                                        <motion.div
-                                            key={round.label}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ duration: 0.35 }}
-                                            style={{
-                                                color: "#2e2f42",
-                                                fontSize: "20px",
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            <strong>{round.label}</strong> Extended Round winner is{" "}
-                                            {renderTeamLabel(
-                                                isLeft
-                                                    ? seriesState.leftTeam
-                                                    : seriesState.rightTeam
-                                            )}
-                                        </motion.div>
-                                    );
-                                })}
-                            </motion.div>
-                        )}
+                        <div
+                            style={{
+                                marginTop: "28px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "14px",
+                                width: "100%",
+                                maxWidth: "720px",
+                            }}
+                        >
+                            <ExtendedRoundsTrack
+                                rounds={extendedRoundDetails.rounds}
+                                revealedCount={seriesState.extRoundCommentaryShown ? seriesState.extRoundRevealIndex : 0}
+                                clinchIndex={extendedRoundDetails.clinchIndex}
+                                decidedWinner={
+                                    seriesState.extRoundRevealIndex >= extendedRoundDetails.rounds.length &&
+                                        seriesState.extRoundLeftScore !== seriesState.extRoundRightScore
+                                        ? seriesState.extRoundLeftScore > seriesState.extRoundRightScore ? "left" : "right"
+                                        : null
+                                }
+                                leftTeam={seriesState.leftTeam}
+                                rightTeam={seriesState.rightTeam}
+                            />
+                            <ExtendedRoundsStatus
+                                rounds={extendedRoundDetails.rounds}
+                                revealedCount={seriesState.extRoundRevealIndex}
+                                introShown={seriesState.extRoundCommentaryShown}
+                                resolved={
+                                    seriesState.tiebreakerBigSymbol === "=" ||
+                                    !!banner ||
+                                    playerWonSets + playerLostSets >= seriesState.setNumber
+                                }
+                                leftScore={seriesState.extRoundLeftScore}
+                                rightScore={seriesState.extRoundRightScore}
+                                leftTeam={seriesState.leftTeam}
+                                rightTeam={seriesState.rightTeam}
+                                setNumber={seriesState.setNumber}
+                                setsToWin={setsToWin}
+                                seriesOver={!!banner}
+                                renderTeamLabel={renderTeamLabel}
+                            />
+                        </div>
                     </motion.div>
                 )}
                 {seriesState.tiebreakerPhase === "penalties" && !seriesState.penaltyResolved ? (
