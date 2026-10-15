@@ -1239,10 +1239,10 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>There has been a simple tiebreaker system for a long time: Overtimes could go up to infinity, until a team gets 4 OT Rounds in a single Overtime. Now, the system has changed and the previous system only works up to Quadruple(4x) Overtime. If it's tied again in 4x Overtime, another way to separate teams is being implemented.</p>
             <p className={css.info_text}>After 24-24 tie, this screen will show up. We see here the scores and the set lines below. Below that, we'll see the explanation text of what will happen now and then you will see messages showing up in a list and the scores being updated. Here, we are seeing a chronological order of all 6 possible Extended Rounds to be won. That team, which won more Extended Rounds throughout the whole set, that team also wins the set (4 Extended Rounds are already enough):</p>
             <div className={css.image_container}>
-                <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '30vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '30vh' }} />
             </div>
             <p className={css.info_text}>If the Extended Rounds score is tied 3-3, penalty series will start, which will decide everything:</p>
             <div className={css.image_container}>
