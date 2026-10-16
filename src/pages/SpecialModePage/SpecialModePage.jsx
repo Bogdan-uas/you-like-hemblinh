@@ -16,7 +16,7 @@ import "odometer/themes/odometer-theme-default.css";
 import { SERIES_ACTIONS } from "../../../assets/constants.js";
 import Lenis from "lenis";
 import "./logic/storageUsageLog.js";
-import { copyBracketStages, advanceBracket, getMatchLoserTeam } from "./logic/brackets.js";
+import { copyBracketStages, advanceBracket, getMatchLoserTeam, getMatchWinnerTeam } from "./logic/brackets.js";
 import { TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "./logic/breakdownStyles.js";
 import { makeColorSequence, buildTournamentColorPool, lightenHex, darkenHex } from "./logic/colors.js";
 import {
@@ -86,6 +86,24 @@ import {
     EXT_ROUND_REVEAL_MS,
 } from "./logic/gameConstants.js";
 import { saveHallTournament, sortHallOfFame } from "./logic/hallOfFameDb.js";
+import {
+    buildPbsSeeds,
+    buildPbsStatus,
+    buildPbsBracket,
+    planPbsDraftSteps,
+    buildPbsDraftTimeline,
+    resolvePbsResult,
+    getPbsRoundWinners,
+    isPbsRoundFinished,
+    getPbsDraftRoundView,
+    getPbsStakeTexts,
+    getPbsBountyLine,
+    getPbsBountyBonus,
+    getPbsPlaces,
+} from "./logic/pbs.jsx";
+import { PBS_BEST_OF, PBS_BIG_STAGE, PBS_NEXT_DRAFT_ROUND, PBS_STAGE_ORDER, getRandomPbsNeededPickemPoints } from "./logic/pbsConfig.js";
+import { usePbsDraftClock, clearPbsDraftProgress } from "./logic/pbsDraftClock.js";
+import { PbsDraftShow } from "./components/PbsDraftShow.jsx";
 import { getPemSeriesConfig, isPemSeriesType, PEM_BIG_PLAYOFFS_BEST_OF, PEM_PLAYOFFS_BEST_OF } from "./logic/pemConfig.js";
 import {
     isPemPlayoffsKind,
@@ -213,6 +231,8 @@ import {
     ECL_TYPE_ID,
     GPL_TYPE_ID,
     GCC_TYPE_ID,
+    PBS_TYPE_ID,
+    formatTournamentNumber,
     loadTournamentNumbers,
     saveTournamentNumbers,
     getTournamentTypeConfig,
@@ -221,7 +241,7 @@ import {
     pickTournamentType,
     saveCurrentTournamentType,
 } from "./logic/tournamentTypes.jsx";
-import { ANNIVERSARY_THEMES, getTournamentNumberStyle, PICKEM_STEP_MS, PICKEM_PLAYOFF_KEYS } from "./logic/winnersAndPickem.js";
+import { getAnniversaryTheme as getTournamentTheme, getTournamentNumberStyle, PICKEM_STEP_MS, PICKEM_PLAYOFF_KEYS } from "./logic/winnersAndPickem.js";
 import { useHallOfFame } from "./hallOfFame/useHallOfFame.js";
 import { useLeaderboard } from "./leaderboard/useLeaderboard.js";
 import { useHallOfFameManager } from "./hallOfFame/useHallOfFameManager.js";
@@ -327,6 +347,15 @@ function SpecialModePage() {
     const isGccPhase = gplSeries?.event === "gcc" && !!gcc;
     const isGccKnockout = isGccPhase && playoffs?.kind === "gcc";
     const isGplMainPhase = gplSeries?.event === "gpl";
+
+    const [pbs, setPbs] = useState(null);
+    const pbsRef = useRef(pbs);
+
+    useEffect(() => {
+        pbsRef.current = pbs;
+    }, [pbs]);
+
+    const isPbsPhase = !!pbs;
 
     const pemType = pemSeries?.type ?? PEM_SMALL_TYPE_ID;
     const pemConfig = getPemSeriesConfig(pemType);
@@ -872,6 +901,55 @@ function SpecialModePage() {
         !isHallOfFameOpen &&
         !isLeaderboardOpen;
 
+    const pbsDraft = pbs?.draft ?? null;
+    const pbsDraftPlan = pbsDraft?.plan ?? null;
+    const pbsDraftTimeline = useMemo(() => (pbsDraftPlan ? buildPbsDraftTimeline(pbsDraftPlan) : null), [pbsDraftPlan]);
+    const isPbsDraftLive = !!pbsDraftPlan && isBracketPageVisible && !isMatchModalOpen && viewPhase === getPbsDraftRoundView(pbsDraft.round);
+    const pbsDraftClock = usePbsDraftClock({
+        draftId: pbsDraftPlan ? pbsDraft.id : null,
+        total: pbsDraftTimeline?.total ?? 0,
+        speed: pbsDraft?.speed ?? 1,
+        active: isPbsDraftLive && !pbsDraft?.paused,
+        onComplete: (draftId) => completePbsDraft(draftId),
+    });
+    const pbsTeamsById = useMemo(() => Object.fromEntries(allTeams.map((team) => [team.id, team])), [allTeams]);
+    const pbsDraftToPlan = pbsDraft && !pbsDraftPlan ? pbsDraft : null;
+
+    useEffect(() => {
+        if (!pbsDraftToPlan) return undefined;
+
+        const { id: draftId, round, entrants } = pbsDraftToPlan;
+        const steps = planPbsDraftSteps({ round, entrants, ratings: teamRatingsRef.current, teams: allTeams, stats: teamStatsRef.current });
+        let timer = null;
+        let cancelled = false;
+
+        const run = () => {
+            const startedAt = performance.now();
+            let step = steps.next();
+            while (!step.done && performance.now() - startedAt < 8) step = steps.next();
+            if (cancelled) return;
+
+            if (!step.done) {
+                timer = setTimeout(run, 0);
+                return;
+            }
+
+            setPbs((prev) => {
+                if (prev?.draft?.id !== draftId || prev.draft.plan) return prev;
+                const next = { ...prev, draft: { ...prev.draft, plan: step.value } };
+                pbsRef.current = next;
+                return next;
+            });
+        };
+
+        timer = setTimeout(run, 0);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pbsDraftToPlan?.id]);
+
     useEffect(() => {
         if (!isBracketPageVisible) return;
 
@@ -890,7 +968,7 @@ function SpecialModePage() {
         }, 450);
 
         return () => clearTimeout(t);
-    }, [isBracketPageVisible, viewPhase, qualifierGroupView, pemGroupView]);
+    }, [isBracketPageVisible, viewPhase, qualifierGroupView, pemGroupView, pbsDraft?.id]);
 
     const isButtonLocked =
         isCalculating ||
@@ -1037,6 +1115,8 @@ function SpecialModePage() {
             setGplSeries(parsed.gplSeries ?? null);
             setGcc(parsed.gcc ?? null);
             gccRef.current = parsed.gcc ?? null;
+            setPbs(parsed.pbs ?? null);
+            pbsRef.current = parsed.pbs ?? null;
 
             setSeriesState(parsed.seriesState ? { ...defaultSeriesState, ...parsed.seriesState } : defaultSeriesState);
 
@@ -1090,6 +1170,7 @@ function SpecialModePage() {
             pemGroupView,
             gplSeries,
             gcc,
+            pbs,
             seriesState,
             neededPickemPoints,
             finalPickemPoints,
@@ -1135,6 +1216,7 @@ function SpecialModePage() {
         pemGroupView,
         gplSeries,
         gcc,
+        pbs,
         seriesState,
         neededPickemPoints,
         finalPickemPoints,
@@ -1156,18 +1238,6 @@ function SpecialModePage() {
         saveTournamentNumber(tournamentNumber);
     }, [tournamentNumber]);
 
-    const getTournamentTheme = (number) => {
-        if (number < 5) return null;
-
-        return (
-            ANNIVERSARY_THEMES.find(
-                theme =>
-                    number >= theme.min &&
-                    number <= theme.max &&
-                    number % theme.every === 0
-            ) ?? null
-        );
-    };
 
     const tournamentTheme = getTournamentTheme(tournamentNumber);
 
@@ -1201,6 +1271,17 @@ function SpecialModePage() {
             </span>
         </>
     ), [gccNumber]);
+
+    const pbsEdition = pbs?.edition ?? (tournamentNumbers?.[PBS_TYPE_ID] ?? 0);
+
+    const pbsLabel = useMemo(() => (
+        <>
+            Premier Bounty Series{" "}
+            <span style={getTournamentNumberStyle(getTournamentTheme(pbsEdition))}>
+                Season {pbsEdition}
+            </span>
+        </>
+    ), [pbsEdition]);
 
     const pemEdition = pemSeries?.edition ?? (tournamentNumbers?.[pemType] ?? 0);
 
@@ -1269,7 +1350,7 @@ function SpecialModePage() {
                     {config.label}{qualifier ? " Qualifier" : ""}
                 </span>{" "}
                 <span style={getTournamentNumberStyle(getTournamentTheme(number))}>
-                    #{number}
+                    {formatTournamentNumber(typeId, number)}
                 </span>
             </>
         );
@@ -1278,7 +1359,9 @@ function SpecialModePage() {
     const confirmRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
         if (!tournamentResults) {
-            if (gplSeries?.event === "gcc") {
+            if (pbs) {
+                setTypeNumber(PBS_TYPE_ID, Math.max(0, getTypeNumber(PBS_TYPE_ID) - 1));
+            } else if (gplSeries?.event === "gcc") {
                 setTypeNumber(GCC_TYPE_ID, Math.max(0, getTypeNumber(GCC_TYPE_ID) - 1));
             } else if (gplSeries?.event === "gpl") {
                 setTypeNumber(GPL_TYPE_ID, Math.max(0, getTypeNumber(GPL_TYPE_ID) - 1));
@@ -1345,6 +1428,9 @@ function SpecialModePage() {
         setGplSeries(null);
         setGcc(null);
         gccRef.current = null;
+        setPbs(null);
+        pbsRef.current = null;
+        clearPbsDraftProgress();
 
         setActivePhase("stage1");
         setViewPhase("stage1");
@@ -1408,6 +1494,9 @@ function SpecialModePage() {
         setGplSeries(null);
         setGcc(null);
         gccRef.current = null;
+        setPbs(null);
+        pbsRef.current = null;
+        clearPbsDraftProgress();
 
         setActivePhase("stage1");
         setViewPhase("stage1");
@@ -1521,6 +1610,34 @@ function SpecialModePage() {
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [isTournamentPickerOpen]);
 
+    const createPbsDraft = (round, entrants) => ({
+        id: `${round}-${Date.now()}`,
+        round,
+        entrants: entrants.map(({ id, seed, bounty }) => ({ id, seed, bounty: bounty ?? 0 })),
+        plan: null,
+        speed: 1,
+        paused: false,
+    });
+
+    const updatePbsDraft = (changes) => {
+        setPbs((prev) => {
+            const next = prev?.draft ? { ...prev, draft: { ...prev.draft, ...changes } } : prev;
+            pbsRef.current = next;
+            return next;
+        });
+    };
+
+    const setPbsDraftSpeed = (speed) => updatePbsDraft({ speed });
+
+    const togglePbsDraftPause = () => updatePbsDraft({ paused: !pbsRef.current?.draft?.paused });
+
+    const skipPbsDraftShow = () => {
+        if (pbsDraftClock && pbsDraftTimeline) {
+            pbsDraftClock.setProgress(Math.max(pbsDraftClock.getProgress(), pbsDraftTimeline.rollOut[0]));
+        }
+        updatePbsDraft({ paused: false });
+    };
+
     const handleTournamentStart = () => {
         const nextTournamentType = pickTournamentType(tournamentPicker);
         setCurrentTournamentType(nextTournamentType);
@@ -1533,11 +1650,16 @@ function SpecialModePage() {
         const gplSeeds = nextTournamentType === GPL_TYPE_ID
             ? buildGplSeeds(allTeams, teamRatingsRef.current)
             : null;
+        const pbsSeeds = nextTournamentType === PBS_TYPE_ID
+            ? buildPbsSeeds(allTeams, teamRatingsRef.current)
+            : null;
         const pulledTeamIds = pemSeeds
             ? pemSeeds.qualifier.map((team) => team.id)
             : gplSeeds
                 ? gplSeeds.gcc.map((team) => team.id)
-                : null;
+                : pbsSeeds
+                    ? pbsSeeds.map((team) => team.id)
+                    : null;
 
         const statsBeforeStart = normalizeTeamStats(allTeams, teamStatsRef.current);
         statsSnapshotRef.current = statsBeforeStart;
@@ -1557,6 +1679,8 @@ function SpecialModePage() {
             const builtQualifier = buildQualifier(groups);
 
             setPemSeries({ type: nextTournamentType, edition, seeds, groups, event: "qualifier", qualified: [], pulledTeamIds });
+            setPbs(null);
+            pbsRef.current = null;
             setGplSeries(null);
             setGcc(null);
             gccRef.current = null;
@@ -1582,6 +1706,8 @@ function SpecialModePage() {
             const builtGcc = buildGccLeague(gplSeeds.gcc);
 
             setGplSeries({ type: GPL_TYPE_ID, seeds: gplSeeds, event: "gcc", gccNumber: number, pulledTeamIds });
+            setPbs(null);
+            pbsRef.current = null;
             setGcc(builtGcc);
             gccRef.current = builtGcc;
             setPlayoffs(null);
@@ -1601,10 +1727,49 @@ function SpecialModePage() {
             setActivePhase("gccLeague");
             setViewPhase("gccLeague");
             setNeededPickemPoints(getRandomGccNeededPickemPoints());
+        } else if (pbsSeeds) {
+            const edition = getTypeNumber(PBS_TYPE_ID) + 1;
+            setTypeNumber(PBS_TYPE_ID, edition);
+
+            const builtPbs = {
+                type: PBS_TYPE_ID,
+                edition,
+                seeds: pbsSeeds,
+                status: buildPbsStatus(pbsSeeds),
+                draft: createPbsDraft("ro32", pbsSeeds),
+                draws: {},
+                pulledTeamIds,
+            };
+
+            clearPbsDraftProgress();
+            setPbs(builtPbs);
+            pbsRef.current = builtPbs;
+            setPlayoffs(buildPbsBracket());
+
+            setPemSeries(null);
+            setGplSeries(null);
+            setGcc(null);
+            gccRef.current = null;
+            setQualifier(null);
+            qualifierRef.current = null;
+            setCst(null);
+            cstRef.current = null;
+            setEcl(null);
+            eclRef.current = null;
+            setPemStage1(null);
+            pemStage1Ref.current = null;
+            setPemMain(null);
+            pemMainRef.current = null;
+
+            setActivePhase("playoffs");
+            setViewPhase("pbsStage1");
+            setNeededPickemPoints(getRandomPbsNeededPickemPoints());
         } else {
             tournamentSeedsRef.current = classifyTeamsForStages(allTeams, teamRatingsRef.current);
 
             setPemSeries(null);
+            setPbs(null);
+            pbsRef.current = null;
             setGplSeries(null);
             setGcc(null);
             gccRef.current = null;
@@ -1731,7 +1896,9 @@ function SpecialModePage() {
             ? CST_PLAYOFFS_BEST_OF
             : match.gcc
                 ? GCC_KNOCKOUT_BEST_OF
-                : match.pemBig || match.gpl
+                : match.pbs
+                    ? PBS_BEST_OF
+                    : match.pemBig || match.gpl
                     ? PEM_BIG_PLAYOFFS_BEST_OF
                     : match.pem
                         ? PEM_PLAYOFFS_BEST_OF
@@ -1793,6 +1960,7 @@ function SpecialModePage() {
             stage3: 0,
             gcc_league: 0,
             po: 0,
+            ro32: 0,
             ro16: 0,
             qf: 0,
             sf: 0,
@@ -1844,6 +2012,7 @@ function SpecialModePage() {
                 });
             };
 
+            addStage("ro32", "ro32");
             addStage("po", "po");
             addStage("ro16", "ro16");
             addStage("qf", "qf");
@@ -1915,7 +2084,9 @@ function SpecialModePage() {
 
         const currentPlayoffs = playoffsOverride ?? playoffs;
 
-        if (activePhase === "qualifier" || qualifierOverride) {
+        if (isPbsPhase || currentPlayoffs?.kind === "pbs") {
+            applyPlayoffs(currentPlayoffs);
+        } else if (activePhase === "qualifier" || qualifierOverride) {
             applyQualifier(qualifierOverride ?? qualifier);
         } else if (pemMainOverride || pemStage1Override || isPemMainPhase) {
             applyBracketMatches(getPemStage1Matches(pemStage1Override ?? pemStage1), pemStage1MatchPoints, "ps1");
@@ -2923,7 +3094,7 @@ function SpecialModePage() {
         );
     };
 
-    const STAGE_ORDER = ["po", "ro16", "qf", "sf", "thirdPlace", "gf"];
+    const STAGE_ORDER = ["ro32", "po", "ro16", "qf", "sf", "thirdPlace", "gf"];
 
     const currentPlayablePlayoffsMatch = useMemo(() => {
         if (!playoffs) return null;
@@ -4983,6 +5154,153 @@ function SpecialModePage() {
         clearStatsSnapshot();
     };
 
+    const commitPbsSeries = ({
+        stage,
+        matchId,
+        leftTeam,
+        rightTeam,
+        winner,
+        loser,
+        seriesLeftSets,
+        seriesRightSets,
+        playedAtMs,
+    }) => {
+        if (!playoffs?.[stage]) return;
+
+        const bracket = copyBracketStages(PBS_STAGE_ORDER, playoffs);
+        const idx = bracket[stage].findIndex((m) => m.id === matchId);
+        if (idx < 0) return;
+
+        const m = { ...bracket[stage][idx] };
+        commitBracketMatchResult({
+            match: m,
+            bestOf: PBS_BEST_OF[stage],
+            phase: "pbsPlayoffs",
+            stage,
+            leftTeam,
+            rightTeam,
+            winner,
+            loser,
+            seriesLeftSets,
+            seriesRightSets,
+            playedAtMs,
+            bigStage: PBS_BIG_STAGE[stage] ?? null,
+        });
+
+        const currentPbs = pbsRef.current;
+        const resolved = resolvePbsResult(currentPbs?.status, winner.id, loser.id);
+        m.pbsMeta = resolved.meta;
+
+        if (stage === "gf" || stage === "thirdPlace") {
+            const bonus = getPbsBountyBonus(resolved.status[winner.id]?.bounty);
+
+            if (bonus > 0) {
+                const nextRatings = { ...teamRatingsRef.current, [winner.id]: (teamRatingsRef.current[winner.id] ?? 0) + bonus };
+                setTeamRatings(nextRatings);
+                teamRatingsRef.current = nextRatings;
+                saveTeamRatings(nextRatings);
+
+                const { rankById: ranksAfterBonus } = buildLeaderboard(allTeams, nextRatings);
+                m.ratingMeta = {
+                    ...m.ratingMeta,
+                    after: Object.fromEntries(
+                        Object.entries(m.ratingMeta?.after || {}).map(([id, value]) => [id, { ...value, rank: ranksAfterBonus[id] ?? value.rank }])
+                    ),
+                };
+                m.pbsMeta = { ...m.pbsMeta, bountyBonus: { teamId: winner.id, points: bonus } };
+            }
+        }
+
+        bracket[stage][idx] = m;
+
+        if (stage === "sf") {
+            const slotKey = idx === 0 ? "slotA" : "slotB";
+            bracket.gf = [{ ...bracket.gf[0], [slotKey]: toBaseTeam(winner) }];
+            bracket.thirdPlace = [{ ...bracket.thirdPlace[0], [slotKey]: toBaseTeam(loser) }];
+        }
+
+        let nextPbs = { ...currentPbs, status: resolved.status };
+        const nextRound = PBS_NEXT_DRAFT_ROUND[stage];
+
+        if (nextRound && isPbsRoundFinished(bracket, stage)) {
+            const entrants = getPbsRoundWinners(bracket, stage).map((team) => ({ id: team.id, ...resolved.status[team.id] }));
+            nextPbs = { ...nextPbs, draft: createPbsDraft(nextRound, entrants) };
+            clearPbsDraftProgress();
+
+            const nextView = getPbsDraftRoundView(nextRound);
+            if (nextView !== getPbsDraftRoundView(stage)) setShowTournamentIntro(true);
+            setViewPhase(nextView);
+        }
+
+        setPlayoffs(bracket);
+        setPbs(nextPbs);
+        pbsRef.current = nextPbs;
+
+        recomputePickemTotals(undefined, undefined, undefined, bracket);
+
+        if (stage === "gf") finishPbs(bracket, winner, loser);
+    };
+
+    const finishPbs = (finishedBracket, winner, loser) => {
+        const third = finishedBracket.thirdPlace?.[0];
+        const results = {
+            winner: toBaseTeam(winner),
+            runnerUp: toBaseTeam(loser),
+            thirdPlace: getMatchWinnerTeam(third),
+            fourthPlace: getMatchLoserTeam(third),
+        };
+
+        setTournamentResults({
+            kind: "pbs",
+            ...results,
+            tournament: { type: PBS_TYPE_ID, number: pbsEdition },
+        });
+        saveFinishedPbsToHallOfFame(finishedBracket, results);
+        awardPlacings({ winsKey: "pbsWins", secondsKey: "tier1Seconds", thirdsKey: "tier1Thirds" }, results);
+
+        setShowWinnersScreen(true);
+        ratingsSnapshotRef.current = null;
+        clearRatingsSnapshot();
+        statsSnapshotRef.current = null;
+        clearStatsSnapshot();
+    };
+
+    const completePbsDraft = (draftId) => {
+        const current = pbsRef.current;
+        const draft = current?.draft;
+        if (!draft || draft.id !== draftId) return;
+
+        const { round, plan } = draft;
+        const teamOf = (id) => toBaseTeam(allTeams.find((team) => team.id === id));
+
+        setPlayoffs((prev) => (prev?.[round]
+            ? {
+                ...prev,
+                [round]: prev[round].map((m, i) => {
+                    const pick = plan.picks[i];
+                    return pick ? { ...m, slotA: teamOf(pick.pickerId), slotB: teamOf(pick.pickedId) } : m;
+                }),
+            }
+            : prev));
+
+        const next = {
+            ...current,
+            draft: null,
+            draws: {
+                ...(current.draws || {}),
+                [round]: {
+                    high: plan.high,
+                    low: plan.low,
+                    status: plan.status,
+                    picks: plan.picks.map(({ pickerId, pickedId, reason }) => ({ pickerId, pickedId, reason })),
+                },
+            },
+        };
+        setPbs(next);
+        pbsRef.current = next;
+        clearPbsDraftProgress();
+    };
+
     const commitPemStage1Series = ({
         group,
         stage,
@@ -5210,6 +5528,22 @@ function SpecialModePage() {
                     group: seriesState.pemStage1Group,
                     stage: seriesState.pemStage1Stage,
                     matchId: seriesState.pemStage1MatchId,
+                    leftTeam,
+                    rightTeam,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
+            if (phase === "playoffs" && playoffs?.kind === "pbs") {
+                commitPbsSeries({
+                    stage: playoffsStage,
+                    matchId: playoffsMatchId,
                     leftTeam,
                     rightTeam,
                     winner,
@@ -5964,7 +6298,9 @@ function SpecialModePage() {
                         ? `And the WINNER of Global Challenger Cup #${tournamentResults.tournament?.number ?? gccNumber} is:`
                         : tournamentResults.kind === "gpl"
                             ? `And the CHAMPION of Global Pro League #${tournamentResults.tournament?.number ?? gplEdition} is:`
-                            : `And the CHAMPION of Official #${tournamentNumber} is:`;
+                            : tournamentResults.kind === "pbs"
+                                ? `And the CHAMPION of Premier Bounty Series Season ${tournamentResults.tournament?.number ?? pbsEdition} is:`
+                                : `And the CHAMPION of Official #${tournamentNumber} is:`;
 
         setShowProceed(false);
         setShowPodium(true);
@@ -6273,6 +6609,16 @@ function SpecialModePage() {
                 if (key === "gf") return <span style={{ fontWeight: 900, color: green }}>the Grand Final</span>;
                 return countItem({ key, ...roundDefs[key] });
             });
+
+        if (isPbsPhase) {
+            return joinItems([
+                countItem({ key: "ro32", label: "Rounds of 32", total: 16 }),
+                countItem({ key: "ro16", label: "Rounds of 16", total: 8 }),
+                countItem({ key: "qf", label: "Quarterfinals", total: 4 }),
+                countItem({ key: "sf", label: "Semifinals", total: 2 }),
+                ...playoffItems({}, ["tpd", "gf"]),
+            ]);
+        }
 
         if (isGccPhase) {
             return joinItems([
@@ -6831,6 +7177,35 @@ function SpecialModePage() {
             .catch((error) => console.error("Couldn't save the Global Pro League to Hall of Fame:", error));
     };
 
+    const saveFinishedPbsToHallOfFame = (finishedBracket, finishedResults) => {
+        const achievedPickemPoints = Object.values(finishedBracket || {})
+            .filter(Array.isArray)
+            .flat()
+            .reduce((sum, match) => sum + playoffsMatchPoints(match), 0);
+        setFinalPickemPoints(achievedPickemPoints);
+
+        const currentPbs = pbsRef.current;
+        const record = {
+            id: `pbs-${pbsEdition}-${Date.now()}`,
+            type: PBS_TYPE_ID,
+            event: "pbs",
+            number: pbsEdition,
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints,
+            pickemWon: achievedPickemPoints >= neededPickemPoints,
+            results: finishedResults,
+            places: getPbsPlaces(finishedBracket, finishedResults).map((team, index) => ({ place: index + 1, team })),
+            teams: currentPbs?.seeds || [],
+            draws: currentPbs?.draws || {},
+            playoffs: finishedBracket,
+        };
+
+        saveHallTournament(record)
+            .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
+            .catch((error) => console.error("Couldn't save the Premier Bounty Series to Hall of Fame:", error));
+    };
+
     const renderQualifierWinnersBlock = (qualifiers, { animated = false } = {}) => (
         <div className={css.qualifier_winners}>
             {QUALIFIER_GROUPS.map((group, groupIndex) => (
@@ -6905,6 +7280,8 @@ function SpecialModePage() {
                         ? `ecl${eclNumber}`
                         : modalContext?.type === "gccLeague" || modalContext?.kind === "gcc"
                             ? `gcc${gccNumber}`
+                            : modalContext?.kind === "pbs"
+                                ? `pbs${pbsEdition}`
                             : modalContext?.kind === "gpl" || modalContext?.format === GPL_SWISS_FORMAT
                                 ? `gpl${gplEdition}`
                                 : tournamentNumber,
@@ -6915,6 +7292,13 @@ function SpecialModePage() {
         ? (modalContext.pemType ?? selectedHallMatch?.record?.type ?? PEM_SMALL_TYPE_ID)
         : pemType;
     const isPemBigModal = modalPemType === PEM_BIG_TYPE_ID;
+
+    const modalPbs = modalContext?.kind === "pbs"
+        ? {
+            status: modalContext.isArchivedHallOfFame ? null : pbs?.status ?? null,
+            meta: currentModalMatch?.pbsMeta ?? null,
+        }
+        : null;
 
     const modalGccPots = modalContext?.type === "gccLeague"
         ? (modalContext.isArchivedHallOfFame ? selectedHallMatch?.record?.league?.pots : gcc?.pots) ?? null
@@ -7024,7 +7408,27 @@ function SpecialModePage() {
         !!currentModalMatch?.winnerTeamId &&
         currentModalMatch.pickTeamId === currentModalMatch.winnerTeamId;
 
+    const pbsDraftShowNode = isPbsDraftLive && pbsDraftClock ? (
+        <PbsDraftShow
+            clock={pbsDraftClock}
+            plan={pbsDraft.plan}
+            timeline={pbsDraftTimeline}
+            teamsById={pbsTeamsById}
+            ratings={teamRatings}
+            speed={pbsDraft?.speed ?? 1}
+            onSpeedChange={setPbsDraftSpeed}
+            paused={!!pbsDraft?.paused}
+            onTogglePause={togglePbsDraftPause}
+            onSkip={skipPbsDraftShow}
+        />
+    ) : null;
+
+    const pbsDraftView = pbsDraft && pbsDraftClock
+        ? { clock: pbsDraftClock, plan: pbsDraftPlan, timeline: pbsDraftTimeline, show: pbsDraftShowNode }
+        : null;
+
     const {
+        renderPbsPage,
         renderPemMainPage,
         renderQualifierPage,
         renderCstPage,
@@ -7101,6 +7505,10 @@ function SpecialModePage() {
         openGccLeagueMatchModal,
         openArchivedGccLeagueMatchModal,
         openArchivedSwissMatchModal,
+        pbs,
+        pbsLabel,
+        pbsDraftView,
+        teamsById: pbsTeamsById,
     });
 
 
@@ -7186,6 +7594,22 @@ function SpecialModePage() {
             }
         }
 
+        if (type === "playoffs" && modalContext?.kind === "pbs") {
+            const texts = getPbsStakeTexts(playoffsStage, !!currentModalMatch?.pbsMeta?.favouriteWon);
+
+            if (texts) {
+                if (winnerIsLeft) {
+                    leftText = texts.winner;
+                    rightText = texts.loser;
+                } else if (winnerIsRight) {
+                    rightText = texts.winner;
+                    leftText = texts.loser;
+                }
+
+                return { leftText, rightText };
+            }
+        }
+
         if (type === "playoffs") {
             switch (playoffsStage) {
                 case "po":
@@ -7261,6 +7685,12 @@ function SpecialModePage() {
                     }
                     break;
             }
+        }
+
+        if (type === "playoffs" && modalContext?.kind === "pbs" && (playoffsStage === "sf" || playoffsStage === "gf")) {
+            const bountyLine = getPbsBountyLine(playoffsStage, !!currentModalMatch?.pbsMeta?.favouriteWon);
+            if (winnerIsLeft && leftText) leftText = <>{leftText}<br />{bountyLine}</>;
+            if (winnerIsRight && rightText) rightText = <>{rightText}<br />{bountyLine}</>;
         }
 
         return {
@@ -7441,7 +7871,7 @@ function SpecialModePage() {
                     showPodium,
                     showProceed,
                 }}
-                labels={{ cstLabel, eclLabel, pemLabel, gccLabel, tournamentLabel, pemType }}
+                labels={{ cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, tournamentLabel, pemType }}
                 actions={{ handleProceed }}
             />
         );
@@ -7499,6 +7929,8 @@ function SpecialModePage() {
                     gccLabel,
                     isGccPhase,
                     isGplMainPhase,
+                    isPbsPhase,
+                    pbsLabel,
                     getOvertimeLabel,
                     getPenaltyMessage,
                     getMultiplierClass,
@@ -7547,6 +7979,7 @@ function SpecialModePage() {
                 isEliminationModal,
                 isPemBigModal,
                 modalPotById,
+                modalPbs,
                 hasChosen,
                 hoveredTeamId,
                 setHoveredTeamId,
@@ -7692,6 +8125,8 @@ function SpecialModePage() {
                     renderEclPage()
                 ) : isGccPhase ? (
                     renderGccPage()
+                ) : isPbsPhase ? (
+                    renderPbsPage()
                 ) : (
                     <>
                         <SwissTournamentView
@@ -7739,9 +8174,9 @@ function SpecialModePage() {
                     }} />
                 <TournamentIntros
                     intro={{ showTournamentIntro, handleCloseTournamentIntro }}
-                    phase={{ isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase }}
-                    labels={{ renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, tournamentLabel }}
-                    tournament={{ ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries }}
+                    phase={{ isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase }}
+                    labels={{ renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, tournamentLabel }}
+                    tournament={{ ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById }}
                 />
             </div>
             <AnimatePresence>{matchModalNode}</AnimatePresence>

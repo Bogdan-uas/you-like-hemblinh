@@ -8,7 +8,7 @@ import { LeaderboardDividerSelect } from "../components/LeaderboardDividerSelect
 import { getLeaderboardDividers } from "../logic/leaderboardDividers.js";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import { TeamStatsHoverPopover } from "../components/TeamStatsHoverPopover.jsx";
-import { PemGoldTrophy, PemSilverTrophy, GplTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
+import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
 import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "../logic/placings.jsx";
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
@@ -162,13 +162,15 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                     const tier1TrophyDisplay = trophyCountToDisplay(p.tier1Wins);
                     const pemBigTrophyDisplay = trophyCountToDisplay(p.pemBigWins);
                     const gplTrophyDisplay = trophyCountToDisplay(p.gplWins);
-                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay;
+                    const pbsTrophyDisplay = trophyCountToDisplay(p.pbsWins);
+                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay || !!pbsTrophyDisplay;
 
                     const isCountMode =
                         trophyDisplay?.mode === "count" ||
                         tier1TrophyDisplay?.mode === "count" ||
                         pemBigTrophyDisplay?.mode === "count" ||
-                        gplTrophyDisplay?.mode === "count";
+                        gplTrophyDisplay?.mode === "count" ||
+                        pbsTrophyDisplay?.mode === "count";
                     const trophyTop = isCountMode ? "21%" : rank > 10 ? "30%" : "20%";
 
                     const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
@@ -291,6 +293,16 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                                         {pemBigTrophyDisplay.n} <PemGoldTrophy />
                                                     </span>
                                                 ))}
+                                            {pbsTrophyDisplay &&
+                                                (pbsTrophyDisplay.mode === "icons" ? (
+                                                    Array.from({ length: pbsTrophyDisplay.n }).map((_, k) => (
+                                                        <PbsTrophy key={k} style={{ transition: "none" }} />
+                                                    ))
+                                                ) : (
+                                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
+                                                        {pbsTrophyDisplay.n} <PbsTrophy />
+                                                    </span>
+                                                ))}
                                             {tier1TrophyDisplay &&
                                                 (tier1TrophyDisplay.mode === "icons" ? (
                                                     Array.from({ length: tier1TrophyDisplay.n }).map((_, k) => (
@@ -338,7 +350,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                             transition: "none"
                                         }}>
                                             {buildPlacingItems(p, null)
-                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins")
+                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins" && item.key !== "pbsWins")
                                                 .map((item, itemIndex) => (
                                                     <MedalWithBreakdown
                                                         key={item.key}

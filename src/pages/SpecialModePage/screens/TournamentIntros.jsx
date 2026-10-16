@@ -6,12 +6,34 @@ import { PEM_MAIN_GROUPS, buildPemMainEventTeams } from "../logic/pemSeries.jsx"
 import { PEM_BIG_STAGE2_AUTO_COUNT, buildPemStage1Teams } from "../logic/pemStage1.jsx";
 import { QUALIFIER_GROUPS } from "../logic/qualifier.jsx";
 import { FadeOut } from "../components/FadeOut.jsx";
+import { PbsTeamTags } from "../components/PbsDraftShow.jsx";
+import { PBS_POT_SIZE } from "../logic/pbsConfig.js";
+import { splitPbsEntrants } from "../logic/pbs.jsx";
+
+const PBS_INTRO_STAGES = { ro16: "Stage II", qf: "Finals" };
 
 export function TournamentIntros({ intro, phase, labels, tournament }) {
     const { showTournamentIntro, handleCloseTournamentIntro } = intro;
-    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase } = phase;
-    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, tournamentLabel } = labels;
-    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries } = tournament;
+    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase } = phase;
+    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, tournamentLabel } = labels;
+    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById } = tournament;
+
+    const pbsPlan = pbs?.draft?.plan ?? (pbs?.draft?.entrants ? splitPbsEntrants(pbs.draft.entrants) : null);
+    const pbsStageTitle = PBS_INTRO_STAGES[pbs?.draft?.round] ?? null;
+    const pbsStatus = pbsPlan?.status ?? pbs?.status ?? {};
+    const pbsSeedIds = (pbs?.seeds || []).map((team) => team.id);
+    const pbsHigh = pbsPlan?.high ?? pbsSeedIds.slice(0, PBS_POT_SIZE);
+    const pbsLow = pbsPlan?.low ?? pbsSeedIds.slice(PBS_POT_SIZE);
+
+    const renderPbsCircle = (teamId) => (
+        <TeamCircle
+            key={teamId}
+            team={pbsTeamsById?.[teamId]}
+            showRating
+            ratingValue={teamRatings[teamId] ?? 0}
+            specialStyle={{ width: "48px", height: "48px" }}
+        />
+    );
 
 
     return (
@@ -433,7 +455,59 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                         </div>
                     </div>
                 )}</FadeOut>
-                <FadeOut variant="overlay">{showTournamentIntro && !isQualifierPhase && !isCstPhase && !isEclPhase && !isPemMainPhase && !isGccPhase && !isGplMainPhase && (
+                <FadeOut variant="overlay">{showTournamentIntro && isPbsPhase && (
+                    <div className={css.intro_overlay}>
+                        <div className={css.intro_content}>
+                            <div className={css.fade_in}>
+                                <div
+                                    className={css.game_title}
+                                    style={{
+                                        fontSize: "44px",
+                                        fontStyle: "italic",
+                                        marginBottom: 18,
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    {pbsLabel}
+                                    {pbsStageTitle ? <> | {pbsStageTitle}</> : null}
+                                </div>
+
+                                <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                    {pbsStageTitle ? `All teams to ${pbsStageTitle}` : "All teams"}
+                                </div>
+
+                                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "100%", margin: "0 auto" }}>
+                                    {[...pbsHigh, ...pbsLow].map(renderPbsCircle)}
+                                </div>
+                            </div>
+
+                            <div className={`${css.fade_in_delay} ${css.pbs_intro_pots}`}>
+                                {[["High-Seed Pot", pbsHigh], ["Low-Seed Pot", pbsLow]].map(([title, ids]) => (
+                                    <div key={title} className={css.pbs_intro_pot}>
+                                        <div className={css.game_title} style={{ fontSize: "32px", marginBottom: 12 }}>
+                                            {title}
+                                        </div>
+                                        <div className={css.pbs_intro_row}>
+                                            {ids.map((teamId) => (
+                                                <div key={teamId} className={css.pbs_intro_team}>
+                                                    {renderPbsCircle(teamId)}
+                                                    <PbsTeamTags seed={pbsStatus[teamId]?.seed} bounty={pbsStatus[teamId]?.bounty ?? 0} vertical />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && !isQualifierPhase && !isCstPhase && !isEclPhase && !isPemMainPhase && !isGccPhase && !isGplMainPhase && !isPbsPhase && (
                     <div className={css.intro_overlay}>
                         <div className={css.intro_content}>
                             <div className={css.fade_in}>

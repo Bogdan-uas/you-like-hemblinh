@@ -2,6 +2,7 @@ import { CST_GROUP_RATING_WEIGHT, CST_PLAYOFFS_RATING_WEIGHTS } from "./cst.js";
 import { ECL_RATING_WEIGHTS } from "./ecl.jsx";
 import { GCC_LEAGUE_RATING_WEIGHT, GCC_KNOCKOUT_RATING_WEIGHTS } from "./gcc.js";
 import { GPL_SWISS_RATING_WEIGHTS, GPL_PLAYOFFS_RATING_WEIGHTS } from "./gpl.js";
+import { PBS_RATING_WEIGHTS } from "./pbsConfig.js";
 import { PEM_GROUP_RATING_WEIGHTS, PEM_PLAYOFFS_RATING_WEIGHTS, PEM_BIG_GROUP_RATING_WEIGHTS, PEM_BIG_PLAYOFFS_RATING_WEIGHTS } from "./pemSeries.jsx";
 import { PEM_STAGE1_RATING_WEIGHTS } from "./pemStage1.jsx";
 import { QUALIFIER_RATING_WEIGHTS } from "./qualifier.jsx";
@@ -59,7 +60,9 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
                                                             ? GCC_LEAGUE_RATING_WEIGHT
                                                             : phase === "gccPlayoffs"
                                                                 ? (GCC_KNOCKOUT_RATING_WEIGHTS[playoffsStage] ?? 1.0)
-                                                                : playoffsWeight(playoffsStage);
+                                                                : phase === "pbsPlayoffs"
+                                                                    ? (PBS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                                                    : playoffsWeight(playoffsStage);
 
     return stage * boWeight(bestOf) * marginMultiplier({ bestOf, loserSetsWon });
 };
@@ -179,7 +182,7 @@ export const applyRatings = ({
     );
 
     const isGrandFinal =
-        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "gplPlayoffs", "gccPlayoffs", "ecl"].includes(phase) && playoffsStage === "gf";
+        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "gplPlayoffs", "gccPlayoffs", "pbsPlayoffs", "ecl"].includes(phase) && playoffsStage === "gf";
 
     if (isGrandFinal) {
         losePoints = Math.round(winPoints * 0.2);

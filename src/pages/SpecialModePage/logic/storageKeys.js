@@ -20,3 +20,5 @@ export const TOURNAMENT_PICKER_LS_KEY = "specialMode_tournamentPicker_v1";
 export const CURRENT_TOURNAMENT_TYPE_LS_KEY = "specialMode_currentTournamentType_v1";
 
 export const TEAM_STATS_SNAPSHOT_LS_KEY = "specialMode_teamStats_snapshot_v1";
+
+export const PBS_DRAFT_CLOCK_LS_KEY = "specialMode_pbsDraftClock_v1";

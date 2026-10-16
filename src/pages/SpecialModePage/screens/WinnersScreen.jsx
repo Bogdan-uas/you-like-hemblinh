@@ -3,8 +3,9 @@ import css from "../SpecialModePage.module.css";
 import { motion } from "framer-motion";
 import { FaTrophy } from "react-icons/fa";
 import { ReactFitty } from "react-fitty";
-import { PemSeriesTrophy, GplTrophy } from "../components/Trophies.jsx";
-import { PODIUM_QUOTES, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
+import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
+import { PODIUM_QUOTES, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 
 export function WinnersScreen({ winners, labels, actions }) {
     const {
@@ -16,7 +17,7 @@ export function WinnersScreen({ winners, labels, actions }) {
         showPodium,
         showProceed,
     } = winners;
-    const { cstLabel, eclLabel, pemLabel, gccLabel, tournamentLabel, pemType } = labels;
+    const { cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, tournamentLabel, pemType } = labels;
     const { handleProceed } = actions;
 
     const pickQuote = (list, seed = 0) => {
@@ -28,6 +29,7 @@ export function WinnersScreen({ winners, labels, actions }) {
     const isTier2Results = tournamentResults.kind === "cst" || tournamentResults.kind === "ecl" || tournamentResults.kind === "gcc";
     const isPemResults = tournamentResults.kind === "pem";
     const isGplResults = tournamentResults.kind === "gpl";
+    const isPbsResults = tournamentResults.kind === "pbs";
 
     return (
         <>
@@ -41,9 +43,9 @@ export function WinnersScreen({ winners, labels, actions }) {
                     >
                         {hasPlayedWinnerAnimation ? (
                             <span>
-                                The Top 4 of {tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : isPemResults ? pemLabel : tournamentLabel}
+                                The Top 4 of {tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : isPemResults ? pemLabel : isPbsResults ? pbsLabel : tournamentLabel}
                             </span>
-                        ) : winnersText}
+                        ) : <TournamentNumberText text={winnersText} />}
                     </motion.h2>
                 )}
                 <div className={css.winnerPodium}>
@@ -112,7 +114,9 @@ export function WinnersScreen({ winners, labels, actions }) {
                                                 ? <PemSeriesTrophy type={pemType} style={{ marginLeft: "6px", marginTop: "-52px" }} />
                                                 : isGplResults
                                                     ? <GplTrophy size={GPL_PODIUM_TROPHY_SIZE} style={GPL_PODIUM_TROPHY_STYLE} />
-                                                    : <FaTrophy />}
+                                                    : isPbsResults
+                                                        ? <PbsTrophy size={PBS_PODIUM_TROPHY_SIZE} style={PBS_PODIUM_TROPHY_STYLE} />
+                                                        : <FaTrophy />}
                                         </span>
                                     )}
                                     <div className={css.firstPodium}>

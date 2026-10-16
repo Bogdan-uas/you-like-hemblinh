@@ -1,4 +1,5 @@
 import css from "../SpecialModePage.module.css";
+import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
@@ -23,7 +24,7 @@ export function QualifierWinnersScreen({ winners, labels, actions }) {
                         <span>
                             The 4 qualifiers of {pemLabel}
                         </span>
-                    ) : winnersText}
+                    ) : <TournamentNumberText text={winnersText} />}
                 </motion.h2>
             )}
 

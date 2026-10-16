@@ -1,5 +1,7 @@
 export const GPL_PODIUM_TROPHY_SIZE = 100;
 export const GPL_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
+export const PBS_PODIUM_TROPHY_SIZE = 100;
+export const PBS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
 
 export const PODIUM_QUOTES = {
     winner: [
@@ -98,6 +100,16 @@ export const PODIUM_QUOTES = {
     ],
 };
 
+const ANNIVERSARY_GLINT = "linear-gradient(110deg,rgba(255,255,255,0) 42%,rgba(255,255,255,0.85) 50%,rgba(255,255,255,0) 58%)";
+const ANNIVERSARY_SHINE = "anniversaryShine 4.5s ease-in-out infinite";
+
+const withShine = (theme, glint = ANNIVERSARY_GLINT) => ({
+    ...theme,
+    gradient: `${glint},${theme.gradient}`,
+    backgroundSize: "300% 100%, 100% 100%",
+    animation: ANNIVERSARY_SHINE,
+});
+
 export const ANNIVERSARY_THEMES = [
     {
         min: 1000,
@@ -115,41 +127,41 @@ export const ANNIVERSARY_THEMES = [
         glow: "#ffffff",
         animation: "gradientShift 10s linear infinite",
     },
-    {
+    withShine({
         min: 250,
         max: 499,
         every: 25,
         gradient: "linear-gradient(180deg,#c77dff 0%,#9d4edd 45%,#5a189a 100%)",
         glow: "#b56cff",
-    },
-    {
+    }),
+    withShine({
         min: 100,
         max: 249,
         every: 10,
         gradient: "linear-gradient(180deg,#ffffff 0%,#b8f3ff 45%,#5fd3ff 100%)",
         glow: "#8be7ff",
-    },
-    {
+    }),
+    withShine({
         min: 50,
         max: 99,
         every: 5,
         gradient: "linear-gradient(180deg,#ff7f7f 0%,#d61a3c 45%,#760019 100%)",
         glow: "#ff4d6d",
-    },
-    {
+    }),
+    withShine({
         min: 25,
         max: 49,
         every: 5,
         gradient: "linear-gradient(180deg,#ffffff 0%,#dcdcdc 45%,#9c9c9c 100%)",
         glow: "#f0f0f0",
-    },
-    {
+    }),
+    withShine({
         min: 10,
         max: 24,
         every: 5,
         gradient: "linear-gradient(180deg,#fff7b3 0%,gold 45%,#c49000 100%)",
         glow: "gold",
-    },
+    }),
     {
         min: 5,
         max: 9,
@@ -157,14 +169,24 @@ export const ANNIVERSARY_THEMES = [
         gradient: "linear-gradient(180deg,#e8b67a 0%,#cd7f32 45%,#8c5317 100%)",
         glow: "#cd7f32",
     },
+    withShine({
+        min: 1,
+        max: 1,
+        every: 1,
+        gradient: "linear-gradient(180deg,#86d9ae 0%,#169158 45%,#0a5a34 100%)",
+        glow: "#2ecc71",
+    }, "linear-gradient(110deg,rgba(255,255,255,0) 42%,rgba(240,255,247,0.85) 50%,rgba(255,255,255,0) 58%)"),
 ];
+
+export const getAnniversaryTheme = (number) =>
+    ANNIVERSARY_THEMES.find((theme) => number >= theme.min && number <= theme.max && number % theme.every === 0) ?? null;
 
 export const getTournamentNumberStyle = (theme) => (
     theme
         ? {
             backgroundImage: theme.gradient,
             backgroundRepeat: "no-repeat",
-            backgroundSize: theme.animation ? "120% 120%" : "100% 100%",
+            backgroundSize: theme.backgroundSize ?? (theme.animation ? "120% 120%" : "100% 100%"),
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",

@@ -142,7 +142,24 @@ export const GplDescription = () => (
     </>
 );
 
-export const WhiteCaretIcon = ({ size = 14, rotation = 0 }) => (
+export const PbsDescription = () => (
+    <>
+        One tournament, played on its own:
+        <PemSmallEventLine tier="tier1">
+            <b>Premier Bounty Series</b> — places 1-32 of the Leaderboard, places 33-64 don&apos;t play at all.
+            Seeds 1-16 form the High-Seed Pot and carry a bounty (60 Bounty Gems for Seed #1 down to 15 for
+            Seed #16), seeds 17-32 form the Low-Seed Pot without one. Before the <b>Round of 32</b> (Stage I),
+            the <b>Round of 16</b> (Stage II), the <b>Quarterfinals</b> and the <b>Semifinals</b> (both in the
+            Finals) a live draft takes place: the remaining teams are split into two Pots by their current seeds
+            and every Low-Seed Pot team, best seed first, picks its opponent from the High-Seed Pot. The winner of a
+            match takes half of the loser&apos;s bounty and an underdog that wins also takes over its seed. Rounds
+            of 32 and 16 are Bo3, the Quarterfinals are Bo5, the Semifinals and Third Place Decider are Bo7, the
+            Grand Final is Bo9.
+        </PemSmallEventLine>
+    </>
+);
+
+export const WhiteCaretIcon =({ size = 14, rotation = 0 }) => (
     <svg
         width={size}
         height={size}

@@ -1,4 +1,4 @@
-import { PemSmallDescription, PemBigDescription, GplDescription } from "../components/TournamentTypeInfo.jsx";
+import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription } from "../components/TournamentTypeInfo.jsx";
 import { TOURNAMENT_NUMBERS_LS_KEY, TOURNAMENT_PICKER_LS_KEY, CURRENT_TOURNAMENT_TYPE_LS_KEY } from "./storageKeys.js";
 
 export const PEM_SMALL_TYPE_ID = "PEM Small Tournament";
@@ -7,6 +7,7 @@ export const CST_TYPE_ID = "Champions Series Tour";
 export const ECL_TYPE_ID = "Elite Competition League";
 export const GPL_TYPE_ID = "Global Pro League";
 export const GCC_TYPE_ID = "Global Challenger Cup";
+export const PBS_TYPE_ID = "Premier Bounty Series";
 
 export const TOURNAMENT_TYPES = [
     {
@@ -49,6 +50,13 @@ export const TOURNAMENT_TYPES = [
         tier: "tier1",
         descriptionNode: <GplDescription />,
     },
+    {
+        id: PBS_TYPE_ID,
+        label: "Premier Bounty Series",
+        tier: "tier1",
+        numberPrefix: "Season ",
+        descriptionNode: <PbsDescription />,
+    },
 ];
 
 const EVENT_TOURNAMENT_TYPES = [
@@ -61,6 +69,9 @@ export const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAME
 
 export const getTournamentTypeConfig = (id) =>
     NUMBERED_TOURNAMENT_TYPES.find((type) => type.id === id) || TOURNAMENT_TYPES[0];
+
+export const formatTournamentNumber = (typeId, number) =>
+    `${getTournamentTypeConfig(typeId).numberPrefix ?? "#"}${number}`;
 
 export const HALL_FORM_TOURNAMENT_TYPES = TOURNAMENT_TYPES.filter((type) => Array.isArray(type.fields));
 

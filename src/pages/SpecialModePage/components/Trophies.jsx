@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import css from "../SpecialModePage.module.css";
 import PemTrophyIcon from "../../../components/PemTrophyIcon/PemTrophyIcon.jsx";
 import GplTrophyIcon from "../../../components/GplTrophyIcon/GplTrophyIcon.jsx";
+import PbsTrophyIcon from "../../../components/PbsTrophyIcon/PbsTrophyIcon.jsx";
 import { PEM_TROPHY_SILVER, PEM_TROPHY_GOLD } from "../logic/pemConfig.js";
+import { PBS_TROPHY_BODY, PBS_TROPHY_GEM } from "../logic/pbsConfig.js";
 import { PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
 
 export const PemSilverTrophy = ({ style, ...props }) => (
@@ -29,6 +31,59 @@ export const GplTrophy = ({ style, ...props }) => (
         {...props}
     />
 );
+
+export const PbsTrophy = ({ style, ...props }) => (
+    <PbsTrophyIcon
+        color={PBS_TROPHY_BODY}
+        gemColor={PBS_TROPHY_GEM}
+        style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
+        {...props}
+    />
+);
+
+const BOUNTY_GEM_FACETS = [
+    ["M222.4 149.2 L188.8 182.8 L222.4 182.8 Z", "#fff", 0.3],
+    ["M222.4 149.2 L222.4 182.8 L256 149.2 Z", "#fff", 0.42],
+    ["M256 149.2 L289.6 182.8 L289.6 149.2 Z", "#fff", 0.1],
+    ["M289.6 149.2 L289.6 182.8 L323.2 182.8 Z", "#000", 0.2],
+    ["M188.8 182.8 L256 182.8 L256 266 Z", "#fff", 0.12],
+    ["M256 182.8 L323.2 182.8 L256 266 Z", "#000", 0.24],
+];
+
+export const BountyGem = ({ size = "1em", style, title }) => {
+    const gradientId = `pbs-bounty-gem-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
+    return (
+        <svg
+            viewBox="186 146 140 124"
+            role={title ? "img" : undefined}
+            aria-hidden={title ? undefined : true}
+            style={{
+                display: "inline-block",
+                verticalAlign: "middle",
+                width: size,
+                height: size,
+                flexShrink: 0,
+                transition: "none",
+                filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.45))",
+                ...style,
+            }}
+        >
+            {title && <title>{title}</title>}
+            <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="#9dffcf" />
+                    <stop offset="0.5" stopColor="#12b36a" />
+                    <stop offset="1" stopColor="#06582f" />
+                </linearGradient>
+            </defs>
+            <path d="M222.4 149.2 L289.6 149.2 L323.2 182.8 L256 266 L188.8 182.8 Z" fill={`url(#${gradientId})`} />
+            {BOUNTY_GEM_FACETS.map(([d, fill, opacity]) => (
+                <path key={d} d={d} fill={fill} fillOpacity={opacity} />
+            ))}
+        </svg>
+    );
+};
 
 export const PemSeriesTrophy = ({ type, ...props }) =>
     type === PEM_BIG_TYPE_ID ? <PemGoldTrophy {...props} /> : <PemSilverTrophy {...props} />;

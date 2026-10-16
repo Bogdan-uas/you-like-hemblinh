@@ -70,6 +70,7 @@ import hardChoiceToMakeTwo from "../../../assets/images/image-27.png";
 import { motion } from "framer-motion";
 import Lenis from "lenis";
 import { FaFire } from "react-icons/fa";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
@@ -325,6 +326,21 @@ const GPL_SECTIONS = [
     {
         id: "gpl-rewards",
         label: "The globe trophy and Hall of Fame",
+    },
+];
+
+const PBS_SECTIONS = [
+    {
+        id: "pbs-overview",
+        label: "Hunting for bounties",
+    },
+    {
+        id: "pbs-draft",
+        label: "Live draft and the Stages",
+    },
+    {
+        id: "pbs-rewards",
+        label: "The emerald trophy and Hall of Fame",
     },
 ];
 
@@ -2078,6 +2094,207 @@ const GplSubPage = ({ scrollToAnchor }) => (
     </>
 );
 
+const PBS_IMAGES = import.meta.glob("../../../assets/images/pbs-*.png", { eager: true, import: "default" });
+const pbsImg = (n) => PBS_IMAGES[`../../../assets/images/pbs-${String(n).padStart(2, "0")}.png`];
+
+const PbsShot = ({ n, ...props }) => <PemShot src={pbsImg(n)} {...props} />;
+
+const PbsSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="pbs-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Hunting for bounties</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The fifth option in the "Choose how you want to play" modal is the <b>Premier Bounty Series</b> (PBS), a Tier 1 tournament like no other one.
+                It is only one tournament: no Qualifier, no Tier 2 tournament before it. And it doesn&apos;t even count with a "#": every edition is a <b>Season</b>,
+                so the very first one is the <b>Premier Bounty Series Season 1</b>.
+            </p>
+            <PbsShot n={1} alt="Choose how you want to play modal with the Premier Bounty Series picked" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                Only the <b>top 32</b> of the Leaderboard play, and they are split into two Pots right at the start: <br />
+                • Top 1-16 → <b>High-Seed Pot</b>. Every team of it carries a <b>bounty</b> of Bounty Gems: Seed #1 carries 60 of them, every next seed 3 less, down to 15 for Seed #16 <br />
+                • Top 17-32 → <b>Low-Seed Pot</b>, with no bounty at all. Nothing to lose, everything to win <br />
+                • Top 33-64 → they don&apos;t play, same as the last places in the{" "}
+                <InfoLink onClick={scrollToAnchor("gpl-overview", "gpl")} href="?page=gpl#gpl-overview">Global Pro League</InfoLink>
+            </p>
+            <p className={css.info_text}>
+                The "Stage dividers" select of the Leaderboard has a "Premier Bounty Series" option for it: one divider between both Pots and the half red one before the teams, which are NOT playing:
+            </p>
+            <PbsShot n={2} alt="Leaderboard with the divider between the High-Seed Pot and the Low-Seed Pot" />
+            <PbsShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                Every single match is a team of the High-Seed Pot against a team of the Low-Seed Pot, and it&apos;s all single elimination: a loss and a team flies out.
+                A High-Seed Pot team has a bounty on their heads: the higher the seed, the more is the bounty (up tp 60). The winner takes <b>half of the loser&apos;s bounty</b> (rounded), and the loser&apos;s bounty is gone, whatever is left of it.
+                If the team with the worse seed wins, it also <b>takes over the seed</b> of the beaten team. So the bounties don&apos;t stay where they started: they travel from team to team, round after round.
+            </p>
+            <p className={css.info_text}>
+                How a match itself is played, you can see in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. I chose the Premier Bounty Series explicitly and clicked "Start Game", right after{" "}
+                <InfoLink onClick={scrollToAnchor("gpl-rewards", "gpl")} href="?page=gpl#gpl-rewards">Global Pro League #1</InfoLink>.
+                The Tournament Intro Screen shows all 32 teams first and then both Pots, every team with its seed and its bounty below the circle:
+            </p>
+            <PbsShot n={4} alt="Tournament Intro Screen of Premier Bounty Series Season 1 with all teams and both Pots" />
+        </section>
+        <section>
+            <div id="pbs-draft" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Live draft and the Stages</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                After "Continue", I land in <b>Stage I</b>, the <b>Round of 32</b>. But all 16 matches are still empty, because nobody has drawn them yet.
+                Nobody draws them at all, actually: the teams pick their opponents themselves, in a <b>live draft</b>. It runs in a footer, which is reversed header of Hall of Fame's second header, at the bottom of the screen,
+                with the Low-Seed Pot above and the High-Seed Pot below, both sorted by their seeds:
+            </p>
+            <PbsShot n={5} alt="The live draft of the Round of 32 is about to begin" />
+            <p className={css.info_text}>
+                First, the Low-Seed Pot takes its places. One by one, the teams fly out of the header into the left slots of the matches, Seed #17 into match #1, Seed #18 into match #2 and so on,
+                and the page scrolls along with them:
+            </p>
+            <PbsShot n={6} alt="The Low-Seed Pot flies into the left slots of the matches" />
+            <p className={css.info_text}>
+                Then, the High-Seed Pot moves into the middle of the header and the picks begin. The best seed of the Low-Seed Pot picks first, so Team Amber (Seed #17) is highlighted
+                and, like a real coach, it goes through the teams it is considering: the yellow ring jumps from circle to circle, until the decision is made and the chosen team flies into the right slot.
+            </p>
+            <PbsShot n={7} alt="Team Amber (Seed #17) is making the pick, Team Green is being considered" />
+            <p className={css.info_text}>
+                Every coach weighs two things: the chance to win the match and the reward, which is half of the opponent&apos;s bounty (and its better seed).
+                And every coach has its own character: most of them play it safe, some are ambitious and a few of them are real bounty hunters.
+                That&apos;s why the header always says, what kind of pick it was: one "picks the most beatable opponent", another one "takes a calculated risk" and a third one "goes for the biggest bounty".
+                Team Amber went for Team Khaki (Seed #16, the smallest bounty of 15), Team Cyan, on the other hand, took a calculated risk with Team Emerald (Seed #11, 30 Bounty Gems):
+            </p>
+            <PbsShot n={8} alt="Team Cyan takes a calculated risk: Team Emerald flies into match #4" />
+            <p className={css.info_text}>
+                On the right side, there is the <b>Speed</b> select (1x, 2x, 4x or 8x), a pause button and an emerald button with the time left, which finishes the show right away.
+                The speed starts at 1x again in every Stage. During the show, the page can&apos;t be scrolled by hand: the show itself scrolls to every team, which is picking, so nothing is ever hidden.
+                And if the page is reloaded in the middle of it, the show goes on from the exact same moment, even in the middle of a flight.
+            </p>
+            <PbsShot n={9} alt="Team Gray (Seed #28) is making the pick, only five teams are left in the High-Seed Pot" />
+            <p className={css.info_text}>
+                The last team of the Low-Seed Pot doesn&apos;t have a choice anymore: Team Bronze (Seed #32) got the only team left, Team Seafoam (Seed #1, 60 Bounty Gems).
+                Then the header slides down, the page scrolls back up and match #1 glows yellow as the current one:
+            </p>
+            <PbsShot n={10} alt="The Round of 32 after the draft, match #1 is the current one" />
+            <p className={css.info_text}>
+                All the matches of the Round of 32 are <b>Best of 3</b>. Since the seeds and the bounties are everything here, the match modal shows them above both circles.
+                And a better seed doesn&apos;t mean a better team: Team Amber and Team Khaki both had 1,171 points, but Team Amber was the favourite with 60.2%:
+            </p>
+            <PbsShot n={11} alt="Match modal of Round of 32 #1 with the seeds and bounties of Team Amber and Team Khaki" width="35vw" />
+            <PbsShot n={12} alt="Series screen of a Round of 32 match with the Premier Bounty Series trophy" width="30vw" caption="(The trophy icon in the series screen is the Premier Bounty Series trophy)" />
+            <p className={css.info_text}>
+                The stakes in the match modal have a second line now. The winner "qualifies to Round of 16" and, if it was the High-Seed Pot team, "keeps its bounty". If it was the Low-Seed Pot team, it "takes the bounty away".
+                The loser "flies out of the tournament". Once the match is finished, the modal shows what changed: Team Amber won the Decider 13-11 and went from Seed #17 to #16 and from 0 to 8 Bounty Gems,
+                while Team Khaki lost all of its 15:
+            </p>
+            <PbsShot n={13} alt="Finished match modal of Round of 32 #1: Team Amber takes Seed #16 and 8 Bounty Gems" width="35vw" />
+            <p className={css.info_text}>
+                That was one of only two upsets of the Round of 32. The other one was Team Beige (Seed #22), which beat Team Jade (Seed #15) 2:0, the second set 16-14 in Overtime.
+                Everywhere else, the High-Seed Pot kept its bounties. The navigation in the top left corner leads back to Stage I at any moment:
+            </p>
+            <PbsShot n={14} alt="Finished Stage I of Premier Bounty Series Season 1" />
+            <p className={css.info_text}>
+                Right after the last match of the Round of 32, <b>Stage II</b> starts with its own Tournament Intro Screen. The 16 teams left are split into two Pots again, this time by their current seeds and bounties:
+            </p>
+            <PbsShot n={15} alt="Tournament Intro Screen of Stage II with the new Pots" />
+            <p className={css.info_text}>
+                And there is a new draft. The <b>Round of 16</b> is <b>Best of 3</b> as well, but every team here carries a bounty already, so there is nothing left to keep:
+                whoever wins, "takes the bounty away". Its 8 matches are in two columns, so all of them fit on the screen:
+            </p>
+            <PbsShot n={16} alt="The live draft of the Round of 16" />
+            <PbsShot n={17} alt="The Round of 16 after the draft" />
+            <p className={css.info_text}>
+                This time, the Low-Seed Pot hit back: four of the eight matches went to the underdogs. Team Sunflower beat Team Orange 2:0 (13-6 and 13-6), Team Navy beat Team Periwinkle 2:0
+                and Team Emerald beat Team Salmon in the Decider. But the biggest one was Team Indigo (Seed #14): it lost the first set 3-13 against Team Moss, Seed #2 and the runner-up of
+                <InfoLink onClick={scrollToAnchor("big-main-event", "pem-big")} href="?page=pem-big#big-main-event"> PEM Big Tournament #1</InfoLink>,
+                then won the second one 16-12 in Overtime and the Decider 13-9. So Team Indigo jumped from Seed #14 to <b>Seed #2</b> and from 21 to 50 Bounty Gems:
+            </p>
+            <PbsShot n={18} alt="Finished Stage II of Premier Bounty Series Season 1" />
+            <p className={css.info_text}>
+                The last 8 teams go to the <b>Finals</b>, again with a Tournament Intro Screen and again with a new draft.
+                The Finals have the <b>Quarterfinals</b> (<b>Best of 5</b>) on the left, but they are not connected to the Semifinals: after the Quarterfinals, the 4 teams left are drafted one more time.
+                And look at the Pots: Team Indigo is in the High-Seed Pot with Seed #2, while Team Rose has more Bounty Gems (62) than Team Indigo (50), but only Seed #5:
+            </p>
+            <PbsShot n={19} alt="Tournament Intro Screen of the Finals with the Pots of the last 8 teams" />
+            <PbsShot n={20} alt="The live draft of the Quarterfinals" />
+            <p className={css.info_text}>
+                Team Rose went for exactly that Team Indigo. Team Navy took Team Copper (Seed #4), Team Emerald took Team Yellow (Seed #3) and Team Sunflower was left with Team Seafoam (Seed #1):
+            </p>
+            <PbsShot n={21} alt="The Quarterfinals after the draft" />
+            <p className={css.info_text}>
+                In the Quarterfinals, the loser&apos;s stake text is "path ends here, for now!" and the winner&apos;s second line is the bounty again.
+                And Team Indigo did it once more: it won the first set 16-12 in Overtime, lost the second and the fourth one and won the Decider 13-11. 3:2, and Team Rose&apos;s 62 Bounty Gems were gone, 31 of them went to Team Indigo:
+            </p>
+            <PbsShot n={22} alt="Finished match modal of Quarterfinal #1: Team Indigo beats Team Rose 3:2" width="35vw" />
+            <p className={css.info_text}>
+                Team Copper, Team Yellow and Team Seafoam won their Quarterfinals 3:1. Team Seafoam even needed a double Overtime for it (19-17 in the third set against Team Sunflower).
+                Then, the draft of the <b>Semifinals</b> took place. As soon as a Semifinal is built, the circles in the Grand Final and in the Third Place Decider already show, which two teams can get there:
+            </p>
+            <PbsShot n={23} alt="The live draft of the Semifinals, the Grand Final and the Third Place Decider already show their contenders" />
+            <p className={css.info_text}>
+                The Semifinals and the Third Place Decider are <b>Best of 7</b>, the Grand Final is <b>Best of 9</b>. Both Semifinals were over quickly: Team Yellow beat Team Indigo 4:0 and took over its Seed #2
+                and Team Seafoam beat Team Copper 4:0. In the Third Place Decider, there is no bounty to win anymore (both losers of the Semifinals lost theirs),
+                so it has no second stake line. Team Copper won it 4:3, only in the seventh set (13-7):
+            </p>
+            <PbsShot n={24} alt="The Finals after the Semifinals, the Grand Final is next" />
+            <p className={css.info_text}>
+                The Grand Final was Team Yellow (Seed #2, 126 Bounty Gems) against Team Seafoam (Seed #1, 138 Bounty Gems). The prediction gave Team Yellow <b>0.4%</b>:
+            </p>
+            <PbsShot n={25} alt="Match modal of the Grand Final of Premier Bounty Series Season 1" width="35vw" />
+            <PbsShot n={26} alt="Series screen of the Bo9 Grand Final" width="30vw" />
+            <p className={css.info_text}>
+                And Team Yellow didn&apos;t win a single set: 5:0. Team Seafoam is the champion, and the Premier Bounty Series has its own trophy, a white one with an emerald Bounty Gem on top:
+            </p>
+            <PbsShot n={27} alt="Winners' screen of Premier Bounty Series Season 1 with the Premier Bounty Series trophy" width="28vw" />
+            <p className={css.info_text}>
+                The Pick&apos;em summary counts every round: the Rounds of 32 and 16, the Quarterfinals and the Semifinals, and the Third Place Decider and the Grand Final, if they were guessed.
+                This time, I won it: 110 out of 92 needed Pick&apos;em points.
+            </p>
+            <PbsShot n={28} alt="Pick'em summary of Premier Bounty Series Season 1" width="30vw" />
+            <p className={css.info_text}>
+                One last thing about the bounties: a team which ends the tournament still holding a bounty, gets a <b>bonus</b> on top of its last match. The final bounty is divided by 4 and rounded up,
+                and the result is added to the team&apos;s points as a free addition, outside of all the usual limits. It has its own green label below the usual points in the match modal.
+                Team Seafoam finished with <b>201 Bounty Gems</b> (138 of its own and 63 from Team Yellow), so it got +51 points on top of its +33:
+            </p>
+            <PbsShot n={29} alt="Finished match modal of the Grand Final with the +51 bounty bonus of Team Seafoam" width="35vw" />
+            <PbsShot n={30} alt="Finished Finals of Premier Bounty Series Season 1 with the end buttons" />
+        </section>
+        <section>
+            <div id="pbs-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The emerald trophy and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                In the Leaderboard, the Premier Bounty Series trophy gets its own icon. It is worth more than the silver PEM trophy and less than the golden one, so it is placed between them.
+                Team Seafoam has all five trophies now, 1,821 points and its Unbeaten Streak went up to 19. The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament (see{" "}
+                <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">Trophies, medals and Hall of Fame</InfoLink>
+                ):
+            </p>
+            <PbsShot n={31} alt="Leaderboard after Premier Bounty Series Season 1" />
+            <p className={css.info_text}>
+                In the Hall of Fame, the new card has the trophy on top, then "Premier Bounty Series Season 1" and the top four:
+            </p>
+            <PbsShot n={32} alt="Hall of Fame with the card of Premier Bounty Series Season 1" />
+            <p className={css.info_text}>
+                Its summary starts with all teams and both Pots with their seeds and bounties. Then come the whole Stage I, all teams to Stage II with their new seeds and bounties, the whole Stage II,
+                all teams to the Finals, the Finals themselves, the podium with the trophy and the 5th-8th places. The losers of the Quarterfinals are 5th to 8th, in the order of the matches:
+            </p>
+            <PbsShot n={33} alt="Hall of Fame, Premier Bounty Series Season 1: all teams and both Pots" />
+            <PbsShot n={34} alt="Hall of Fame, Premier Bounty Series Season 1: Stage I" />
+            <PbsShot n={35} alt="Hall of Fame, Premier Bounty Series Season 1: the end of Stage I and all teams to Stage II" />
+            <PbsShot n={36} alt="Hall of Fame, Premier Bounty Series Season 1: Stage II and all teams to the Finals" />
+            <PbsShot n={37} alt="Hall of Fame, Premier Bounty Series Season 1: the Finals" />
+            <PbsShot n={38} alt="Hall of Fame, Premier Bounty Series Season 1: the podium with the trophy" />
+            <PbsShot n={39} alt="Hall of Fame, Premier Bounty Series Season 1: the places 5-8" />
+            <p className={css.info_text}>
+                And now, there are five tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b> and <b>Premier Bounty Series</b>.
+                Four of them are waiting for their #2, one for its Season 2. Who is going to hunt the bounties next time?
+            </p>
+        </section>
+    </>
+);
+
 const INFO_SUB_PAGES = [
     {
         id: "official",
@@ -2103,9 +2320,24 @@ const INFO_SUB_PAGES = [
         sections: GPL_SECTIONS,
         Content: GplSubPage,
     },
+    {
+        id: "pbs",
+        label: <>Premier Bounty Series</>,
+        sections: PBS_SECTIONS,
+        Content: PbsSubPage,
+    },
 ];
 
 const SUB_PAGE_SEARCH_PARAM = "page";
+
+const VISIBLE_SUB_PAGES = 4;
+
+const MAX_TAB_START = Math.max(0, INFO_SUB_PAGES.length - VISIBLE_SUB_PAGES);
+
+const clampTabStart = (start) => Math.max(0, Math.min(MAX_TAB_START, start));
+
+const tabStartShowing = (start, index) =>
+    index < start ? clampTabStart(index) : index >= start + VISIBLE_SUB_PAGES ? clampTabStart(index - VISIBLE_SUB_PAGES + 1) : start;
 
 const SCROLL_EASING = (t) =>
     t < 0.5
@@ -2128,6 +2360,11 @@ const SpecialModeInfoPage = () => {
     const hasMeasuredTabsRef = useRef(false);
     const [headerHeight, setHeaderHeight] = useState(0);
     const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0, animate: false });
+    const [tabStart, setTabStart] = useState(() =>
+        tabStartShowing(0, INFO_SUB_PAGES.findIndex((page) => page.id === activeSubPage.id))
+    );
+    const [tabWindow, setTabWindow] = useState({ x: 0, width: null, animate: false });
+    const hasMeasuredWindowRef = useRef(false);
 
     useEffect(() => {
         const lenis = new Lenis({
@@ -2180,6 +2417,23 @@ const SpecialModeInfoPage = () => {
         return () => window.removeEventListener("resize", handleResize);
     }, [activeSubPage.id]);
 
+    useLayoutEffect(() => {
+        const measure = (animate) => {
+            const tabs = tabsRef.current?.querySelectorAll("[data-sub-page-tab]");
+            const first = tabs?.[tabStart];
+            const last = tabs?.[Math.min(tabs.length, tabStart + VISIBLE_SUB_PAGES) - 1];
+            if (!first || !last) return;
+            setTabWindow({ x: first.offsetLeft, width: last.offsetLeft + last.offsetWidth - first.offsetLeft, animate });
+        };
+
+        measure(hasMeasuredWindowRef.current);
+        hasMeasuredWindowRef.current = true;
+
+        const handleResize = () => measure(false);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [tabStart]);
+
     const pendingAnchorRef = useRef(null);
 
     useEffect(() => {
@@ -2206,8 +2460,11 @@ const SpecialModeInfoPage = () => {
 
     const selectSubPage = (id) => {
         if (id === activeSubPage.id) return;
+        setTabStart((start) => tabStartShowing(start, INFO_SUB_PAGES.findIndex((page) => page.id === id)));
         setSearchParams({ [SUB_PAGE_SEARCH_PARAM]: id }, { replace: true });
     };
+
+    const scrollTabs = (direction) => setTabStart((start) => clampTabStart(start + direction));
 
     const [indicator, setIndicator] = useState({
         top: 0,
@@ -2334,30 +2591,69 @@ const SpecialModeInfoPage = () => {
         });
     };
 
+    const renderSubPageArrow = (direction) => {
+        const isHidden = direction < 0 ? tabStart <= 0 : tabStart >= MAX_TAB_START;
+        const Icon = direction < 0 ? IoIosArrowBack : IoIosArrowForward;
+        return (
+            <button
+                type="button"
+                aria-label={direction < 0 ? "Previous tournaments" : "Next tournaments"}
+                aria-hidden={isHidden}
+                tabIndex={isHidden ? -1 : 0}
+                onClick={() => scrollTabs(direction)}
+                className={`${css.sub_page_button} ${css.sub_page_arrow} ${isHidden ? css.sub_page_arrow_hidden : ""}`}
+            >
+                <Icon />
+            </button>
+        );
+    };
+
+    const tabTransition = tabWindow.animate ? { type: "tween", duration: 0.3, ease: "easeInOut" } : { duration: 0 };
+
     const renderSubPageNavigation = () => (
         <div ref={headerRef} className={css.second_header}>
-            <nav ref={tabsRef} className={css.sub_page_navigation}>
-                {INFO_SUB_PAGES.map((page) => {
-                    const isActive = page.id === activeSubPage.id;
-                    return (
-                        <button
-                            key={page.id}
-                            type="button"
-                            data-sub-page-active={isActive}
-                            onClick={() => selectSubPage(page.id)}
-                            className={`${css.sub_page_button} ${isActive ? css.sub_page_button_active : ""}`}
-                        >
-                            {page.label}
-                        </button>
-                    );
-                })}
+            <div className={css.sub_page_strip}>
+                {renderSubPageArrow(-1)}
                 <motion.div
-                    className={css.sub_page_indicator}
+                    className={css.sub_page_window}
                     initial={false}
-                    animate={{ left: tabIndicator.left, width: tabIndicator.width }}
-                    transition={tabIndicator.animate ? { type: "tween", duration: 0.3, ease: "easeInOut" } : { duration: 0 }}
-                />
-            </nav>
+                    animate={{ width: tabWindow.width ?? "auto" }}
+                    transition={tabTransition}
+                >
+                    <motion.nav
+                        ref={tabsRef}
+                        className={css.sub_page_navigation}
+                        initial={false}
+                        animate={{ x: -tabWindow.x }}
+                        transition={tabTransition}
+                    >
+                        {INFO_SUB_PAGES.map((page, index) => {
+                            const isActive = page.id === activeSubPage.id;
+                            const isVisible = index >= tabStart && index < tabStart + VISIBLE_SUB_PAGES;
+                            return (
+                                <button
+                                    key={page.id}
+                                    type="button"
+                                    data-sub-page-tab
+                                    data-sub-page-active={isActive}
+                                    tabIndex={isVisible ? 0 : -1}
+                                    onClick={() => selectSubPage(page.id)}
+                                    className={`${css.sub_page_button} ${isActive ? css.sub_page_button_active : ""}`}
+                                >
+                                    {page.label}
+                                </button>
+                            );
+                        })}
+                        <motion.div
+                            className={css.sub_page_indicator}
+                            initial={false}
+                            animate={{ left: tabIndicator.left, width: tabIndicator.width }}
+                            transition={tabIndicator.animate ? { type: "tween", duration: 0.3, ease: "easeInOut" } : { duration: 0 }}
+                        />
+                    </motion.nav>
+                </motion.div>
+                {renderSubPageArrow(1)}
+            </div>
         </div>
     );
 

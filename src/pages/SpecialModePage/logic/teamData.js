@@ -282,7 +282,7 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000 + ((p?.pemBigWins ?? 0) + (p?.gplWins ?? 0)) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
+            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000000 + ((p?.pemBigWins ?? 0) + (p?.gplWins ?? 0)) * 1000000000 + (p?.pbsWins ?? 0) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
             case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
             case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;

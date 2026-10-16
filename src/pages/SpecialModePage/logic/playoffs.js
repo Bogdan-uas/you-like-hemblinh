@@ -1,10 +1,12 @@
 import { CST_PLAYOFFS_BEST_OF } from "./cst.js";
 import { GCC_KNOCKOUT_BEST_OF } from "./gcc.js";
 import { PEM_PLAYOFFS_BEST_OF, PEM_BIG_PLAYOFFS_BEST_OF } from "./pemConfig.js";
+import { PBS_BEST_OF } from "./pbsConfig.js";
 
 export const stageLabelPlayoffs = (stage) => {
     switch (stage) {
         case "po": return "Knockout Play-off";
+        case "ro32": return "Round of 32";
         case "ro16": return "Round of 16";
         case "qf": return "Quarterfinal";
         case "sf": return "Semifinal";
@@ -19,6 +21,7 @@ export const getBestOfForPlayoffs = (stage, kind = null) => {
     if (kind === "pem") return PEM_PLAYOFFS_BEST_OF[stage] ?? 5;
     if (kind === "pemBig" || kind === "gpl") return PEM_BIG_PLAYOFFS_BEST_OF[stage] ?? 5;
     if (kind === "gcc") return GCC_KNOCKOUT_BEST_OF[stage] ?? 3;
+    if (kind === "pbs") return PBS_BEST_OF[stage] ?? 3;
     if (stage === "gf") return 9;
     if (stage === "sf") return 7;
     if (stage === "thirdPlace") return 7;
@@ -148,6 +151,7 @@ export const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
         if (!stageArr[i].played) return false;
     }
 
+    if (stage === "ro16" && (bracket.ro32 || []).some((m) => !m.played)) return false;
     if (stage === "qf" && (bracket.ro16 || []).some((m) => !m.played)) return false;
     if (stage === "qf" && (bracket.po || []).some((m) => !m.played)) return false;
     if (stage === "sf" && bracket.qf.some((m) => !m.played)) return false;

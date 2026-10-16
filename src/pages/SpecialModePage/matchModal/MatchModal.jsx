@@ -12,7 +12,7 @@ import { SetBreakdownOverlay } from "../components/SetBreakdownOverlay.jsx";
 import { MatchStatsOverlay } from "../components/StatsPanels.jsx";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
-import { PemSeriesTrophy, GplTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, BountyGem } from "../components/Trophies.jsx";
 import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isPemPlayoffsKind } from "../logic/pemSeries.jsx";
@@ -47,6 +47,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         isEliminationModal,
         isPemBigModal,
         modalPotById,
+        modalPbs,
         hasChosen,
         hoveredTeamId,
         setHoveredTeamId,
@@ -73,6 +74,41 @@ export function MatchModal({ modal, teams, actions, labels }) {
                 {circle}
                 <span className={css.modal_team_pot} title={`Pot ${pot} of the League Phase`}>
                     Pot {pot}
+                </span>
+            </span>
+        );
+    };
+
+    const pbsBonusOf = (teamId) =>
+        modalPbs?.meta?.bountyBonus?.teamId === teamId ? modalPbs.meta.bountyBonus.points : 0;
+
+    const withPbsTags = (team, circle, finished = false) => {
+        if (!modalPbs || !team) return circle;
+        const before = finished ? modalPbs.meta?.before?.[team.id] : modalPbs.status?.[team.id];
+        if (!before) return circle;
+        const after = finished ? modalPbs.meta?.after?.[team.id] ?? before : before;
+        const seedChanged = after.seed !== before.seed;
+        const bountyDiff = (after.bounty ?? 0) - (before.bounty ?? 0);
+
+        return (
+            <span style={{ position: "relative", display: "inline-block", transition: "none" }}>
+                {circle}
+                <span className={`${css.pbs_team_tags} ${css.pbs_modal_tags} ${finished ? "" : `${css.pbs_team_tags_small} ${css.pbs_modal_tags_pre}`}`}>
+                    <span className={css.pbs_seed_tag} title={seedChanged ? `Seed #${before.seed} → #${after.seed}` : `Seed #${before.seed}`}>
+                        {seedChanged ? (
+                            <span className={css.pbs_tag_change}>
+                                #{before.seed} → <span className={after.seed < before.seed ? css.pbs_tag_gain : css.pbs_tag_loss}>#{after.seed}</span>
+                            </span>
+                        ) : <>#{before.seed}</>}
+                    </span>
+                    <span className={css.pbs_bounty_tag} title={`${after.bounty ?? 0} Bounty Gems`}>
+                        <BountyGem size={finished ? 12 : 10} />
+                        {bountyDiff !== 0 ? (
+                            <span className={css.pbs_tag_change}>
+                                {before.bounty ?? 0} → <span className={bountyDiff > 0 ? css.pbs_tag_gain : css.pbs_tag_loss}>{after.bounty ?? 0}</span>
+                            </span>
+                        ) : <>{before.bounty ?? 0}</>}
+                    </span>
                 </span>
             </span>
         );
@@ -423,11 +459,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                 ? "gccPlayoffs"
                                                                 : modalContext?.kind === "gpl"
                                                                     ? "gplPlayoffs"
-                                                                    : modalContext?.kind === "pemBig"
-                                                                        ? "pemBigPlayoffs"
-                                                                        : modalContext?.kind === "pem"
-                                                                            ? "pemPlayoffs"
-                                                                            : "playoffs",
+                                                                    : modalContext?.kind === "pbs"
+                                                                        ? "pbsPlayoffs"
+                                                                        : modalContext?.kind === "pemBig"
+                                                                            ? "pemBigPlayoffs"
+                                                                            : modalContext?.kind === "pem"
+                                                                                ? "pemPlayoffs"
+                                                                                : "playoffs",
 
                             swissStageKey:
                                 modalContext?.type === "swiss"
@@ -616,7 +654,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 borderRadius: "50%"
                                             }}
                                         >
-                                            {withPotBadge(modalLeftTeam, (
+                                            {withPbsTags(modalLeftTeam, withPotBadge(modalLeftTeam, (
                                                 <TeamCircle
                                                     team={modalLeftTeam}
                                                     showRating
@@ -638,7 +676,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                         zIndex: 0
                                                     }}
                                                 />
-                                            ))}
+                                            )))}
                                             <span
                                                 style={{
                                                     color: "#fff",
@@ -727,7 +765,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 borderRadius: "50%"
                                             }}
                                         >
-                                            {withPotBadge(modalRightTeam, (
+                                            {withPbsTags(modalRightTeam, withPotBadge(modalRightTeam, (
                                                 <TeamCircle
                                                     team={modalRightTeam}
                                                     showRating
@@ -744,7 +782,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                         zIndex: 0
                                                     }}
                                                 />
-                                            ))}
+                                            )))}
 
                                             <span
                                                 className={css.finished_modal_team_placing}
@@ -886,6 +924,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                             </span>
                                         );
                                     }
+                                    if (isWinner && modalContext?.kind === "pbs") {
+                                        return (
+                                            <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <PbsTrophy />+
+                                            </span>
+                                        );
+                                    }
                                     if (isWinner && isPemPlayoffsKind(modalContext?.kind)) {
                                         return (
                                             <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
@@ -1022,9 +1067,9 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                     pointerEvents: "none",
                                                 }}
                                             >
-                                                {withPotBadge(modalPlayedLeft, (
-                                                    <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
-                                                ))}
+                                                {withPbsTags(modalPlayedLeft, withPotBadge(modalPlayedLeft, (
+                                                    <TeamCircle team={modalPlayedLeft} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedLeft?.id]?.points} ratingValue={(currentModalMatch?.ratingMeta?.after?.[modalPlayedLeft?.id]?.points ?? (teamRatings[modalPlayedLeft?.id] ?? 0)) + pbsBonusOf(modalPlayedLeft?.id)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                )), true)}
                                                 <span className={css.modal_team_label}>
                                                     {(() => {
                                                         const meta = currentModalMatch?.ratingMeta;
@@ -1086,6 +1131,11 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                     {deltaPoints !== 0 && (
                                                                         <span style={{ color: deltaPoints > 0 ? "#2e7d32" : "red", fontWeight: 900, marginLeft: '4px' }}>
                                                                             {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
+                                                                        </span>
+                                                                    )}
+                                                                    {pbsBonusOf(id) > 0 && (
+                                                                        <span className={css.pbs_bonus_points} title={`Bounty bonus: the final bounty divided by 4 (${pbsBonusOf(id)} points on top)`}>
+                                                                            <BountyGem size={11} />+{pbsBonusOf(id)}p
                                                                         </span>
                                                                     )}
                                                                 </span>
@@ -1179,9 +1229,9 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                     pointerEvents: "none",
                                                 }}
                                             >
-                                                {withPotBadge(modalPlayedRight, (
-                                                    <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
-                                                ))}
+                                                {withPbsTags(modalPlayedRight, withPotBadge(modalPlayedRight, (
+                                                    <TeamCircle team={modalPlayedRight} showRating beforeRatingValue={currentModalMatch?.ratingMeta?.before?.[modalPlayedRight?.id]?.points} ratingValue={(currentModalMatch?.ratingMeta?.after?.[modalPlayedRight?.id]?.points ?? (teamRatings[modalPlayedRight?.id] ?? 0)) + pbsBonusOf(modalPlayedRight?.id)} specialStyle={{ width: '64px', height: '64px', border: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '3px solid #7d2e2e' : '3px solid #2e7d32' : '3px solid #999', boxShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px #7d2e2e' : '0 0 8px 2px #2e7d32' : 'none', zIndex: 2 }} />
+                                                )), true)}
                                                 <span>
                                                     {(() => {
                                                         const meta = currentModalMatch?.ratingMeta;
@@ -1245,6 +1295,11 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                             {deltaPoints > 0 ? `+${deltaPoints}p` : `${deltaPoints}p`}
                                                                         </span>
                                                                     )}
+                                                                    {pbsBonusOf(id) > 0 && (
+                                                                        <span className={css.pbs_bonus_points} title={`Bounty bonus: the final bounty divided by 4 (${pbsBonusOf(id)} points on top)`}>
+                                                                            <BountyGem size={11} />+{pbsBonusOf(id)}p
+                                                                        </span>
+                                                                    )}
                                                                 </span>
                                                             </>
                                                         );
@@ -1276,7 +1331,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 style={{
                                                     position: "relative",
                                                     zIndex: 2,
-                                                    marginTop: "-24px",
+                                                    marginTop: modalPbs?.meta?.bountyBonus ? "-8px" : "-24px",
                                                     marginBottom: "8px",
                                                     marginLeft: "48px",
                                                     fontSize: "13px",

@@ -854,6 +854,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="thirds">🥉</option>
                         <option value="pemBigWins">🏆 (PEM Big)</option>
                         <option value="gplWins">🏆 (GPL)</option>
+                        <option value="pbsWins">🏆 (PBS)</option>
                         <option value="tier1Wins">🏆 (PEM Small)</option>
                         <option value="tier1Seconds">🥈 (Tier 1)</option>
                         <option value="tier1Thirds">🥉 (Tier 1)</option>
@@ -1033,6 +1034,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="thirds">🥉</option>
                         <option value="pemBigWins">🏆 (PEM Big)</option>
                         <option value="gplWins">🏆 (GPL)</option>
+                        <option value="pbsWins">🏆 (PBS)</option>
                         <option value="tier1Wins">🏆 (PEM Small)</option>
                         <option value="tier1Seconds">🥈 (Tier 1)</option>
                         <option value="tier1Thirds">🥉 (Tier 1)</option>

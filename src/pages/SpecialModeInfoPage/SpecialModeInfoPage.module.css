@@ -28,13 +28,43 @@
             rgba(255, 255, 255, 0) 100%);
 }
 
+.sub_page_strip {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.sub_page_window {
+    overflow: hidden;
+    padding-top: 4px;
+    margin-top: -4px;
+}
+
 .sub_page_navigation {
     position: relative;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     gap: 48px;
+    width: max-content;
     padding-bottom: 6px;
+}
+
+.sub_page_arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 40px;
+    transition:
+        color .15s ease-in-out,
+        transform .15s ease-in-out,
+        opacity .2s ease-in-out;
+}
+
+.sub_page_arrow_hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .sub_page_button {

@@ -4,11 +4,12 @@ import Header from "../../../components/Header/Header.jsx";
 import { FaTrophy } from "react-icons/fa";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
-import { PemPlayoffsLayout, GccKnockoutLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, GccKnockoutLayout, PbsStageLayout } from "../components/BracketLayouts.jsx";
+import { PbsTeamTags } from "../components/PbsDraftShow.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
-import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
 import { CST_GROUPS } from "../logic/cst.js";
 import { hallRecordTime } from "../logic/hallOfFameDb.js";
 import { PEM_QUALIFIED_HIGHLIGHT, getPemSeriesConfig } from "../logic/pemConfig.js";
@@ -17,8 +18,9 @@ import { PEM_BIG_STAGE2_AUTO_COUNT } from "../logic/pemStage1.jsx";
 import { getBestOfForPlayoffs } from "../logic/playoffs.js";
 import { QUALIFIER_GROUPS } from "../logic/qualifier.jsx";
 import { formatOrdinal } from "../logic/teamData.js";
-import { getTournamentTypeConfig, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
-import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { PBS_POT_SIZE } from "../logic/pbsConfig.js";
+import { getTournamentTypeConfig, formatTournamentNumber, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
+import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 import { HallManagerModals } from "./HallManagerModals.jsx";
 
 export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, page }) {
@@ -203,7 +205,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             ? `${getPemSeriesConfig(item.type).label} Qualifier #${item.number}`
             : item?.event === "main"
                 ? `${getPemSeriesConfig(item.type).longLabel} #${item.number}`
-                : `${getTournamentTypeConfig(item?.type).label} #${item?.number}`;
+                : `${getTournamentTypeConfig(item?.type).label} ${formatTournamentNumber(item?.type, item?.number)}`;
 
     const renderPemHallCardName = (number, type = PEM_SMALL_TYPE_ID) => (
         <>
@@ -488,10 +490,22 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </span>
     );
 
+    const renderPbsHallCardName = (number) => (
+        <span style={{ fontSize: 30 }}>
+            <span style={{ display: "block" }}>Premier</span>
+            <span style={{ display: "block" }}>Bounty</span>
+            <span style={{ display: "block" }}>Series</span>
+            <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                <span style={getTournamentNumberStyle(getTournamentTheme(number))}>Season {number}</span>
+            </span>
+        </span>
+    );
+
     const renderPemMainHallCard = (item) => {
         const won = item.pickemWon;
         const results = item.results || {};
         const isGpl = item.event === "gpl";
+        const isPbs = item.event === "pbs";
 
         return (
             <button
@@ -540,7 +554,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             display: "flex",
                         }}
                     >
-                        {isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
+                        {isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
                     </span>
                     <span
                         style={{
@@ -567,10 +581,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         lineHeight: 1,
                         textTransform: "none",
                         fontSize: 20,
-                        marginTop: isGpl ? "20px" : ""
+                        marginTop: isPbs ? "4px" : isGpl ? "20px" : ""
                     }}
                 >
-                    {isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
+                    {isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div
@@ -578,7 +592,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        marginTop: isGpl ? 52 : 36,
+                        marginTop: isPbs ? 38 : isGpl ? 52 : 36,
                         position: "relative"
                     }}
                 >
@@ -635,7 +649,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         if (item.event === "qualifier") return renderQualifierHallCard(item);
         if (item.event === "cst") return renderTier2HallCard(item, ["Champions", "Series", "Tour"]);
         if (item.event === "ecl") return renderTier2HallCard(item, ["Elite", "Competition", "League"]);
-        if (item.event === "main" || item.event === "gpl") return renderPemMainHallCard(item);
+        if (item.event === "main" || item.event === "gpl" || item.event === "pbs") return renderPemMainHallCard(item);
         if (item.event === "gcc") return renderTier2HallCard(item, ["Global", "Challenger", "Cup"]);
 
         const won = item.pickemWon;
@@ -839,7 +853,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             setHallTeamSortMode,
         }} />;
 
-    const renderArchivedPlayoffsBracket = (record) => {
+    const renderArchivedPlayoffsBracket = (record, pbsView = null) => {
         const bracketKind = record.playoffs?.kind ?? null;
         const hasRoundOf16 = (record.playoffs?.ro16?.length ?? 0) > 0;
         const connectorLevelOf = (stage) => (hasRoundOf16 ? stage : ({ qf: "ro16", sf: "qf" }[stage] ?? stage));
@@ -994,6 +1008,27 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 </div>
             );
         };
+
+        if (bracketKind === "pbs") {
+            const pbsRectClasses = {
+                ro32: css.match_rect,
+                ro16: css.match_rect,
+                qf: css.quarters_rect,
+                sf: css.semis_rect,
+                thirdPlace: css.thirdPlace_rect,
+                gf: css.grandFinal_rect,
+            };
+
+            return (
+                <PbsStageLayout
+                    bracket={record.playoffs}
+                    view={pbsView ?? "pbsStage1"}
+                    renderMatch={(match, stage, index) =>
+                        renderArchivedMatch(match, stage, index, pbsRectClasses[stage], true)
+                    }
+                />
+            );
+        }
 
         if (bracketKind === "gcc") {
             const gccRectClasses = {
@@ -1617,6 +1652,110 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
 
                         <HallOfFameSectionTitle text="Podium" marginTop="102px" />
                         {renderHallPodium(podium, <GplTrophy size={GPL_PODIUM_TROPHY_SIZE} style={GPL_PODIUM_TROPHY_STYLE} />)}
+
+                        <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "pbs") {
+            const teams = record.teams || [];
+            const teamById = Object.fromEntries(teams.map((team) => [team.id, team]));
+            const seedStatus = Object.fromEntries(teams.map((team) => [team.id, { seed: team.seed, bounty: team.bounty }]));
+            const draws = record.draws || {};
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+            const placementColors = {
+                5: "#40e0d0",
+                6: "#ba68c8",
+                7: "#ff5e2d",
+                8: "#81c784",
+            };
+            const drawIds = (draw) => [...(draw?.high || []), ...(draw?.low || [])];
+
+            const renderPbsTeamRow = (ids, status) => (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {ids.map((id) => (
+                        <span key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                            {hallTeamCircle(teamById[id], 38)}
+                            <PbsTeamTags seed={status?.[id]?.seed} bounty={status?.[id]?.bounty ?? 0} size="small" />
+                        </span>
+                    ))}
+                </div>
+            );
+
+            const allIds = teams.map((team) => team.id);
+            const ro32Status = draws.ro32?.status ?? seedStatus;
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header}>
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span>
+                                    Premier Bounty Series{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        Season {record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(teams)}
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content", marginTop: 36 }}>
+                            <div>
+                                <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                    High-Seed Pot
+                                </h4>
+                                {renderPbsTeamRow(draws.ro32?.high ?? allIds.slice(0, PBS_POT_SIZE), ro32Status)}
+                            </div>
+                            <div>
+                                <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                    Low-Seed Pot
+                                </h4>
+                                {renderPbsTeamRow(draws.ro32?.low ?? allIds.slice(PBS_POT_SIZE), ro32Status)}
+                            </div>
+                        </div>
+
+                        <HallOfFameSectionTitle text="Stage I" marginTop="64px" />
+                        {renderArchivedPlayoffsBracket(record, "pbsStage1")}
+
+                        <HallOfFameSectionTitle text="All teams to Stage II" marginTop="64px" />
+                        {renderPbsTeamRow(drawIds(draws.ro16), draws.ro16?.status)}
+
+                        <HallOfFameSectionTitle text="Stage II" marginTop="64px" />
+                        {renderArchivedPlayoffsBracket(record, "pbsStage2")}
+
+                        <HallOfFameSectionTitle text="All teams to Finals" marginTop="64px" />
+                        {renderPbsTeamRow(drawIds(draws.qf), draws.qf?.status)}
+
+                        <HallOfFameSectionTitle text="Finals" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record, "pbsFinals")}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, <PbsTrophy size={PBS_PODIUM_TROPHY_SIZE} style={PBS_PODIUM_TROPHY_STYLE} />)}
 
                         <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
                         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

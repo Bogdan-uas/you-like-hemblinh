@@ -3,7 +3,8 @@ import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
-import { PemPlayoffsLayout, QualifierBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, QualifierBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout } from "../components/BracketLayouts.jsx";
+import { PbsDraftSlot, PbsDraftSpacer, PbsLandedPair } from "../components/PbsDraftShow.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
@@ -24,6 +25,8 @@ import {
 } from "../logic/gcc.js";
 import { lightenHex, darkenHex } from "../logic/colors.js";
 import { GccTableInfo } from "../components/GccTableInfo.jsx";
+import { getPbsSlotLanding } from "../logic/pbs.jsx";
+import { PBS_STAGE_TITLES } from "../logic/pbsConfig.js";
 import { isPemPlayoffsKind, pemGroupSlotSource, canOpenPemGroupMatch, getBestOfForPemGroup, isSinglePemGroupStage, findCurrentPemGroupMatch, findNextPemGroupMatch } from "../logic/pemSeries.jsx";
 import { pemStage1SlotSource, canOpenPemStage1Match, getBestOfForPemStage1, isSinglePemStage1Stage, findCurrentPemStage1Match, findNextPemStage1Match } from "../logic/pemStage1.jsx";
 import { canOpenPlayoffsMatch, getBestOfForPlayoffs } from "../logic/playoffs.js";
@@ -89,6 +92,10 @@ export function createTournamentRenderers({
     openGccLeagueMatchModal,
     openArchivedGccLeagueMatchModal,
     openArchivedSwissMatchModal,
+    pbs,
+    pbsLabel,
+    pbsDraftView,
+    teamsById,
 }) {
     const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = pemLabel, gap = 6 } = {}) => (
         <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
@@ -455,7 +462,7 @@ export function createTournamentRenderers({
         );
     };
 
-    const renderPlayoffsBracket = () => {
+    const renderPlayoffsBracket = (pbsView = null) => {
         if (!playoffs) {
             return (
                 <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
@@ -487,7 +494,8 @@ export function createTournamentRenderers({
         const currentStageKey = currentPlayablePlayoffsMatch?.stage ?? null;
 
         const nextStageKey =
-            currentStageKey === "po" ? "qf"
+            currentStageKey === "ro32" ? "ro16"
+            : currentStageKey === "po" ? "qf"
             : currentStageKey === "ro16" ? "qf"
                 : currentStageKey === "qf" ? "sf"
                     : currentStageKey === "sf" ? "gf"
@@ -513,6 +521,8 @@ export function createTournamentRenderers({
 
                 return [m.slotA, m.slotB].filter(Boolean);
             };
+
+            if (bracketKind === "pbs" && (stageKey === "ro16" || stageKey === "qf" || stageKey === "sf")) return [];
 
             if (stageKey === "qf" && bracketKind === "gcc") {
                 return slotKey === "slotB" ? pickFromMatch(playoffs.po?.[idx], "winner") : [];
@@ -546,8 +556,31 @@ export function createTournamentRenderers({
         };
 
         const PlaceholderWithContenders = ({ stageKey, idx, slotKey }) => {
-            const contenders = contendersForSlot(stageKey, idx, slotKey);
+            const sfSource = slotKey === "slotA" ? 0 : 1;
+            const isPbsSfDraft =
+                bracketKind === "pbs" &&
+                (stageKey === "gf" || stageKey === "thirdPlace") &&
+                pbsDraftView?.plan?.round === "sf" &&
+                !playoffs.sf?.[sfSource]?.slotA;
 
+            if (isPbsSfDraft) {
+                return (
+                    <PbsLandedPair
+                        clock={pbsDraftView.clock}
+                        timeline={pbsDraftView.timeline}
+                        plan={pbsDraftView.plan}
+                        matchIdx={sfSource}
+                        teamsById={teamsById}
+                    >
+                        {(teams) => <ContendersCircle stageKey={stageKey} contenders={teams} />}
+                    </PbsLandedPair>
+                );
+            }
+
+            return <ContendersCircle stageKey={stageKey} contenders={contendersForSlot(stageKey, idx, slotKey)} />;
+        };
+
+        const ContendersCircle = ({ stageKey, contenders }) => {
             if (!contenders.length) {
                 return <div style={{ fontSize: "20px" }} className={css.placeholder_circle}>?</div>;
             }
@@ -636,6 +669,7 @@ export function createTournamentRenderers({
         };
 
         const stageIndex = (k) => {
+            if (k === "ro32") return -1;
             if (k === "po") return 0;
             if (k === "ro16") return 0;
             if (k === "qf") return 1;
@@ -672,6 +706,17 @@ export function createTournamentRenderers({
 
         const renderMatch = (m, stageKey, idx, baseClass, nextRect, bestOf, connectorStyle, isSingularMatch, pemLayout = false) => {
             const isPlayed = !!m.played;
+            const pbsDraft = pbsDraftView?.plan?.round === stageKey && !m.slotA && !m.slotB ? pbsDraftView : null;
+            const pbsPick = pbsDraft?.timeline?.picks?.[idx] ?? null;
+            const renderPbsDraftSlot = (slotKey) => (
+                <PbsDraftSlot
+                    clock={pbsDraft.clock}
+                    team={teamsById?.[slotKey === "slotA" ? pbsDraft.plan.low[idx] : pbsPick?.pickedId]}
+                    landAt={getPbsSlotLanding(pbsDraft.timeline, idx, slotKey)}
+                    slotDataKey={`${stageKey}-${idx}-${slotKey}`}
+                    highlightWindow={slotKey === "slotA" && pbsPick ? [pbsPick.highlight[0], pbsPick.flight.end] : null}
+                />
+            );
 
             const isUserWin =
                 isPlayed &&
@@ -747,6 +792,7 @@ export function createTournamentRenderers({
                 <div key={m.id} className={connectorStyle}>
                     <div
                         data-bracket-rect={pemLayout ? `${stageKey}-${idx}` : undefined}
+                        data-pbs-match={pbsDraft ? `${stageKey}-${idx}` : undefined}
                         className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""
                             } ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? baseClass : css.no_hover
                             }`}
@@ -789,28 +835,32 @@ export function createTournamentRenderers({
                         ) : null}
                         <div className={css.match_content}>
                             <div className={css.team_row}>
-                                <div className={css.team_cell}>
-                                    {leftTeam ? (
-                                        <div
-                                            className={css.team_circle}
-                                            style={{ background: leftTeam.color }}
-                                            title={`Team ${leftTeam.name}`}
-                                        />
-                                    ) : (
-                                        <PlaceholderWithContenders
-                                            stageKey={stageKey}
-                                            idx={idx}
-                                            slotKey="slotA"
-                                        />
-                                    )}
-                                </div>
+                                {pbsDraft ? renderPbsDraftSlot("slotA") : (
+                                    <>
+                                        <div className={css.team_cell}>
+                                            {leftTeam ? (
+                                                <div
+                                                    className={css.team_circle}
+                                                    style={{ background: leftTeam.color }}
+                                                    title={`Team ${leftTeam.name}`}
+                                                />
+                                            ) : (
+                                                <PlaceholderWithContenders
+                                                    stageKey={stageKey}
+                                                    idx={idx}
+                                                    slotKey="slotA"
+                                                />
+                                            )}
+                                        </div>
 
-                                <div
-                                    style={{ color: !isPlayed ? "" : winnerIsLeft ? "#2e7d32" : "red" }}
-                                    className={css.team_name_placeholder}
-                                >
-                                    {leftTeam?.name ? `Team ${leftTeam?.name}` : "TBD"}
-                                </div>
+                                        <div
+                                            style={{ color: !isPlayed ? "" : winnerIsLeft ? "#2e7d32" : "red" }}
+                                            className={css.team_name_placeholder}
+                                        >
+                                            {leftTeam?.name ? `Team ${leftTeam?.name}` : "TBD"}
+                                        </div>
+                                    </>
+                                )}
                                 <span
                                     style={{
                                         color: winnerIsLeft ? "#2e7d32" : "red",
@@ -862,28 +912,32 @@ export function createTournamentRenderers({
                             </div>
 
                             <div className={css.team_row}>
-                                <div className={css.team_cell}>
-                                    {rightTeam ? (
-                                        <div
-                                            className={css.team_circle}
-                                            style={{ background: rightTeam.color }}
-                                            title={`Team ${rightTeam.name}`}
-                                        />
-                                    ) : (
-                                        <PlaceholderWithContenders
-                                            stageKey={stageKey}
-                                            idx={idx}
-                                            slotKey="slotB"
-                                        />
-                                    )}
-                                </div>
+                                {pbsDraft ? renderPbsDraftSlot("slotB") : (
+                                    <>
+                                        <div className={css.team_cell}>
+                                            {rightTeam ? (
+                                                <div
+                                                    className={css.team_circle}
+                                                    style={{ background: rightTeam.color }}
+                                                    title={`Team ${rightTeam.name}`}
+                                                />
+                                            ) : (
+                                                <PlaceholderWithContenders
+                                                    stageKey={stageKey}
+                                                    idx={idx}
+                                                    slotKey="slotB"
+                                                />
+                                            )}
+                                        </div>
 
-                                <div
-                                    style={{ color: !isPlayed ? "" : winnerIsRight ? "#2e7d32" : "red" }}
-                                    className={css.team_name_placeholder}
-                                >
-                                    {rightTeam?.name ? `Team ${rightTeam?.name}` : "TBD"}
-                                </div>
+                                        <div
+                                            style={{ color: !isPlayed ? "" : winnerIsRight ? "#2e7d32" : "red" }}
+                                            className={css.team_name_placeholder}
+                                        >
+                                            {rightTeam?.name ? `Team ${rightTeam?.name}` : "TBD"}
+                                        </div>
+                                    </>
+                                )}
                                 <span
                                     style={{
                                         color: winnerIsRight ? "#2e7d32" : "red",
@@ -905,6 +959,37 @@ export function createTournamentRenderers({
                 </div>
             );
         };
+
+        if (bracketKind === "pbs") {
+            const pbsRectClasses = {
+                ro32: css.match_rect,
+                ro16: css.match_rect,
+                qf: css.quarters_rect,
+                sf: css.semis_rect,
+                thirdPlace: css.thirdPlace_rect,
+                gf: css.grandFinal_rect,
+            };
+
+            return (
+                <PbsStageLayout
+                    bracket={playoffs}
+                    view={pbsView ?? "pbsStage1"}
+                    renderMatch={(m, stageKey, idx) =>
+                        renderMatch(
+                            m,
+                            stageKey,
+                            idx,
+                            pbsRectClasses[stageKey],
+                            css.next_rect,
+                            getBestOfForPlayoffs(stageKey, bracketKind),
+                            css.pem_playoffs_wrapper,
+                            stageKey === "gf" || stageKey === "thirdPlace",
+                            true
+                        )
+                    }
+                />
+            );
+        }
 
         if (bracketKind === "gcc") {
             const gccRectClasses = {
@@ -1890,13 +1975,13 @@ export function createTournamentRenderers({
         { id: groupStageViewId, label: "Group Stage" },
     ]);
 
-    const renderPhaseNav = (entries) => {
+    const renderPhaseNav = (entries, top = "10%") => {
         return (
             <div
                 ref={navRef}
                 style={{
                     position: "absolute",
-                    top: "10%",
+                    top,
                     left: "2%",
                     zIndex: 19,
                     display: "flex",
@@ -2261,7 +2346,78 @@ export function createTournamentRenderers({
         );
     };
 
+    const renderPbsPage = () => {
+        const view = PBS_STAGE_TITLES[viewPhase] ? viewPhase : "pbsStage1";
+        const champion = tournamentResults?.kind === "pbs" ? tournamentResults.winner : null;
+        const showEndButtons = showPickemLine2 && !!champion;
+        const isRoundDone = (round) => (playoffs?.[round] || []).length > 0 && playoffs[round].every((m) => m.played);
+        const draftRound = pbs?.draft?.round ?? null;
+
+        const entries = [
+            (isRoundDone("ro16") || draftRound === "qf" || draftRound === "sf") && { id: "pbsFinals", label: "Finals" },
+            (isRoundDone("ro32") || draftRound === "ro16") && { id: "pbsStage2", label: "Stage II" },
+            { id: "pbsStage1", label: "Stage I" },
+        ].filter(Boolean);
+
+        return (
+            <div className={css.cst_page} style={{ paddingBottom: 16 }}>
+                {entries.length > 1 ? renderPhaseNav(entries, "98px") : null}
+
+                {showEndButtons ? (
+                    <div className={css.pickem_buttons} style={{ top: "96px", left: "auto", right: "3%", zIndex: 19 }}>
+                        <button
+                            className={`${css.gamble_button} ${css.back_button}`}
+                            onClick={() => setShowPickemSummary(true)}
+                        >
+                            Back to the Pick'em challenge summary
+                        </button>
+                        <button
+                            className={`${css.gamble_button} ${css.back_back_button}`}
+                            style={{ backgroundColor: hover ? champion.hoverOn : champion.color }}
+                            onMouseEnter={() => setHover(true)}
+                            onMouseLeave={() => setHover(false)}
+                            onClick={() => setShowWinnersScreen(true)}
+                        >
+                            Back to the Winners' screen
+                        </button>
+                        <button className={css.gamble_button} onClick={handleBackToHome}>
+                            To Home Page
+                        </button>
+                        <button className={css.gamble_button} onClick={handleBackToSpecialStart}>
+                            Back to the start of Special Mode
+                        </button>
+                        <button className={css.gamble_button} onClick={handleBackToGambling}>
+                            Back to normal Gambling
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ gap: 0, top: "96px", left: "auto", right: "5%" }} className={css.pickem_buttons}>
+                        <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                        <span className={css.points}>
+                            <CountUp
+                                start={0}
+                                duration={1.2}
+                                end={neededPickemPoints}
+                                key={neededPickemPoints}
+                            />
+                        </span>
+                    </div>
+                )}
+
+                <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                    {pbsLabel} | {PBS_STAGE_TITLES[view]}
+                </div>
+
+                <div style={{ width: "100%", marginTop: view === "pbsFinals" ? "64px" : "24px" }}>{renderPlayoffsBracket(view)}</div>
+
+                {view === "pbsStage1" ? <PbsDraftSpacer active={!!pbsDraftView?.show} /> : null}
+                {pbsDraftView?.show ?? null}
+            </div>
+        );
+    };
+
     return {
+        renderPbsPage,
         renderGccPage,
         renderGccLeague,
         renderPemMainPage,

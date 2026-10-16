@@ -14,12 +14,13 @@ import { ExtendedRoundsTrack, ExtendedRoundsStatus } from "../components/Extende
 import { BreakdownSectionTitle, BreakdownSquares } from "../components/BreakdownParts.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { MomentumStreakBadge } from "../components/StreakBadges.jsx";
-import { PemSeriesTrophy, GplTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
 import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
 import { isSingleEclStage, eclStageLabel } from "../logic/ecl.jsx";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isSinglePemGroupStage, pemGroupStageLabel, PEM_GROUP_QUALIFYING_STAGES } from "../logic/pemSeries.jsx";
 import { isSinglePemStage1Stage, pemStage1StageLabel, PEM_STAGE1_QUALIFYING_STAGES } from "../logic/pemStage1.jsx";
+import { PBS_STAGE_TITLES, PBS_VIEW_OF_ROUND } from "../logic/pbsConfig.js";
 import { stageLabelPlayoffs } from "../logic/playoffs.js";
 import { isSingleQualifierStage, qualifierStageLabel, QUALIFIER_QUALIFYING_STAGES } from "../logic/qualifier.jsx";
 import { swissNetTitle, GPL_SWISS_FORMAT } from "../logic/swiss.js";
@@ -75,6 +76,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
         gccLabel,
         isGccPhase,
         isGplMainPhase,
+        isPbsPhase,
+        pbsLabel,
         getOvertimeLabel,
         getPenaltyMessage,
         getMultiplierClass,
@@ -132,6 +135,13 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 </>
             );
             big = `Group ${seriesState.cstGroup}`;
+        } else if (seriesState.phase === "playoffs" && isPbsPhase) {
+            small = (
+                <>
+                    {pbsLabel} | {PBS_STAGE_TITLES[PBS_VIEW_OF_ROUND[seriesState.playoffsStage]]}
+                </>
+            );
+            big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "playoffs") {
             small = isCstPhase ? cstLabel : isGccPhase ? gccLabel : isPemMainPhase ? pemLabel : tournamentLabel;
             big = stageLabelPlayoffs(seriesState.playoffsStage);
@@ -238,7 +248,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             >
                                 &nbsp;
                             </motion.span>
-                        ) : isPemSeries || isGplMainPhase ? (
+                        ) : isPemSeries || isGplMainPhase || isPbsPhase ? (
                             <motion.span
                                 initial={{ opacity: 0, y: -40 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -247,7 +257,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 className={css.round_text}
                                 style={{ fontSize: "28px", position: "absolute", left: "50%", x: "-50%", display: "flex", transition: 'none' }}
                             >
-                                {isGplMainPhase ? <GplTrophy /> : <PemSeriesTrophy type={pemType} />}
+                                {isPbsPhase ? <PbsTrophy /> : isGplMainPhase ? <GplTrophy /> : <PemSeriesTrophy type={pemType} />}
                             </motion.span>
                         ) : (
                             <motion.span
@@ -537,7 +547,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 </span>
             </>
         );
-    }, [seriesState, tournamentLabel, pemLabel, cstLabel, eclLabel, gccLabel, isCstPhase, isGccPhase, isGplMainPhase, isPemMainPhase, isPemBigSeries, pemType]);
+    }, [seriesState, tournamentLabel, pemLabel, cstLabel, eclLabel, gccLabel, pbsLabel, isCstPhase, isGccPhase, isGplMainPhase, isPbsPhase, isPemMainPhase, isPemBigSeries, pemType]);
 
     const getPointLabel = () => {
         if (seriesState.phase === "cstGroup" || seriesState.phase === "gccLeague") return "MATCH POINT!!!";

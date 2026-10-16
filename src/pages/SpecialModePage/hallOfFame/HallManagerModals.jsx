@@ -1,4 +1,5 @@
 import React from "react";
+import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
 import css from "../SpecialModePage.module.css";
 import { MIN_NEEDED_PICKEM, MAX_NEEDED_PICKEM } from "../logic/gameConstants.js";
 import { getTournamentTypeConfig, HALL_FORM_TOURNAMENT_TYPES } from "../logic/tournamentTypes.jsx";
@@ -203,7 +204,7 @@ export function HallManagerModals({ ctx }) {
                                             />
 
                                             <span>
-                                                {hallRecordLabel(item)}
+                                                <TournamentNumberText text={hallRecordLabel(item)} />
                                             </span>
                                         </label>
                                     );
