@@ -26,48 +26,73 @@
 }
 
 .restart_button {
-    border-radius: 8px;
+    border-radius: var(--ui-radius);
     padding: 8px 16px;
-    color: #f1f4fd;
+    color: #fff;
     background-color: #fa5256;
-    font-weight: 500;
+    font-weight: 700;
     font-size: 15px;
     line-height: 1.5;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     border: none;
-    transition: all 500ms ease-in-out;
+    transition: var(--ui-button-transition);
+    box-shadow: var(--ui-shadow);
 }
 
 .restart_button:hover {
     background-color: red;
     color: #fff;
+    translate: 0 -2px;
+    box-shadow: var(--ui-shadow-raised);
 }
 
 .gamble_button {
-    border-radius: 8px;
+    border-radius: var(--ui-radius);
     width: max-content;
     padding: 8px 20px;
     background-color: #747bff;
-    color: #f1f4fd;
-    font-weight: 500;
+    color: #fff;
+    font-weight: 700;
     font-size: 15px;
     line-height: 1.5;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     border: none;
-    transition: all 500ms ease-in-out;
+    transition: var(--ui-button-transition);
+    box-shadow: var(--ui-shadow);
 }
 
 .gamble_button:hover {
     background-color: #0d6aff;
     color: #fff;
+    translate: 0 -2px;
+    box-shadow: var(--ui-shadow-raised);
 }
 
 .back_back_back_button {
-    color: #ebebeb;
+    color: #fff;
     background-color: tomato;
 }
 
 .back_back_back_button:hover {
     background-color: rgb(255, 38, 0);
     color: #fff;
+}
+
+@media (max-width: 1023.98px) {
+    .header {
+        justify-content: flex-start;
+        gap: 12px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .bottom_buttons {
+        flex-shrink: 0;
+        gap: 12px;
+    }
+
+    .header button {
+        flex-shrink: 0;
+        margin-left: 0 !important;
+    }
 }

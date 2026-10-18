@@ -7,6 +7,7 @@ import {
     STATS_PANELS_MAX_ENTRIES,
     TOURNAMENT_NUMBER_LS_KEY,
     TEAM_RATINGS_SNAPSHOT_LS_KEY,
+    LAST_TOURNAMENT_CHANGES_LS_KEY,
     LEADERBOARD_SORT_LS_KEY,
     RATING_BASED_STATS_LS_KEY,
 } from "./storageKeys.js";
@@ -147,6 +148,76 @@ export const clearRatingsSnapshot = () => {
     } catch {
         console.error("Couldn't remove teams' snapshot")
     }
+};
+
+export const loadLastTournamentChanges = () => {
+    try {
+        const raw = localStorage.getItem(LAST_TOURNAMENT_CHANGES_LS_KEY);
+        return raw === null ? undefined : JSON.parse(raw);
+    } catch {
+        return undefined;
+    }
+};
+
+export const saveLastTournamentChanges = (changes) => {
+    try {
+        localStorage.setItem(LAST_TOURNAMENT_CHANGES_LS_KEY, JSON.stringify(changes ?? null));
+    } catch {
+        console.error("Couldn't save the last tournament's changes")
+    }
+};
+
+export const buildTournamentChangesFromHallRecord = (record, currentRatings) => {
+    if (!record || !currentRatings) return null;
+
+    const pointsDelta = {};
+    const seen = new Set();
+    const walk = (node) => {
+        if (!node || typeof node !== "object" || seen.has(node)) return;
+        seen.add(node);
+
+        const meta = node.ratingMeta;
+        if (meta?.before && meta?.after) {
+            Object.keys(meta.before).forEach((id) => {
+                const before = meta.before[id]?.points;
+                const after = meta.after[id]?.points;
+                if (Number.isFinite(before) && Number.isFinite(after)) pointsDelta[id] = (pointsDelta[id] ?? 0) + after - before;
+            });
+        }
+
+        const bonus = node.pbsMeta?.bountyBonus;
+        if (bonus?.teamId != null && Number.isFinite(bonus.points)) pointsDelta[bonus.teamId] = (pointsDelta[bonus.teamId] ?? 0) + bonus.points;
+
+        Object.keys(node).forEach((key) => {
+            if (key !== "ratingMeta" && key !== "pbsMeta") walk(node[key]);
+        });
+    };
+    walk(record);
+
+    if (!Object.keys(pointsDelta).length) return null;
+
+    const after = { ...currentRatings };
+    const before = { ...currentRatings };
+    Object.entries(pointsDelta).forEach(([id, delta]) => {
+        before[id] = (after[id] ?? 0) - delta;
+    });
+
+    return { before, after };
+};
+
+export const getTournamentChangesById = (teams, changes) => {
+    if (!changes?.before || !changes?.after) return null;
+
+    const { rankById: rankBefore } = buildLeaderboard(teams, changes.before);
+    const { rankById: rankAfter } = buildLeaderboard(teams, changes.after);
+    const out = {};
+    teams.forEach((team) => {
+        out[team.id] = {
+            points: (changes.after[team.id] ?? 0) - (changes.before[team.id] ?? 0),
+            places: (rankBefore[team.id] ?? 0) - (rankAfter[team.id] ?? 0),
+        };
+    });
+    return out;
 };
 
 export const buildLeaderboard = (teams, ratings) => {

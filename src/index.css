@@ -1,4 +1,54 @@
+html {
+  font-size: clamp(0.5rem, calc(100vw / 128), 2rem);
+  transition: none;
+}
+
+@media (max-width: 1023.98px) {
+  html {
+    font-size: calc(100vw / 64);
+  }
+}
+
+@media (max-width: 599.98px) {
+  html {
+    font-size: calc(100vw / 40);
+  }
+}
+
+
+button,
+input,
+select,
+textarea {
+  font-size: calc(1rem / 1.2);
+}
+
+html.rubber-resizing,
+html.rubber-resizing *,
+html.rubber-resizing *::before,
+html.rubber-resizing *::after {
+  transition: none !important;
+}
+
 :root {
+  --ui-text: #2e2f42;
+  --ui-text-muted: #5b5e6e;
+  --ui-text-faint: #999;
+  --ui-surface: #fff;
+  --ui-chip: #e8e8f0;
+  --ui-line-soft: #ececf2;
+  --ui-input-line: #d4d6e0;
+  --ui-radius: 6px;
+  --ui-radius-card: 12px;
+  --ui-radius-pill: 999px;
+  --ui-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  --ui-shadow-raised: 0 6px 16px rgba(0, 0, 0, 0.24);
+  --ui-focus-ring: 0 0 0 3px rgba(102, 160, 254, 0.55);
+  --ui-select: #66a0fe;
+  --ui-highlight: #cadefd;
+  --ui-divider-solid: 1px solid #2e2f42;
+  --ui-divider-dashed: 4px dashed #999;
+  --ui-button-transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease, translate 150ms ease, opacity 200ms ease;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -90,6 +140,15 @@ button:disabled:hover,
 button:disabled:focus {
   background-color: gray;
   cursor: not-allowed;
+  translate: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring), var(--ui-shadow);
 }
 
 main {
@@ -121,5 +180,18 @@ main {
 
   100% {
     background-position: 0% 0, 0 0;
+  }
+}
+
+@media (max-width: 1023.98px) {
+  #root {
+    max-width: 100vw;
+    overflow-x: auto;
+    align-items: flex-start;
+  }
+
+  main {
+    width: fit-content;
+    min-width: 100%;
   }
 }

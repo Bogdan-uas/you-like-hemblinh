@@ -1,4 +1,5 @@
 export const ROUND12_TOAST_ID = "round12-warning";
+export const SAVE_FAILED_TOAST_ID = "save-failed-warning";
 export const SECRET_TOAST_ID = "secret-toast";
 export const SECRET_NUM_TWO_TOAST_ID = "secret-toast-num-two";
 export const SECRET_NUM_THREE_TOAST_ID = "secret-toast-num-three";

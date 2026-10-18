@@ -25,6 +25,8 @@ import { stageLabelPlayoffs } from "../logic/playoffs.js";
 import { isSingleQualifierStage, qualifierStageLabel, QUALIFIER_QUALIFYING_STAGES } from "../logic/qualifier.jsx";
 import { swissNetTitle, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { GameControlModals } from "../screens/GameControlModals.jsx";
+import { BestOfBadge } from "../components/BestOfBadge.jsx";
+import { SetBadge, OvertimeBadge, SetHistoryChip, PenaltyBadge, RoundBadge } from "../components/SeriesBadges.jsx";
 
 export function SeriesScreen({ header, series, labels, actions }) {
     const {
@@ -309,9 +311,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4 }}
                         className={css.round_text}
-                        style={{ fontSize: "24px", marginBottom: "-4px", marginLeft: "-2px" }}
+                        style={{ fontSize: "24px", marginBottom: "2px", marginTop: "10px", marginLeft: "-2px", display: "flex" }}
                     >
-                        Best of {setsToWin * 2 - 1}
+                        <BestOfBadge bestOf={setsToWin * 2 - 1} size={20} />
                     </motion.span>
                     {setsToWin !== 1 && !seriesBanner ? (
                         <motion.span
@@ -320,16 +322,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.4 }}
                             className={css.round_text}
-                            style={{ fontSize: "24px" }}
+                            style={{ fontSize: "24px", display: "flex", marginTop: "2px", marginBottom: "8px" }}
                         >
-                            {(() => {
-                                const currentSet = setNumber;
-                                const totalSets = setsToWin * 2 - 1;
-                                const isDecider = currentSet === totalSets;
-                                return isDecider
-                                    ? "Decider"
-                                    : `Set ${currentSet}`;
-                            })()}
+                            <SetBadge set={setNumber} isDecider={setNumber === setsToWin * 2 - 1} size={20} />
                         </motion.span>
                     ) : setsToWin !== 1 ? (
                         <motion.span
@@ -353,7 +348,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 flexWrap: "wrap",
                                 alignItems: "start",
                                 justifyContent: "center",
-                                columnGap: "12px",
+                                columnGap: "6px",
                                 rowGap: '4px',
                                 maxWidth: "380px",
                                 height: seriesState.finishedSets?.length >= 7 ? "62px" : "40px",
@@ -387,145 +382,21 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 const leftWonSet = displayLeftScore > displayRightScore;
 
                                 return (
-                                    <div
+                                    <SetHistoryChip
                                         key={set}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "4px",
-                                        }}
-                                    >
-                                        <span
-                                            className={css.round_text}
-                                            style={{
-                                                fontSize: "12px",
-                                                textShadow: leftWonSet
-                                                    ? seriesState.leftTeam.shadow
-                                                    : seriesState.rightTeam.shadow,
-                                                color: leftWonSet
-                                                    ? seriesState.leftTeam.color
-                                                    : seriesState.rightTeam.color,
-                                            }}
-                                        >
-                                            Set {set}
-                                        </span>
-
-                                        <span
-                                            style={{
-                                                color:
-                                                    leftScore > rightScore
-                                                        ? "#4caf50"
-                                                        : leftScore === rightScore
-                                                            ? "#2e2f42"
-                                                            : "#f44336",
-                                                fontSize: "12px",
-                                            }}
-                                        >
-                                            {leftScore}
-                                        </span>
-
-                                        <span
-                                            className={css.round_text}
-                                            style={{
-                                                fontSize: "12px",
-                                                marginTop: '-1px'
-                                            }}
-                                        >
-                                            -
-                                        </span>
-
-                                        <span
-                                            style={{
-                                                color:
-                                                    rightScore > leftScore
-                                                        ? "#4caf50"
-                                                        : rightScore === leftScore
-                                                            ? "#2e2f42"
-                                                            : "#f44336",
-                                                fontSize: "12px",
-                                            }}
-                                        >
-                                            {rightScore}
-                                        </span>
-                                        {penaltiesPlayed ? (
-                                            <span
-                                                className={css.round_text}
-                                                style={{
-                                                    fontSize: "12px",
-                                                    marginLeft: "-4px"
-                                                }}
-                                            >
-                                                (Pens{" "}
-                                                <span
-                                                    style={{
-                                                        color:
-                                                            penaltyLeftScore > penaltyRightScore
-                                                                ? "#4caf50"
-                                                                : penaltyLeftScore === penaltyRightScore
-                                                                    ? "#2e2f42"
-                                                                    : "#f44336",
-                                                        fontSize: "12px",
-                                                    }}
-                                                >
-                                                    {penaltyLeftScore}
-                                                </span>{" "}
-                                                -{" "}
-                                                <span
-                                                    style={{
-                                                        color:
-                                                            penaltyRightScore > penaltyLeftScore
-                                                                ? "#4caf50"
-                                                                : penaltyLeftScore === penaltyRightScore
-                                                                    ? "#2e2f42"
-                                                                    : "#f44336",
-                                                        fontSize: "12px",
-                                                    }}
-                                                >
-                                                    {penaltyRightScore}
-                                                </span>
-                                                )
-                                            </span>
-                                        ) : extendedRoundsPlayed ? (
-                                            <span
-                                                className={css.round_text}
-                                                style={{
-                                                    fontSize: "12px",
-                                                    marginLeft: "-4px",
-                                                }}
-                                            >
-                                                (ERs{" "}
-                                                <span
-                                                    style={{
-                                                        color:
-                                                            extendedRoundLeftScore > extendedRoundRightScore
-                                                                ? "#4caf50"
-                                                                : extendedRoundLeftScore === extendedRoundRightScore
-                                                                    ? "#2e2f42"
-                                                                    : "#f44336",
-                                                        fontSize: "12px",
-                                                    }}
-                                                >
-                                                    {extendedRoundLeftScore}
-                                                </span>{" "}
-                                                -{" "}
-                                                <span
-                                                    style={{
-                                                        color:
-                                                            extendedRoundRightScore > extendedRoundLeftScore
-                                                                ? "#4caf50"
-                                                                : extendedRoundLeftScore === extendedRoundRightScore
-                                                                    ? "#2e2f42"
-                                                                    : "#f44336",
-                                                        fontSize: "12px",
-                                                    }}
-                                                >
-                                                    {extendedRoundRightScore}
-                                                </span>
-                                                )
-                                            </span>
-                                        ) : null}
-                                    </div>
-                                )
+                                        set={set}
+                                        leftScore={leftScore}
+                                        rightScore={rightScore}
+                                        winnerColor={leftWonSet ? seriesState.leftTeam.color : seriesState.rightTeam.color}
+                                        extra={
+                                            penaltiesPlayed
+                                                ? { label: "Pens", left: penaltyLeftScore, right: penaltyRightScore }
+                                                : extendedRoundsPlayed
+                                                    ? { label: "ERs", left: extendedRoundLeftScore, right: extendedRoundRightScore }
+                                                    : null
+                                        }
+                                    />
+                                );
                             })}
                         </motion.div>
                     ) : setsToWin !== 1 ? (
@@ -2197,6 +2068,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                             fontSize: "14px",
                                             width: "63.8px",
                                             textAlign: "center",
+                                            display: "flex",
+                                            justifyContent: "center",
                                             marginTop:
                                                 isPlayoffsStyleSeries &&
                                                     seriesState.tiebreakerPhase !== "penalties"
@@ -2207,15 +2080,14 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         {seriesState.tiebreakerPhase === "penalties" ? (
                                             "\u00A0"
                                         ) : (
-                                            <>
-                                                Round{" "}
+                                            <RoundBadge size={14}>
                                                 <CountUp
                                                     key={roundWins + roundLosses + 1}
                                                     start={Math.max(roundWins + roundLosses, 0)}
                                                     end={roundWins + roundLosses + 1}
                                                     duration={1}
                                                 />
-                                            </>
+                                            </RoundBadge>
                                         )}
                                     </motion.span>
                                 )
@@ -2729,39 +2601,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4 }}
                         className={css.game_info_text}
+                        style={{ minHeight: "55px", justifyContent: "center" }}
                     >
-                        <motion.span
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className={css.round_text}
-                            style={{
-                                textAlign: "center",
-                                fontSize: "14px",
-                                marginBottom: "12px",
-                                userSelect: "none"
-                            }}
-                        >
-                            First to {overtimeToWin}
-                        </motion.span>
-
-                        <motion.span
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className={css.round_text}
-                            style={{
-                                textAlign: "center",
-                                fontSize: "20px",
-                                marginTop: "-20px",
-                                userSelect: "none"
-                            }}
-                        >
-                            {getOvertimeLabel(overtimeBlock === 0 ? 1 : overtimeBlock)}
-                            <br />
-                        </motion.span>
+                        <OvertimeBadge label={getOvertimeLabel(overtimeBlock === 0 ? 1 : overtimeBlock)} level={overtimeBlock === 0 ? 1 : overtimeBlock} firstTo={overtimeToWin} size={18} />
                     </motion.div>
                 ) : (
                     <motion.div
@@ -2771,37 +2613,12 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         transition={{ duration: 0.4 }}
                         className={css.game_info_text}
                     >
-                        <motion.span
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className={css.round_text}
-                            style={{
-                                textAlign: "center",
-                                fontSize: "14px",
-                                marginBottom: "12px",
-                                userSelect: "none"
-                            }}
-                        >
-                            {seriesState.tiebreakerPhase === "penalties" && !banner
-                                ? `Penalty Series`
-                                : "\u00A0"}
-                        </motion.span>
-                        <motion.span
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className={css.round_text}
-                            style={{
-                                textAlign: "center",
-                                fontSize: "20px",
-                                marginTop: "-20px",
-                                userSelect: "none"
-                            }}
-                        >
-                            {inSuddenDeath && !banner && (
+                        {seriesState.tiebreakerPhase === "penalties" && !banner ? (
+                            <div style={{ minHeight: "47px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <PenaltyBadge attempt={currentAttempt} suddenDeath={inSuddenDeath} size={18} />
+                            </div>
+                        ) : (
+                            <>
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -2810,18 +2627,51 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     className={css.round_text}
                                     style={{
                                         textAlign: "center",
+                                        fontSize: "14px",
                                         marginBottom: "12px",
-                                        color: "rgb(152, 51, 51)",
                                         userSelect: "none"
                                     }}
                                 >
-                                    Sudden Death!!! <span style={{ color: "#2e2f42" }}>|</span>{" "}
+                                    {seriesState.tiebreakerPhase === "penalties" && !banner
+                                        ? `Penalty Series`
+                                        : "\u00A0"}
                                 </motion.span>
-                            )}
-                            {seriesState.tiebreakerPhase === "penalties" && !banner
-                                ? `Attempt ${currentAttempt}`
-                                : "\u00A0"}
-                        </motion.span>
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className={css.round_text}
+                                    style={{
+                                        textAlign: "center",
+                                        fontSize: "20px",
+                                        marginTop: "-20px",
+                                        userSelect: "none"
+                                    }}
+                                >
+                                    {inSuddenDeath && !banner && (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className={css.round_text}
+                                            style={{
+                                                textAlign: "center",
+                                                marginBottom: "12px",
+                                                color: "rgb(152, 51, 51)",
+                                                userSelect: "none"
+                                            }}
+                                        >
+                                            Sudden Death!!! <span style={{ color: "#2e2f42" }}>|</span>{" "}
+                                        </motion.span>
+                                    )}
+                                    {seriesState.tiebreakerPhase === "penalties" && !banner
+                                        ? `Attempt ${currentAttempt}`
+                                        : "\u00A0"}
+                                </motion.span>
+                            </>
+                        )}
                     </motion.div>
                 )}
 

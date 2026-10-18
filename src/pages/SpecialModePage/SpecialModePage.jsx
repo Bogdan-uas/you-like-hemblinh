@@ -81,6 +81,7 @@ import {
     OT_ROUNDS_TO_WIN,
     OT_MAX_BLOCK,
     ROUND12_TOAST_ID,
+    SAVE_FAILED_TOAST_ID,
     EXT_ROUND_FINAL_COMPARE_MS,
     EXT_ROUND_COMMENTARY_DELAY_MS,
     EXT_ROUND_REVEAL_MS,
@@ -165,7 +166,7 @@ import {
     qualifierStageLabel,
 } from "./logic/qualifier.jsx";
 import { applyRatings, applyTieRatings } from "./logic/ratings.js";
-import { defaultSeriesState, buildExtendedRoundWinnerList, buildExtendedRoundDetails, round2 } from "./logic/series.js";
+import { defaultSeriesState, buildExtendedRoundWinnerList, buildExtendedRoundDetails, round2, encodeMiniRound, buildSeriesRoundKey } from "./logic/series.js";
 import {
     resetBattleExperience,
     pullStatsTowardStart,
@@ -211,6 +212,10 @@ import {
     clearRatingsSnapshot,
     saveRatingsSnapshot,
     toggleStatsPanelEntry,
+    loadLastTournamentChanges,
+    saveLastTournamentChanges,
+    buildTournamentChangesFromHallRecord,
+    getTournamentChangesById,
 } from "./logic/teamData.js";
 import { getAllTeams64, toBaseTeam, uniqById } from "./logic/teams.js";
 import {
@@ -427,6 +432,7 @@ function SpecialModePage() {
     const { rankById } = leaderboard;
     const ratingsSnapshotRef = useRef(loadRatingsSnapshot());
     const statsSnapshotRef = useRef(loadStatsSnapshot());
+    const [lastTournamentChanges, setLastTournamentChanges] = useState(loadLastTournamentChanges);
 
     const [teamPlacings, setTeamPlacings] = useState(() => loadTeamPlacings(allTeams));
 
@@ -508,6 +514,20 @@ function SpecialModePage() {
         pickemSummarySeen,
     });
     const { isLeaderboardOpen, setIsLeaderboardOpen, setLeaderboardStatsTab } = leaderboardState;
+
+    useEffect(() => {
+        const isTournamentLive = !showIntro && !tournamentResults;
+        if (lastTournamentChanges !== undefined || isTournamentLive || !hallOfFame.length) return;
+        const derived = buildTournamentChangesFromHallRecord(hallOfFame[0], teamRatingsRef.current);
+        if (!derived) return;
+        setLastTournamentChanges(derived);
+        saveLastTournamentChanges(derived);
+    }, [hallOfFame, lastTournamentChanges, showIntro, tournamentResults]);
+
+    const tournamentChangesById = useMemo(
+        () => getTournamentChangesById(allTeams, lastTournamentChanges),
+        [allTeams, lastTournamentChanges]
+    );
     const hallManager = useHallOfFameManager({ allTeams, hallTeamSortMode, teamRatings, rankById, hallOfFame, setHallOfFame, setSelectedHallTournament });
     const placingsAdmin = usePlacingsAdmin({
         teamPlacings,
@@ -1150,6 +1170,8 @@ function SpecialModePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const saveFailedRef = useRef(false);
+
     useEffect(() => {
         const stateToSave = {
             showIntro,
@@ -1196,7 +1218,20 @@ function SpecialModePage() {
                 : null,
         };
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+            if (saveFailedRef.current) {
+                saveFailedRef.current = false;
+                toast.dismiss(SAVE_FAILED_TOAST_ID);
+            }
+        } catch (error) {
+            console.error("Couldn't save the Special Mode progress:", error);
+            saveFailedRef.current = true;
+            toast.error("The browser storage is full, so the latest progress couldn't be saved!", {
+                id: SAVE_FAILED_TOAST_ID,
+                duration: Infinity,
+            });
+        }
     }, [
         showIntro,
         showTournamentIntro,
@@ -1471,6 +1506,8 @@ function SpecialModePage() {
     const resetTournamentStateWithSeeds = (seededStage1Seeds) => {
         localStorage.removeItem(STORAGE_KEY);
         clearRoundLog();
+        setLastTournamentChanges(null);
+        saveLastTournamentChanges(null);
 
         const s1 = buildSwissStage("stage1", seededStage1Seeds);
         setStage1(s1);
@@ -1530,6 +1567,19 @@ function SpecialModePage() {
         setIsTerminateModalOpen(false);
     };
 
+    const closeTournamentSnapshots = () => {
+        if (ratingsSnapshotRef.current) {
+            const changes = { before: ratingsSnapshotRef.current, after: { ...teamRatingsRef.current } };
+            setLastTournamentChanges(changes);
+            saveLastTournamentChanges(changes);
+        }
+
+        ratingsSnapshotRef.current = null;
+        clearRatingsSnapshot();
+        statsSnapshotRef.current = null;
+        clearStatsSnapshot();
+    };
+
     const ensureRatingsSnapshot = () => {
         if (!ratingsSnapshotRef.current) {
             const snap = { ...teamRatingsRef.current };
@@ -1545,7 +1595,7 @@ function SpecialModePage() {
     };
 
     useEffect(() => {
-        if (!showIntro) ensureRatingsSnapshot();
+        if (!showIntro && !tournamentResults) ensureRatingsSnapshot();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showIntro]);
 
@@ -3842,6 +3892,9 @@ function SpecialModePage() {
                 overtimes: [...(extendedRounds?.overtimes ?? [])],
             };
 
+            const miniRoundKey = buildSeriesRoundKey(prev);
+            const nextMinis = (prev.miniLog?.key === miniRoundKey ? prev.miniLog.minis : "") + encodeMiniRound(leftMult, rightMult);
+
             const miniWinsToWinRound =
                 roundNumber <= 1 ||
                     roundNumber === 13 ||
@@ -3875,6 +3928,7 @@ function SpecialModePage() {
                         lastMultiplierRight: rightMult,
                         miniWins: nextMiniWins,
                         miniLosses: nextMiniLosses,
+                        miniLog: { key: miniRoundKey, minis: nextMinis },
                         clutchRoundFlag: nextClutchRoundFlag,
                     };
                 }
@@ -3948,6 +4002,7 @@ function SpecialModePage() {
                     momentumValue: roundMomentumValue >= 5 ? roundMomentumValue : null,
                     miniLeft: nextMiniWins,
                     miniRight: nextMiniLosses,
+                    minis: nextMinis,
                     scoreLeft: updatedRoundWins,
                     scoreRight: updatedRoundLosses,
                     winner: wonOtRound ? "left" : "right",
@@ -4266,6 +4321,7 @@ function SpecialModePage() {
                     lastMultiplierRight: rightMult,
                     miniWins: nextMiniWins,
                     miniLosses: nextMiniLosses,
+                    miniLog: { key: miniRoundKey, minis: nextMinis },
                     clutchRoundFlag: nextClutchRoundFlagReg,
                 };
             }
@@ -4366,6 +4422,7 @@ function SpecialModePage() {
                 momentumValue: regRoundMomentumValue >= 5 ? regRoundMomentumValue : null,
                 miniLeft: nextMiniWins,
                 miniRight: nextMiniLosses,
+                minis: nextMinis,
                 scoreLeft: roundWins,
                 scoreRight: roundLosses,
                 winner: playerWonRound ? "left" : "right",
@@ -5148,10 +5205,7 @@ function SpecialModePage() {
         awardPlacings({ winsKey: "tier2Wins", secondsKey: "tier2Seconds", thirdsKey: "tier2Thirds" }, results);
 
         setShowWinnersScreen(true);
-        ratingsSnapshotRef.current = null;
-        clearRatingsSnapshot();
-        statsSnapshotRef.current = null;
-        clearStatsSnapshot();
+        closeTournamentSnapshots();
     };
 
     const commitPbsSeries = ({
@@ -5259,10 +5313,7 @@ function SpecialModePage() {
         awardPlacings({ winsKey: "pbsWins", secondsKey: "tier1Seconds", thirdsKey: "tier1Thirds" }, results);
 
         setShowWinnersScreen(true);
-        ratingsSnapshotRef.current = null;
-        clearRatingsSnapshot();
-        statsSnapshotRef.current = null;
-        clearStatsSnapshot();
+        closeTournamentSnapshots();
     };
 
     const completePbsDraft = (draftId) => {
@@ -5387,10 +5438,7 @@ function SpecialModePage() {
         saveFinishedQualifierToHallOfFame(finishedQualifier, qualifiers, edition);
 
         setShowWinnersScreen(true);
-        ratingsSnapshotRef.current = null;
-        clearRatingsSnapshot();
-        statsSnapshotRef.current = null;
-        clearStatsSnapshot();
+        closeTournamentSnapshots();
     };
 
     const seriesCommitExecuteAtRef = useRef(null);
@@ -5821,10 +5869,7 @@ function SpecialModePage() {
                             finishedResults
                         );
                         setShowWinnersScreen(true);
-                        ratingsSnapshotRef.current = null;
-                        clearRatingsSnapshot();
-                        statsSnapshotRef.current = null;
-                        clearStatsSnapshot();
+                        closeTournamentSnapshots();
                     }
 
                     return copy;
@@ -7392,13 +7437,13 @@ function SpecialModePage() {
     if (wonPickemPoints !== null) {
         if (wonPickemPoints === 0) {
             pickemLabelText = "+0 Pick'em points";
-            pickemLabelStyle = { color: "red", left: isEliminationModal ? '95%' : '75%' };
+            pickemLabelStyle = { color: "red" };
         } else if (wonPickemPoints === 1) {
             pickemLabelText = "+1 Pick'em point";
-            pickemLabelStyle = { color: "#2e7d32", left: isEliminationModal ? '95%' : '75%' };
+            pickemLabelStyle = { color: "#2e7d32" };
         } else {
             pickemLabelText = `+${wonPickemPoints} Pick'em points`;
-            pickemLabelStyle = { color: "#2e7d32", left: isEliminationModal ? '95%' : '75%' };
+            pickemLabelStyle = { color: "#2e7d32" };
         }
     }
 
@@ -8058,6 +8103,7 @@ function SpecialModePage() {
                         placementColors,
                         teamPlacings,
                         rankById,
+                        tournamentChangesById,
                     }} />
                 <GameControlModals
                     controls={{ isRestartModalOpen, confirmRestart, isTerminateModalOpen, confirmTerminate, setIsRestartModalOpen, setIsTerminateModalOpen }}

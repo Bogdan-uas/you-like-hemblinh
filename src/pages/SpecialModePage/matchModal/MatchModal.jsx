@@ -10,6 +10,8 @@ import { ReactFitty } from "react-fitty";
 import { PenaltyCircles } from "../components/PenaltyCircles.jsx";
 import { SetBreakdownOverlay } from "../components/SetBreakdownOverlay.jsx";
 import { MatchStatsOverlay } from "../components/StatsPanels.jsx";
+import { BestOfBadge } from "../components/BestOfBadge.jsx";
+import { centerOverflowX } from "../../../rubber.js";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
 import { PemSeriesTrophy, GplTrophy, PbsTrophy, BountyGem } from "../components/Trophies.jsx";
@@ -148,6 +150,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            ref={centerOverflowX}
             className={css.match_modal_overlay}
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) {
@@ -221,7 +224,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                     }
                 >
                     <div
-                        style={{ paddingTop: '12px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ paddingTop: '12px', paddingLeft: '20px', paddingRight: '20px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                         <div className={css.match_modal_header}>
                             <span className={css.match_modal_title} style={{
@@ -265,21 +268,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     </div>
                                 ) : null}
                             </h3>
-                            <span
-                                style={{
-                                    color: isPlayedModal
-                                        ? didUserWin
-                                            ? '#fff'
-                                            : '#fff'
-                                        : "",
-                                    margin: '0',
-                                    fontSize: '18px',
-                                    marginTop: '-6px',
-                                }}
-                                className={css.match_modal_title}
-                            >
-                                Best of {modalBestOf}
-                            </span>
+                            <BestOfBadge bestOf={modalBestOf} size={16} onColor={isPlayedModal} style={{ marginTop: -2, marginBottom: 2 }} />
 
                             {isPlayedModal && pickemLabelText && (
                                 <span

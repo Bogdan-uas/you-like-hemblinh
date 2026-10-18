@@ -27,6 +27,7 @@ import finishedMatchModalImg from "../../../assets/images/image-14.png";
 import finishedMatchModalTwoImg from "../../../assets/images/image-14.1.png";
 import hoveredTotalRoundsCountButton from "../../../assets/images/image-14.2.png";
 import detailedMatchResults from "../../../assets/images/image-14.3.png";
+import miniRoundStrips from "../../../assets/images/image-14.31.png";
 import significantPartDivider from "../../../assets/images/image-14.4.png";
 import setEnding from "../../../assets/images/image-14.5.png";
 import boThreeFinishedMatchModal from "../../../assets/images/image-14.6.png";
@@ -1050,7 +1051,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 There is a lot of information on this modal, so let me explain it to you: <br />
-                At the top, there is a small stage name, name of the match with its order number and the "Best of" of this match, in this case it's a BO1. <br />
+                At the top, there is a small stage name, name of the match with its order number and the "BEST OF" badge of this match, in this case it's a BO1. Every "Best of" has its own color: grey for a Bo1, indigo for a Bo3, blue for a Bo5, purple for a Bo7 and gold for a Bo9. <br />
                 In the center, there are two teams, that will be playing in this match. Inside of their circles there are shown their current points. On top of the circle, there is the team's placement and on the bottom, there is the team's name. Then, above and below of these circles, we see an approximate prediction on points change of both teams (W means Win; L means Loss). This is approximate because some factors of points change are developed throughout the match itself that's why, they are only approximate. <br /> You have to choose one of these teams by clicking on your chosen team's circle. <br />
                 Below those, there is a percentage bar, which shows the estimated winning chances of each team and the text stating, which team has an advantage (or none of the teams).
                 The percentages are being calculated based on teams'{' '}
@@ -1092,9 +1093,9 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 At the very top, there are a stage name, a trophy icon, which all teams are fighting for and a match name with its order number. <br />
-                Lower from it, there is the "Best of" of the match. <br />
-                In the center, there is the scoreboard. In the middle, there is a leading indicator, which at the start is a diamond, because of tied score and round count. On the left and on the right, there are these big numbers, which tell who how much rounds has a team already taken and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
-                Below the scoreboard, there is "First to n" and "nx Overtime". These show up, once it's Overtime and the "Double" or "Triple" near it mean that Overtime was pushed to multiple ones, like "Triple Overtime" means word-to-word: "Third Overtime". <br />
+                Lower from it, there is the same "BEST OF" badge of the match as in the match modal. In non-Bo1 matches, there is also a "SET" badge below it, which shows the set that is being played right now (the last possible set of a series is the "DECIDER" and it gets its own red badge), and from the second set on, a small history of the already played sets shows up below them: every chip (S1, S2, ...) has the color of the set winner on its left edge and the set score, where the winner&apos;s rounds are green and the loser&apos;s are red. <br />
+                In the center, there is the scoreboard. In the middle, there is a leading indicator, which at the start is a diamond, because of tied score and round count, and right under it, the "ROUND" badge counts the rounds of the set. On the left and on the right, there are these big numbers, which tell who how much rounds has a team already taken and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
+                Below the scoreboard, there is the Overtime badge, like "OVERTIME | First to 16". It shows up, once it's Overtime: the left part tells which Overtime it is and the "Double" or "Triple" in it mean that Overtime was pushed to multiple ones, like "Triple Overtime" means word-to-word: "Third Overtime" (every Overtime has its own color: orange for the first one, then a darker orange, red and pink for the Quadruple Overtime), and the right part tells how many rounds a team needs to win the set. <br />
                 At the bottom, there's gamble button. <br />
                 In general, all the rules are from Extended Mode. In order to win a set here, 13 rounds are required to be won. Maximum of a normal regulation is 24 rounds, so if it is a tie 12-12 after 24 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 15-15, so each team won 3 OT rounds, we go onto Double Overtime and it can go up to 4 Overtimes. If after 4 Overtimes, there's still a tie, then there will be taken another tiebreaker system. This "another" tiebreaker system is explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("tiebreaker-system")} href='#tiebreaker-system'>here</a>. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 13th Round and each first round of every Overtime require 10 mini-wins to win a round, that's why, they are called <strong>Extended Rounds</strong> or <strong>Extended OT rounds</strong>.</i> <br /> In order for a team to win a mini-round, they need a specific number. Why do they specifically need this number, it is because: <br />
             </p>
@@ -1198,11 +1199,27 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={detailedMatchResults} alt="Detailed Match Results" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
             </div>
             <p className={css.info_text}>
-                At the top, there are a modal and the navigation. The modal contains the match Stage, name and order number, "Best of" of this match, gained Pick&apos;em points specifically in this set(this is a Bo1 here, so in this Bo1), final set score with total played rounds, "Back?" button and the text, which can be clicked and shrink the modal for a better view of the breakdown. The modal also has all the possible indicators to show whether your pickem team won this specific set(again, it's a Bo1 here, so this Bo1). <br />
+                At the top, there are a modal and the navigation. The modal contains the match Stage, name and order number, "Best of" of this match, gained Pick&apos;em points specifically in this set(this is a Bo1 here, so in this Bo1), final set score with total played rounds, "Back?" button and the "Hide full modal" text. Clicking it shrinks the modal down to the team names, the score and the gained Pick&apos;em points for a better view of the breakdown, while the breakdown itself stays exactly where it is (and the modal remembers this choice for the next time). The modal also has all the possible indicators to show whether your pickem team won this specific set(again, it's a Bo1 here, so this Bo1), like the ✓ or ✗ in its top-left corner. <br />
                 The navigation contains all significant parts of the set and allows you to go directly to that or that part. These two (modal and navigation) are always with you on the screen (until you click on the "Back?" button, of course).
             </p>
             <p className={css.info_text}>
-                And as you already understood, this is a detailed breakdown of each round, each having the won amount of mini-rounds for both teams. The parts are also visually separated, like here for example:
+                And as you already understood, this is a detailed breakdown of each round, each having the won amount of mini-rounds for both teams.
+            </p>
+            <p className={css.info_text}>
+                Below every round, there is also a small strip with all the mini-rounds of that round, in the same order they were played. Each column is one mini-round:
+                the upper number is the multiplier of the left team, the lower one is the multiplier of the right team (the small colored marks at the start of the strip tell which row belongs to which team).
+                The multiplier of the team, which got that mini-round, is filled with the team color, so you can follow the whole round mini-round by mini-round, and the tiny numbers at the bottom show the score of the round after each of them. <br />
+                The mini-round, which decided the round, glows in the color of its winner. If both teams rolled the same multiplier, nobody got that mini-round, so both numbers only get a grey outline.
+                Hovering onto a column also tells you, which mini-round it was and who got it. Extended Rounds simply have longer strips, since they need 10 mini-wins.
+            </p>
+            <div className={css.image_container}>
+                <img src={miniRoundStrips} alt="Close-up of Round 1 (an Extended Round) and Round 2 with their mini-round strips" className={css.image} style={{ width: '34vw', height: 'auto', margin: "0 auto" }} />
+                <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
+                    (In Round 1, Team Charcoal took the first four mini-rounds, Team Raspberry answered with two in a row, and then Team Charcoal won the next six to take the Extended Round 10:2)
+                </span>
+            </div>
+            <p className={css.info_text}>
+                The parts are also visually separated, like here for example:
             </p>
             <div className={css.image_container}>
                 <img src={significantPartDivider} alt="Divider between First Half and Second Half" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
@@ -1226,7 +1243,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </span>
             </div>
             <p className={css.info_text}>
-                And the UI for the Detailed Match Results modal for non-Bo1 matches is also different. I open at first the "Set 1":
+                And the UI for the Detailed Match Results modal for non-Bo1 matches is also different: next to the "BEST OF" badge, there is the same "SET" badge as in the series screen (or the red "DECIDER" one for the last possible set) and arrows on both sides to switch between the sets. I open at first the "Set 1":
             </p>
             <div className={css.image_container}>
                 <img src={detailedMatchResultsBoThreeFirstSet} alt="Detailed Match Results of Set 1 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
@@ -1268,7 +1285,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={pensScreen} alt="Penalty series screen" className={css.image} style={{ width: '32vw', height: '36vh' }} />
             </div>
             <p className={css.info_text}>
-                It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn't been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. The rules are now different as from normal series.
+                It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn&apos;t been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. Instead of the "ROUND" badge, the "PENALTY SERIES | Attempt n" badge below the score tells which attempt it is, and if nobody is ahead after the 5th attempt, it turns into a pulsing "SUDDEN DEATH" badge. The rules are now different as from normal series.
                 The point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The team that will take the Pen first, is always random. But, here are also simultaneous pair rolls of each team. During an attempt of e.g. left team, left team should roll a bigger number than their opponent to gain a successful attempt, like here:
             </p>
             <div className={css.image_container}>
@@ -1399,11 +1416,20 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Five buttons are replacing now the Needed Pick&apos;em points and they explain by themselves, what they do. Also, in the Header, we can open the updated Leaderboard:
             </p>
             <div className={css.image_container}>
-                <img src={updatedLeaderboard} alt="Updated Leaderboard" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={updatedLeaderboard} alt="Updated Leaderboard with the changes of Official #1" className={css.image} style={{ width: '34vw', height: '35vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (The trophy icon resembles each Official win for the teams, the medals are understandable, what they resemble)
                 </span>
             </div>
+            <p className={css.info_text}>
+                Right after a tournament, the Leaderboard also shows what this tournament has changed. The green or red number with the double arrow tells how many places a team went up or down,
+                and the green or red points right after the team name tell how many points it gained or lost in this tournament.
+                For the Top 10, the places are shown right before the placement, and for all the other teams, right before the team circle. <br />
+                For example, Team Seafoam went from the 40th place right up to the 1st one (39 places up), gaining 416 points along the way.
+                If a team&apos;s points or place didn&apos;t change, nothing is shown for that part. <br />
+                These changes are always only from the last finished tournament: they stay in the Leaderboard until the next tournament starts, and once that one is finished, its own changes replace them.
+                If you sort the Leaderboard by something else than points, the change of places moves next to the "Original ranking", because it always belongs to the ranking by points.
+            </p>
             <p className={css.info_text}>
                 Then, I clicked "Back to the start of Special Mode" and got redirected to Intro Page again:
             </p>
@@ -1644,6 +1670,12 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             </p>
             <PemShot n={26} alt="Leaderboard after PEM Small Tournament #1" />
             <p className={css.info_text}>
+                The green and red numbers are the changes of the last finished tournament again (see{" "}
+                <InfoLink onClick={scrollToAnchor("finale", "official")} href="?page=official#finale">Finale? Or not?</InfoLink>
+                ). This time, it&apos;s the PEM Small Tournament itself, because the Qualifier and the Champions Series Tour are tournaments of their own, so their changes have already been replaced.
+                Team Seafoam gained another 105 points, and Team Moss went 3 places up to the 3rd one.
+            </p>
+            <p className={css.info_text}>
                 Second and third places of Tier 1 and Tier 2 tournaments don&apos;t get their own icons, they are counted together with the Official ones.
                 By hovering onto a medal, I can see where they come from. Team Yellow lost the Grand Finals of Official #1 and of PEM Small Tournament #1, so it has two silver medals:
             </p>
@@ -1866,6 +1898,9 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             </p>
             <BigShot n={29} alt="Leaderboard after PEM Big Tournament #1" />
             <p className={css.info_text}>
+                The changes in the Leaderboard are from the PEM Big Tournament itself again: Team Moss went 1 place up to the 2nd one, Team Yellow 1 place down to the 3rd one, and Team Seafoam gained 94 more points.
+            </p>
+            <p className={css.info_text}>
                 In the Hall of Fame, there are three new cards again: the PEM Big Tournament card with the golden trophy on top, the Elite Competition League card and the Qualifier card.
                 I lost all three Pick&apos;em challenges this time, so the Pick&apos;em points score went down:
             </p>
@@ -1931,6 +1966,9 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <GplShot n={2} alt="Leaderboard with the Global Pro League dividers between Stage I and the Global Challenger Cup" />
             <GplShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                (The Global Pro League hasn&apos;t started yet here, so the green and red numbers in the Leaderboard are still the changes from the PEM Big Tournament.)
+            </p>
             <p style={{ marginTop: '12px' }} className={css.info_text}>
                 Both tournaments have their own numbers (Global Challenger Cup #1 and Global Pro League #1) and "Proceed" leads from the first one into the second one, same as in the PEM Tournaments.
                 How a match is played itself, you can see in{" "}
@@ -2064,6 +2102,10 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <GplShot n={23} alt="Leaderboard after Global Pro League #1" />
             <p className={css.info_text}>
+                The changes in the Leaderboard are only from the Global Pro League, not from the Global Challenger Cup, since both of them are tournaments of their own.
+                Team Copper made the biggest jump among the top teams: 11 places up to the 4th place with 216 more points.
+            </p>
+            <p className={css.info_text}>
                 In the Hall of Fame, there are two new cards: the Global Pro League card with its trophy above the name and the top four, and the Global Challenger Cup card, the same as the other Tier 2 cards:
             </p>
             <GplShot n={24} alt="Hall of Fame with the cards of Global Pro League #1 and Global Challenger Cup #1" />
@@ -2124,6 +2166,9 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             </p>
             <PbsShot n={2} alt="Leaderboard with the divider between the High-Seed Pot and the Low-Seed Pot" />
             <PbsShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                (The green and red numbers in the Leaderboard are still the changes from the Global Pro League here, since the Premier Bounty Series hasn&apos;t started yet.)
+            </p>
             <p style={{ marginTop: '12px' }} className={css.info_text}>
                 Every single match is a team of the High-Seed Pot against a team of the Low-Seed Pot, and it&apos;s all single elimination: a loss and a team flies out.
                 A High-Seed Pot team has a bounty on their heads: the higher the seed, the more is the bounty (up tp 60). The winner takes <b>half of the loser&apos;s bounty</b> (rounded), and the loser&apos;s bounty is gone, whatever is left of it.
@@ -2272,6 +2317,9 @@ const PbsSubPage = ({ scrollToAnchor }) => (
                 ):
             </p>
             <PbsShot n={31} alt="Leaderboard after Premier Bounty Series Season 1" />
+            <p className={css.info_text}>
+                Team Seafoam gained 101 points in this tournament (the 51 points of the Bounty bonus are included in them), and Team Yellow and Team Copper went 1 place up each, to the 2nd and the 3rd place.
+            </p>
             <p className={css.info_text}>
                 In the Hall of Fame, the new card has the trophy on top, then "Premier Bounty Series Season 1" and the top four:
             </p>
@@ -2433,6 +2481,13 @@ const SpecialModeInfoPage = () => {
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, [tabStart]);
+
+    useEffect(() => {
+        const active = tabsRef.current?.querySelector("[data-sub-page-active='true']");
+        const strip = tabsRef.current?.parentElement;
+        if (!active || !strip || strip.scrollWidth <= strip.clientWidth || !window.matchMedia("(max-width: 1023.98px)").matches) return;
+        strip.scrollLeft = active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2;
+    }, [activeSubPage.id]);
 
     const pendingAnchorRef = useRef(null);
 

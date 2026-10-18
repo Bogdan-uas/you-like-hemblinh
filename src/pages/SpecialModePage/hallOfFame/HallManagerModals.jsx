@@ -155,7 +155,7 @@ export function HallManagerModals({ ctx }) {
                 )}</FadeOut>
 
                 <FadeOut>{isHallManagerSelectModalOpen && (
-                    <div className={css.restart_modal} style={{ width: "520px", top: hallManagerMode === "delete" ? "12%" : "" }}>
+                    <div className={css.restart_modal} style={{ width: "520px" }}>
                         <p className={css.restart_text} style={{ marginBottom: 12 }}>
                             {hallManagerMode === "delete" ? "Which tournaments?" : "Which tournament?"}
                         </p>
@@ -262,7 +262,6 @@ export function HallManagerModals({ ctx }) {
                         style={{
                             width: "620px",
                             height: "360px",
-                            top: "20%",
                             padding: 0,
                             display: "flex",
                             flexDirection: "column",

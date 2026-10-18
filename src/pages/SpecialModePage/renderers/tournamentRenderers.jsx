@@ -1979,6 +1979,7 @@ export function createTournamentRenderers({
         return (
             <div
                 ref={navRef}
+                className={css.phase_nav}
                 style={{
                     position: "absolute",
                     top,

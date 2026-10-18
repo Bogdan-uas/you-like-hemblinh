@@ -101,7 +101,7 @@ const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "8px", no
             if (natural <= available) return;
         }
 
-        labelEl.style.fontSize = `${Math.max(STAT_ROW_MIN_FONT_PX, fitStatRowFont(natural, available))}px`;
+        labelEl.style.fontSize = `${Math.max(STAT_ROW_MIN_FONT_PX, fitStatRowFont(natural, available)) / 16}rem`;
     });
 
     return (

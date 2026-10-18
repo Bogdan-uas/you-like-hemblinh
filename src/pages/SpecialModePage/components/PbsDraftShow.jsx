@@ -8,6 +8,7 @@ import { BountyGem } from "./Trophies.jsx";
 import { PBS_DRAFT_SPEEDS, usePbsClockValue } from "../logic/pbsDraftClock.js";
 import { windowProgress, easeInOut, getPbsSlotLanding, PBS_PICK_REASONS } from "../logic/pbs.jsx";
 import { PBS_ROUND_TITLES } from "../logic/pbsConfig.js";
+import { rubberPx as px } from "../../../rubber.js";
 
 const SLOT_W = 68;
 const CIRCLE = 46;
@@ -76,14 +77,14 @@ const TeamName = ({ team }) => (
 const flightPosition = (t, src, dst) => {
     if (t < LIFT) {
         const u = easeInOut(t / LIFT);
-        return { x: src.x, y: src.y - LIFT_PX * u, size: src.size * (1 + 0.18 * u), lift: u };
+        return { x: src.x, y: src.y - px(LIFT_PX) * u, size: src.size * (1 + 0.18 * u), lift: u };
     }
 
     const u = easeInOut((t - LIFT) / (1 - LIFT));
     const sx = src.x;
-    const sy = src.y - LIFT_PX;
+    const sy = src.y - px(LIFT_PX);
     const cx = (sx + dst.x) / 2;
-    const cy = Math.min(sy, dst.y) - ARC_PX;
+    const cy = Math.min(sy, dst.y) - px(ARC_PX);
     const x = (1 - u) * (1 - u) * sx + 2 * (1 - u) * u * cx + u * u * dst.x;
     const y = (1 - u) * (1 - u) * sy + 2 * (1 - u) * u * cy + u * u * dst.y;
 
@@ -255,8 +256,8 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
         if (!rect) return;
 
         const headerTop = headerRef.current?.getBoundingClientRect().top ?? window.innerHeight;
-        const visibleTop = 120;
-        const visibleBottom = Math.min(window.innerHeight, headerTop) - 16;
+        const visibleTop = px(120);
+        const visibleBottom = Math.min(window.innerHeight, headerTop) - px(16);
         if (rect.top >= visibleTop && rect.bottom <= visibleBottom) return;
 
         const middle = visibleTop + (visibleBottom - visibleTop - rect.height) / 2;
@@ -265,7 +266,10 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
     }, [scrollTarget, plan.round]);
 
     const W = rowsWidth;
-    const xOf = (list, id) => W / 2 + (list.indexOf(id) - (list.length - 1) / 2) * SLOT_W;
+    const fit = W ? Math.min(1, (W - px(16)) / (Math.max(plan.low.length, plan.high.length) * px(SLOT_W))) : 1;
+    const slotW = px(SLOT_W) * fit;
+    const circleSize = px(CIRCLE) * fit;
+    const xOf = (list, id) => W / 2 + (list.indexOf(id) - (list.length - 1) / 2) * slotW;
 
     const highXAt = (teamId, at) => {
         let list = plan.high;
@@ -284,11 +288,11 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
         return xOf(list, teamId);
     };
 
-    const highY = lerp(HIGH_Y, MID_Y, easeInOut(windowProgress(p, timeline.center)));
+    const highY = lerp(px(HIGH_Y), px(MID_Y), easeInOut(windowProgress(p, timeline.center)));
     const highInHeader = plan.high.filter((teamId) => p < (timeline.picks.find((pick) => pick.pickedId === teamId)?.flight.start ?? Infinity));
     const highLabelLeft = highInHeader.length
-        ? Math.min(...highInHeader.map((teamId) => highXAt(teamId, p))) - SLOT_W / 2 - 8
-        : W / 2 - SLOT_W / 2 - 8;
+        ? Math.min(...highInHeader.map((teamId) => highXAt(teamId, p))) - slotW / 2 - px(8)
+        : W / 2 - slotW / 2 - px(8);
     const lowLabelOpacity = 1 - windowProgress(p, timeline.fadeLow);
     const hiddenFraction = p < timeline.rollOut[0]
         ? 1 - easeInOut(windowProgress(p, timeline.rollIn))
@@ -314,7 +318,7 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
             <div
                 key={teamId}
                 className={css.pbs_draft_slot}
-                style={{ left: x - SLOT_W / 2, top: y - CIRCLE / 2, width: SLOT_W }}
+                style={{ left: x - slotW / 2, top: y - circleSize / 2, width: slotW }}
             >
                 <span className={`${css.pbs_draft_circle} ${isConsidered ? css.pbs_considering : ""}`}>
                     <TeamCircle
@@ -322,7 +326,7 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
                         showRating
                         beforeRatingValue={ratings?.[teamId] ?? 0}
                         ratingValue={ratings?.[teamId] ?? 0}
-                        specialStyle={{ width: CIRCLE, height: CIRCLE, transition: "none", boxSizing: "border-box" }}
+                        specialStyle={{ width: circleSize, height: circleSize, transition: "none", boxSizing: "border-box" }}
                     />
                 </span>
                 <PbsTeamTags seed={status?.seed} bounty={status?.bounty ?? 0} size="small" style={{ opacity: labelOpacity }} />
@@ -337,7 +341,7 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
         const team = teamsById[flight.teamId];
         if (!team) return null;
 
-        const src = { x: rowsRect.left + srcX, y: rowsRect.top + srcY, size: CIRCLE };
+        const src = { x: rowsRect.left + srcX, y: rowsRect.top + srcY, size: circleSize };
         const target = document.querySelector(slotSelector(plan.round, flight.matchIdx, slotKey))?.getBoundingClientRect();
         const dst = target
             ? { x: target.left + target.width / 2, y: target.top + target.height / 2, size: target.width }
@@ -376,12 +380,12 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
                 </div>
 
                 <div ref={rowsRef} className={css.pbs_draft_rows}>
-                    <span className={css.pbs_pot_label} style={{ left: W / 2 - (plan.low.length * SLOT_W) / 2 - 8, top: LOW_Y - 10, opacity: lowLabelOpacity }}>Low-Seed Pot</span>
-                    <span className={css.pbs_pot_label} style={{ left: highLabelLeft, top: highY - 10, opacity: highInHeader.length ? 1 : 0 }}>High-Seed Pot</span>
+                    <span className={css.pbs_pot_label} style={{ left: W / 2 - (plan.low.length * slotW) / 2 - px(8), top: px(LOW_Y) - px(10), opacity: lowLabelOpacity }}>Low-Seed Pot</span>
+                    <span className={css.pbs_pot_label} style={{ left: highLabelLeft, top: highY - px(10), opacity: highInHeader.length ? 1 : 0 }}>High-Seed Pot</span>
 
                     {W > 0 && plan.low.map((teamId, i) =>
                         p < timeline.lowFlights[i].start
-                            ? renderHeaderTeam(teamId, xOf(plan.low, teamId), LOW_Y, lowLabelOpacity, false)
+                            ? renderHeaderTeam(teamId, xOf(plan.low, teamId), px(LOW_Y), lowLabelOpacity, false)
                             : null
                     )}
                     {W > 0 && plan.high.map((teamId) =>
@@ -406,10 +410,10 @@ export const PbsDraftShow = ({ clock, plan, timeline, teamsById, ratings, speed,
 
             <div className={css.pbs_flight_layer}>
                 {W > 0 && timeline.lowFlights.map((flight) =>
-                    renderFlight(flight, "slotA", xOf(plan.low, flight.teamId), LOW_Y)
+                    renderFlight(flight, "slotA", xOf(plan.low, flight.teamId), px(LOW_Y))
                 )}
                 {W > 0 && pickFlights.map((flight) =>
-                    renderFlight(flight, "slotB", highXAt(flight.teamId, flight.start), MID_Y)
+                    renderFlight(flight, "slotB", highXAt(flight.teamId, flight.start), px(MID_Y))
                 )}
             </div>
         </>
@@ -445,7 +449,7 @@ const DRAFT_SPACER_HEIGHT = 260;
 
 export const PbsDraftSpacer = ({ active }) => {
     const ref = useRef(null);
-    const heightRef = useRef(active ? DRAFT_SPACER_HEIGHT : 0);
+    const heightRef = useRef(active ? px(DRAFT_SPACER_HEIGHT) : 0);
 
     useLayoutEffect(() => {
         const el = ref.current;
@@ -457,7 +461,7 @@ export const PbsDraftSpacer = ({ active }) => {
         };
 
         if (active) {
-            apply(DRAFT_SPACER_HEIGHT);
+            apply(px(DRAFT_SPACER_HEIGHT));
             return undefined;
         }
 

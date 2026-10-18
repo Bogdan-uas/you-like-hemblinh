@@ -181,7 +181,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
         )}</FadeOut>
 
         <FadeOut>{full && isTournamentNumberModalOpen && (
-            <div className={css.restart_modal} style={{ width: "520px", top: "10%" }}>
+            <div className={css.restart_modal} style={{ width: "520px" }}>
                 <p className={css.restart_text} style={{ marginBottom: 12 }}>
                     Tournament number management
                 </p>
@@ -331,7 +331,6 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                 style={{
                     width: "620px",
                     height: "360px",
-                    top: "20%",
                     padding: 0,
                     display: "flex",
                     flexDirection: "column",
@@ -627,7 +626,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                     x: "-50%",
                     opacity: 1,
                     animation: "none",
-                    borderRadius: "0 0 8px 8px",
+                    borderRadius: "0 0 12px 12px",
                 }}
             >
                 <p className={css.restart_text}>
@@ -761,7 +760,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
         )}</FadeOut>
 
         <FadeOut>{isAddPlacingsModalOpen && (
-            <div className={css.restart_modal} style={{ width: "520px", top: '20%' }}>
+            <div className={css.restart_modal} style={{ width: "520px" }}>
                 <p className={css.restart_text} style={{ marginBottom: 12 }}>
                     Add tournament placings
                 </p>
@@ -937,7 +936,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
         )}</FadeOut>
 
         <FadeOut>{isRemovePlacingsModalOpen && (
-            <div className={css.restart_modal} style={{ width: "520px", top: '20%' }}>
+            <div className={css.restart_modal} style={{ width: "520px" }}>
                 <p className={css.restart_text} style={{ marginBottom: 12 }}>
                     Remove tournament placings
                 </p>

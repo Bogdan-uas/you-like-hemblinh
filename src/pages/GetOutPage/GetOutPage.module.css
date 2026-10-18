@@ -11,7 +11,7 @@
     line-height: 1.2;
     text-align: center;
     text-transform: capitalize;
-    color: #2e2f42;
+    color: var(--ui-text);
 }
 
 .message_block {
@@ -34,28 +34,31 @@
 
 .timer {
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 700;
     text-align: center;
     color: #2e2f42;
 }
 
 .reconsider_button {
     display: flex;
-    font-weight: 500;
+    font-weight: 700;
     font-size: 16px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     padding: 8px 16px;
     width: fit-content;
     background-color: #747bff;
-    color: #f1f4fd;
-    border-radius: 8px;
+    color: #fff;
+    border-radius: var(--ui-radius);
     border: none;
     margin-inline: auto;
     margin-top: 32px;
-    transition: all 500ms ease-in-out;
+    transition: var(--ui-button-transition);
+    box-shadow: var(--ui-shadow);
 }
 
 .reconsider_button:hover {
     background-color: #0d6aff;
     color: #fff;
+    translate: 0 -2px;
+    box-shadow: var(--ui-shadow-raised);
 }

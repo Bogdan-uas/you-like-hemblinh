@@ -37,6 +37,7 @@ export const defaultSeriesState = {
 
     miniWins: 0,
     miniLosses: 0,
+    miniLog: null,
 
     isOvertime: false,
     overtimeBlock: 0,
@@ -75,6 +76,31 @@ export const defaultSeriesState = {
 };
 
 export const round2 = (n) => Number(n.toFixed(2));
+
+const MINI_CODE_LENGTH = 2;
+const MINI_CODE_MAX = 36 ** MINI_CODE_LENGTH - 1;
+
+const encodeMultiplier = (value) =>
+    Math.max(0, Math.min(MINI_CODE_MAX, Math.round((Number(value) || 0) * 100)))
+        .toString(36)
+        .padStart(MINI_CODE_LENGTH, "0");
+
+export const encodeMiniRound = (left, right) => encodeMultiplier(left) + encodeMultiplier(right);
+
+export const decodeMiniRounds = (code) => {
+    if (typeof code !== "string" || !code) return [];
+    const pairLength = MINI_CODE_LENGTH * 2;
+    const minis = [];
+    for (let i = 0; i + pairLength <= code.length; i += pairLength) {
+        const left = parseInt(code.slice(i, i + MINI_CODE_LENGTH), 36) / 100;
+        const right = parseInt(code.slice(i + MINI_CODE_LENGTH, i + pairLength), 36) / 100;
+        minis.push({ left, right, winner: left > right ? "left" : right > left ? "right" : null });
+    }
+    return minis;
+};
+
+export const buildSeriesRoundKey = ({ setNumber, isOvertime, overtimeBlock, roundWins, roundLosses }) =>
+    `s${setNumber}-${isOvertime ? `ot${overtimeBlock}` : "reg"}-r${roundWins + roundLosses + 1}`;
 
 export const buildExtendedRoundWinnerList = (extendedRounds) => {
     const overtimes = extendedRounds?.overtimes ?? [];

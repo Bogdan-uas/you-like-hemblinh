@@ -1,16 +1,37 @@
 import { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Lenis from "lenis";
-import { BreakdownSectionTitle, BreakdownDivider, BreakdownScoreRow } from "./BreakdownParts.jsx";
+import { BreakdownSectionTitle, BreakdownDivider, BreakdownScoreRow, MiniRoundTimeline } from "./BreakdownParts.jsx";
 import { BREAKDOWN_OT_NAMES, BREAKDOWN_GLOW, BREAKDOWN_OT_SHORT } from "../logic/breakdownStyles.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { buildExtendedRoundWinnerList, buildExtendedRoundDetails } from "../logic/series.js";
 import { ExtendedRoundsTrack } from "./ExtendedRounds.jsx";
-import { BREAKDOWN_HIDDEN_LS_KEY } from "../logic/storageKeys.js";
+import { BREAKDOWN_HIDDEN_LS_KEY, BREAKDOWN_FULL_HEIGHT_LS_KEY } from "../logic/storageKeys.js";
+
+const rootFontSize = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
+const readStoredFullModalHeight = () => {
+    try {
+        const rem = Number(localStorage.getItem(BREAKDOWN_FULL_HEIGHT_LS_KEY));
+        return rem > 0 ? rem * rootFontSize() : 300;
+    } catch {
+        return 300;
+    }
+};
+
+const storeFullModalHeight = (height) => {
+    try {
+        localStorage.setItem(BREAKDOWN_FULL_HEIGHT_LS_KEY, String(height / rootFontSize()));
+    } catch {
+        /* ignore */
+    }
+};
+import { BestOfBadge } from "./BestOfBadge.jsx";
+import { SetBadge } from "./SeriesBadges.jsx";
 
 const createActiveSectionStore = () => {
     let value = null;
@@ -129,7 +150,7 @@ export const SetBreakdownOverlay = ({
     const sectionRefs = useRef({});
     const modalRef = useRef(null);
     const [activeSectionStore] = useState(createActiveSectionStore);
-    const [fullModalHeight, setFullModalHeight] = useState(300);
+    const [fullModalHeight, setFullModalHeight] = useState(readStoredFullModalHeight);
 
     useEffect(() => {
         if (!scrollRef.current || !contentRef.current) return;
@@ -293,6 +314,9 @@ export const SetBreakdownOverlay = ({
 
             if (!isModalHidden) {
                 setFullModalHeight(height);
+                storeFullModalHeight(height);
+            } else {
+                setFullModalHeight(readStoredFullModalHeight());
             }
         };
 
@@ -306,7 +330,8 @@ export const SetBreakdownOverlay = ({
             clearTimeout(id);
             window.removeEventListener("resize", measure);
         };
-    }, [index, entry, isModalHidden]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [index, entry]);
 
     const updateActiveSection = useCallback(() => {
         const container = scrollRef.current;
@@ -424,8 +449,6 @@ export const SetBreakdownOverlay = ({
     const background = won ? "linear-gradient(180deg,#b8ffd7 0%,#ffffff 120%)" : "linear-gradient(180deg, #ffbfbf 0%, #ffffff 120%)";
     const tieDecided = !!plan.tieDecidedBy;
     const tieWinner = plan.tieLeftScore > plan.tieRightScore ? "left" : plan.tieRightScore > plan.tieLeftScore ? "right" : null;
-
-    const setLabel = index + 1 === bestOf ? "Decider" : `Set ${index + 1}`;
 
     const isClinchingSet =
         (won && leftSetsAfter === setsToWin) ||
@@ -613,6 +636,8 @@ export const SetBreakdownOverlay = ({
                     }
                     {...opacities}
                 />
+
+                <MiniRoundTimeline minis={round.minis} leftTeam={leftTeam} rightTeam={rightTeam} />
             </div>
         );
     };
@@ -645,6 +670,24 @@ export const SetBreakdownOverlay = ({
         pointerEvents: disabled ? "none" : "auto",
         zIndex: 3,
     });
+
+    const renderPickemLabels = (compact) => {
+        const placement = compact ? { position: "static" } : { right: 0 };
+        return (
+            <>
+                {isClinchingSet && !isBo1 && (
+                    <span className={css.match_modal_pickem_total} style={placement}>
+                        +{totalPickemPoints} Pick&apos;em point{totalPickemPoints !== 1 ? "s" : ""}
+                    </span>
+                )}
+                <span className={css.match_modal_pickem} style={{ ...placement, color: won ? "#2e7d32" : "red" }}>
+                    {won
+                        ? (isClinchingSet ? "+1 Pick'em point" : "+2 Pick'em points")
+                        : "+0 Pick'em points"}
+                </span>
+            </>
+        );
+    };
 
     return (
         <>
@@ -871,9 +914,12 @@ export const SetBreakdownOverlay = ({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                     position: "fixed",
-                    top: isPlayoffs && isModalHidden ? "124px" : isModalHidden ? "112px" : isBo1 ? "174px" : "198px",
+                    top: "28px",
                     left: "50%",
                     transform: "none",
+                    animation: "none",
+                    gap: 0,
+                    borderRadius: "12px",
                     width: "620px",
                     maxWidth: "92vw",
                     background,
@@ -881,7 +927,7 @@ export const SetBreakdownOverlay = ({
                     flexDirection: "column",
                     alignItems: "center",
                     transformOrigin: "top",
-                    padding: isModalHidden ? "16px 56px 14px" : "20px 56px 22px",
+                    padding: isModalHidden ? (isPlayoffs ? "56px 56px 14px" : "36px 56px 14px") : "20px 56px 22px",
                     zIndex: 81,
                     border: won ? "2px solid #006a32" : "2px solid rgb(188, 108, 108)",
                 }}
@@ -940,68 +986,63 @@ export const SetBreakdownOverlay = ({
                     </>
                 )}
 
-                {!isModalHidden && (
-                    <div className={css.match_modal_header} style={{ marginBottom: "6px" }}>
-                        {stageLabel ? (
-                            <span
-                                className={css.match_modal_title}
-                                style={{ fontSize: "16px", marginBottom: "-8px", color: "#ffffff" }}
-                            >
-                                {stageLabel}
-                            </span>
-                        ) : null}
-
-                        <h3 className={css.match_modal_title} style={{ margin: 0, color: "#ffffff" }}>
-                            {matchTitle}
-                            {matchNumber ? (
-                                <div
-                                    className={css.points}
-                                    style={{ marginLeft: "2px", marginTop: "-2px", padding: "4px 8px", color: "#ffffff", backgroundColor: won ? "#2e7d32" : "#7d2e2e" }}
-                                >
-                                    #{matchNumber}
-                                </div>
-                            ) : null}
-                        </h3>
-
-                        <span
-                            className={css.match_modal_title}
-                            style={{ margin: 0, fontSize: "18px", marginTop: "-6px", color: "#ffffff" }}
+                <AnimatePresence initial={false}>
+                    {!isModalHidden && (
+                        <motion.div
+                            key="breakdown-modal-header"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.35, ease: "easeInOut" }}
+                            style={{ width: "100%", overflow: "hidden", display: "flex", justifyContent: "center", transition: "none" }}
                         >
-                            Best of {bestOf}
-                        </span>
+                            <div className={css.match_modal_header} style={{ marginBottom: "6px" }}>
+                                {stageLabel ? (
+                                    <span
+                                        className={css.match_modal_title}
+                                        style={{ fontSize: "16px", marginBottom: "-8px", color: "#ffffff" }}
+                                    >
+                                        {stageLabel}
+                                    </span>
+                                ) : null}
+        
+                                <h3 className={css.match_modal_title} style={{ margin: 0, color: "#ffffff" }}>
+                                    {matchTitle}
+                                    {matchNumber ? (
+                                        <div
+                                            className={css.points}
+                                            style={{ marginLeft: "2px", marginTop: "-2px", padding: "4px 8px", color: "#ffffff", backgroundColor: won ? "#2e7d32" : "#7d2e2e" }}
+                                        >
+                                            #{matchNumber}
+                                        </div>
+                                    ) : null}
+                                </h3>
+        
+                                <BestOfBadge bestOf={bestOf} size={16} onColor style={{ marginTop: 2, marginBottom: 2 }} />
+        
+                                {!isBo1 && (
+                                    <SetBadge set={index + 1} isDecider={index + 1 === bestOf} size={18} onColor style={{ marginBottom: 2 }} />
+                                )}
+                                {renderPickemLabels(false)}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                        {!isBo1 && (
-                            <span
-                                className={css.match_modal_title}
-                                style={{ margin: 0, fontSize: "24px", marginTop: "-4px", color: "#ffffff" }}
-                            >
-                                {setLabel}
-                            </span>
-                        )}
-
-                        {isClinchingSet && !isBo1 && (
-                            <span
-                                className={css.match_modal_pickem_total}
-                                style={{
-                                    left: isPlayoffs ? "85%" : "74%",
-                                }}
-                            >
-                                +{totalPickemPoints} Pick&apos;em point{totalPickemPoints !== 1 ? "s" : ""}
-                            </span>
-                        )}
-                        <span
-                            className={css.match_modal_pickem}
-                            style={{
-                                color: won ? "#2e7d32" : "red",
-                                left: isPlayoffs ? "85%" : "75%",
-                            }}
+                <AnimatePresence initial={false}>
+                    {isModalHidden && (
+                        <motion.div
+                            key="breakdown-modal-pickem"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className={css.breakdown_pickem_compact}
                         >
-                            {won
-                                ? (isClinchingSet ? "+1 Pick'em point" : "+2 Pick'em points")
-                                : "+0 Pick'em points"}
-                        </span>
-                    </div>
-                )}
+                            {renderPickemLabels(true)}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <div style={{ marginTop: isModalHidden ? "0px" : "10px" }}>
                     <BreakdownScoreRow

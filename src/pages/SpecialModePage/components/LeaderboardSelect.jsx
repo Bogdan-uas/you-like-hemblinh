@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { FaCheck } from "react-icons/fa6";
@@ -112,6 +113,7 @@ export const LeaderboardSelect = ({ label, options, value, onChange, renderIcon,
     return (
         <div
             ref={wrapperRef}
+            className={css.leaderboard_select}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onFocus={(e) => {

@@ -8,6 +8,81 @@ import { PenaltyCircles } from "./PenaltyCircles.jsx";
 import { MomentumStreakBadge } from "./StreakBadges.jsx";
 import { BREAKDOWN_GLOW, TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "../logic/breakdownStyles.js";
 import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
+import { decodeMiniRounds } from "../logic/series.js";
+
+const MINI_TAPE_MAX_COLUMNS = 22;
+
+const miniTapeColumnVariants = {
+    hidden: { opacity: 0, y: 4 },
+    shown: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } },
+};
+
+const miniTapeFill = (team, isClincher) => ({
+    background: `linear-gradient(180deg, ${lightenHex(team.color, 0.25)} 0%, ${team.color} 55%, ${darkenHex(team.color, 0.25)} 100%)`,
+    boxShadow: isClincher ? BREAKDOWN_GLOW(team.color) : undefined,
+});
+
+export const MiniRoundTimeline = ({ minis, leftTeam, rightTeam }) => {
+    const rounds = decodeMiniRounds(minis);
+    if (!rounds.length) return null;
+
+    const rows = Math.ceil(rounds.length / MINI_TAPE_MAX_COLUMNS);
+    let leftTally = 0;
+    let rightTally = 0;
+
+    const renderCell = (value, side, mini, isClincher) => {
+        const team = side === "left" ? leftTeam : rightTeam;
+        const won = mini.winner === side;
+        return (
+            <span
+                className={`${css.mini_tape_cell} ${won ? css.mini_tape_cell_won : mini.winner ? "" : css.mini_tape_cell_tie}`}
+                style={won && team?.color ? miniTapeFill(team, isClincher) : undefined}
+            >
+                {value.toFixed(2)}
+            </span>
+        );
+    };
+
+    return (
+        <motion.div
+            key={minis}
+            className={css.mini_tape}
+            style={{ "--mini-cols": Math.ceil(rounds.length / rows), marginTop: 32 }}
+            initial="hidden"
+            whileInView="shown"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={{ shown: { transition: { staggerChildren: 0.025 } } }}
+        >
+            <div className={css.mini_tape_legend} aria-hidden="true">
+                <span className={css.mini_tape_key} style={{ background: leftTeam?.color }} />
+                <span className={css.mini_tape_key} style={{ background: rightTeam?.color }} />
+            </div>
+
+            {rounds.map((mini, i) => {
+                if (mini.winner === "left") leftTally += 1;
+                else if (mini.winner === "right") rightTally += 1;
+
+                const winnerTeam = mini.winner === "left" ? leftTeam : mini.winner === "right" ? rightTeam : null;
+                const isClincher = i === rounds.length - 1 && !!winnerTeam;
+
+                return (
+                    <motion.div
+                        key={i}
+                        className={css.mini_tape_column}
+                        variants={miniTapeColumnVariants}
+                        title={winnerTeam
+                            ? `Mini-round ${i + 1}: Team ${winnerTeam.name} (${leftTally}:${rightTally})`
+                            : `Mini-round ${i + 1}: nobody gets it (${leftTally}:${rightTally})`}
+                    >
+                        {renderCell(mini.left, "left", mini, isClincher)}
+                        {renderCell(mini.right, "right", mini, isClincher)}
+                        <span className={css.mini_tape_tally}>{leftTally}:{rightTally}</span>
+                    </motion.div>
+                );
+            })}
+        </motion.div>
+    );
+};
 
 export const BreakdownSquares = ({ team, lit, total, side }) => (
     <div
