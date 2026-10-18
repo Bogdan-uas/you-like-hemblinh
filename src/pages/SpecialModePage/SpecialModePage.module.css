@@ -5404,6 +5404,7 @@
 
 
 .round_score {
+    position: relative;
     display: inline-grid;
     place-items: center;
     height: 76px;
@@ -5414,10 +5415,11 @@
 }
 
 .round_score_clip {
+    position: relative;
     grid-area: 1 / 1;
     display: grid;
     place-items: center;
-    clip-path: inset(17px -40px 12px -40px);
+    clip-path: inset(17px -12px 12px -12px);
     transition: none;
 }
 
@@ -5564,5 +5566,32 @@
 }
 
 .team_name_main {
+    transition: none;
+}
+
+.round_score_bloom {
+    position: absolute;
+    grid-area: 1 / 1;
+    top: 14px;
+    bottom: 6px;
+    left: -14px;
+    right: -14px;
+    z-index: 0;
+    filter: blur(6px);
+    pointer-events: none;
+    transition: none;
+}
+
+.round_score_digits {
+    position: relative;
+    z-index: 1;
+    grid-area: 1 / 1;
+    display: inline-flex;
+    transition: none;
+}
+
+.round_score_slot {
+    position: relative;
+    display: inline-block;
     transition: none;
 }
