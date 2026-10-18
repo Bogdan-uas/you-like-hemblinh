@@ -197,12 +197,11 @@ main {
   }
 }
 
-@keyframes ui-press {
-  0% { scale: 1; }
-  40% { scale: 0.93; }
-  100% { scale: 1; }
+[data-ui-pressed] {
+  scale: 0.93;
+  transition: scale 120ms ease-out, background-color 500ms ease-in-out, color 500ms ease-in-out, box-shadow 500ms ease-in-out, translate 150ms ease !important;
 }
 
-.ui-pressed {
-  animation: ui-press 260ms ease-in-out;
+[data-ui-released] {
+  transition: scale 300ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 500ms ease-in-out, color 500ms ease-in-out, box-shadow 500ms ease-in-out, translate 150ms ease !important;
 }

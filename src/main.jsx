@@ -17,18 +17,32 @@ new MutationObserver(() => {
 }).observe(rootElement, { childList: true });
 
 const pressTarget = (event) => event.target.closest?.("button:not(:disabled), [role=button], a[class*=button]");
-const playPress = (element) => {
+let pressedElement = null;
+const pressDown = (element) => {
   if (!element) return;
-  element.classList.remove("ui-pressed");
-  void element.offsetWidth;
-  element.classList.add("ui-pressed");
+  releasePress();
+  delete element.dataset.uiReleased;
+  element.dataset.uiPressed = "";
+  pressedElement = element;
 };
-document.addEventListener("pointerdown", (event) => playPress(pressTarget(event)), true);
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") playPress(pressTarget(event));
+const releasePress = () => {
+  const element = pressedElement;
+  if (!element) return;
+  pressedElement = null;
+  delete element.dataset.uiPressed;
+  element.dataset.uiReleased = "";
+  setTimeout(() => delete element.dataset.uiReleased, 320);
+};
+document.addEventListener("pointerdown", (event) => {
+  if (event.button === 0) pressDown(pressTarget(event));
 }, true);
-document.addEventListener("animationend", (event) => {
-  if (event.animationName === "ui-press") event.target.classList.remove("ui-pressed");
+["pointerup", "pointercancel"].forEach((type) => document.addEventListener(type, releasePress, true));
+window.addEventListener("blur", releasePress);
+document.addEventListener("keydown", (event) => {
+  if ((event.key === "Enter" || event.key === " ") && !event.repeat) pressDown(pressTarget(event));
+}, true);
+document.addEventListener("keyup", (event) => {
+  if (event.key === "Enter" || event.key === " ") releasePress();
 }, true);
 
 let rubberResizeTimer = null;
