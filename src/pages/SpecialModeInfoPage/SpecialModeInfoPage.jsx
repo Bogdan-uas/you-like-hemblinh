@@ -1311,6 +1311,10 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={rightWinsPens} alt="Right team win the penalty series" className={css.image} style={{ width: '30vw', height: '34vh' }} />
             </div>
             <p className={css.info_text}>
+                And whenever a match is over, no matter how it ended, a big "GG!" in the colors of the winner shows up below the scoreboard with a small celebration, and the whole side of the loser fades out.
+                The round, which decided the match, gets the same "GG!" in the Detailed Match Results as well, playing its celebration once, when you scroll to it.
+            </p>
+            <p className={css.info_text}>
                 Match rectangle of such a match looks like this then:
             </p>
             <div className={css.image_container}>
@@ -1587,7 +1591,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 And here is the one thing that only exists in the Champions Series Tour: a match <b>can end in a tie</b>.
                 If the score is 12-12 after the regulation and the first Overtime ends 3-3 as well, so 15-15, nobody wins and the match is over.
-                In my very first match of the Champions Series Tour, Team Spring and Team Ruby did exactly that:
+                In my very first match of the Champions Series Tour, Team Spring and Team Ruby did exactly that, so instead of "GG!", a grey "TIE!" shows up and none of the sides fades out:
             </p>
             <PemShot n={13} alt="TIE! at 15-15 in the series screen" />
             <p className={css.info_text}>

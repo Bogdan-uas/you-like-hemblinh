@@ -1247,9 +1247,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         {!isPlayoffsStyleSeries ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
+                                animate={{ opacity: loserOpacity === "win" ? 0.4 : 1 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.6 }}
+                                transition={{ duration: 0.5, ease: "easeInOut" }}
                                 style={{
                                     display: "inline-block",
 
@@ -1756,9 +1756,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         {!isPlayoffsStyleSeries ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
+                                animate={{ opacity: loserOpacity === "loss" ? 0.4 : 1 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
+                                transition={{ duration: 0.5, ease: "easeInOut" }}
                                 style={{
                                     display: "inline-block",
 

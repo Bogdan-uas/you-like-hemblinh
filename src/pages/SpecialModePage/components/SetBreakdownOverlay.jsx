@@ -740,14 +740,14 @@ export const SetBreakdownOverlay = ({
                             <div style={{ marginTop: "24px" }}>
                                 <BreakdownSectionTitle text="First Half" marginTop="0px" />
                             </div>
-                            {plan.firstHalf.map((round, i) => renderRound(round, `fh-${i}`))}
+                            {plan.firstHalf.map((round, i) => renderRound(round, `s${index}-fh-${i}`))}
                         </div>
                     )}
 
                     {plan.secondHalf.length > 0 && (
                         <div ref={(node) => { sectionRefs.current.secondHalf = node; }}>
                             <BreakdownDivider from="First Half" to="Second Half" />
-                            {plan.secondHalf.map((round, i) => renderRound(round, `sh-${i}`))}
+                            {plan.secondHalf.map((round, i) => renderRound(round, `s${index}-sh-${i}`))}
                         </div>
                     )}
 
@@ -766,7 +766,7 @@ export const SetBreakdownOverlay = ({
                                 ref={(node) => { sectionRefs.current[`ot${block}`] = node; }}
                             >
                                 <BreakdownDivider from={previousLabel} to={label} />
-                                {rounds.map((round, j) => renderRound(round, `ot-${block}-${j}`))}
+                                {rounds.map((round, j) => renderRound(round, `s${index}-ot-${block}-${j}`))}
                             </div>
                         );
                     })}

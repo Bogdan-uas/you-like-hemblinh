@@ -84,7 +84,6 @@ export const LeadingIndicator = ({ leftTeam, rightTeam, leftScore = 0, rightScor
                     Array.from({ length: tier }, (_, i) => (
                         <motion.span
                             key={`${side}-${i}`}
-                            layout
                             className={`${css.lead_indicator_item} ${tier === 3 && i === 0 ? css.lead_indicator_pulse : ""}`}
                             initial={{ opacity: 0, scale: 0.3, x: side === "left" ? 14 : -14 }}
                             animate={{ opacity: 1 - i * 0.3, scale: 1 - i * 0.18, x: 0 }}
