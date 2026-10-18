@@ -7,6 +7,7 @@ import { BREAKDOWN_GLOW, TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "../logic/
 import { lightenHex, darkenHex } from "../logic/colors.js";
 import { decodeMiniRounds } from "../logic/series.js";
 import { LeadingIndicator } from "./LeadingIndicator.jsx";
+import { SeriesBanner } from "./SeriesBanner.jsx";
 
 const MINI_TAPE_MAX_COLUMNS = 22;
 
@@ -429,38 +430,8 @@ export const BreakdownScoreRow = ({
                 }}
             >
                 {ggBanner ? (
-                    <span
-                        className={css.round_text}
-                        style={{
-                            fontSize: "38px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "0px",
-                            marginTop: "-4px",
-                            minWidth: "77.8px",
-                            textShadow: `
-                                0 0 4px ${ggBanner.tie ? TIE_BANNER_COLOR : ggBanner.team?.color},
-                                0 0 10px ${ggBanner.tie ? TIE_BANNER_COLOR : ggBanner.team?.color}66,
-                                0 2px 6px rgba(0,0,0,0.4)
-                            `,
-                        }}
-                    >
-                        {(ggBanner.tie ? "TIE!" : "GG!").split("").map((char, i) => (
-                            <span
-                                key={`${char}-${i}`}
-                                style={{
-                                    display: "inline-block",
-                                    background: ggBanner.tie ? TIE_BANNER_GRADIENT : ggBanner.team?.gradient,
-                                    backgroundClip: "text",
-                                    WebkitBackgroundClip: "text",
-                                    color: "transparent",
-                                    WebkitTextFillColor: "transparent",
-                                }}
-                            >
-                                {char}
-                            </span>
-                        ))}
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "77.8px", marginTop: "-4px", transition: "none" }}>
+                        <SeriesBanner tie={!!ggBanner.tie} team={ggBanner.team} size={38} playOnView particles={9} />
                     </span>
                 ) : center === "indicator" ? (
                     <div style={{ marginTop: "-4px", transition: "none" }}>

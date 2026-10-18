@@ -5595,3 +5595,85 @@
     display: inline-block;
     transition: none;
 }
+
+.series_banner {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    transition: none;
+}
+
+.series_banner_text {
+    position: relative;
+    z-index: 2;
+    grid-area: 1 / 1;
+    display: inline-flex;
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--banner-color) 70%, transparent)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    transition: none;
+}
+
+.series_banner_letter {
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    transition: none;
+}
+
+.series_banner_shine {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    background-image: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.9) 50%, transparent 60%);
+    background-size: 250% 100%;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    pointer-events: none;
+    transition: none;
+}
+
+.series_banner_bloom {
+    grid-area: 1 / 1;
+    width: 2.6em;
+    height: 1.7em;
+    z-index: 0;
+    filter: blur(0.12em);
+    pointer-events: none;
+    transition: none;
+}
+
+.series_banner_ring {
+    grid-area: 1 / 1;
+    width: 1.6em;
+    height: 1.6em;
+    z-index: 1;
+    border-radius: 50%;
+    border: 0.04em solid #9c9c9c;
+    pointer-events: none;
+    transition: none;
+}
+
+.series_banner_piece {
+    grid-area: 1 / 1;
+    z-index: 1;
+    pointer-events: none;
+    transition: none;
+}
+
+.series_banner_slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 81px;
+    margin-top: -8px;
+    transition: none;
+}

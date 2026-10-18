@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
 import Header from "../../../components/Header/Header.jsx";
@@ -24,6 +24,7 @@ import { getDisplayedRoundNumber } from "../logic/series.js";
 import { getBrightness } from "../logic/colors.js";
 import { LeadingIndicator } from "../components/LeadingIndicator.jsx";
 import { RoundScore } from "../components/RoundScore.jsx";
+import { SeriesBanner } from "../components/SeriesBanner.jsx";
 import { GameControlModals } from "../screens/GameControlModals.jsx";
 import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { SetBadge, OvertimeBadge, SetHistory, PenaltyBadge, RoundBadge } from "../components/SeriesBadges.jsx";
@@ -349,6 +350,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
     } = seriesState;
 
     const displayedRound = getDisplayedRoundNumber(seriesState);
+    const bannerAtMountRef = useRef(!!seriesState.banner);
 
     const pointPillStyle = (team) => ({
         background: team?.gradient,
@@ -1242,7 +1244,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 </motion.span>
                             ) : null}
                         </AnimatePresence>
-                        {!isPlayoffsStyleSeries && !banner ? (
+                        {!isPlayoffsStyleSeries ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -1395,7 +1397,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     resolved={seriesState.penaltyResolved}
                                     shouldHaveMargin={seriesState.tiebreakerPhase === "penalties" ? false : true}
                                 />
-                            ) : !banner ? (
+                            ) : (
                                 <div className={css.miniSquares}>
                                     {[...Array(displayedMiniSquares)].map((_, i) => {
                                         const isLit = i < miniWins;
@@ -1432,7 +1434,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         );
                                     })}
                                 </div>
-                            ) : null}
+                            )}
                             <div className={css.verticalLines}>
                                 {isPlayoffsStyleSeries && setsToWin === 5 ? (
                                     <>
@@ -1615,7 +1617,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     </div>
                                 ) : null}
                             </div>
-                            {!banner && isPlayoffsStyleSeries ? (
+                            {isPlayoffsStyleSeries ? (
                                 <motion.span
                                     key={seriesState.leftTeam?.name}
                                     initial={{ x: 420 }}
@@ -1651,76 +1653,6 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             ) : null}
                         </div>
                     </div>
-                    {banner ? (() => {
-                        const cleanBanner = banner.text;
-                        const chars = cleanBanner.split("");
-
-                        const fromTop = (index) =>
-                            banner.tie ? index % 2 === 0 : index < Math.ceil(chars.length / 2);
-
-                        return (
-                            <motion.span
-                                className={css.round_text}
-                                style={{
-                                    fontSize: "38px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: "0px",
-                                    width: banner.tie ? 'max-content' : '63.8px',
-                                    textShadow: banner.shadow
-                                }}
-                            >
-                                {chars.map((char, index) => (
-                                    <motion.span
-                                        key={`${index}-${char}`}
-                                        initial={{
-                                            opacity: 0,
-                                            y: fromTop(index) ? -20 : 20,
-                                        }}
-                                        animate={{
-                                            opacity: 1,
-                                            y: 0,
-                                        }}
-                                        transition={{
-                                            duration: 0.45
-                                        }}
-                                        style={{
-                                            display: "inline-block",
-                                            background: banner.gradient,
-                                            backgroundClip: "text",
-                                            WebkitBackgroundClip: "text",
-
-                                            color: "transparent",
-                                            WebkitTextFillColor: "transparent",
-                                        }}
-                                    >
-                                        {char}
-                                    </motion.span>
-                                ))}
-
-                                <motion.span
-                                    initial={{ opacity: 0, scale: 0 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{
-                                        duration: 0.45
-                                    }}
-                                    style={{
-                                        display: "inline-block",
-                                        marginLeft: "2px",
-                                        background: banner.gradient,
-                                        backgroundClip: "text",
-                                        WebkitBackgroundClip: "text",
-
-                                        color: "transparent",
-                                        WebkitTextFillColor: "transparent",
-                                    }}
-                                >
-                                    !
-                                </motion.span>
-                            </motion.span>
-                        );
-                    })() : (
                         <div
                             style={{
                                 marginTop: isPlayoffsStyleSeries ? "16px" : "24px",
@@ -1791,7 +1723,6 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 )
                             }
                         </div>
-                    )}
                     <div
                         style={{
                             display: "flex",
@@ -1822,7 +1753,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 </motion.span>
                             ) : null}
                         </AnimatePresence>
-                        {!isPlayoffsStyleSeries && !banner ? (
+                        {!isPlayoffsStyleSeries ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -1982,7 +1913,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     resolved={seriesState.penaltyResolved}
                                     shouldHaveMargin={seriesState.tiebreakerPhase === "penalties" ? false : true}
                                 />
-                            ) : !banner ? (
+                            ) : (
                                 <div className={css.miniSquares} style={{ flexDirection: 'row-reverse' }}>
                                     {[...Array(displayedMiniSquares)].map((_, i) => {
                                         const isLit = i < miniLosses;
@@ -2019,7 +1950,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         );
                                     })}
                                 </div>
-                            ) : null}
+                            )}
                             <div className={css.verticalLossLines}>
                                 {isPlayoffsStyleSeries && setsToWin === 5 ? (
                                     <>
@@ -2201,7 +2132,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     </div>
                                 ) : null}
                             </div>
-                            {!banner && isPlayoffsStyleSeries ? (
+                            {isPlayoffsStyleSeries ? (
                                 <motion.span
                                     key={seriesState.rightTeam?.name}
                                     initial={{ x: -420 }}
@@ -2268,6 +2199,15 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 </div>
 
                 <div className={css.seriesGambleMessage}>
+                    {banner ? (
+                        <div className={css.series_banner_slot}>
+                            <SeriesBanner
+                                tie={!!banner.tie}
+                                team={playerWonSets >= playerLostSets ? seriesState.leftTeam : seriesState.rightTeam}
+                                celebrate={!bannerAtMountRef.current}
+                            />
+                        </div>
+                    ) : null}
                     {!banner &&
                         seriesState.lastMultiplierLeft != null &&
                         seriesState.lastMultiplierRight != null && (() => {
