@@ -153,6 +153,17 @@ export const SetBreakdownOverlay = ({
     const [fullModalHeight, setFullModalHeight] = useState(readStoredFullModalHeight);
 
     useEffect(() => {
+        const root = document.documentElement;
+        const previous = [root.style.overflow, document.body.style.overflow];
+        root.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";
+        return () => {
+            root.style.overflow = previous[0];
+            document.body.style.overflow = previous[1];
+        };
+    }, []);
+
+    useEffect(() => {
         if (!scrollRef.current || !contentRef.current) return;
 
         const lenis = new Lenis({
@@ -998,10 +1009,7 @@ export const SetBreakdownOverlay = ({
                         >
                             <div className={css.match_modal_header} style={{ marginBottom: "6px" }}>
                                 {stageLabel ? (
-                                    <span
-                                        className={css.match_modal_title}
-                                        style={{ fontSize: "16px", marginBottom: "-8px", color: "#ffffff" }}
-                                    >
+                                    <span className={css.match_modal_caption} style={{ color: "rgba(255, 255, 255, 0.88)" }}>
                                         {stageLabel}
                                     </span>
                                 ) : null}

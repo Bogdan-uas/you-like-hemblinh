@@ -1,14 +1,12 @@
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-import GradientCaretLeft from "../../../components/GradientIcon/GradientCaretLeft.jsx";
-import GradientCaretRight from "../../../components/GradientIcon/GradientCaretRight.jsx";
-import GradientDiamond from "../../../components/GradientIcon/GradientDiamond.jsx";
 import { PenaltyCircles } from "./PenaltyCircles.jsx";
 import { MomentumStreakBadge } from "./StreakBadges.jsx";
 import { BREAKDOWN_GLOW, TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "../logic/breakdownStyles.js";
-import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
+import { lightenHex, darkenHex } from "../logic/colors.js";
 import { decodeMiniRounds } from "../logic/series.js";
+import { LeadingIndicator } from "./LeadingIndicator.jsx";
 
 const MINI_TAPE_MAX_COLUMNS = 22;
 
@@ -214,53 +212,6 @@ const BreakdownScoreNumber = ({ team, value, glow, dim, size = 44, width }) => (
     </span>
 );
 
-const BreakdownLeadingIndicator = ({ leftTeam, rightTeam, leftScore, rightScore }) => {
-    const momentum =
-        leftScore > rightScore ? "left" : rightScore > leftScore ? "right" : "tie";
-
-    if (momentum === "left" && leftTeam) {
-        return (
-            <GradientCaretLeft
-                size={26}
-                gradient={{
-                    top: lightenHex(leftTeam.color, 0.18),
-                    middle: leftTeam.color,
-                    bottom: darkenHex(
-                        leftTeam.color,
-                        getBrightness(leftTeam.color) > 210 ? 0.22 : 0.35
-                    ),
-                }}
-                glowColor={leftTeam.color}
-            />
-        );
-    }
-
-    if (momentum === "right" && rightTeam) {
-        return (
-            <GradientCaretRight
-                size={26}
-                gradient={{
-                    top: lightenHex(rightTeam.color, 0.18),
-                    middle: rightTeam.color,
-                    bottom: darkenHex(
-                        rightTeam.color,
-                        getBrightness(rightTeam.color) > 210 ? 0.22 : 0.35
-                    ),
-                }}
-                glowColor={rightTeam.color}
-            />
-        );
-    }
-
-    return (
-        <GradientDiamond
-            size={18}
-            gradient={{ top: "#9c9c9c", middle: "#757575", bottom: "#555555" }}
-            glowColor="#757575"
-        />
-    );
-};
-
 const BreakdownPointLabel = ({ team, text }) => (
     <span
         className={css.info_text}
@@ -319,13 +270,6 @@ export const BreakdownScoreRow = ({
     leftMomentumStreak = null,
     rightMomentumStreak = null,
 }) => {
-    const momentum =
-        leftScore > rightScore
-            ? "left"
-            : rightScore > leftScore
-                ? "right"
-                : "tied";
-
     const hasPens = !!penalties;
 
     const renderSide = (side) => {
@@ -479,7 +423,7 @@ export const BreakdownScoreRow = ({
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    overflow: center === "indicator" ? "hidden" : "visible",
+                    overflow: "visible",
                     flexShrink: 0,
                     marginTop: showLabels ? "20px" : 0,
                 }}
@@ -519,29 +463,16 @@ export const BreakdownScoreRow = ({
                         ))}
                     </span>
                 ) : center === "indicator" ? (
-                    <motion.div
-                        initial={false}
-                        animate={{
-                            x:
-                                momentum === "left"
-                                    ? -28
-                                    : momentum === "right"
-                                        ? 8
-                                        : -6,
-                        }}
-                        transition={{
-                            duration: 0.35,
-                            ease: "easeInOut",
-                        }}
-                        style={{ marginTop: "-4px" }}
-                    >
-                        <BreakdownLeadingIndicator
+                    <div style={{ marginTop: "-4px", transition: "none" }}>
+                        <LeadingIndicator
                             leftTeam={leftTeam}
                             rightTeam={rightTeam}
                             leftScore={leftScore}
                             rightScore={rightScore}
+                            size={24}
+                            width={56}
                         />
-                    </motion.div>
+                    </div>
                 ) : (
                     <span
                         className={css.info_text}

@@ -181,3 +181,63 @@ export const getEliminatedBy = (stage, key) =>
     stage.teams
         .filter((t) => t.eliminated && t.eliminatedVia === key)
         .sort((a, b) => (a.eliminatedAt ?? 1e9) - (b.eliminatedAt ?? 1e9));
+
+const EXTENDED_ROUNDS_TOTAL = EXTENDED_ROUND_TITLES.length;
+const BASE_SET_TARGET = 13;
+
+export const getLiveSetResult = (seriesState) => {
+    const s = seriesState;
+    if (!s?.setNumber || (s.finishedSets || []).some((f) => f.set === s.setNumber)) return null;
+
+    if (s.tiebreakerPhase === "penalties") {
+        if (!s.penaltyResolved) return null;
+        return {
+            set: s.setNumber,
+            leftScore: s.penaltyPreScore?.left ?? 0,
+            rightScore: s.penaltyPreScore?.right ?? 0,
+            extendedRoundsPlayed: true,
+            extendedRoundLeftScore: s.extRoundLeftScore,
+            extendedRoundRightScore: s.extRoundRightScore,
+            penaltiesPlayed: true,
+            penaltyLeftScore: s.penaltyLeftScore,
+            penaltyRightScore: s.penaltyRightScore,
+        };
+    }
+
+    if (s.tiebreakerPhase === "extended") {
+        if (s.extRoundRevealIndex < EXTENDED_ROUNDS_TOTAL || s.extRoundLeftScore === s.extRoundRightScore) return null;
+        return {
+            set: s.setNumber,
+            leftScore: s.roundWins,
+            rightScore: s.roundLosses,
+            extendedRoundsPlayed: true,
+            extendedRoundLeftScore: s.extRoundLeftScore,
+            extendedRoundRightScore: s.extRoundRightScore,
+            penaltiesPlayed: false,
+        };
+    }
+
+    const target = BASE_SET_TARGET + (s.overtimeBlock || 0) * 3;
+    if (s.roundWins >= target || s.roundLosses >= target) {
+        return { set: s.setNumber, leftScore: s.roundWins, rightScore: s.roundLosses };
+    }
+
+    return null;
+};
+
+export const getSetResultWinner = (result) => {
+    if (!result) return null;
+    const left = result.penaltiesPlayed ? result.penaltyLeftScore : result.extendedRoundsPlayed ? result.extendedRoundLeftScore : result.leftScore;
+    const right = result.penaltiesPlayed ? result.penaltyRightScore : result.extendedRoundsPlayed ? result.extendedRoundRightScore : result.rightScore;
+    return left > right ? "left" : right > left ? "right" : null;
+};
+
+export const getDisplayedRoundNumber = (seriesState) => {
+    const s = seriesState;
+    const played = (s.roundWins || 0) + (s.roundLosses || 0);
+    if (getLiveSetResult(s) || s.banner) return Math.max(played, 1);
+    const target = BASE_SET_TARGET + (s.overtimeBlock || 0) * 3;
+    const blockBoundary = s.roundWins === s.roundLosses && s.roundWins === target - 1;
+    if (blockBoundary || s.tiebreakerPhase !== "idle") return Math.max(played, 1);
+    return played + 1;
+};

@@ -227,17 +227,11 @@ export function MatchModal({ modal, teams, actions, labels }) {
                         style={{ paddingTop: '12px', paddingLeft: '20px', paddingRight: '20px', borderTopRightRadius: '12px', borderTopLeftRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                         <div className={css.match_modal_header}>
-                            <span className={css.match_modal_title} style={{
-                                fontSize: '16px',
-                                marginBottom: '-8px',
-                                color: isPlayedModal
-                                    ? didUserWin
-                                        ? '#fff'
-                                        : '#fff'
-                                    : "",
-                            }}>
-                                {modalContext.type !== "playoffs" ? modalStageSmallLabel : null}
-                            </span>
+                            {modalContext.type !== "playoffs" && modalStageSmallLabel ? (
+                                <span className={css.match_modal_caption} style={{ color: isPlayedModal ? "rgba(255, 255, 255, 0.88)" : undefined }}>
+                                    {modalStageSmallLabel}
+                                </span>
+                            ) : null}
                             <h3
                                 style={{
                                     color: isPlayedModal

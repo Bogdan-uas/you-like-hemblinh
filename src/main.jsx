@@ -16,6 +16,21 @@ new MutationObserver(() => {
   [...rootElement.children].forEach((child) => rubberCenterObserver.observe(child));
 }).observe(rootElement, { childList: true });
 
+const pressTarget = (event) => event.target.closest?.("button:not(:disabled), [role=button], a[class*=button]");
+const playPress = (element) => {
+  if (!element) return;
+  element.classList.remove("ui-pressed");
+  void element.offsetWidth;
+  element.classList.add("ui-pressed");
+};
+document.addEventListener("pointerdown", (event) => playPress(pressTarget(event)), true);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") playPress(pressTarget(event));
+}, true);
+document.addEventListener("animationend", (event) => {
+  if (event.animationName === "ui-press") event.target.classList.remove("ui-pressed");
+}, true);
+
 let rubberResizeTimer = null;
 window.addEventListener("resize", () => {
   document.documentElement.classList.add("rubber-resizing");

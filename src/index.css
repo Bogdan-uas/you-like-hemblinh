@@ -48,7 +48,7 @@ html.rubber-resizing *::after {
   --ui-highlight: #cadefd;
   --ui-divider-solid: 1px solid #2e2f42;
   --ui-divider-dashed: 4px dashed #999;
-  --ui-button-transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease, translate 150ms ease, opacity 200ms ease;
+  --ui-button-transition: background-color 500ms ease-in-out, color 500ms ease-in-out, box-shadow 500ms ease-in-out, translate 150ms ease, opacity 500ms ease-in-out;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -133,6 +133,7 @@ a {
 
 button:disabled {
   background-color: gray;
+  transition: background-color 500ms ease-in-out, color 500ms ease-in-out, box-shadow 500ms ease-in-out, opacity 500ms ease-in-out;
   cursor: not-allowed;
 }
 
@@ -194,4 +195,14 @@ main {
     width: fit-content;
     min-width: 100%;
   }
+}
+
+@keyframes ui-press {
+  0% { scale: 1; }
+  40% { scale: 0.93; }
+  100% { scale: 1; }
+}
+
+.ui-pressed {
+  animation: ui-press 260ms ease-in-out;
 }
