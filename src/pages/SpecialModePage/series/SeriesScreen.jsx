@@ -1186,63 +1186,62 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         </div>
                     </motion.div>
                 )}
-                {seriesState.tiebreakerPhase === "penalties" && !seriesState.penaltyResolved ? (
-                    <motion.div
-                        key={seriesState.penaltyTurn}
-                        initial={{ opacity: 0, x: seriesState.penaltyTurn === "left" ? -40 : 40, scale: 0.9 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className={css.turn_pill}
-                        style={{
-                            ...pointPillStyle(seriesState.penaltyTurn === "left" ? seriesState.leftTeam : seriesState.rightTeam),
-                            flexDirection: seriesState.penaltyTurn === "left" ? "row" : "row-reverse",
-                        }}
-                    >
-                        {seriesState.penaltyTurn === "left" ? <FaCaretLeft /> : <FaCaretRight />}
-                        <span>
-                            Team {seriesState.penaltyTurn === "left" ? seriesState.leftTeam?.name : seriesState.rightTeam?.name}&apos;s turn
-                        </span>
-                    </motion.div>
+                {seriesState.tiebreakerPhase === "penalties" ? (
+                    <div className={css.turn_slot}>
+                        <AnimatePresence mode="wait" initial={false}>
+                            {!seriesState.penaltyResolved ? (
+                                <motion.div
+                                    key={seriesState.penaltyTurn}
+                                    initial={{ opacity: 0, rotateX: -90, y: 6 }}
+                                    animate={{ opacity: 1, rotateX: 0, y: 0 }}
+                                    exit={{ opacity: 0, rotateX: 90, y: -6 }}
+                                    transition={{ duration: 0.32, ease: "easeInOut" }}
+                                    className={css.turn_pill}
+                                    style={{
+                                        ...pointPillStyle(seriesState.penaltyTurn === "left" ? seriesState.leftTeam : seriesState.rightTeam),
+                                        flexDirection: seriesState.penaltyTurn === "left" ? "row" : "row-reverse",
+                                        transformPerspective: 500,
+                                    }}
+                                >
+                                    <motion.span
+                                        className={css.turn_pill_arrow}
+                                        animate={{ x: seriesState.penaltyTurn === "left" ? [0, -3, 0] : [0, 3, 0] }}
+                                        transition={{ duration: 1.1, ease: "easeInOut", repeat: Infinity }}
+                                    >
+                                        {seriesState.penaltyTurn === "left" ? <FaCaretLeft /> : <FaCaretRight />}
+                                    </motion.span>
+                                    <span>
+                                        Team {seriesState.penaltyTurn === "left" ? seriesState.leftTeam?.name : seriesState.rightTeam?.name}&apos;s turn
+                                    </span>
+                                </motion.div>
+                            ) : null}
+                        </AnimatePresence>
+                    </div>
                 ) : null}
                 <div className={css.scoreboard} style={{ backgroundColor: "#fff" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative" }}>
-                        {isSeriesPointWins ? (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.point_pill}
-                                style={{
-                                    ...pointPillStyle(seriesState.leftTeam),
-                                    position: "absolute",
-                                    bottom: isPlayoffsStyleSeries ? "calc(100% + 8px)" : "calc(100% + 4px)",
-                                    left: isPlayoffsStyleSeries ? "0" : "8px",
-                                    zIndex: 2
-                                }}
-                            >
-                                {getPointLabel()}
-                            </motion.span>
-                        ) : (
-                            isSetPointWins && (
+                        <AnimatePresence initial={false}>
+                            {isSeriesPointWins || isSetPointWins ? (
                                 <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
+                                    key={isSeriesPointWins ? "series-point" : "set-point"}
+                                    initial={{ opacity: 0, y: 8, scale: 0.85 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 8, scale: 0.85 }}
+                                    transition={{ duration: 0.55, ease: "easeInOut" }}
                                     className={css.point_pill}
                                     style={{
                                         ...pointPillStyle(seriesState.leftTeam),
                                         position: "absolute",
                                         bottom: isPlayoffsStyleSeries ? "calc(100% + 8px)" : "calc(100% + 4px)",
                                         left: isPlayoffsStyleSeries ? "0" : "8px",
+                                        transformOrigin: "left bottom",
                                         zIndex: 2
                                     }}
                                 >
-                                    Set point!
+                                    {isSeriesPointWins ? getPointLabel() : "Set point!"}
                                 </motion.span>
-                            )
-                        )}
+                            ) : null}
+                        </AnimatePresence>
                         {!isPlayoffsStyleSeries && !banner ? (
                             <motion.span
                                 initial={{ opacity: 0 }}
@@ -1801,43 +1800,28 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             position: "relative",
                         }}
                         >
-                        {isSeriesPointLosses ? (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={css.point_pill}
-                                style={{
-                                    ...pointPillStyle(seriesState.rightTeam),
-                                    position: "absolute",
-                                    bottom: isPlayoffsStyleSeries ? "calc(100% + 8px)" : "calc(100% + 4px)",
-                                    right: isPlayoffsStyleSeries ? "0" : "8px",
-                                    zIndex: 2
-                                }}
-                            >
-                                {getPointLabel()}
-                            </motion.span>
-                        ) : (
-                            isSetPointLosses && (
+                        <AnimatePresence initial={false}>
+                            {isSeriesPointLosses || isSetPointLosses ? (
                                 <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.4 }}
+                                    key={isSeriesPointLosses ? "series-point" : "set-point"}
+                                    initial={{ opacity: 0, y: 8, scale: 0.85 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 8, scale: 0.85 }}
+                                    transition={{ duration: 0.55, ease: "easeInOut" }}
                                     className={css.point_pill}
                                     style={{
                                         ...pointPillStyle(seriesState.rightTeam),
                                         position: "absolute",
                                         bottom: isPlayoffsStyleSeries ? "calc(100% + 8px)" : "calc(100% + 4px)",
                                         right: isPlayoffsStyleSeries ? "0" : "8px",
+                                        transformOrigin: "right bottom",
                                         zIndex: 2
                                     }}
                                 >
-                                    Set point!
+                                    {isSeriesPointLosses ? getPointLabel() : "Set point!"}
                                 </motion.span>
-                            )
-                        )}
+                            ) : null}
+                        </AnimatePresence>
                         {!isPlayoffsStyleSeries && !banner ? (
                             <motion.span
                                 initial={{ opacity: 0 }}

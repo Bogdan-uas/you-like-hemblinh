@@ -5371,6 +5371,20 @@
 
 
 
+.turn_slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 37px;
+    transition: none;
+}
+
+.turn_pill_arrow {
+    display: inline-flex;
+    transition: none;
+}
+
 .turn_pill {
     display: inline-flex;
     align-items: center;
