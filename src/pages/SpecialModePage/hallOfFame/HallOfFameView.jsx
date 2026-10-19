@@ -909,6 +909,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     <button
                         type="button"
                         data-bracket-rect={pemLayout ? `${stage}-${index}` : undefined}
+                        data-no-press=""
                         className={`${rectClass} ${winnerIsLeft ? css.playoffs_match_win : css.playoffs_match_loss}`}
                         onClick={() => openArchivedHallMatchModal(record, stage, index, displayMatch)}
                         style={{ cursor: "pointer", borderColor: winnerIsLeft ? "#2e7d32" : "#7d2e2e" }}

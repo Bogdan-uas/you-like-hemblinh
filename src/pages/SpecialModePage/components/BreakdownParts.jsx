@@ -1,20 +1,17 @@
+import { useRef } from "react";
 import css from "../SpecialModePage.module.css";
-// eslint-disable-next-line no-unused-vars
-import { motion } from "framer-motion";
+import { useInView } from "framer-motion";
 import { PenaltyCircles } from "./PenaltyCircles.jsx";
 import { MomentumStreakBadge } from "./StreakBadges.jsx";
 import { BREAKDOWN_GLOW, TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "../logic/breakdownStyles.js";
-import { lightenHex, darkenHex } from "../logic/colors.js";
+import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
 import { decodeMiniRounds } from "../logic/series.js";
 import { LeadingIndicator } from "./LeadingIndicator.jsx";
 import { SeriesBanner } from "./SeriesBanner.jsx";
+import { RoundScore } from "./RoundScore.jsx";
+import { RoundBadge } from "./SeriesBadges.jsx";
 
 const MINI_TAPE_MAX_COLUMNS = 22;
-
-const miniTapeColumnVariants = {
-    hidden: { opacity: 0, y: 4 },
-    shown: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } },
-};
 
 const miniTapeFill = (team, isClincher) => ({
     background: `linear-gradient(180deg, ${lightenHex(team.color, 0.25)} 0%, ${team.color} 55%, ${darkenHex(team.color, 0.25)} 100%)`,
@@ -22,6 +19,8 @@ const miniTapeFill = (team, isClincher) => ({
 });
 
 export const MiniRoundTimeline = ({ minis, leftTeam, rightTeam }) => {
+    const ref = useRef(null);
+    const shown = useInView(ref, { once: true, amount: 0.3 });
     const rounds = decodeMiniRounds(minis);
     if (!rounds.length) return null;
 
@@ -43,14 +42,10 @@ export const MiniRoundTimeline = ({ minis, leftTeam, rightTeam }) => {
     };
 
     return (
-        <motion.div
-            key={minis}
-            className={css.mini_tape}
+        <div
+            ref={ref}
+            className={`${css.mini_tape} ${shown ? css.mini_tape_shown : ""}`}
             style={{ "--mini-cols": Math.ceil(rounds.length / rows), marginTop: 32 }}
-            initial="hidden"
-            whileInView="shown"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={{ shown: { transition: { staggerChildren: 0.025 } } }}
         >
             <div className={css.mini_tape_legend} aria-hidden="true">
                 <span className={css.mini_tape_key} style={{ background: leftTeam?.color }} />
@@ -65,10 +60,10 @@ export const MiniRoundTimeline = ({ minis, leftTeam, rightTeam }) => {
                 const isClincher = i === rounds.length - 1 && !!winnerTeam;
 
                 return (
-                    <motion.div
+                    <div
                         key={i}
                         className={css.mini_tape_column}
-                        variants={miniTapeColumnVariants}
+                        style={{ animationDelay: `${i * 25}ms` }}
                         title={winnerTeam
                             ? `Mini-round ${i + 1}: Team ${winnerTeam.name} (${leftTally}:${rightTally})`
                             : `Mini-round ${i + 1}: nobody gets it (${leftTally}:${rightTally})`}
@@ -76,10 +71,10 @@ export const MiniRoundTimeline = ({ minis, leftTeam, rightTeam }) => {
                         {renderCell(mini.left, "left", mini, isClincher)}
                         {renderCell(mini.right, "right", mini, isClincher)}
                         <span className={css.mini_tape_tally}>{leftTally}:{rightTally}</span>
-                    </motion.div>
+                    </div>
                 );
             })}
-        </motion.div>
+        </div>
     );
 };
 
@@ -142,7 +137,6 @@ const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" })
                             style={{
                                 boxShadow: lineGlow(isLit),
                                 ...(total >= 3 ? { width: "16px" } : null),
-                                marginTop: "8px"
                             }}
                         >
                             <div
@@ -164,7 +158,7 @@ const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" })
     }
 
     return (
-        <div className={side === "right" ? css.verticalLossLines : css.verticalLines}>
+        <div className={side === "right" ? css.verticalLossLines : css.verticalLines} style={{ marginTop: "6px" }}>
             {[...Array(total)].map((_, i) => {
                 const isLit = i < lit;
 
@@ -197,44 +191,47 @@ const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" })
     );
 };
 
-const BreakdownScoreNumber = ({ team, value, glow, dim, size = 44, width }) => (
-    <span
-        className={css.round_text}
-        style={{
-            fontSize: `${size}px`,
-            lineHeight: 1,
-            color: team?.color,
-            opacity: dim ? 0.4 : 1,
-            textShadow: glow ? BREAKDOWN_GLOW(team?.color) : "none",
-            ...(width ? { width: `${width}px`, display: "inline-block", textAlign: "center" } : null),
-        }}
-    >
-        {value}
-    </span>
-);
+const pointPillStyle = (team) => ({
+    background: team?.gradient,
+    color: getBrightness(team?.color ?? "#2e2f42") > 190 ? "#2e2f42" : "#ffffff",
+});
 
-const BreakdownPointLabel = ({ team, text }) => (
+const fancyNameStyle = (team) => ({
+    display: "inline-block",
+    "--team-color": team?.color,
+    backgroundImage: team?.gradient,
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "100% 100%",
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    color: "transparent",
+});
+
+export const BreakdownTeamName = ({ team, side, style, winnerDot = false }) => (
     <span
-        className={css.info_text}
+        className={`${side === "left" ? css.team_name_left : css.team_name_right} ${css.team_name_fancy}`}
+        data-side={side}
         style={{
-            color: team?.color,
-            fontSize: "16px",
-            fontWeight: 500,
-            minHeight: "20px",
-            marginTop: "-8px",
-            transition: "all 500ms ease-in-out",
-            textShadow: text
-                ? `
-                    0 0 3px ${team?.color},
-                    0 0 7px ${team?.color}66,
-                    0 1px 3px rgba(0,0,0,0.4)
-                `
-                : "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "7px",
+            flexDirection: side === "left" ? "row" : "row-reverse",
             whiteSpace: "nowrap",
-            userSelect: "none"
+            ...style,
         }}
     >
-        {text || "\u00A0"}
+        <span style={fancyNameStyle(team)}>
+            <span className={css.team_name_prefix}>Team</span>{" "}
+            <span className={css.team_name_main}>{team?.name}</span>
+        </span>
+        {winnerDot ? (
+            <span
+                className={css.breakdown_round_dot}
+                title={`Team ${team?.name} won this round`}
+                style={{ background: team?.gradient, boxShadow: BREAKDOWN_GLOW(team?.color) }}
+            />
+        ) : null}
     </span>
 );
 
@@ -243,8 +240,6 @@ export const BreakdownScoreRow = ({
     rightTeam,
     leftScore,
     rightScore,
-    scoreSize = 44,
-    scoreWidth,
     squaresTotal = 0,
     leftSquares = 0,
     rightSquares = 0,
@@ -253,20 +248,19 @@ export const BreakdownScoreRow = ({
     rightSets = 0,
     leftGlow = false,
     rightGlow = false,
-    leftDim = false,
-    rightDim = false,
     leftOpacity = 1,
     rightOpacity = 1,
     isPlayoffs = false,
-    center = "indicator",
-    centerText = "",
-    centerColor = "#2e2f42",
     penalties = null,
     leftLabel = "",
     rightLabel = "",
-    showLabels = false,
-    isInModal = false,
-    isModalHidden,
+    roundNumber = null,
+    roundLabel = "Round",
+    winnerSide = null,
+    nameLayout = isPlayoffs ? "side" : "top",
+    centeredSides = false,
+    setLinesLayout = isPlayoffs ? "vertical" : "horizontal",
+    tag = null,
     ggBanner = null,
     leftMomentumStreak = null,
     rightMomentumStreak = null,
@@ -274,111 +268,68 @@ export const BreakdownScoreRow = ({
     const hasPens = !!penalties;
 
     const renderSide = (side) => {
-        const team = side === "left" ? leftTeam : rightTeam;
-        const score = side === "left" ? leftScore : rightScore;
-        const glow = side === "left" ? leftGlow : rightGlow;
-        const dim = side === "left" ? leftDim : rightDim;
-        const squares = side === "left" ? leftSquares : rightSquares;
-        const sets = side === "left" ? leftSets : rightSets;
-        const label = side === "left" ? leftLabel : rightLabel;
-        const opacity = side === "left" ? leftOpacity : rightOpacity;
+        const isLeft = side === "left";
+        const team = isLeft ? leftTeam : rightTeam;
+        const score = isLeft ? leftScore : rightScore;
+        const glow = isLeft ? leftGlow : rightGlow;
+        const squares = isLeft ? leftSquares : rightSquares;
+        const sets = isLeft ? leftSets : rightSets;
+        const label = isLeft ? leftLabel : rightLabel;
+        const opacity = isLeft ? leftOpacity : rightOpacity;
 
         return (
             <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: side === "left" ? "flex-start" : "flex-end",
-                    opacity,
-                    transition: "opacity 400ms ease",
-                }}
+                className={css.breakdown_side}
+                style={{ alignItems: centeredSides ? "center" : isLeft ? "flex-start" : "flex-end", opacity }}
             >
-                {showLabels && (
-                    <BreakdownPointLabel
-                        team={team}
-                        text={label}
-                    />
-                )}
+                {label ? (
+                    <span
+                        className={css.point_pill}
+                        style={{
+                            ...pointPillStyle(team),
+                            position: "absolute",
+                            bottom: nameLayout === "side" ? "calc(100% + 8px)" : "calc(100% + 4px)",
+                            [isLeft ? "left" : "right"]: nameLayout === "side" ? 0 : "8px",
+                            zIndex: 2,
+                        }}
+                    >
+                        {label}
+                    </span>
+                ) : null}
+                {nameLayout === "top" ? <BreakdownTeamName team={team} side={side} winnerDot={winnerSide === side} /> : null}
 
                 <div
                     style={{
                         display: "flex",
-                        flexDirection: side === "left" ? "row-reverse" : "row",
+                        flexDirection: isLeft ? "row-reverse" : "row",
                         alignItems: "center",
                         gap: hasPens ? "10px" : "14px",
+                        position: "relative",
                     }}
                 >
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            position: "relative",
-                        }}
-                    >
-                        {team && (
-                            <span
-                                className={
-                                    side === "left"
-                                        ? css.team_name_left
-                                        : css.team_name_right
-                                }
-                                style={{
-                                    position: "absolute",
-                                    top:
-                                        isPlayoffs
-                                            ? "-42px"
-                                            : isModalHidden
-                                                ? "-20px"
-                                                : "-24px",
-                                    display: !isInModal ? "none" : "inline-block",
-                                    backgroundImage: team.gradient,
-                                    backgroundRepeat: "no-repeat",
-                                    backgroundSize: "100% 100%",
-                                    WebkitBackgroundClip: "text",
-                                    backgroundClip: "text",
-                                    WebkitTextFillColor: "transparent",
-                                    color: "transparent",
-                                    transition: "all 500ms ease-in-out",
-                                    whiteSpace: "nowrap",
-                                    marginLeft: isInModal && side === "left" ? "-108px" : "",
-                                    marginRight: isInModal && side === "right" ? "-108px" : "",
-                                }}
-                            >
-                                Team {team.name}
-                            </span>
+                    <div style={{ display: "flex", alignItems: "center", flexDirection: "column", width: "50.1px", position: "relative" }}>
+                        <RoundScore value={score} team={team} highlighted={glow} animated={false} />
+                        {setLinesLayout === "horizontal" ? (
+                            setLinesTotal > 0 ? (
+                                <BreakdownSetLines
+                                    team={team}
+                                    lit={sets}
+                                    total={setLinesTotal}
+                                    side={isLeft ? undefined : "right"}
+                                    orientation="horizontal"
+                                />
+                            ) : (
+                                <div className={isLeft ? css.lines : css.lossLines} style={{ height: "5px" }} />
+                            )
+                        ) : (
+                            <div className={isLeft ? css.lines : css.lossLines} />
                         )}
-                        <BreakdownScoreNumber
-                            team={team}
-                            value={score}
-                            glow={glow}
-                            dim={dim}
-                            size={scoreSize}
-                            width={scoreWidth}
-                        />
-
-                        {!isPlayoffs && setLinesTotal > 0 && (
-                            <BreakdownSetLines
-                                team={team}
-                                lit={sets}
-                                total={setLinesTotal}
-                                side={side === "right" ? "right" : undefined}
-                                orientation="horizontal"
-                            />
-                        )}
-
-                        <MomentumStreakBadge
-                            value={side === "left" ? leftMomentumStreak : rightMomentumStreak}
-                        />
+                        <MomentumStreakBadge value={isLeft ? leftMomentumStreak : rightMomentumStreak} />
                     </div>
 
                     {hasPens ? (
                         <PenaltyCircles
-                            results={
-                                side === "left"
-                                    ? penalties.leftResults ?? []
-                                    : penalties.rightResults ?? []
-                            }
+                            results={isLeft ? penalties.leftResults ?? [] : penalties.rightResults ?? []}
                             team={side}
                             attemptsToDisplay={penalties.attemptsToDisplay}
                             resolved={penalties.resolved}
@@ -389,81 +340,78 @@ export const BreakdownScoreRow = ({
                             team={team}
                             lit={squares}
                             total={squaresTotal}
-                            side={side === "right" ? "right" : undefined}
+                            side={isLeft ? undefined : "right"}
                         />
                     ) : null}
 
-                    {isPlayoffs && setLinesTotal > 0 && (
+                    {setLinesLayout === "vertical" && setLinesTotal > 0 ? (
                         <BreakdownSetLines
                             team={team}
                             lit={sets}
                             total={setLinesTotal}
-                            side={side === "right" ? "right" : undefined}
+                            side={isLeft ? undefined : "right"}
+                        />
+                    ) : (
+                        <div
+                            className={isLeft ? css.verticalLines : css.verticalLossLines}
+                            style={{ marginTop: "6px", width: setLinesLayout === "vertical" ? "5px" : undefined }}
                         />
                     )}
+
+                    {nameLayout === "side" ? (
+                        <BreakdownTeamName
+                            team={team}
+                            side={side}
+                            winnerDot={winnerSide === side}
+                            style={{
+                                margin: 0,
+                                position: "absolute",
+                                [isLeft ? "right" : "left"]: "110%",
+                                fontSize: "28px",
+                            }}
+                        />
+                    ) : null}
                 </div>
             </div>
         );
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "16px",
-            }}
-        >
+        <div className={css.breakdown_scoreboard}>
             {renderSide("left")}
 
-            <div
-                style={{
-                    minWidth: "63.8px",
-                    height: "42px",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    overflow: "visible",
-                    flexShrink: 0,
-                    marginTop: showLabels ? "20px" : 0,
-                }}
-            >
-                {ggBanner ? (
-                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "77.8px", marginTop: "-4px", transition: "none" }}>
+            <div className={css.breakdown_center} style={{ marginTop: isPlayoffs ? "16px" : "24px" }}>
+                {tag ? <div className={css.breakdown_center_tag}>{tag}</div> : null}
+                <div className={css.breakdown_center_slot} style={{ marginBottom: isPlayoffs ? "-12px" : 0 }}>
+                    {ggBanner ? (
                         <SeriesBanner tie={!!ggBanner.tie} team={ggBanner.team} size={38} playOnView particles={9} />
-                    </span>
-                ) : center === "indicator" ? (
-                    <div style={{ marginTop: "-4px", transition: "none" }}>
+                    ) : (
                         <LeadingIndicator
                             leftTeam={leftTeam}
                             rightTeam={rightTeam}
                             leftScore={leftScore}
                             rightScore={rightScore}
-                            size={24}
-                            width={56}
+                            size={28}
+                            width={64}
+                            animated={false}
                         />
-                    </div>
-                ) : (
-                    <span
-                        className={css.info_text}
-                        style={{
-                            fontSize: "16px",
-                            fontWeight: 700,
-                            color: centerColor,
-                            whiteSpace: "nowrap",
-                            marginTop: "-4px",
-                        }}
-                    >
-                        {centerText}
-                    </span>
-                )}
+                    )}
+                </div>
+                <div
+                    className={css.breakdown_round_slot}
+                    style={{ marginTop: isPlayoffs ? "8px" : 0 }}
+                >
+                    {roundNumber != null ? (
+                        <RoundBadge size={14} label={roundLabel}>{roundNumber}</RoundBadge>
+                    ) : null}
+                </div>
             </div>
 
             {renderSide("right")}
         </div>
     );
 };
+
 
 export const BreakdownSectionTitle = ({ text, marginTop = "16px", marginBottom = "0px" }) => (
     <h4
@@ -481,3 +429,82 @@ export const BreakdownDivider = ({ from, to }) => (
         <BreakdownSectionTitle text={to} marginTop="16px" />
     </div>
 );
+
+export const BreakdownModalScoreboard = ({
+    leftTeam,
+    rightTeam,
+    leftScore,
+    rightScore,
+    setLinesTotal = 0,
+    leftSets = 0,
+    rightSets = 0,
+    leftGlow = false,
+    rightGlow = false,
+    leftOpacity = 1,
+    rightOpacity = 1,
+    isPlayoffs = false,
+    roundsPlayed = null,
+    roundsLabel = "Rounds",
+    centerMinWidth = null,
+    ggBanner = null,
+    animated = true,
+}) => {
+    const renderSide = (side) => {
+        const isLeft = side === "left";
+        const team = isLeft ? leftTeam : rightTeam;
+        const sets = isLeft ? leftSets : rightSets;
+
+        return (
+            <div
+                className={css.breakdown_modal_side}
+                style={{ flexDirection: isLeft ? "row-reverse" : "row", opacity: isLeft ? leftOpacity : rightOpacity }}
+            >
+                <BreakdownTeamName
+                    team={team}
+                    side={side}
+                    style={{ position: "absolute", bottom: "calc(100% - 8px)", [isLeft ? "right" : "left"]: 0, margin: 0, zIndex: 2 }}
+                />
+                <div style={{ display: "flex", alignItems: "center", flexDirection: "column", width: "50.1px", position: "relative" }}>
+                    <RoundScore value={isLeft ? leftScore : rightScore} team={team} highlighted={isLeft ? leftGlow : rightGlow} animated={animated} />
+                    {!isPlayoffs && setLinesTotal > 0 ? (
+                        <BreakdownSetLines team={team} lit={sets} total={setLinesTotal} side={isLeft ? undefined : "right"} orientation="horizontal" />
+                    ) : (
+                        <div className={isLeft ? css.lines : css.lossLines} style={{ height: isPlayoffs ? 0 : "5px" }} />
+                    )}
+                </div>
+                {isPlayoffs && setLinesTotal > 0 ? (
+                    <BreakdownSetLines team={team} lit={sets} total={setLinesTotal} side={isLeft ? undefined : "right"} />
+                ) : null}
+            </div>
+        );
+    };
+
+    return (
+        <div className={css.breakdown_modal_scoreboard}>
+            {renderSide("left")}
+            <div className={css.breakdown_center} style={{ marginTop: isPlayoffs ? "16px" : "24px", minWidth: centerMinWidth ?? undefined }}>
+                <div className={css.breakdown_center_slot} style={{ marginBottom: isPlayoffs ? "-12px" : 0 }}>
+                    {ggBanner ? (
+                        <SeriesBanner tie={!!ggBanner.tie} team={ggBanner.team} size={38} playOnView particles={9} />
+                    ) : (
+                        <LeadingIndicator
+                            leftTeam={leftTeam}
+                            rightTeam={rightTeam}
+                            leftScore={leftScore}
+                            rightScore={rightScore}
+                            size={28}
+                            width={64}
+                            animated={animated}
+                        />
+                    )}
+                </div>
+                <div className={css.breakdown_round_slot} style={{ marginTop: isPlayoffs ? "8px" : 0 }}>
+                    {roundsPlayed != null ? (
+                        <RoundBadge size={14} label={roundsLabel} reversed>{roundsPlayed}</RoundBadge>
+                    ) : null}
+                </div>
+            </div>
+            {renderSide("right")}
+        </div>
+    );
+};

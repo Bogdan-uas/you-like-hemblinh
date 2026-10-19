@@ -5,13 +5,33 @@ import css from "../SpecialModePage.module.css";
 
 const DIGIT_SPRING = { type: "spring", stiffness: 340, damping: 24, mass: 0.9 };
 
-export const RoundScore = ({ value, team, highlighted = false }) => {
+export const RoundScore = ({ value, team, highlighted = false, animated = true }) => {
     const digits = String(value).split("");
     const mountedRef = useRef(false);
 
     useEffect(() => {
         mountedRef.current = true;
     }, []);
+
+    const filter = highlighted
+        ? `drop-shadow(0 0 1.5px ${team?.color}) drop-shadow(0 0 3.5px ${team?.color}66) drop-shadow(0 1px 3px rgba(0,0,0,0.4))`
+        : "none";
+
+    if (!animated) {
+        return (
+            <span className={`${css.round_text} ${css.round_score}`} style={{ filter }}>
+                <span className={css.round_score_clip}>
+                    <span className={css.round_score_digits}>
+                        {digits.map((digit, index) => (
+                            <span key={index} className={css.round_score_slot}>
+                                <span className={css.round_score_digit} style={{ backgroundImage: team?.gradient }}>{digit}</span>
+                            </span>
+                        ))}
+                    </span>
+                </span>
+            </span>
+        );
+    }
 
     return (
         <span

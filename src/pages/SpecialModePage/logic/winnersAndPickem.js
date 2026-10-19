@@ -3,6 +3,16 @@ export const GPL_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" 
 export const PBS_PODIUM_TROPHY_SIZE = 100;
 export const PBS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
 
+export const WINNERS_TIMELINE = {
+    headline: 500,
+    fourthPlace: { text: 0, rise: 1300, duration: 1700 },
+    thirdPlace: { text: 6400, rise: 7200, duration: 1800 },
+    runnerUp: { text: 12600, rise: 13400, duration: 2000 },
+    winner: { text: 19000, rise: 20000, duration: 2400 },
+    proceed: 25000,
+    done: 28500,
+};
+
 export const PODIUM_QUOTES = {
     winner: [
         "The best of the best",
@@ -26,7 +36,22 @@ export const PODIUM_QUOTES = {
         "Excellence became expectation, and they delivered",
         "History remembers champions, not predictions",
         "Perfection wasn't required, only superiority",
-        "The crown found its rightful owner"
+        "The crown found its rightful owner",
+        "Every rival had a plan, they had the answer",
+        "The last roll fell, and the throne was theirs",
+        "Champions are made in the rounds nobody watches",
+        "They made the impossible look routine",
+        "The bracket bent, but it never broke them",
+        "From the first round to the final, nobody could catch them",
+        "Calm in the chaos, ruthless at the end",
+        "They didn't wait for luck, they rolled their own",
+        "Some teams win games, they won the whole story",
+        "The final buzzer only confirmed what everyone knew",
+        "Gold suits them",
+        "They raised the bar and then raised the trophy",
+        "Write the name in big letters",
+        "Hunted by everyone, caught by no one",
+        "Another chapter, same ending: on top"
     ],
 
     runnerUp: [
@@ -50,7 +75,19 @@ export const PODIUM_QUOTES = {
         "The trophy escaped them, but respect did not",
         "Close enough to dream, far enough to remember",
         "The finish line was visible, but unreachable",
-        "Tomorrow's champions are often today's runners-up"
+        "Tomorrow's champions are often today's runners-up",
+        "The final was theirs for a while, just not at the end",
+        "They pushed the champions further than anyone else",
+        "Silver shines brightest on those who almost had it all",
+        "Every final needs a worthy opponent, and they were it",
+        "One roll away from a different headline",
+        "They lost the final, not their reputation",
+        "The ending stings, the run was still special",
+        "Only one team was better, and only just",
+        "A runner-up medal earned the hard way",
+        "The road to the final was theirs, the last step wasn't",
+        "They will be back hungrier",
+        "Second in the standings, first in the stubbornness"
     ],
 
     thirdPlace: [
@@ -73,7 +110,19 @@ export const PODIUM_QUOTES = {
         "The tournament ends, but the progress doesn't",
         "They answered defeat with determination",
         "A finish worthy of applause",
-        "Not the ending they wanted, but one they earned"
+        "Not the ending they wanted, but one they earned",
+        "The semifinal hurt, the bronze heals a little",
+        "They refused to leave empty-handed",
+        "A bronze medal won with a silver attitude",
+        "Not the final they dreamed of, but a podium they deserved",
+        "They bounced back when it mattered",
+        "A podium finish never goes out of style",
+        "The last win of the tournament still counts",
+        "They finished the job others couldn't",
+        "Bronze is proof they belonged with the best",
+        "The comeback after the heartbreak",
+        "Close to the top, closer than most",
+        "One door closed, another medal opened"
     ],
 
     fourthPlace: [
@@ -96,7 +145,19 @@ export const PODIUM_QUOTES = {
         "Every tournament has heroes without trophies",
         "Sometimes fourth place is the beginning, not the ending",
         "They leave empty-handed, but not empty-hearted",
-        "A tournament remembered for the journey, not the destination"
+        "A tournament remembered for the journey, not the destination",
+        "So close to the podium you could touch it",
+        "Fourth place, but the semis were real",
+        "Top four is still top four",
+        "They ran out of rounds, not out of heart",
+        "The podium was one roll away",
+        "The medals went elsewhere, the respect stayed",
+        "Fourth today, a warning for tomorrow",
+        "They made the final four the hard way",
+        "Not quite a medal, definitely a statement",
+        "They will remember how close it was",
+        "Good enough for the final four, hungry enough for more",
+        "The last team standing outside the podium"
     ],
 };
 

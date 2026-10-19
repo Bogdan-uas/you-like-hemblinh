@@ -1153,7 +1153,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the check icon again (it can also be a cross icon but if the match would have lost). <br />
-                And there is also a small label, which tells how many <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("pickem-system")} href='#pickem-system'>Pick&apos;em points</a> you got. <br />
+                And there is also a pill on the right of the "BEST OF" badge, which tells how many <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("pickem-system")} href='#pickem-system'>Pick&apos;em points</a> you got: it&apos;s green with a ✓, if your team won the match, red with a ✗, if it got nothing, and orange with a half-filled circle, if your team lost the match, but still took some sets (and therefore some Pick&apos;em points). <br />
                 In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 50th place to 33rd place. Loser team loses 5 points and moves from 47th place to 64th place.<br />
                 Also, the winner team got an <strong>Unbeaten Streak</strong>: consecutive wins without a loss in between will increment it. <br />
                 In the footer, there is a precise series summary. Here, you can see total played rounds, which is also a clickable button (we will come back to it soon in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("breakdown-explained")} href='#breakdown-explained'>Detailed Match Results</a> section), the score after 1st Half, the score after 2nd Half and in some cases, like here as well, the score after all OTs (here, it was only 1x OT).
@@ -1200,11 +1200,12 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={detailedMatchResults} alt="Detailed Match Results" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
             </div>
             <p className={css.info_text}>
-                At the top, there are a modal and the navigation. The modal contains the match Stage, name and order number, "Best of" of this match, gained Pick&apos;em points specifically in this set(this is a Bo1 here, so in this Bo1), final set score with total played rounds, "Back?" button and the "Hide full modal" text. Clicking it shrinks the modal down to the team names, the score and the gained Pick&apos;em points for a better view of the breakdown, while the breakdown itself stays exactly where it is (and the modal remembers this choice for the next time). The modal also has all the possible indicators to show whether your pickem team won this specific set(again, it's a Bo1 here, so this Bo1), like the ✓ or ✗ in its top-left corner. <br />
+                At the top, there are a modal and the navigation. The modal looks like a small version of the series screen: it contains the match Stage, name and order number, "Best of" of this match, the gained Pick&apos;em points specifically in this set (this is a Bo1 here, so in this Bo1) as a pill on the right, the final set score with both team names above it and the "n | ROUNDS" badge, which tells how many rounds were played, the "Back?" button and the "Hide full modal" text. Clicking it shrinks the modal down to the team names, the score and the gained Pick&apos;em points for a better view of the breakdown, while the breakdown itself stays exactly where it is (and the modal remembers this choice for the next time). The modal also shows whether your pickem team won this specific set (again, it&apos;s a Bo1 here, so this Bo1) with its light-green or light-red top and the ✓ or ✗ in its top-left corner. <br />
                 The navigation contains all significant parts of the set and allows you to go directly to that or that part. These two (modal and navigation) are always with you on the screen (until you click on the "Back?" button, of course).
             </p>
             <p className={css.info_text}>
-                And as you already understood, this is a detailed breakdown of each round, each having the won amount of mini-rounds for both teams.
+                And as you already understood, this is a detailed breakdown of each round. Every round has the same scoreboard as in the series screen: the team names, the score after this round, the won amount of mini-rounds of both teams and the leading indicator with the "ROUND" badge below it.
+                The small glowing dot next to a team&apos;s name shows, which team won this round. "SET POINT!" and "MATCH POINT!!!" pills show up above the names exactly like in the series screen, and every Extended Round gets a purple "EXTENDED ROUND" pill above its indicator.
             </p>
             <p className={css.info_text}>
                 Below every round, there is also a small strip with all the mini-rounds of that round, in the same order they were played. Each column is one mini-round:
@@ -1226,7 +1227,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={significantPartDivider} alt="Divider between First Half and Second Half" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
             </div>
             <p className={css.info_text}>
-                The ending of the set looks like this, for example (in this case, it has happened in first Overtime):
+                The ending of the set looks like this, for example (in this case, it has happened in first Overtime). Only the last round of a set shows the set lines below the scores, just like the series screen does right after the set:
             </p>
             <div className={css.image_container}>
                 <img src={setEnding} alt="Ending of the set in Overtime" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
@@ -1244,7 +1245,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </span>
             </div>
             <p className={css.info_text}>
-                And the UI for the Detailed Match Results modal for non-Bo1 matches is also different: next to the "BEST OF" badge, there is the same "SET" badge as in the series screen (or the red "DECIDER" one for the last possible set) and arrows on both sides to switch between the sets. I open at first the "Set 1":
+                And the UI for the Detailed Match Results modal for non-Bo1 matches is also different: below the "BEST OF" badge, there are the same set chips with the final scores as in the set history of the series screen (S1, S2, ... and the orange "DEC" for the Decider). The chip of the set, which you&apos;re looking at, is dark with a small eye icon and a blue ring around it. By clicking onto another chip, the ring glides over to it and the whole breakdown smoothly switches to that set, while the scores in the modal roll to the new ones. I open at first the "Set 1":
             </p>
             <div className={css.image_container}>
                 <img src={detailedMatchResultsBoThreeFirstSet} alt="Detailed Match Results of Set 1 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
@@ -1256,7 +1257,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={detailedMatchResultsBoThreeSecondSet} alt="Detailed Match Results of Set 2 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
                 <img src={detailedMatchResultsBoThreeDecider} alt="Detailed Match Results of the Decider of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                    (Golden label is only shown at the last played set of a series and shows how much Pick&apos;em points you have gained from the whole series)
+                    (The golden "TOTAL" pill on the left is only shown at the last played set of a series and shows how much Pick&apos;em points you have gained from the whole series. If your picked team lost the series, but still took some sets, it&apos;s orange instead)
                 </span>
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (If your picked team wins last needed set to win, you get from that set only 1 Pick&apos;em point)
@@ -1271,16 +1272,18 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>There has been a simple tiebreaker system for a long time: Overtimes could go up to infinity, until a team gets 4 OT Rounds in a single Overtime. Now, the system has changed and the previous system only works up to Quadruple(4x) Overtime. If it's tied again in 4x Overtime, another way to separate teams is being implemented.</p>
-            <p className={css.info_text}>After 24-24 tie, this screen will show up. We see here the scores and the set lines below. Below that, we'll see the explanation text of what will happen now and then you will see messages showing up in a list and the scores being updated. Here, we are seeing a chronological order of all 6 possible Extended Rounds to be won. That team, which won more Extended Rounds throughout the whole set, that team also wins the set (4 Extended Rounds are already enough):</p>
+            <p className={css.info_text}>After 24-24 tie, this screen will show up. At the top, it tells that the set is still tied after Quadruple Overtime and there is the "EXTENDED ROUNDS | First to 4" badge. Below, there is a small scoreboard like in the series screen with the Extended Rounds score of both teams, their squares and the leading indicator with the "COMPARED n/6" badge.
+                Below that, there are the cards of all 6 possible Extended Rounds in a chronological order (1st Half, 2nd Half, OT, Double OT, Triple OT and Quadruple OT). One by one, the cards flip over and show the winner of that Extended Round with a small arrow pointing to the side of the winner, the mini-rounds score of that round and the total Extended Rounds score below the card. The card, which is about to flip, has a blue ring around it, and the pill at the bottom always tells what has just happened.
+                That team, which won more Extended Rounds throughout the whole set, that team also wins the set (4 Extended Rounds are already enough and the card, which decided it, gets a "CLINCHED!" pill):</p>
             <div className={css.image_container}>
-                <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '30vh' }} />
+                <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '35vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '30vh' }} />
+                <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>If the Extended Rounds score is tied 3-3, penalty series will start, which will decide everything:</p>
             <div className={css.image_container}>
-                <img src={extRoundsScreenThree} alt="Extended Rounds score tied 3-3" className={css.image} style={{ width: '30vw', height: '32vh' }} />
+                <img src={extRoundsScreenThree} alt="Extended Rounds score tied 3-3" className={css.image} style={{ width: '30vw', height: '35vh' }} />
             </div>
             <div className={css.image_container}>
                 <img src={pensScreen} alt="Penalty series screen" className={css.image} style={{ width: '32vw', height: '36vh' }} />
@@ -1318,7 +1321,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Match rectangle of such a match looks like this then:
             </p>
             <div className={css.image_container}>
-                <img src={matchRectPens} alt="Match rectangle with penalty score" className={css.image} style={{ width: '30vw', height: '21.5vh' }} />
+                <img src={matchRectPens} alt="Match rectangle with penalty score" className={css.image} style={{ width: '30vw', height: '24vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Instead of "Pens", it could be also "ERs", which stands for "Extended Rounds". "ERs" is there if this match was finished already by Extended Rounds score. Also, this label underneath is only in BO1s.)
                 </span>
@@ -1358,7 +1361,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>That's why also I get here only <b>+1 Pick&apos;em point</b>:</p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '37vw', height: '31vh' }} />
+                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '37vw', height: '27vh' }} />
             </div>
         </section>
         <section>
@@ -1398,10 +1401,10 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={grandFinalistsImg} alt="Two contenders for the championship remaining" className={css.image} style={{ width: '29vw', height: '38vh' }} />
             </div>
             <p className={css.info_text}>
-                In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner's screen, where we see first 4 places of the tournament:
+                In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner&apos;s screen, where the first 4 places of the tournament show up one by one: at first the Fourth Place, then the Third Place, the Runner-Up and at the very end, the Winner. Every place rises with its own little celebration: blue embers for the Fourth Place, bronze sparkles for the Third Place, silver rays for the Runner-Up and golden rays, fireworks and confetti all over the screen for the Winner:
             </p>
             <div className={css.image_container}>
-                <img src={winnersScreenImg} alt="Team Gold as Winner, Team Lime as Runner-up, Team Blue as Third Place, Team Green as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
+                <img src={winnersScreenImg} alt="Team Seafoam as Winner, Team Yellow as Runner-up, Team Salmon as Third Place, Team Rose as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
             </div>
             <p className={css.info_text}>After clicking "Proceed", we are redirected to Pick&apos;em summary, where you can see how many matches overall you've guessed correctly throughout the tournament and your final Pick&apos;em points score and also whether you won the Pick'em challenge or not:</p>
             <div className={css.image_container}>

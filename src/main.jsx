@@ -16,7 +16,10 @@ new MutationObserver(() => {
   [...rootElement.children].forEach((child) => rubberCenterObserver.observe(child));
 }).observe(rootElement, { childList: true });
 
-const pressTarget = (event) => event.target.closest?.("button:not(:disabled), [role=button], a[class*=button]");
+const pressTarget = (event) => {
+  const element = event.target.closest?.("button:not(:disabled), [role=button], a[class*=button]");
+  return element && !element.closest("[data-no-press]") ? element : null;
+};
 let pressedElement = null;
 const pressDown = (element) => {
   if (!element) return;

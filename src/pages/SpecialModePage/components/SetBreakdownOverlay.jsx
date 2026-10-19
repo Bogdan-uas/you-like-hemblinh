@@ -2,15 +2,16 @@ import { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback, use
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { FaCheck, FaXmark, FaCircle, FaCircleHalfStroke } from "react-icons/fa6";
 import Lenis from "lenis";
-import { BreakdownSectionTitle, BreakdownDivider, BreakdownScoreRow, MiniRoundTimeline } from "./BreakdownParts.jsx";
-import { BREAKDOWN_OT_NAMES, BREAKDOWN_GLOW, BREAKDOWN_OT_SHORT } from "../logic/breakdownStyles.js";
+import { BreakdownSectionTitle, BreakdownDivider, BreakdownScoreRow, BreakdownModalScoreboard, MiniRoundTimeline } from "./BreakdownParts.jsx";
+import { BREAKDOWN_OT_NAMES, BREAKDOWN_OT_SHORT } from "../logic/breakdownStyles.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { buildExtendedRoundWinnerList, buildExtendedRoundDetails } from "../logic/series.js";
 import { ExtendedRoundsTrack } from "./ExtendedRounds.jsx";
 import { BREAKDOWN_HIDDEN_LS_KEY, BREAKDOWN_FULL_HEIGHT_LS_KEY } from "../logic/storageKeys.js";
+
+const ROUND_BATCH = 3;
 
 const rootFontSize = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 
@@ -31,7 +32,7 @@ const storeFullModalHeight = (height) => {
     }
 };
 import { BestOfBadge } from "./BestOfBadge.jsx";
-import { SetBadge } from "./SeriesBadges.jsx";
+import { SetPicker } from "./SeriesBadges.jsx";
 
 const createActiveSectionStore = () => {
     let value = null;
@@ -297,6 +298,26 @@ export const SetBreakdownOverlay = ({
         };
     }, [entry]);
 
+    const totalRounds = plan
+        ? plan.firstHalf.length + plan.secondHalf.length + plan.overtimes.reduce((sum, ot) => sum + ot.rounds.length, 0)
+        : 0;
+    const [renderCount, setRenderCount] = useState(ROUND_BATCH);
+    const [chunking, setChunking] = useState(true);
+    const shownIndexRef = useRef(index);
+
+    useEffect(() => {
+        if (shownIndexRef.current === index) return;
+        shownIndexRef.current = index;
+        setChunking(false);
+        setRenderCount(ROUND_BATCH);
+    }, [index]);
+
+    useEffect(() => {
+        if (!chunking || renderCount >= totalRounds) return;
+        const id = requestAnimationFrame(() => setRenderCount((count) => count + ROUND_BATCH));
+        return () => cancelAnimationFrame(id);
+    }, [chunking, renderCount, totalRounds]);
+
     const setsWonByLeft = useMemo(
         () =>
             (sets ?? [])
@@ -361,18 +382,6 @@ export const SetBreakdownOverlay = ({
 
         activeSectionStore.set(current);
     }, [plan, fullModalHeight, activeSectionStore]);
-
-    useEffect(() => {
-        if (!lenisRef.current) return;
-
-        lenisRef.current.scrollTo(0, {
-            immediate: true,
-            easing: (t) =>
-                t < 0.5
-                    ? 4 * t * t * t
-                    : 1 - Math.pow(-2 * t + 2, 3) / 2,
-        });
-    }, [index]);
 
     useEffect(() => {
         requestAnimationFrame(() => updateActiveSection());
@@ -457,9 +466,7 @@ export const SetBreakdownOverlay = ({
 
     const won = !!entry.won;
     const isTieSet = !!entry.tie;
-    const background = won ? "linear-gradient(180deg,#b8ffd7 0%,#ffffff 120%)" : "linear-gradient(180deg, #ffbfbf 0%, #ffffff 120%)";
     const tieDecided = !!plan.tieDecidedBy;
-    const tieWinner = plan.tieLeftScore > plan.tieRightScore ? "left" : plan.tieRightScore > plan.tieLeftScore ? "right" : null;
 
     const isClinchingSet =
         (won && leftSetsAfter === setsToWin) ||
@@ -502,7 +509,9 @@ export const SetBreakdownOverlay = ({
         return { leftOpacity: loserSideOpacity(setsWonByLeftBefore), rightOpacity: 1 };
     };
 
-    const renderRound = (round, key) => {
+    const renderRound = (round, key, ordinal) => {
+        if (ordinal >= renderCount) return null;
+
         const isDecisive =
             !tieDecided &&
             plan.lastLogged &&
@@ -541,91 +550,12 @@ export const SetBreakdownOverlay = ({
             : { leftOpacity: 1, rightOpacity: 1 };
 
         return (
-            <div
-                key={key}
-                data-round-key={round.key}
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "2px",
-                    maxWidth: "720px",
-                    margin: "42px auto 0",
-                    padding: "6px 0",
-                    borderRadius: "16px",
-                }}
-            >
-                <div
-                    style={{
-                        position: "relative",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}
-                >
-                    <span
-                        className={css.info_text}
-                        style={{
-                            fontSize: "15px",
-                            color: "#555",
-                            fontWeight: 600,
-                        }}
-                    >
-                        Round {round.roundNumber}
-                    </span>
-
-                    {round.winner === "left" && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                left: -32,
-                                width: "14px",
-                                height: "14px",
-                                borderRadius: "50%",
-                                marginTop: "-2px",
-                                backgroundColor: "#54CC54",
-                                boxShadow: BREAKDOWN_GLOW("#54CC54"),
-                            }}
-                        />
-                    )}
-
-                    {round.winner === "right" && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                right: -32,
-                                width: "14px",
-                                height: "14px",
-                                borderRadius: "50%",
-                                marginTop: "-2px",
-                                backgroundColor: "#54CC54",
-                                boxShadow: BREAKDOWN_GLOW("#54CC54"),
-                            }}
-                        />
-                    )}
-                </div>
-
-                {round.squares === 10 && (
-                    plan.hasExtended ? (
-                        <button
-                            type="button"
-                            className={`${css.link_button} ${css.ert_round_tag}`}
-                            onClick={() => scrollToExtendedCard(round.key)}
-                        >
-                            Extended Round
-                        </button>
-                    ) : (
-                            <span className={css.ert_round_tag} style={{ pointerEvents: "none" }}>Extended Round</span>
-                    )
-                )}
-
+            <div key={key} data-round-key={round.key} className={css.breakdown_round}>
                 <BreakdownScoreRow
                     leftTeam={leftTeam}
                     rightTeam={rightTeam}
                     leftScore={round.scoreLeft}
                     rightScore={round.scoreRight}
-                    scoreSize={44}
-                    scoreWidth={49}
                     squaresTotal={round.squares}
                     leftSquares={round.miniLeft}
                     rightSquares={round.miniRight}
@@ -635,9 +565,24 @@ export const SetBreakdownOverlay = ({
                     leftGlow={isDecisive && won && !isTieSet}
                     rightGlow={isDecisive && !won && !isTieSet}
                     isPlayoffs={isPlayoffs}
-                    showLabels
                     leftLabel={leftLabel}
                     rightLabel={rightLabel}
+                    roundNumber={round.roundNumber}
+                    winnerSide={round.winner}
+                    tag={round.squares === 10 ? (
+                        plan.hasExtended ? (
+                            <button
+                                type="button"
+                                className={css.breakdown_er_tag}
+                                onClick={() => scrollToExtendedCard(round.key)}
+                                title="Show this round in the Extended Rounds"
+                            >
+                                Extended Round
+                            </button>
+                        ) : (
+                            <span className={css.breakdown_er_tag}>Extended Round</span>
+                        )
+                    ) : null}
                     leftMomentumStreak={!isLastRoundOfSet && round.momentumSide === "left" ? round.momentumValue : null}
                     rightMomentumStreak={!isLastRoundOfSet && round.momentumSide === "right" ? round.momentumValue : null}
                     ggBanner={
@@ -653,52 +598,64 @@ export const SetBreakdownOverlay = ({
         );
     };
 
-    const tieOpacities =
-        tieWinner === "left"
-            ? {
-                leftOpacity: 1,
-                rightOpacity: loserSideOpacity(setsWonByRightBefore),
+    const setChips = (sets ?? []).map((s, i) => {
+        const ext = s.extendedRounds;
+        const pens = ext?.penalties ?? null;
+        let extra = null;
+        if (pens) {
+            extra = { label: "P", title: "Penalties", left: pens.leftScore ?? 0, right: pens.rightScore ?? 0 };
+        } else if (ext && s.wins === s.losses && !s.tie) {
+            const winners = buildExtendedRoundWinnerList(ext).filter((x) => x.winner);
+            if (winners.length) {
+                const left = winners.filter((x) => x.winner === "left").length;
+                extra = { label: "ER", title: "Extended Rounds", left, right: winners.length - left };
             }
-            : tieWinner === "right"
-                ? {
-                    leftOpacity: loserSideOpacity(setsWonByLeftBefore),
-                    rightOpacity: 1,
-                }
-                : {
-                    leftOpacity: 1,
-                    rightOpacity: 1,
-                };
-
-    const arrowStyle = (disabled) => ({
-        position: "absolute",
-        top: "50%",
-        transform: "translateY(-50%)",
-        background: "none",
-        border: "none",
-        padding: 0,
-        opacity: disabled ? 0.35 : 1,
-        cursor: disabled ? "default" : "pointer",
-        pointerEvents: disabled ? "none" : "auto",
-        zIndex: 3,
+        }
+        return {
+            set: i + 1,
+            result: { leftScore: s.wins, rightScore: s.losses, extra },
+            winnerColor: s.tie ? null : s.won ? leftTeam?.color : rightTeam?.color,
+        };
     });
 
-    const renderPickemLabels = (compact) => {
-        const placement = compact ? { position: "static" } : { right: 0 };
-        return (
-            <>
-                {isClinchingSet && !isBo1 && (
-                    <span className={css.match_modal_pickem_total} style={placement}>
-                        +{totalPickemPoints} Pick&apos;em point{totalPickemPoints !== 1 ? "s" : ""}
-                    </span>
-                )}
-                <span className={css.match_modal_pickem} style={{ ...placement, color: won ? "#2e7d32" : "red" }}>
-                    {won
-                        ? (isClinchingSet ? "+1 Pick'em point" : "+2 Pick'em points")
-                        : "+0 Pick'em points"}
-                </span>
-            </>
-        );
+    const pickemPoints = won ? (isClinchingSet ? 1 : 2) : 0;
+
+    const handleSetSwitched = () => {
+        lenisRef.current?.scrollTo(0, { immediate: true, force: true });
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
+        setChunking(true);
+        requestAnimationFrame(() => updateActiveSection());
     };
+
+    const renderPickemPills = (full = false) => (
+        <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+                key={`pickem-${index}`}
+                className={full ? css.breakdown_pickem_spread : css.breakdown_pickem_row}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+            >
+                {isClinchingSet && !isBo1 ? (
+                    <span
+                        className={`${css.breakdown_pickem_pill} ${won ? css.breakdown_pickem_pill_total : totalPickemPoints > 0 ? css.breakdown_pickem_pill_partial : css.breakdown_pickem_pill_loss}`}
+                        title={!won && totalPickemPoints > 0 ? "Your pick took some sets, but not the series" : undefined}
+                    >
+                        {!won ? (totalPickemPoints > 0 ? <FaCircleHalfStroke /> : <FaXmark />) : null}
+                        Total +{totalPickemPoints}
+                    </span>
+                ) : full ? <span /> : null}
+                <span className={`${css.breakdown_pickem_pill} ${won ? css.breakdown_pickem_pill_win : css.breakdown_pickem_pill_loss}`}>
+                    {won ? <FaCheck /> : <FaXmark />}
+                    +{pickemPoints} Pick&apos;em point{pickemPoints !== 1 ? "s" : ""}
+                </span>
+            </motion.span>
+        </AnimatePresence>
+    );
+
+    const tieLabel = plan.tieDecidedBy === "penalties" ? "Penalties" : "Extended Rounds";
+    const tieTone = (own, other) => (own > other ? css.set_chip_win : own < other ? css.set_chip_loss : "");
 
     return (
         <>
@@ -734,268 +691,226 @@ export const SetBreakdownOverlay = ({
                         textAlign: "center",
                     }}
                 >
-                    {plan.firstHalf.length > 0 && (
-                        <div ref={(node) => { sectionRefs.current.firstHalf = node; }}>
-                            <hr style={{ width: "600px", margin: "0 auto" }} className={css.dashed_divider} />
-                            <div style={{ marginTop: "24px" }}>
-                                <BreakdownSectionTitle text="First Half" marginTop="0px" />
-                            </div>
-                            {plan.firstHalf.map((round, i) => renderRound(round, `s${index}-fh-${i}`))}
-                        </div>
-                    )}
+                    <AnimatePresence mode="wait" initial={false} onExitComplete={handleSetSwitched}>
+                        <motion.div
+                            key={`set-${index}`}
+                            initial={{ opacity: 0, y: 28 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -16 }}
+                            transition={{ duration: 0.32, ease: "easeInOut" }}
+                            style={{ transition: "none" }}
+                        >
+                            {plan.firstHalf.length > 0 && (
+                                <div ref={(node) => { sectionRefs.current.firstHalf = node; }}>
+                                    <hr style={{ width: "600px", margin: "0 auto" }} className={css.dashed_divider} />
+                                    <div style={{ marginTop: "24px" }}>
+                                        <BreakdownSectionTitle text="First Half" marginTop="0px" />
+                                    </div>
+                                    {plan.firstHalf.map((round, i) => renderRound(round, `s${index}-fh-${i}`, i))}
+                                </div>
+                            )}
 
-                    {plan.secondHalf.length > 0 && (
-                        <div ref={(node) => { sectionRefs.current.secondHalf = node; }}>
-                            <BreakdownDivider from="First Half" to="Second Half" />
-                            {plan.secondHalf.map((round, i) => renderRound(round, `s${index}-sh-${i}`))}
-                        </div>
-                    )}
+                            {plan.secondHalf.length > 0 && plan.firstHalf.length < renderCount && (
+                                <div ref={(node) => { sectionRefs.current.secondHalf = node; }}>
+                                    <BreakdownDivider from="First Half" to="Second Half" />
+                                    {plan.secondHalf.map((round, i) => renderRound(round, `s${index}-sh-${i}`, plan.firstHalf.length + i))}
+                                </div>
+                            )}
 
-                    {plan.overtimes.map(({ block, rounds }, i) => {
-                        const previousLabel =
-                            i === 0
-                                ? "Second Half"
-                                : BREAKDOWN_OT_NAMES[plan.overtimes[i - 1].block] ??
-                                `${plan.overtimes[i - 1].block}x Overtime`;
+                            {plan.overtimes.map(({ block, rounds }, i) => {
+                                const previousLabel =
+                                    i === 0
+                                        ? "Second Half"
+                                        : BREAKDOWN_OT_NAMES[plan.overtimes[i - 1].block] ??
+                                        `${plan.overtimes[i - 1].block}x Overtime`;
 
-                        const label = BREAKDOWN_OT_NAMES[block] ?? `${block}x Overtime`;
-
-                        return (
-                            <div
-                                key={`ot-${block}`}
-                                ref={(node) => { sectionRefs.current[`ot${block}`] = node; }}
-                            >
-                                <BreakdownDivider from={previousLabel} to={label} />
-                                {rounds.map((round, j) => renderRound(round, `s${index}-ot-${block}-${j}`))}
-                            </div>
-                        );
-                    })}
-
-                    {plan.hasExtended && plan.extDetails && (
-                        <div ref={(node) => { sectionRefs.current.extended = node; }}>
-                            <BreakdownDivider
-                                from={
-                                    plan.overtimes.length
-                                        ? BREAKDOWN_OT_NAMES[
-                                        plan.overtimes[plan.overtimes.length - 1].block
-                                        ] ?? "Overtime"
-                                        : "Second Half"
-                                }
-                                to="Extended Rounds"
-                            />
-
-                            {(() => {
-                                const { rounds, clinchIndex, left, right } = plan.extDetails;
-                                const extDecisive = plan.tieDecidedBy === "extended";
-                                const isMatchDecidingExtendedRound = isFinalSet && extDecisive;
-                                const winnerTeam = left > right ? leftTeam : rightTeam;
-                                const clinchRound = clinchIndex !== null ? rounds[clinchIndex] : null;
+                                const label = BREAKDOWN_OT_NAMES[block] ?? `${block}x Overtime`;
+                                const offset = plan.firstHalf.length + plan.secondHalf.length
+                                    + plan.overtimes.slice(0, i).reduce((sum, ot) => sum + ot.rounds.length, 0);
+                                if (offset >= renderCount) return null;
 
                                 return (
-                                    <div style={{ marginTop: "18px" }}>
-                                        <p
-                                            className={css.info_text}
-                                            style={{ fontSize: "15px", color: "#555", fontWeight: 600, margin: "0 auto 4px", maxWidth: "620px" }}
-                                        >
-                                            Still {entry.wins}:{entry.losses} after Quadruple Overtime, so every Extended Round winner was compared.
-                                            {rounds.some((r) => r.roundKey) ? " Click a card to jump to that round." : ""}
-                                        </p>
-
-                                        <ExtendedRoundsTrack
-                                            rounds={rounds}
-                                            clinchIndex={clinchIndex}
-                                            decidedWinner={extDecisive ? (left > right ? "left" : "right") : null}
-                                            leftTeam={leftTeam}
-                                            rightTeam={rightTeam}
-                                            showRoundNumbers
-                                            animate={false}
-                                            onTileClick={scrollToRound}
-                                        />
-
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                alignItems: "center",
-                                                gap: "2px",
-                                                marginTop: "26px",
-                                            }}
-                                        >
-                                            <span
-                                                className={css.info_text}
-                                                style={{ fontSize: "15px", color: "#555", fontWeight: 600 }}
-                                            >
-                                                {extDecisive ? (
-                                                    <>
-                                                        <span style={{ color: winnerTeam?.color, fontWeight: 900 }}>
-                                                            Team {winnerTeam?.name}
-                                                        </span>
-                                                        {" "}won the Extended Rounds {Math.max(left, right)}:{Math.min(left, right)}
-                                                        {clinchRound ? `, clinched in the ${clinchRound.title}` : ""}
-                                                    </>
-                                                ) : (
-                                                    <>{left}:{right}, tied again, so Penalties had to decide it</>
-                                                )}
-                                            </span>
-
-                                            <BreakdownScoreRow
-                                                leftTeam={leftTeam}
-                                                rightTeam={rightTeam}
-                                                leftScore={left}
-                                                rightScore={right}
-                                                scoreSize={44}
-                                                scoreWidth={49}
-                                                center="text"
-                                                centerText={extDecisive ? "VS" : "="}
-                                                centerColor="#2e2f42"
-                                                isPlayoffs={isPlayoffs}
-                                                setLinesTotal={extDecisive ? setLinesTotal : 0}
-                                                leftSets={leftSetsAfter}
-                                                rightSets={rightSetsAfter}
-                                                leftGlow={extDecisive && won}
-                                                rightGlow={extDecisive && !won}
-                                                ggBanner={
-                                                    isMatchDecidingExtendedRound
-                                                        ? { team: won ? leftTeam : rightTeam }
-                                                        : null
-                                                }
-                                                {...(extDecisive
-                                                    ? decisiveOpacities(!!won)
-                                                    : { leftOpacity: 1, rightOpacity: 1 })}
-                                            />
-                                        </div>
+                                    <div
+                                        key={`ot-${block}`}
+                                        ref={(node) => { sectionRefs.current[`ot${block}`] = node; }}
+                                    >
+                                        <BreakdownDivider from={previousLabel} to={label} />
+                                        {rounds.map((round, j) => renderRound(round, `s${index}-ot-${block}-${j}`, offset + j))}
                                     </div>
                                 );
-                            })()}
-                        </div>
-                    )}
+                            })}
 
-                    {plan.penalties && (
-                        <div ref={(node) => { sectionRefs.current.penalties = node; }}>
-                            <BreakdownDivider
-                                from="Extended Rounds"
-                                to="Penalties"
-                            />
+                            {plan.hasExtended && plan.extDetails && renderCount >= totalRounds && (
+                                <div ref={(node) => { sectionRefs.current.extended = node; }}>
+                                    <BreakdownDivider
+                                        from={
+                                            plan.overtimes.length
+                                                ? BREAKDOWN_OT_NAMES[
+                                                plan.overtimes[plan.overtimes.length - 1].block
+                                                ] ?? "Overtime"
+                                                : "Second Half"
+                                        }
+                                        to="Extended Rounds"
+                                    />
 
-                            {(() => {
-                                const leftScore = plan.penalties.leftScore ?? 0;
-                                const rightScore = plan.penalties.rightScore ?? 0;
-                                const leftWon = leftScore > rightScore;
+                                    {(() => {
+                                        const { rounds, clinchIndex, left, right } = plan.extDetails;
+                                        const extDecisive = plan.tieDecidedBy === "extended";
+                                        const isMatchDecidingExtendedRound = isFinalSet && extDecisive;
+                                        const winnerTeam = left > right ? leftTeam : rightTeam;
+                                        const clinchRound = clinchIndex !== null ? rounds[clinchIndex] : null;
 
-                                return (
-                                    <div style={{ marginTop: "14px" }}>
-                                        <BreakdownScoreRow
-                                            leftTeam={leftTeam}
-                                            rightTeam={rightTeam}
-                                            leftScore={leftScore}
-                                            rightScore={rightScore}
-                                            scoreSize={44}
-                                            scoreWidth={49}
-                                            center="text"
-                                            centerText="VS"
-                                            centerColor="#2e2f42"
-                                            isPlayoffs={isPlayoffs}
-                                            penalties={penaltyView}
-                                            setLinesTotal={setLinesTotal}
-                                            leftSets={leftSetsAfter}
-                                            rightSets={rightSetsAfter}
-                                            leftGlow={leftWon}
-                                            rightGlow={!leftWon}
-                                            ggBanner={
-                                                isFinalSet
-                                                    ? { team: leftWon ? leftTeam : rightTeam }
-                                                    : null
-                                            }
-                                            {...decisiveOpacities(leftWon)}
-                                        />
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    )}
+                                        return (
+                                            <div style={{ marginTop: "18px" }}>
+                                                <p
+                                                    className={css.info_text}
+                                                    style={{ fontSize: "15px", color: "#555", fontWeight: 600, margin: "0 auto 4px", maxWidth: "620px" }}
+                                                >
+                                                    Still {entry.wins}:{entry.losses} after Quadruple Overtime, so every Extended Round winner was compared.
+                                                    {rounds.some((r) => r.roundKey) ? " Click a card to jump to that round." : ""}
+                                                </p>
+
+                                                <ExtendedRoundsTrack
+                                                    rounds={rounds}
+                                                    clinchIndex={clinchIndex}
+                                                    decidedWinner={extDecisive ? (left > right ? "left" : "right") : null}
+                                                    leftTeam={leftTeam}
+                                                    rightTeam={rightTeam}
+                                                    showRoundNumbers
+                                                    animate={false}
+                                                    onTileClick={scrollToRound}
+                                                />
+
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        alignItems: "center",
+                                                        gap: "2px",
+                                                        marginTop: "26px",
+                                                    }}
+                                                >
+                                                    <span
+                                                        className={css.info_text}
+                                                        style={{ fontSize: "15px", color: "#555", fontWeight: 600 }}
+                                                    >
+                                                        {extDecisive ? (
+                                                            <>
+                                                                <span style={{ color: winnerTeam?.color, fontWeight: 900 }}>
+                                                                    Team {winnerTeam?.name}
+                                                                </span>
+                                                                {" "}won the Extended Rounds {Math.max(left, right)}:{Math.min(left, right)}
+                                                                {clinchRound ? `, clinched in the ${clinchRound.title}` : ""}
+                                                            </>
+                                                        ) : (
+                                                            <>{left}:{right}, tied again, so Penalties had to decide it</>
+                                                        )}
+                                                    </span>
+
+                                                    <div style={{ marginTop: "34px", transition: "none" }}>
+                                                    <BreakdownModalScoreboard
+                                                        leftTeam={leftTeam}
+                                                        rightTeam={rightTeam}
+                                                        leftScore={left}
+                                                        rightScore={right}
+                                                        isPlayoffs={isPlayoffs}
+                                                        centerMinWidth={170}
+                                                        animated={false}
+                                                        setLinesTotal={extDecisive ? setLinesTotal : 0}
+                                                        leftSets={leftSetsAfter}
+                                                        rightSets={rightSetsAfter}
+                                                        leftGlow={extDecisive && won}
+                                                        rightGlow={extDecisive && !won}
+                                                        ggBanner={
+                                                            isMatchDecidingExtendedRound
+                                                                ? { team: won ? leftTeam : rightTeam }
+                                                                : null
+                                                        }
+                                                        {...(extDecisive
+                                                            ? decisiveOpacities(!!won)
+                                                            : { leftOpacity: 1, rightOpacity: 1 })}
+                                                    />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+
+                            {plan.penalties && renderCount >= totalRounds && (
+                                <div ref={(node) => { sectionRefs.current.penalties = node; }}>
+                                    <BreakdownDivider
+                                        from="Extended Rounds"
+                                        to="Penalties"
+                                    />
+
+                                    {(() => {
+                                        const leftScore = plan.penalties.leftScore ?? 0;
+                                        const rightScore = plan.penalties.rightScore ?? 0;
+                                        const leftWon = leftScore > rightScore;
+
+                                        return (
+                                            <div style={{ marginTop: "14px" }}>
+                                                <BreakdownScoreRow
+                                                    leftTeam={leftTeam}
+                                                    rightTeam={rightTeam}
+                                                    leftScore={leftScore}
+                                                    rightScore={rightScore}
+                                                    isPlayoffs={isPlayoffs}
+                                                    penalties={penaltyView}
+                                                    setLinesTotal={setLinesTotal}
+                                                    leftSets={leftSetsAfter}
+                                                    rightSets={rightSetsAfter}
+                                                    leftGlow={leftWon}
+                                                    rightGlow={!leftWon}
+                                                    ggBanner={
+                                                        isFinalSet
+                                                            ? { team: leftWon ? leftTeam : rightTeam }
+                                                            : null
+                                                    }
+                                                    {...decisiveOpacities(leftWon)}
+                                                />
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </motion.div>
             <motion.div
                 ref={modalRef}
-                className={css.restart_modal}
-                initial={{ opacity: 0, x: "-50%", y: -120 }}
-                animate={{ opacity: 1, x: "-50%", y: 0 }}
-                exit={{ opacity: 0, x: "-50%", y: -100 }}
+                className={css.breakdown_modal}
+                initial={{ opacity: 0, y: -120 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -100 }}
                 transition={{ type: "spring", stiffness: 240, damping: 22, duration: 3 }}
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                    position: "fixed",
-                    top: "28px",
-                    left: "50%",
-                    transform: "none",
-                    animation: "none",
-                    gap: 0,
-                    borderRadius: "12px",
-                    width: "620px",
-                    maxWidth: "92vw",
-                    background,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    transformOrigin: "top",
-                    padding: isModalHidden ? (isPlayoffs ? "56px 56px 14px" : "36px 56px 14px") : "20px 56px 22px",
-                    zIndex: 81,
-                    border: won ? "2px solid #006a32" : "2px solid rgb(188, 108, 108)",
+                    padding: isModalHidden ? "14px 40px 12px" : "18px 40px 16px",
+                    borderColor: won ? "rgba(55, 183, 55, 0.55)" : "rgba(190, 57, 57, 0.5)",
+                    background: `linear-gradient(180deg, ${won ? "#dcffea" : "#ffe1e1"} 0%, #ffffff ${isModalHidden ? 77 : 198}px)`,
                 }}
             >
-                <div
-                    style={{
-                        position: "absolute",
-                        top: "-16.5px",
-                        left: "-16.5px",
-                        display: "flex",
-                        alignItems: "center",
-                        color: won ? "#1f9d55" : "#c62828",
-                        zIndex: 3,
-                    }}
-                >
-                    {won ? (
-                        <div
-                            className={css.modalSuccessPickemIndicator}
+                <div className={css.breakdown_modal_mark}>
+                    <AnimatePresence mode="wait" initial={false}>
+                        <motion.span
+                            key={won ? "won" : "lost"}
+                            initial={{ opacity: 0, scale: 0.6, rotate: -90 }}
+                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                            exit={{ opacity: 0, scale: 0.6, rotate: 90 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            style={{ display: "grid", placeItems: "center", transition: "none" }}
                         >
-                            <FaCircle size={32} color="#37b737" />
-                            <FaCheck size={20} color="#ffffff" />
-                        </div>
-                    ) : (
-                        <div
-                            className={css.modalSuccessPickemIndicator}
-                        >
-                            <FaCircle size={32} color="#be3939" />
-                            <FaXmark size={20} color="#fff" />
-                        </div>
-                    )}
+                            <FaCircle size={32} color={won ? "#37b737" : "#be3939"} style={{ gridArea: "1 / 1" }} />
+                            {won
+                                ? <FaCheck size={20} color="#ffffff" style={{ gridArea: "1 / 1" }} />
+                                : <FaXmark size={20} color="#ffffff" style={{ gridArea: "1 / 1" }} />}
+                        </motion.span>
+                    </AnimatePresence>
                 </div>
-
-                {!isBo1 && (
-                    <>
-                        <button
-                            type="button"
-                            aria-label="Previous set"
-                            disabled={index <= 0}
-                            onClick={() => index > 0 && onIndexChange(index - 1)}
-                            style={{ ...arrowStyle(index <= 0), left: "10px" }}
-                            className={css.arrowToAnotherSet}
-                        >
-                            <IoIosArrowBack size={34} />
-                        </button>
-
-                        <button
-                            type="button"
-                            aria-label="Next set"
-                            disabled={index >= sets.length - 1}
-                            onClick={() => index < sets.length - 1 && onIndexChange(index + 1)}
-                            style={{ ...arrowStyle(index >= sets.length - 1), right: "10px" }}
-                            className={css.arrowToAnotherSet}
-                        >
-                            <IoIosArrowForward size={34} />
-                        </button>
-                    </>
-                )}
 
                 <AnimatePresence initial={false}>
                     {!isModalHidden && (
@@ -1007,35 +922,92 @@ export const SetBreakdownOverlay = ({
                             transition={{ duration: 0.35, ease: "easeInOut" }}
                             style={{ width: "100%", overflow: "hidden", display: "flex", justifyContent: "center", transition: "none" }}
                         >
-                            <div className={css.match_modal_header} style={{ marginBottom: "6px" }}>
+                            <div className={css.breakdown_modal_header}>
                                 {stageLabel ? (
-                                    <span className={css.match_modal_caption} style={{ color: "rgba(255, 255, 255, 0.88)" }}>
-                                        {stageLabel}
-                                    </span>
+                                    <span className={css.match_modal_caption} style={{ marginBottom: 0, color: "#fff", textShadow: "0 0 4px #000" }}>{stageLabel}</span>
                                 ) : null}
-        
-                                <h3 className={css.match_modal_title} style={{ margin: 0, color: "#ffffff" }}>
-                                    {matchTitle}
+                                <span style={{ color: "#fff" }} className={css.series_label_title}>
+                                    <span style={{ textShadow: "0 0 4px #000" }}>{matchTitle}</span>
                                     {matchNumber ? (
-                                        <div
-                                            className={css.points}
-                                            style={{ marginLeft: "2px", marginTop: "-2px", padding: "4px 8px", color: "#ffffff", backgroundColor: won ? "#2e7d32" : "#7d2e2e" }}
-                                        >
-                                            #{matchNumber}
-                                        </div>
+                                        <span style={{ backgroundColor: won ? "#2e7d32" : "#7d2e2e", color: "#fff" }} className={`${css.points} ${css.series_label_number}`}>#{matchNumber}</span>
                                     ) : null}
-                                </h3>
-        
-                                <BestOfBadge bestOf={bestOf} size={16} onColor style={{ marginTop: 2, marginBottom: 2 }} />
-        
-                                {!isBo1 && (
-                                    <SetBadge set={index + 1} isDecider={index + 1 === bestOf} size={18} onColor style={{ marginBottom: 2 }} />
-                                )}
-                                {renderPickemLabels(false)}
+                                </span>
+                                <BestOfBadge bestOf={bestOf} size={16} style={{ marginTop: 2 }} />
+                                {renderPickemPills(true)}
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {!isBo1 && (
+                    <div style={{ marginTop: isModalHidden ? 0 : "12px", transition: "none" }}>
+                        <SetPicker
+                            sets={setChips}
+                            totalSets={bestOf}
+                            selectedIndex={index}
+                            onSelect={(i) => i !== index && onIndexChange(i)}
+                        />
+                    </div>
+                )}
+
+                <div className={css.breakdown_modal_board} style={{ marginTop: isModalHidden ? "26px" : "34px" }}>
+                    <BreakdownModalScoreboard
+                        leftTeam={leftTeam}
+                        rightTeam={rightTeam}
+                        leftScore={entry.wins}
+                        rightScore={entry.losses}
+                        isPlayoffs={isPlayoffs}
+                        setLinesTotal={setLinesTotal}
+                        leftSets={leftSetsAfter}
+                        rightSets={rightSetsAfter}
+                        leftGlow={won && !isTieSet}
+                        rightGlow={!won && !isTieSet}
+                        roundsPlayed={roundsPlayed}
+                        roundsLabel={roundsLabel}
+                        {...(isTieSet ? { leftOpacity: 1, rightOpacity: 1 } : decisiveOpacities(!!won))}
+                    />
+                </div>
+
+                <div className={css.breakdown_modal_tie}>
+                    <AnimatePresence mode="wait" initial={false}>
+                        {tieDecided ? (
+                            <motion.span
+                                key={`tie-${index}`}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                style={{ display: "inline-flex", transition: "none" }}
+                            >
+                                <ActiveSectionConsumer store={activeSectionStore}>
+                                    {(activeSection) => {
+                                        const here = activeSection === plan.tieDecidedBy;
+                                        return (
+                                            <button
+                                                type="button"
+                                                className={css.breakdown_tie_button}
+                                                disabled={here}
+                                                onClick={() => scrollToSection(plan.tieDecidedBy)}
+                                                title={here ? undefined : `Go to the ${tieLabel}`}
+                                            >
+                                                <span className={`${css.best_of_badge} ${css.overtime_badge}`} style={{ fontSize: 15 }}>
+                                                    <span className={`${css.overtime_badge_label} ${plan.tieDecidedBy === "penalties" ? css.penalty_badge_label : css.ert_badge_label}`}>
+                                                        {tieLabel}
+                                                    </span>
+                                                    <span className={css.overtime_badge_target}>
+                                                        <b className={tieTone(plan.tieLeftScore, plan.tieRightScore)}>{plan.tieLeftScore}</b>
+                                                        <span className={css.set_chip_colon}>:</span>
+                                                        <b className={tieTone(plan.tieRightScore, plan.tieLeftScore)}>{plan.tieRightScore}</b>
+                                                    </span>
+                                                </span>
+                                            </button>
+                                        );
+                                    }}
+                                </ActiveSectionConsumer>
+                            </motion.span>
+                        ) : null}
+                    </AnimatePresence>
+                </div>
 
                 <AnimatePresence initial={false}>
                     {isModalHidden && (
@@ -1047,137 +1019,10 @@ export const SetBreakdownOverlay = ({
                             transition={{ duration: 0.25 }}
                             className={css.breakdown_pickem_compact}
                         >
-                            {renderPickemLabels(true)}
+                            {renderPickemPills()}
                         </motion.div>
                     )}
                 </AnimatePresence>
-
-                <div style={{ marginTop: isModalHidden ? "0px" : "10px" }}>
-                    <BreakdownScoreRow
-                        leftTeam={leftTeam}
-                        rightTeam={rightTeam}
-                        leftScore={entry.wins}
-                        rightScore={entry.losses}
-                        scoreSize={44}
-                        scoreWidth={49}
-                        center="text"
-                        centerText={`${roundsPlayed} ${roundsLabel}`}
-                        centerColor="#ffffff"
-                        isPlayoffs={isPlayoffs}
-                        setLinesTotal={setLinesTotal}
-                        leftSets={leftSetsAfter}
-                        rightSets={rightSetsAfter}
-                        leftGlow={won && !isTieSet}
-                        rightGlow={!won && !isTieSet}
-                        isInModal={true}
-                        isModalHidden={isModalHidden}
-                        {...(isTieSet ? { leftOpacity: 1, rightOpacity: 1 } : decisiveOpacities(!!won))}
-                    />
-                </div>
-
-                {tieDecided ? (
-                    <div
-                        className={css.info_text}
-                        style={{
-                            marginTop: "6px",
-                            fontSize: "15px",
-                            fontWeight: 700,
-                            color: "#555",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                        }}
-                    >
-                        <span
-                            style={{
-                                color: leftTeam?.color,
-                                fontWeight: 700,
-                                marginRight: "28px",
-                                textShadow:
-                                    tieWinner === "left"
-                                        ? BREAKDOWN_GLOW(leftTeam?.color)
-                                        : "none",
-                                opacity: tieOpacities.leftOpacity,
-                                transition: "opacity 400ms ease",
-                            }}
-                        >
-                            {plan.tieLeftScore}
-                        </span>
-                        <ActiveSectionConsumer store={activeSectionStore}>
-                            {(activeSection) => (
-                                <button
-                                    type="button"
-                                    onClick={() => scrollToSection(plan.tieDecidedBy)}
-                                    className={css.link_button}
-                                    style={{
-                                        pointerEvents:
-                                            activeSection === "penalties" ||
-                                                activeSection === "extended"
-                                                ? "none"
-                                                : "auto",
-                                        cursor:
-                                            activeSection === "penalties" ||
-                                                activeSection === "extended"
-                                                ? "default"
-                                                : "pointer",
-                                    }}
-                                >
-                                    {plan.tieDecidedBy === "penalties"
-                                        ? "Penalties"
-                                        : "Extended Rounds"}
-                                </button>
-                            )}
-                        </ActiveSectionConsumer>
-                        <span
-                            style={{
-                                color: rightTeam?.color,
-                                fontWeight: 700,
-                                marginLeft: "28px",
-                                textShadow:
-                                    tieWinner === "right"
-                                        ? BREAKDOWN_GLOW(rightTeam?.color)
-                                        : "none",
-                                opacity: tieOpacities.rightOpacity,
-                                transition: "opacity 400ms ease",
-                            }}
-                        >
-                            {plan.tieRightScore}
-                        </span>
-                    </div>
-                ) : (
-                    <div
-                        className={css.info_text}
-                        style={{
-                            marginTop: "6px",
-                            fontSize: "15px",
-                            fontWeight: 700,
-                            color: "#555",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            pointerEvents: "none"
-                        }}
-                    >
-                        &nbsp;
-                        <button
-                            type="button"
-                            className={css.link_button}
-                            style={{
-                                pointerEvents: "none"
-                            }}
-                        >
-                            &nbsp;
-                        </button>
-                        <span
-                            style={{
-                                fontWeight: 700,
-                                marginLeft: "28px",
-                                pointerEvents: "none"
-                            }}>
-                            &nbsp;
-                        </span>
-                    </div>
-                )}
 
                 <div
                     style={{
@@ -1185,7 +1030,7 @@ export const SetBreakdownOverlay = ({
                         flexDirection: "column",
                         alignItems: "center",
                         gap: "6px",
-                        marginTop: isModalHidden ? "10px" : "14px",
+                        marginTop: isModalHidden ? "8px" : "12px",
                     }}
                 >
                     <button
@@ -1209,15 +1054,7 @@ export const SetBreakdownOverlay = ({
                     <button
                         type="button"
                         onClick={toggleModalHidden}
-                        style={{
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            cursor: "pointer",
-                            color: "#8c8c8c",
-                            fontSize: "13px",
-                            textDecoration: "underline",
-                        }}
+                        className={css.breakdown_modal_toggle}
                     >
                         {isModalHidden ? "Show full modal" : "Hide full modal"}
                     </button>

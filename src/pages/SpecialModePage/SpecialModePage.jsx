@@ -12,7 +12,6 @@ import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "./logic/renderSafeToast.js";
-import "odometer/themes/odometer-theme-default.css";
 import { SERIES_ACTIONS } from "../../../assets/constants.js";
 import Lenis from "lenis";
 import "./logic/storageUsageLog.js";
@@ -246,7 +245,7 @@ import {
     pickTournamentType,
     saveCurrentTournamentType,
 } from "./logic/tournamentTypes.jsx";
-import { getAnniversaryTheme as getTournamentTheme, getTournamentNumberStyle, PICKEM_STEP_MS, PICKEM_PLAYOFF_KEYS } from "./logic/winnersAndPickem.js";
+import { getAnniversaryTheme as getTournamentTheme, getTournamentNumberStyle, PICKEM_STEP_MS, PICKEM_PLAYOFF_KEYS, WINNERS_TIMELINE } from "./logic/winnersAndPickem.js";
 import { useHallOfFame } from "./hallOfFame/useHallOfFame.js";
 import { useLeaderboard } from "./leaderboard/useLeaderboard.js";
 import { useHallOfFameManager } from "./hallOfFame/useHallOfFameManager.js";
@@ -6351,37 +6350,18 @@ function SpecialModePage() {
         setShowPodium(true);
 
         if (!hasPlayedWinnerAnimation) {
-            setTimeout(() => setShowWinnerText(true), 500);
-
             setWinnersText("And the Fourth Place is:");
 
-            const t2 = setTimeout(() => {
-                setWinnersText("The Third Place is:");
-            }, 4000);
+            const timers = [
+                setTimeout(() => setShowWinnerText(true), WINNERS_TIMELINE.headline),
+                setTimeout(() => setWinnersText("The Third Place is:"), WINNERS_TIMELINE.thirdPlace.text),
+                setTimeout(() => setWinnersText("The Runner-Up is:"), WINNERS_TIMELINE.runnerUp.text),
+                setTimeout(() => setWinnersText(championText), WINNERS_TIMELINE.winner.text),
+                setTimeout(() => setShowProceed(true), WINNERS_TIMELINE.proceed),
+                setTimeout(() => setHasPlayedWinnerAnimation(true), WINNERS_TIMELINE.done),
+            ];
 
-            const t3 = setTimeout(() => {
-                setWinnersText("The Runner-Up is:");
-            }, 7000);
-
-            const t4 = setTimeout(() => {
-                setWinnersText(championText);
-            }, 10000);
-
-            const proceed = setTimeout(() => {
-                setShowProceed(true);
-            }, 15000);
-
-            const veryLast = setTimeout(() => {
-                setHasPlayedWinnerAnimation(true);
-            }, 20000);
-
-            return () => {
-                clearTimeout(t2);
-                clearTimeout(t3);
-                clearTimeout(t4);
-                clearTimeout(veryLast);
-                clearTimeout(proceed);
-            };
+            return () => timers.forEach(clearTimeout);
         }
 
         setShowWinnerText(true);
@@ -7432,19 +7412,9 @@ function SpecialModePage() {
     }
 
     let pickemLabelText = "";
-    let pickemLabelStyle = {};
 
     if (wonPickemPoints !== null) {
-        if (wonPickemPoints === 0) {
-            pickemLabelText = "+0 Pick'em points";
-            pickemLabelStyle = { color: "red" };
-        } else if (wonPickemPoints === 1) {
-            pickemLabelText = "+1 Pick'em point";
-            pickemLabelStyle = { color: "#2e7d32" };
-        } else {
-            pickemLabelText = `+${wonPickemPoints} Pick'em points`;
-            pickemLabelStyle = { color: "#2e7d32" };
-        }
+        pickemLabelText = wonPickemPoints === 1 ? "+1 Pick'em point" : `+${wonPickemPoints} Pick'em points`;
     }
 
     const didUserWin =
@@ -7863,6 +7833,10 @@ function SpecialModePage() {
             (seriesState.isOvertime && seriesState.roundNumber === 1)
             ? 10
             : 5;
+    const lastLoggedRound = roundLogRef.current[roundLogRef.current.length - 1];
+    const finalRoundMinis = seriesState.banner && lastLoggedRound?.squares
+        ? { squares: lastLoggedRound.squares, left: lastLoggedRound.miniLeft ?? 0, right: lastLoggedRound.miniRight ?? 0 }
+        : null;
     if (showPickemSummary) {
         return (
             <PickemSummary
@@ -7957,7 +7931,8 @@ function SpecialModePage() {
                     isSeriesPointWins,
                     isSetPointWins,
                     overtimeTarget,
-                    displayedMiniSquares,
+                    displayedMiniSquares: finalRoundMinis?.squares ?? displayedMiniSquares,
+                    finalRoundMinis,
                     isSeriesPointLosses,
                     isSetPointLosses,
                     overtimeToWin,
@@ -8019,7 +7994,7 @@ function SpecialModePage() {
                 modalMatchNumber,
                 modalBestOf,
                 pickemLabelText,
-                pickemLabelStyle,
+                pickemPointsWon: wonPickemPoints,
                 breakdownSetIndex,
                 isEliminationModal,
                 isPemBigModal,

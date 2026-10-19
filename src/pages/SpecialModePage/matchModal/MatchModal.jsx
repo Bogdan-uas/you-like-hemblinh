@@ -5,7 +5,7 @@ import css from "../SpecialModePage.module.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTrophy } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
-import { FaCircle, FaCheck, FaXmark, FaCircleInfo, FaCircleCheck } from "react-icons/fa6";
+import { FaCircle, FaCheck, FaXmark, FaCircleInfo, FaCircleCheck, FaCircleHalfStroke } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
 import { PenaltyCircles } from "../components/PenaltyCircles.jsx";
 import { SetBreakdownOverlay } from "../components/SetBreakdownOverlay.jsx";
@@ -44,7 +44,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         modalMatchNumber,
         modalBestOf,
         pickemLabelText,
-        pickemLabelStyle,
+        pickemPointsWon,
         breakdownSetIndex,
         isEliminationModal,
         isPemBigModal,
@@ -262,13 +262,14 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     </div>
                                 ) : null}
                             </h3>
-                            <BestOfBadge bestOf={modalBestOf} size={16} onColor={isPlayedModal} style={{ marginTop: -2, marginBottom: 2 }} />
+                            <BestOfBadge bestOf={modalBestOf} size={16} onColor={isPlayedModal} style={{ marginTop: -2, marginBottom: 2, zIndex: 5 }} />
 
                             {isPlayedModal && pickemLabelText && (
                                 <span
-                                    className={css.match_modal_pickem}
-                                    style={pickemLabelStyle}
+                                    className={`${css.match_modal_pickem} ${css.breakdown_pickem_pill} ${didUserWin ? css.breakdown_pickem_pill_win : pickemPointsWon > 0 ? css.breakdown_pickem_pill_partial : css.breakdown_pickem_pill_loss}`}
+                                    title={!didUserWin && pickemPointsWon > 0 ? "Your pick took some sets, but not the series" : undefined}
                                 >
+                                    {didUserWin ? <FaCheck /> : pickemPointsWon > 0 ? <FaCircleHalfStroke /> : <FaXmark />}
                                     {pickemLabelText}
                                 </span>
                             )}

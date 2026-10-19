@@ -44,7 +44,16 @@ const Shape = ({ path, viewBox, color, size, flip = false }) => {
     );
 };
 
-export const LeadingIndicator = ({ leftTeam, rightTeam, leftScore = 0, rightScore = 0, size = 26, width = 64 }) => {
+export const LeadChevron = ({ color, size = 14, side = "left" }) => (
+    <span
+        className={css.lead_indicator_item}
+        style={{ filter: `drop-shadow(0 0 2px ${color}aa) drop-shadow(0 1px 1.5px rgba(0,0,0,0.3))` }}
+    >
+        <Shape path={CHEVRON_PATH} viewBox="0 0 20 24" color={color} size={size} flip={side === "right"} />
+    </span>
+);
+
+export const LeadingIndicator = ({ leftTeam, rightTeam, leftScore = 0, rightScore = 0, size = 26, width = 64, animated = true }) => {
     const diff = leftScore - rightScore;
     const side = diff > 0 ? "left" : diff < 0 ? "right" : "tie";
     const tier = getLeadTier(Math.abs(diff));
@@ -67,6 +76,29 @@ export const LeadingIndicator = ({ leftTeam, rightTeam, leftScore = 0, rightScor
             }}
             title={title}
         >
+            {!animated ? (
+                side === "tie" ? (
+                    <span className={css.lead_indicator_item} style={{ filter: glowFilter(TIE_COLOR, 2) }}>
+                        <Shape path={DIAMOND_PATH} viewBox="0 0 24 24" color={TIE_COLOR} size={size * 0.85} />
+                    </span>
+                ) : (
+                    Array.from({ length: tier }, (_, i) => (
+                        <span
+                            key={`${side}-${i}`}
+                            className={`${css.lead_indicator_item} ${tier === 3 && i === 0 ? css.lead_indicator_pulse : ""}`}
+                            style={{
+                                [side === "left" ? "marginLeft" : "marginRight"]: i === 0 ? 0 : -size * 0.3,
+                                opacity: 1 - i * 0.3,
+                                scale: String(1 - i * 0.18),
+                                filter: glowFilter(color, glow),
+                            }}
+                        >
+                            <Shape path={CHEVRON_PATH} viewBox="0 0 20 24" color={color} size={size} flip={side === "right"} />
+                        </span>
+                    ))
+                )
+            ) : null}
+            {animated ? (
             <AnimatePresence mode="popLayout" initial={false}>
                 {side === "tie" ? (
                     <motion.span
@@ -99,6 +131,7 @@ export const LeadingIndicator = ({ leftTeam, rightTeam, leftScore = 0, rightScor
                     ))
                 )}
             </AnimatePresence>
+            ) : null}
         </div>
     );
 };

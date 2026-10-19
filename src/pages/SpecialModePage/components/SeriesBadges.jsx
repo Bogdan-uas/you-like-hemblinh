@@ -1,6 +1,8 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
+import { FaEye } from "react-icons/fa";
 import { getLiveSetResult, getSetResultWinner } from "../logic/series.js";
 
 export const SetBadge = ({ set, isDecider = false, size = 20, onColor = false, style }) =>
@@ -56,12 +58,13 @@ const SetChipResult = ({ result }) => (
     </>
 );
 
-export const SetHistoryChip = ({ set, isDecider, status, result, winnerColor, ghost = false }) => {
+export const SetHistoryChip = ({ set, isDecider, status, result, winnerColor, ghost = false, layoutAnimated = true }) => {
     const label = isDecider ? "DEC" : `S${set}`;
     const className = [
         css.set_chip,
         result ? css.set_chip_done : "",
         status === "current" ? css.set_chip_current : "",
+        status === "selected" ? css.set_chip_selected : "",
         isDecider ? css.set_chip_decider : "",
     ].join(" ");
 
@@ -78,13 +81,29 @@ export const SetHistoryChip = ({ set, isDecider, status, result, winnerColor, gh
 
     return (
         <motion.span
-            layout="position"
+            layout={layoutAnimated ? "position" : false}
             transition={{ layout: SET_CHIP_TRANSITION }}
             className={className}
             style={{ "--set-chip-accent": winnerColor ?? "transparent", opacity: status === "uncertain" ? 0.4 : 1 }}
             title={isDecider ? "Decider" : `Set ${set}`}
         >
-            <span className={css.set_chip_label}>{label}</span>
+            <span className={css.set_chip_label}>
+                <AnimatePresence initial={false}>
+                    {status === "selected" ? (
+                        <motion.span
+                            key="eye"
+                            className={css.set_chip_eye}
+                            initial={{ width: 0, opacity: 0, scale: 0.4 }}
+                            animate={{ width: 13, opacity: 1, scale: 1 }}
+                            exit={{ width: 0, opacity: 0, scale: 0.4 }}
+                            transition={SET_CHIP_TRANSITION}
+                        >
+                            <FaEye />
+                        </motion.span>
+                    ) : null}
+                </AnimatePresence>
+                {label}
+            </span>
             <AnimatePresence initial={false}>
                 {result ? (
                     <motion.span
@@ -117,6 +136,58 @@ const toChipResult = (finished) => {
                     : null,
         },
     };
+};
+
+export const SetPicker = ({ sets, totalSets, selectedIndex, onSelect }) => {
+    const buttonsRef = useRef([]);
+    const [ring, setRing] = useState(null);
+
+    useLayoutEffect(() => {
+        const node = buttonsRef.current[selectedIndex];
+        if (!node) return undefined;
+        const measure = () => setRing({ left: node.offsetLeft, top: node.offsetTop, width: node.offsetWidth, height: node.offsetHeight });
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [selectedIndex, sets.length]);
+
+    return (
+        <div className={css.set_picker}>
+            {sets.map((item, i) => {
+                const selected = i === selectedIndex;
+                return (
+                    <button
+                        key={item.set}
+                        ref={(node) => { buttonsRef.current[i] = node; }}
+                        type="button"
+                        className={css.set_picker_button}
+                        disabled={selected}
+                        onClick={() => onSelect(i)}
+                        aria-pressed={selected}
+                        title={`Show ${item.set === totalSets ? "the Decider" : `Set ${item.set}`}`}
+                    >
+                        <SetHistoryChip
+                            set={item.set}
+                            isDecider={item.set === totalSets}
+                            status={selected ? "selected" : "done"}
+                            result={item.result}
+                            winnerColor={item.winnerColor}
+                            layoutAnimated={false}
+                        />
+                    </button>
+                );
+            })}
+            {ring ? (
+                <motion.span
+                    className={css.set_picker_ring}
+                    initial={false}
+                    animate={{ x: ring.left - 3, y: ring.top - 3, width: ring.width + 6, height: ring.height + 6 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+            ) : null}
+        </div>
+    );
 };
 
 export const SetHistory = ({ seriesState }) => {
@@ -174,9 +245,12 @@ export const PenaltyBadge = ({ attempt, suddenDeath = false, size = 16, style })
     </span>
 );
 
-export const RoundBadge = ({ children, size = 14, style }) => (
-    <span className={`${css.best_of_badge} ${css.round_badge}`} style={{ fontSize: size, ...style }}>
-        <span className={css.round_badge_label}>Round</span>
+export const RoundBadge = ({ children, size = 14, style, label = "Round", reversed = false }) => (
+    <span
+        className={`${css.best_of_badge} ${css.round_badge} ${reversed ? css.round_badge_reversed : ""}`}
+        style={{ fontSize: size, flexDirection: reversed ? "row-reverse" : undefined, ...style }}
+    >
+        <span className={css.round_badge_label}>{label}</span>
         <span style={{ marginTop: -1 }} className={css.round_badge_value}>{children}</span>
     </span>
 );
