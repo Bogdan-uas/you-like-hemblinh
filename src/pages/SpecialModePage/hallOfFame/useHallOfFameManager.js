@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import toast from "../logic/renderSafeToast.js";
 import { MIN_NEEDED_PICKEM, MAX_NEEDED_PICKEM } from "../logic/gameConstants.js";
 import { saveHallTournament, clearHallOfFameStore, deleteHallTournament, sortHallOfFame } from "../logic/hallOfFameDb.js";
-import { SCOREBOARD_RESET_CODE } from "../logic/storageKeys.js";
+import { checkResetCode, isResetCodeConfigured } from "../logic/codeHash.js";
 import { formatOrdinal } from "../logic/teamData.js";
 import { getTournamentTypeConfig, TOURNAMENT_TYPES } from "../logic/tournamentTypes.jsx";
 
@@ -109,12 +109,12 @@ export function useHallOfFameManager({ allTeams, hallTeamSortMode, teamRatings, 
         setIsHallManagerCodeModalOpen(true);
     };
 
-    const handleVerifyHallManagerPassword = () => {
-        if (!SCOREBOARD_RESET_CODE) {
+    const handleVerifyHallManagerPassword = async () => {
+        if (!isResetCodeConfigured()) {
             toast.error("Reset code is not configured.");
             return;
         }
-        if (hallManagerCode !== SCOREBOARD_RESET_CODE) {
+        if (!(await checkResetCode(hallManagerCode))) {
             toast.error("WRONG PASSWORD!");
             return;
         }

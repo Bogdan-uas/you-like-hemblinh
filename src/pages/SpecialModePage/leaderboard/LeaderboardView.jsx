@@ -2,7 +2,7 @@ import React from "react";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from "framer-motion";
-import { FaTrophy } from "react-icons/fa";
+import { FaTrophy, FaCaretUp, FaCaretDown } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import { LeaderboardSortSelect } from "../components/LeaderboardSortSelect.jsx";
 import { LeaderboardDividerSelect } from "../components/LeaderboardDividerSelect.jsx";
@@ -14,7 +14,29 @@ import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "..
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
 
-const NOT_PLAYING_RED = "#be3939";
+const formatRange = (from, to) => (from >= to ? formatOrdinal(from) : `${formatOrdinal(from)}–${formatOrdinal(to)}`);
+
+function LeaderboardStageDivider({ divider, aboveFrom, belowTo }) {
+    return (
+        <div className={css.leaderboard_zone}>
+            <span className={`${css.leaderboard_zone_pill} ${css.leaderboard_zone_above}`}>
+                <FaCaretUp className={css.leaderboard_zone_caret} aria-hidden="true" />
+                {divider.above}
+                <span className={css.leaderboard_zone_range}>{formatRange(aboveFrom, divider.rank - 1)}</span>
+            </span>
+            <span className={css.leaderboard_zone_cut} aria-hidden="true">
+                <span className={css.leaderboard_zone_line} />
+                <span className={`${css.leaderboard_zone_mark} ${divider.notPlayingBelow ? css.leaderboard_zone_mark_out : ""}`} />
+                <span className={`${css.leaderboard_zone_line} ${css.leaderboard_zone_line_right}`} />
+            </span>
+            <span className={`${css.leaderboard_zone_pill} ${divider.notPlayingBelow ? css.leaderboard_zone_out : css.leaderboard_zone_below}`}>
+                <FaCaretDown className={css.leaderboard_zone_caret} aria-hidden="true" />
+                {divider.below}
+                <span className={css.leaderboard_zone_range}>{formatRange(divider.rank, belowTo)}</span>
+            </span>
+        </div>
+    );
+}
 
 export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page }) {
     const { isTournamentNumberButtonArmed, handleTournamentNumberClick, setIsTournamentNumberButtonArmed } = tournamentNumberAdmin;
@@ -137,8 +159,8 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                     const rating = teamRatings[t.id] ?? 0;
                     const showStageDividers = leaderboardSortMode === DEFAULT_LEADERBOARD_SORT;
                     const stageDividerStyle = {
-                        marginTop: showStageDividers ? "24px" : "0",
-                        marginBottom: showStageDividers ? "24px" : "0",
+                        marginTop: showStageDividers ? "36px" : "0",
+                        marginBottom: showStageDividers ? "32px" : "0",
                         height: showStageDividers ? "auto" : "0px",
                         overflow: showStageDividers ? "visible" : "hidden",
                         opacity: showStageDividers ? 1 : 0,
@@ -315,33 +337,13 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
 
                     return (
                         <React.Fragment key={t.id}>
-                            {stageDividers.filter((divider) => divider.rank === rank).map((divider) => (
+                            {stageDividers.map((divider, k) => divider.rank === rank && (
                                 <div key={`divider-${divider.rank}`} data-leaderboard-divider aria-hidden={!showStageDividers} style={stageDividerStyle}>
-                                    <h4
-                                        className={css.game_title}
-                                        style={{ fontSize: "30px", color: "#999", marginBottom: "16px" }}
-                                    >
-                                        {divider.above}
-                                    </h4>
-
-                                    {divider.notPlayingBelow ? (
-                                        <div style={{ position: "relative", width: "600px", transition: "none" }}>
-                                            <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
-                                            <hr
-                                                style={{ width: "600px", margin: 0, position: "absolute", top: 0, left: 0, borderTopColor: NOT_PLAYING_RED, clipPath: "inset(2px 0 0 0)" }}
-                                                className={css.dashed_divider}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <hr style={{ width: "600px", margin: 0 }} className={css.dashed_divider} />
-                                    )}
-
-                                    <h4
-                                        className={css.game_title}
-                                        style={{ fontSize: "30px", color: divider.notPlayingBelow ? NOT_PLAYING_RED : "#999", marginTop: "16px" }}
-                                    >
-                                        {divider.below}
-                                    </h4>
+                                    <LeaderboardStageDivider
+                                        divider={divider}
+                                        aboveFrom={k > 0 ? stageDividers[k - 1].rank : 1}
+                                        belowTo={k + 1 < stageDividers.length ? stageDividers[k + 1].rank - 1 : leaderboardDisplayOrder.length}
+                                    />
                                 </div>
                             ))}
 

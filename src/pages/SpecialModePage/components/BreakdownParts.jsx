@@ -10,6 +10,7 @@ import { LeadingIndicator } from "./LeadingIndicator.jsx";
 import { SeriesBanner } from "./SeriesBanner.jsx";
 import { RoundScore } from "./RoundScore.jsx";
 import { RoundBadge } from "./SeriesBadges.jsx";
+import { FaCaretRight } from "react-icons/fa";
 
 const MINI_TAPE_MAX_COLUMNS = 22;
 
@@ -413,20 +414,26 @@ export const BreakdownScoreRow = ({
 };
 
 
-export const BreakdownSectionTitle = ({ text, marginTop = "16px", marginBottom = "0px" }) => (
-    <h4
-        className={css.game_title}
-        style={{ fontSize: "30px", color: "#999", marginTop, marginBottom }}
-    >
-        {text}
-    </h4>
-);
+const dividerTone = (section, level) => {
+    if (section === "overtime") return css[`ot_level_${Math.min(Math.max(level ?? 1, 1), 10)}`];
+    if (section === "extended") return css.ert_badge_label;
+    if (section === "penalties") return css.penalty_badge_label;
+    return css.breakdown_divider_half;
+};
 
-export const BreakdownDivider = ({ from, to }) => (
-    <div style={{ marginTop: "24px", marginBottom: "24px" }}>
-        <BreakdownSectionTitle text={from} marginTop="0px" marginBottom="16px" />
-        <hr style={{ width: "600px", margin: "0 auto" }} className={css.dashed_divider} />
-        <BreakdownSectionTitle text={to} marginTop="16px" />
+export const BreakdownDivider = ({ from, to, section = "half", level, first = false }) => (
+    <div className={`${css.breakdown_divider} ${first ? css.breakdown_divider_first : ""}`}>
+        <span className={css.breakdown_divider_line} aria-hidden="true" />
+        <span className={`${css.best_of_badge} ${css.overtime_badge} ${css.breakdown_divider_badge}`}>
+            {from ? (
+                <span className={`${css.overtime_badge_target} ${css.breakdown_divider_from}`}>
+                    {from}
+                    <FaCaretRight className={css.breakdown_divider_caret} aria-hidden="true" />
+                </span>
+            ) : null}
+            <span className={`${css.overtime_badge_label} ${dividerTone(section, level)}`}>{to}</span>
+        </span>
+        <span className={`${css.breakdown_divider_line} ${css.breakdown_divider_line_right}`} aria-hidden="true" />
     </div>
 );
 

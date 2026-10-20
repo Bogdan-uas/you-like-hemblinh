@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import toast from "../logic/renderSafeToast.js";
 import { EMPTY_TEAM_PLACINGS, saveTeamPlacings } from "../logic/placings.jsx";
-import { SCOREBOARD_RESET_CODE } from "../logic/storageKeys.js";
+import { checkResetCode, isResetCodeConfigured } from "../logic/codeHash.js";
 import { saveTeamRatings } from "../logic/teamData.js";
 
 export function usePlacingsAdmin({
@@ -75,12 +75,12 @@ export function usePlacingsAdmin({
         setPlacingAmount("");
     };
 
-    const verifyAdminCodeOrToast = () => {
-        if (!SCOREBOARD_RESET_CODE) {
+    const verifyAdminCodeOrToast = async () => {
+        if (!isResetCodeConfigured()) {
             toast.error("Reset code is not configured.");
             return false;
         }
-        if (placingsAdminCode !== SCOREBOARD_RESET_CODE) {
+        if (!(await checkResetCode(placingsAdminCode))) {
             toast.error("WRONG PASSWORD!");
             return false;
         }
@@ -88,8 +88,8 @@ export function usePlacingsAdmin({
         return true;
     };
 
-    const handleVerifyAddPlacingsPassword = () => {
-        if (!verifyAdminCodeOrToast()) return;
+    const handleVerifyAddPlacingsPassword = async () => {
+        if (!(await verifyAdminCodeOrToast())) return;
         setIsAddPlacingsCodeModalOpen(false);
         setPlacingsAdminCode("");
         setIsAddPlacingsModalOpen(true);
@@ -175,8 +175,8 @@ export function usePlacingsAdmin({
         toast.success("Placings updated.");
     };
 
-    const handleVerifyRemovePlacingsPassword = () => {
-        if (!verifyAdminCodeOrToast()) return;
+    const handleVerifyRemovePlacingsPassword = async () => {
+        if (!(await verifyAdminCodeOrToast())) return;
         setIsRemovePlacingsCodeModalOpen(false);
         setPlacingsAdminCode("");
         setIsRemovePlacingsModalOpen(true);

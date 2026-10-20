@@ -828,7 +828,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={dashedDividerTwoImg} alt="Divider, which show the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '73vh' }} />
             </div>
             <p style={{ marginBottom: '24px' }} className={css.info_text}>
-                As you can read it, these should be dividers to show which Stages of Official, which teams autoqualify to. <br /> <i>— But wait, what are "Stages" meant here?</i> <br />
+                As you can read it, these should be dividers to show which Stages of Official, which teams autoqualify to.
+                The upper pill (with ▲) is the group above the divider and the lower one (with ▼) is the group below it, and both of them show which places they cover. <br /> <i>— But wait, what are "Stages" meant here?</i> <br />
                 There are three stages throughout the whole Official, which are being played in Swiss Format: <b>Stage I</b>, <b>Stage II</b> and <b>Stage III</b>. <br />
                 After Stage III, there will stay only 16 teams remaining, which will play in Playoffs (or another name for it, Knockout Stage), starting from Round of 16.
             </p>
@@ -1246,7 +1247,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </span>
             </div>
             <p className={css.info_text}>
-                The parts are also visually separated, like here for example:
+                The parts are also visually separated, like here for example.
+                Each divider is a pill, where the grey part shows which part has just ended and the coloured part shows which one begins (Overtimes, Extended Rounds and Penalties get the same colours as on the series screen):
             </p>
             <div className={css.image_container}>
                 <img src={significantPartDivider} alt="Divider between First Half and Second Half" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
@@ -1995,7 +1997,7 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>
                 That&apos;s why the "Stage dividers" select of the Leaderboard has its own "Global Pro League" option now. When you pick it, you see where every team starts
-                and, at the end, the edge between the Global Challenger Cup and the teams, which are NOT playing. This divider is half red, on the side of the not playing teams:
+                and, at the end, the edge between the Global Challenger Cup and the teams, which are NOT playing. In this divider, the lower pill and the diamond are red, on the side of the not playing teams:
             </p>
             <GplShot n={2} alt="Leaderboard with the Global Pro League dividers between Stage I and the Global Challenger Cup" />
             <GplShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
@@ -2195,7 +2197,7 @@ const PbsSubPage = ({ scrollToAnchor }) => (
                 <InfoLink onClick={scrollToAnchor("gpl-overview", "gpl")} href="?page=gpl#gpl-overview">Global Pro League</InfoLink>
             </p>
             <p className={css.info_text}>
-                The "Stage dividers" select of the Leaderboard has a "Premier Bounty Series" option for it: one divider between both Pots and the half red one before the teams, which are NOT playing:
+                The "Stage dividers" select of the Leaderboard has a "Premier Bounty Series" option for it: one divider between both Pots and the red one before the teams, which are NOT playing:
             </p>
             <PbsShot n={2} alt="Leaderboard with the divider between the High-Seed Pot and the Low-Seed Pot" />
             <PbsShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />

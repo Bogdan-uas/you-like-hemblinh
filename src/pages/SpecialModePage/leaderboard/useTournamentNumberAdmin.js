@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "../logic/renderSafeToast.js";
-import { SCOREBOARD_RESET_CODE } from "../logic/storageKeys.js";
+import { checkResetCode, isResetCodeConfigured } from "../logic/codeHash.js";
 import { TOURNAMENT_TYPES } from "../logic/tournamentTypes.jsx";
 
 export function useTournamentNumberAdmin({ getTypeNumber, setTypeNumber }) {
@@ -34,12 +34,12 @@ export function useTournamentNumberAdmin({ getTypeNumber, setTypeNumber }) {
         clearTournamentNumberAdminState();
     };
 
-    const handleVerifyTournamentNumberPassword = () => {
-        if (!SCOREBOARD_RESET_CODE) {
+    const handleVerifyTournamentNumberPassword = async () => {
+        if (!isResetCodeConfigured()) {
             toast.error("Reset code is not configured.");
             return;
         }
-        if (tournamentNumberCode !== SCOREBOARD_RESET_CODE) {
+        if (!(await checkResetCode(tournamentNumberCode))) {
             toast.error("WRONG PASSWORD!");
             return;
         }

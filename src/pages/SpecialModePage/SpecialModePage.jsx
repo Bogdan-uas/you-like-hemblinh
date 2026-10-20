@@ -268,7 +268,7 @@ import { SwissTournamentView } from "./screens/SwissTournamentView.jsx";
 import { TournamentIntros } from "./screens/TournamentIntros.jsx";
 import { GameControlModals } from "./screens/GameControlModals.jsx";
 import { SettingsPanel } from "./components/SettingsPanel.jsx";
-import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSpecialModeSettings } from "./logic/settings.js";
+import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKey, isSecretUnlocked, useSpecialModeSettings } from "./logic/settings.js";
 
 function SpecialModePage() {
     const [settings, setSettings] = useState(loadSettings);
@@ -283,6 +283,12 @@ function SpecialModePage() {
         code: settings.gambleKey,
         hold: settings.holdToGamble,
         proceeds: settings.gambleKeyProceeds,
+        enabled: !isSettingsOpen,
+    });
+
+    useSecretKey({
+        code: isSecretUnlocked(settings) ? settings.secretKey : null,
+        scoreCode: isSecretUnlocked(settings) ? settings.secretScoreKey : null,
         enabled: !isSettingsOpen,
     });
 

@@ -4,7 +4,7 @@ import css from "../SpecialModePage.module.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCheck, FaXmark, FaCircle, FaCircleHalfStroke } from "react-icons/fa6";
 import Lenis from "lenis";
-import { BreakdownSectionTitle, BreakdownDivider, BreakdownScoreRow, BreakdownModalScoreboard, MiniRoundTimeline } from "./BreakdownParts.jsx";
+import { BreakdownDivider, BreakdownScoreRow, BreakdownModalScoreboard, MiniRoundTimeline } from "./BreakdownParts.jsx";
 import { BREAKDOWN_OT_NAMES, BREAKDOWN_OT_SHORT } from "../logic/breakdownStyles.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { buildExtendedRoundWinnerList, buildExtendedRoundDetails } from "../logic/series.js";
@@ -710,10 +710,7 @@ export const SetBreakdownOverlay = ({
                         >
                             {plan.firstHalf.length > 0 && (
                                 <div ref={(node) => { sectionRefs.current.firstHalf = node; }}>
-                                    <hr style={{ width: "600px", margin: "0 auto" }} className={css.dashed_divider} />
-                                    <div style={{ marginTop: "24px" }}>
-                                        <BreakdownSectionTitle text="First Half" marginTop="0px" />
-                                    </div>
+                                    <BreakdownDivider to="First Half" first />
                                     {plan.firstHalf.map((round, i) => renderRound(round, `s${index}-fh-${i}`, i))}
                                 </div>
                             )}
@@ -742,7 +739,7 @@ export const SetBreakdownOverlay = ({
                                         key={`ot-${block}`}
                                         ref={(node) => { sectionRefs.current[`ot${block}`] = node; }}
                                     >
-                                        <BreakdownDivider from={previousLabel} to={label} />
+                                        <BreakdownDivider from={previousLabel} to={label} section="overtime" level={block} />
                                         {rounds.map((round, j) => renderRound(round, `s${index}-ot-${block}-${j}`, offset + j))}
                                     </div>
                                 );
@@ -759,6 +756,7 @@ export const SetBreakdownOverlay = ({
                                                 : "Second Half"
                                         }
                                         to="Extended Rounds"
+                                        section="extended"
                                     />
 
                                     {(() => {
@@ -851,6 +849,7 @@ export const SetBreakdownOverlay = ({
                                     <BreakdownDivider
                                         from="Extended Rounds"
                                         to="Penalties"
+                                        section="penalties"
                                     />
 
                                     {(() => {

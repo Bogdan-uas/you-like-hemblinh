@@ -1,4 +1,5 @@
-export const SCOREBOARD_RESET_CODE = import.meta.env.VITE_SCOREBOARD_RESET_CODE;
+export const SCOREBOARD_RESET_CODE_HASH = (import.meta.env.VITE_SCOREBOARD_RESET_CODE_HASH ?? "").trim().toLowerCase();
+export const SECRET_KEY_CODE_HASH = (import.meta.env.VITE_SECRET_KEY_CODE_HASH ?? "").trim().toLowerCase();
 
 export const STORAGE_KEY = "specialPageState_swiss_v2";
 export const TEAM_RATINGS_LS_KEY = "specialMode_teamRatings_v1";

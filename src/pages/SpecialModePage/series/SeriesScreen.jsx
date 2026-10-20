@@ -385,6 +385,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         type="button"
                         onClick={toggleSecretGuaranteedWin}
                         onContextMenu={handleSecretButtonContextMenu}
+                        data-secret-button
+                        tabIndex={-1}
                         className={css.gamble_button}
                         style={{
                             position: "absolute",

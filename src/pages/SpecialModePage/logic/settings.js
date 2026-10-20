@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect } from "react";
-import { SETTINGS_LS_KEY } from "./storageKeys.js";
+import { SETTINGS_LS_KEY, SECRET_KEY_CODE_HASH } from "./storageKeys.js";
+import { isSecretCodeConfigured } from "./codeHash.js";
 
 export const DEFAULT_SETTINGS = {
     gambleKey: null,
@@ -12,7 +13,13 @@ export const DEFAULT_SETTINGS = {
     smoothScroll: true,
     podiumEffects: true,
     skipPodiumReveal: false,
+    secretKey: null,
+    secretScoreKey: null,
+    secretUnlock: null,
 };
+
+export const isSecretUnlocked = (settings) =>
+    isSecretCodeConfigured() && settings.secretUnlock === SECRET_KEY_CODE_HASH;
 
 export const GAMBLE_KEY_PRESETS = ["Space", "Enter", "KeyG", "KeyF", "KeyJ", "ArrowRight", "ArrowUp"];
 
@@ -61,8 +68,19 @@ export const saveSettings = (settings) => {
     }
 };
 
+const SECRET_SETTING_KEYS = ["secretKey", "secretScoreKey", "secretUnlock"];
+
 export const isDefaultSettings = (settings) =>
-    Object.keys(DEFAULT_SETTINGS).every((key) => settings[key] === DEFAULT_SETTINGS[key]);
+    Object.keys(DEFAULT_SETTINGS)
+        .filter((key) => !SECRET_SETTING_KEYS.includes(key))
+        .every((key) => settings[key] === DEFAULT_SETTINGS[key]);
+
+export const resetSettingsKeepingSecret = (settings) => ({
+    ...DEFAULT_SETTINGS,
+    secretKey: settings.secretKey,
+    secretScoreKey: settings.secretScoreKey,
+    secretUnlock: settings.secretUnlock,
+});
 
 export const SettingsContext = createContext(DEFAULT_SETTINGS);
 
@@ -128,4 +146,27 @@ export const useGambleKey = ({ code, hold, proceeds, enabled }) => {
             release();
         };
     }, [code, hold, proceeds, enabled]);
+};
+
+export const useSecretKey = ({ code, scoreCode, enabled }) => {
+    useEffect(() => {
+        if ((!code && !scoreCode) || !enabled) return undefined;
+
+        const onKeyDown = (e) => {
+            if (e.code !== code && e.code !== scoreCode) return;
+            if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
+            if (document.querySelector("[data-key-blocker]")) return;
+            const button = document.querySelector("[data-secret-button]");
+            if (!button) return;
+            e.preventDefault();
+            if (e.code === code) {
+                button.click();
+                return;
+            }
+            button.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2 }));
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [code, scoreCode, enabled]);
 };

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "../logic/renderSafeToast.js";
 import { buildDefaultTeamPlacings, saveTeamPlacings } from "../logic/placings.jsx";
-import { SCOREBOARD_RESET_CODE } from "../logic/storageKeys.js";
+import { checkResetCode, isResetCodeConfigured } from "../logic/codeHash.js";
 import { loadRatingBasedStatsTeamIds, buildDefaultTeamRatings, saveTeamRatings, saveTournamentNumber, classifyTeamsForStages, clearRatingsSnapshot, getTeamStatAverage, estimateStatsFromStrength, getRatingBasedStrength, getStatsDistance, RATING_BASED_FAR_OFF_DISTANCE, saveRatingBasedStatsTeamIds } from "../logic/teamData.js";
 import { buildDefaultTeamStats, saveTeamStats, clearStatsSnapshot, DEFAULT_TEAM_STAT_VALUES, clampStat, MANAGE_STAT_DEFINITIONS, parseStatInput, STAT_DEFINITIONS, statToInputString, sanitizeStatInput } from "../logic/teamStats.js";
 import { saveTournamentNumbers } from "../logic/tournamentTypes.jsx";
@@ -50,13 +50,13 @@ export function useStatsAdmin({
         setScoreboardResetCode("");
     };
 
-    const handleVerifyScoreboardResetPassword = () => {
-        if (!SCOREBOARD_RESET_CODE) {
+    const handleVerifyScoreboardResetPassword = async () => {
+        if (!isResetCodeConfigured()) {
             toast.error("Reset code is not configured.");
             return;
         }
 
-        if (scoreboardResetCode !== SCOREBOARD_RESET_CODE) {
+        if (!(await checkResetCode(scoreboardResetCode))) {
             toast.error("WRONG PASSWORD!");
             return;
         }
