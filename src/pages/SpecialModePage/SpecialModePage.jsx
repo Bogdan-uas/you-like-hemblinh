@@ -11,7 +11,7 @@ import css from "./SpecialModePage.module.css";
 import Header from "../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import toast from "./logic/renderSafeToast.js";
+import toast, { setCommentaryMuted } from "./logic/renderSafeToast.js";
 import { SERIES_ACTIONS } from "../../../assets/constants.js";
 import Lenis from "lenis";
 import "./logic/storageUsageLog.js";
@@ -267,8 +267,40 @@ import { StartPage } from "./screens/StartPage.jsx";
 import { SwissTournamentView } from "./screens/SwissTournamentView.jsx";
 import { TournamentIntros } from "./screens/TournamentIntros.jsx";
 import { GameControlModals } from "./screens/GameControlModals.jsx";
+import { SettingsPanel } from "./components/SettingsPanel.jsx";
+import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSpecialModeSettings } from "./logic/settings.js";
 
 function SpecialModePage() {
+    const [settings, setSettings] = useState(loadSettings);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    const updateSettings = useCallback((next) => {
+        setSettings(next);
+        saveSettings(next);
+    }, []);
+
+    useGambleKey({
+        code: settings.gambleKey,
+        hold: settings.holdToGamble,
+        proceeds: settings.gambleKeyProceeds,
+        enabled: !isSettingsOpen,
+    });
+
+    useEffect(() => {
+        setCommentaryMuted(!settings.commentaryToasts);
+    }, [settings.commentaryToasts]);
+
+    return (
+        <SettingsContext.Provider value={settings}>
+            <SpecialModeContent />
+            <SettingsPanel settings={settings} onChange={updateSettings} open={isSettingsOpen} setOpen={setIsSettingsOpen} />
+        </SettingsContext.Provider>
+    );
+}
+
+function SpecialModeContent() {
+    const { smoothScroll, closeWithEscape, fastExtendedRounds, skipPodiumReveal } = useSpecialModeSettings();
+    const extRoundPace = fastExtendedRounds ? 0.5 : 1;
     const navigate = useNavigate();
     const allTeams = useMemo(() => getAllTeams64(), []);
 
@@ -461,11 +493,17 @@ function SpecialModePage() {
 
     const lenisRef = useRef(null);
     const hallManagerScrollRef = useRef(null);
+    const smoothScrollRef = useRef(smoothScroll);
+
+    useEffect(() => {
+        smoothScrollRef.current = smoothScroll;
+        if (lenisRef.current) lenisRef.current.options.smoothWheel = smoothScroll;
+    }, [smoothScroll]);
 
     useEffect(() => {
         const lenis = new Lenis({
             duration: 1.8,
-            smoothWheel: true,
+            smoothWheel: smoothScrollRef.current,
             prevent: (node) => node === hallManagerScrollRef.current || isNativeScrollArea(node),
         });
 
@@ -2411,6 +2449,26 @@ function SpecialModePage() {
         }
     };
 
+    useEffect(() => {
+        if (!closeWithEscape) return undefined;
+        const onKeyDown = (e) => {
+            if (e.key !== "Escape" || e.defaultPrevented) return;
+            if (isRestartModalOpen) {
+                setIsRestartModalOpen(false);
+            } else if (isTerminateModalOpen) {
+                setIsTerminateModalOpen(false);
+            } else if (breakdownSetIndex !== null) {
+                setBreakdownSetIndex(-1);
+                requestAnimationFrame(() => setBreakdownSetIndex(null));
+            } else if (isMatchModalOpen) {
+                closeMatchModal();
+            }
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [closeWithEscape, isRestartModalOpen, isTerminateModalOpen, breakdownSetIndex, isMatchModalOpen, modalContext]);
+
     const handleChooseLeft = () => {
         setHasChosen(true);
     };
@@ -3213,7 +3271,7 @@ function SpecialModePage() {
                 toast.dismiss(SECRET_TOAST_ID);
                 toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
                 toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
-                toast("Don't tell anyone about this!!!", {
+                toast.always("Don't tell anyone about this!!!", {
                     id: SECRET_TOAST_ID,
                     duration: 2000,
                     icon: "🤫",
@@ -3225,7 +3283,7 @@ function SpecialModePage() {
                 toast.dismiss(SECRET_TOAST_ID);
                 toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
                 toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
-                toast("Even the odds...", {
+                toast.always("Even the odds...", {
                     id: SECRET_NUM_TWO_TOAST_ID,
                     duration: 2000,
                     icon: "😈",
@@ -3237,7 +3295,7 @@ function SpecialModePage() {
                 toast.dismiss(SECRET_TOAST_ID);
                 toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
                 toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
-                toast("Secret mode disabled", {
+                toast.always("Secret mode disabled", {
                     id: SECRET_NUM_THREE_TOAST_ID,
                     duration: 2000,
                     icon: "🔓",
@@ -6085,7 +6143,7 @@ function SpecialModePage() {
                     if (curr.tiebreakerPhase !== "extended") return curr;
                     return { ...curr, extRoundCommentaryShown: true };
                 });
-            }, EXT_ROUND_COMMENTARY_DELAY_MS);
+            }, EXT_ROUND_COMMENTARY_DELAY_MS * extRoundPace);
             return () => clearTimeout(t);
         }
 
@@ -6124,7 +6182,7 @@ function SpecialModePage() {
                         extRoundRightScore: finalRight,
                     };
                 });
-            }, EXT_ROUND_REVEAL_MS);
+            }, EXT_ROUND_REVEAL_MS * extRoundPace);
             return () => clearTimeout(t);
         }
 
@@ -6260,7 +6318,7 @@ function SpecialModePage() {
 
                 return { ...curr, tiebreakerBigSymbol: "=" };
             });
-        }, EXT_ROUND_FINAL_COMPARE_MS);
+        }, EXT_ROUND_FINAL_COMPARE_MS * extRoundPace);
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
@@ -6312,6 +6370,11 @@ function SpecialModePage() {
             setShowProceed(false);
             setShowPodium(true);
 
+            if (!hasPlayedWinnerAnimation && skipPodiumReveal) {
+                setHasPlayedWinnerAnimation(true);
+                return;
+            }
+
             if (!hasPlayedWinnerAnimation) {
                 setWinnersText("Qualified from Group A:");
 
@@ -6348,6 +6411,11 @@ function SpecialModePage() {
 
         setShowProceed(false);
         setShowPodium(true);
+
+        if (!hasPlayedWinnerAnimation && skipPodiumReveal) {
+            setHasPlayedWinnerAnimation(true);
+            return;
+        }
 
         if (!hasPlayedWinnerAnimation) {
             setWinnersText("And the Fourth Place is:");

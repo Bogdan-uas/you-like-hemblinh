@@ -80,7 +80,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -127,7 +127,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -170,7 +170,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -255,7 +255,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -326,7 +326,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -389,7 +389,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -448,7 +448,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -500,7 +500,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div className={css.fade_in_delay_more} style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>
@@ -576,7 +576,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                             </div>
 
                             <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro}>
+                                <button className={css.gamble_button} onClick={handleCloseTournamentIntro} data-proceed-button>
                                     Continue
                                 </button>
                             </div>

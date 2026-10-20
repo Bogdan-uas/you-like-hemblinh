@@ -6,6 +6,7 @@ import { ReactFitty } from "react-fitty";
 import { PemSeriesTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
 import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
 import { PodiumEffect, ConfettiRain } from "../components/PodiumEffects.jsx";
+import { useSpecialModeSettings } from "../logic/settings.js";
 import { PODIUM_QUOTES, WINNERS_TIMELINE, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 
 const RISE_EASE = [0.16, 1, 0.3, 1];
@@ -95,7 +96,8 @@ export function WinnersScreen({ winners, labels, actions }) {
     const isGplResults = tournamentResults.kind === "gpl";
     const isPbsResults = tournamentResults.kind === "pbs";
     const animated = !hasPlayedWinnerAnimation;
-    const effects = animated && !reduceMotion;
+    const { podiumEffects } = useSpecialModeSettings();
+    const effects = animated && !reduceMotion && podiumEffects;
     const finalLabel = tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : isPemResults ? pemLabel : isPbsResults ? pbsLabel : tournamentLabel;
     const headlineKey = hasPlayedWinnerAnimation ? "top-4" : winnersText;
 
@@ -252,6 +254,7 @@ export function WinnersScreen({ winners, labels, actions }) {
                         transition={{ duration: 0.4 }}
                         className={css.gamble_button}
                         onClick={handleProceed}
+                        data-proceed-button
                         style={{ zIndex: 10, marginTop: "124px" }}
                     >
                         Proceed

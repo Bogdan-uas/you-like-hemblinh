@@ -1731,7 +1731,7 @@ export function createTournamentRenderers({
                             >
                                 Back to the Winners' screen
                             </button>
-                            <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                            <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
                                 Proceed
                             </button>
                         </div>
@@ -1813,7 +1813,7 @@ export function createTournamentRenderers({
                                 >
                                     Back to the Winners' screen
                                 </button>
-                                <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                                <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
                                     Proceed
                                 </button>
                             </div>
@@ -2057,7 +2057,7 @@ export function createTournamentRenderers({
                         >
                             Back to the Winners' screen
                         </button>
-                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
                             Proceed
                         </button>
                     </div>
@@ -2309,7 +2309,7 @@ export function createTournamentRenderers({
                         >
                             Back to the Winners' screen
                         </button>
-                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
                             Proceed
                         </button>
                     </div>

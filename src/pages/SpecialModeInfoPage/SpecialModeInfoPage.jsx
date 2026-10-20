@@ -10,6 +10,7 @@ import hoveredTeamRedsStatsTabTwo from "../../../assets/images/image-4.2.png";
 import emptyHallOfFame from "../../../assets/images/image-4.3.png";
 import openedTournamentSelectionModal from "../../../assets/images/image-4.4.png";
 import openedTournamentSelectionModalHoveredOn from "../../../assets/images/image-4.5.png";
+import settingsPanelImg from "../../../assets/images/image-4.6.png";
 import tournamentIntroScreenImg from "../../../assets/images/image-5.png";
 import tournamentIntroScreenHoverImg from "../../../assets/images/image-5.5.png";
 import swissStageImg from "../../../assets/images/image-6.png";
@@ -798,6 +799,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Above, you see already a familiar <b>header</b> with two buttons: "Restart the game?" and "Terminate the game?".
                 First restarts the tournament and redirects you to this page again & second redirects you to Home Page but doesn't restart the tournament.
                 Near those two, you will see an orange button, named as "Leaderboard" and below those, you will see the button, called as "Hall of Fame". We will come to those in a minute, ok? <br />
+                And in the top-right corner of the header, there is a small round button with a gear on it, which opens the <b>Settings</b>. It stays there on every screen of the Special Mode, but more on it a little bit later too. <br />
                 Below the header, you see the encouraging text to the tournament simulator and the button leading to this Info Page nearby. <br />
                 In the center there is an endless loop of different team circles, which tries to show, what colors are featured in the tournament. <br />
                 At the bottom, you see two buttons, which speak for themselves.<br />
@@ -886,6 +888,29 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Hall of Fame will store all the played tournaments and their results but since we haven't played any tournament yet, it is empty.
                 In the top-right corner, you can see "Pick'em points score", "0 Pick'em challenges won" and "0 Pick'em challenges lost".
                 These are stats, which are being gathered from all of the registered and played tournaments. "Pick'em points" will meet us again soon...
+            </p>
+            <p className={css.info_text}>
+                Before we start anything, let&apos;s also click on that gear in the top-right corner. It smoothly opens the <b>Settings</b> on top of the screen you are on, so you can change them at any moment, even in the middle of a series:
+            </p>
+            <div className={css.image_container}>
+                <img src={settingsPanelImg} alt="Settings with all of its options" className={css.image} style={{ width: '24vw', height: 'auto' }} />
+            </div>
+            <p className={css.info_text}>
+                These are the options, which make playing the Special Mode more comfortable:
+                <br />• <b>Gambling Key</b>: choose a key (Space, Enter, G, F, J, an arrow or any other key with "Custom key...") and pressing it will click the "Gamble" button during a series for you, with the same press effect as the mouse click
+                <br />• <b>The key also presses Proceed and Continue</b>: the same key will also move you through the Tournament Intro Screens, the results and the Winners&apos; Screens
+                <br />• <b>Hold to keep gambling</b>: while you hold the key, it keeps gambling every time the "Gamble" button is ready again
+                <br />• <b>Show the key on the Gamble button</b>: puts a small badge with your key on the "Gamble" button, so you don&apos;t forget it
+                <br />• <b>Faster Extended Rounds</b>: halves the pauses between the comparisons in the Extended Rounds
+                <br />• <b>Close windows with Esc</b>: Esc closes the match window, the Detailed Match Breakdown and the "Restart" / "Terminate" pop-ups
+                <br />• <b>Commentary notifications</b>: turn them off to hide the play-by-play notifications, like "Second Half begins" (the warnings will still be shown)
+                <br />• <b>Smooth scrolling</b>: turn it off, if you prefer the instant, normal mouse wheel scrolling
+                <br />• <b>Skip the podium reveal</b>: the Winners&apos; Screen shows the whole Top 4 at once instead of revealing them one by one
+                <br />• <b>Winners&apos; Screen effects</b>: the rays, sparkles and confetti around the podium
+            </p>
+            <p className={css.info_text}>
+                The greyed out options only become available once you choose a Gambling Key (or turn off "Skip the podium reveal" for the effects). All the settings are saved, so they stay the same after reloading the page, and the "Reset settings" button brings them back to their defaults (with a chance to undo it, of course).
+                Gambling Key is "Off" by default, so nothing changes until you pick one.
             </p>
             <p className={css.info_text}>
                 Now, let's go back to the Intro Page and click on that addition on the "Start Game" button with an arrow:

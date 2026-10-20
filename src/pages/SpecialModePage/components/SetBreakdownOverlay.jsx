@@ -10,6 +10,7 @@ import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { buildExtendedRoundWinnerList, buildExtendedRoundDetails } from "../logic/series.js";
 import { ExtendedRoundsTrack } from "./ExtendedRounds.jsx";
 import { BREAKDOWN_HIDDEN_LS_KEY, BREAKDOWN_FULL_HEIGHT_LS_KEY } from "../logic/storageKeys.js";
+import { useSpecialModeSettings } from "../logic/settings.js";
 
 const ROUND_BATCH = 3;
 
@@ -152,6 +153,13 @@ export const SetBreakdownOverlay = ({
     const modalRef = useRef(null);
     const [activeSectionStore] = useState(createActiveSectionStore);
     const [fullModalHeight, setFullModalHeight] = useState(readStoredFullModalHeight);
+    const { smoothScroll } = useSpecialModeSettings();
+    const smoothScrollRef = useRef(smoothScroll);
+
+    useEffect(() => {
+        smoothScrollRef.current = smoothScroll;
+        if (lenisRef.current) lenisRef.current.options.smoothWheel = smoothScroll;
+    }, [smoothScroll]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -171,7 +179,7 @@ export const SetBreakdownOverlay = ({
             wrapper: scrollRef.current,
             content: contentRef.current,
             duration: 1.8,
-            smoothWheel: true,
+            smoothWheel: smoothScrollRef.current,
         });
 
         lenisRef.current = lenis;

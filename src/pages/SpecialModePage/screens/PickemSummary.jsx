@@ -148,7 +148,7 @@ export function PickemSummary({ pickem, phase, actions }) {
                         To the bracket
                     </button>
                     {activePhase === "qualifier" || isCstPhase || isEclPhase || isGccPhase ? (
-                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent}>
+                        <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
                             Proceed
                         </button>
                     ) : (

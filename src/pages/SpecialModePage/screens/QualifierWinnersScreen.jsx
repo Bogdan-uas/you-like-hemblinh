@@ -37,6 +37,7 @@ export function QualifierWinnersScreen({ winners, labels, actions }) {
                     transition={{ duration: 0.4 }}
                     className={css.gamble_button}
                     onClick={handleProceed}
+                    data-proceed-button
                     style={{ zIndex: 10, marginTop: "48px" }}
                 >
                     Proceed

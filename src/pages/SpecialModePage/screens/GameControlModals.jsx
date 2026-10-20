@@ -15,7 +15,7 @@ export function GameControlModals({ controls }) {
     return (
         <>
                 <FadeOut>{isRestartModalOpen && (
-                    <div className={css.restart_modal}>
+                    <div className={css.restart_modal} data-key-blocker>
                         <p className={css.restart_text}>
                             Are you sure you want to restart the game? <br /> <strong>You will NOT be able to revert this action!</strong>
                         </p>
@@ -37,7 +37,7 @@ export function GameControlModals({ controls }) {
                 )}</FadeOut>
 
                 <FadeOut>{isTerminateModalOpen && (
-                    <div className={css.restart_modal}>
+                    <div className={css.restart_modal} data-key-blocker>
                         <p className={css.restart_text}>
                             Are you sure you want to terminate the game?
                         </p>

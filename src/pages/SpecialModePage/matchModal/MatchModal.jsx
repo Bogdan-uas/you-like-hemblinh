@@ -152,6 +152,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
             transition={{ duration: 0.15 }}
             ref={centerOverflowX}
             className={css.match_modal_overlay}
+            data-key-blocker
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) {
                     closeMatchModal();

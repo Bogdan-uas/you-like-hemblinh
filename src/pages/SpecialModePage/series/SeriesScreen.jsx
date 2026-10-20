@@ -26,6 +26,7 @@ import { SeriesBanner } from "../components/SeriesBanner.jsx";
 import { GameControlModals } from "../screens/GameControlModals.jsx";
 import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { SetBadge, OvertimeBadge, SetHistory, PenaltyBadge, RoundBadge } from "../components/SeriesBadges.jsx";
+import { useSpecialModeSettings, shortKeyCode } from "../logic/settings.js";
 
 export function SeriesScreen({ header, series, labels, actions }) {
     const {
@@ -51,6 +52,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
         setIsScoreBoardResetModalOpen,
         navigate,
     } = header;
+    const { gambleKey, showGambleKey } = useSpecialModeSettings();
     const {
         seriesState,
         activePhase,
@@ -1461,6 +1463,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         <button
                             className={`${css.gamble_button} ${isButtonLocked || banner ? css.locked : ""}`}
                             disabled={isButtonLocked || !!banner}
+                            data-gamble-button
                             onClick={
                                 seriesState.tiebreakerPhase === "penalties"
                                     ? handlePenaltyShot
@@ -1468,6 +1471,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             }
                         >
                             Gamble
+                            {gambleKey && showGambleKey ? (
+                                <kbd className={css.gamble_key_hint}>{shortKeyCode(gambleKey)}</kbd>
+                            ) : null}
                         </button>
                     </div>
                 )}
