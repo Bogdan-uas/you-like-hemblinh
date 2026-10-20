@@ -115,7 +115,7 @@ export const BreakdownSquares = ({ team, lit, total, side }) => (
     </div>
 );
 
-const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" }) => {
+const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical", style }) => {
     const lineGlow = (isLit) =>
         isLit
             ? `
@@ -159,7 +159,7 @@ const BreakdownSetLines = ({ team, lit, total, side, orientation = "vertical" })
     }
 
     return (
-        <div className={side === "right" ? css.verticalLossLines : css.verticalLines} style={{ marginTop: "6px" }}>
+        <div className={side === "right" ? css.verticalLossLines : css.verticalLines} style={style}>
             {[...Array(total)].map((_, i) => {
                 const isLit = i < lit;
 
@@ -355,7 +355,7 @@ export const BreakdownScoreRow = ({
                     ) : (
                         <div
                             className={isLeft ? css.verticalLines : css.verticalLossLines}
-                            style={{ marginTop: "6px", width: setLinesLayout === "vertical" ? "5px" : undefined }}
+                            style={{ marginTop: setLinesLayout === "vertical" ? 0 : "6px", width: setLinesLayout === "vertical" ? "5px" : undefined }}
                         />
                     )}
 
@@ -367,7 +367,9 @@ export const BreakdownScoreRow = ({
                             style={{
                                 margin: 0,
                                 position: "absolute",
+                                top: "50%",
                                 [isLeft ? "right" : "left"]: "110%",
+                                translate: "0 -50%",
                                 fontSize: "28px",
                             }}
                         />
@@ -480,7 +482,7 @@ export const BreakdownModalScoreboard = ({
                     )}
                 </div>
                 {isPlayoffs && setLinesTotal > 0 ? (
-                    <BreakdownSetLines team={team} lit={sets} total={setLinesTotal} side={isLeft ? undefined : "right"} />
+                    <BreakdownSetLines team={team} lit={sets} total={setLinesTotal} side={isLeft ? undefined : "right"} style={{ marginTop: "6px" }} />
                 ) : null}
             </div>
         );
