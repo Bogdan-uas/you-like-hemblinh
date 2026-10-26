@@ -148,10 +148,10 @@ export const saveCurrentTournamentType = (type) => {
     }
 };
 
-export const TOURNAMENT_BAN_ROLLS = 1;
+export const TOURNAMENT_BAN_ROLLS = 2;
 
 export const TOURNAMENT_BAN_EXCEPTIONS = [
-    { id: ACTIVE_TOURNAMENT_TYPE, rolls: 2 },
+    { id: ACTIVE_TOURNAMENT_TYPE, rolls: 3 },
 ];
 
 export const getTournamentBanRolls = (id) =>
