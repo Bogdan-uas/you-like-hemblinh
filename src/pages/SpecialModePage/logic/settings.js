@@ -20,10 +20,14 @@ export const DEFAULT_SETTINGS = {
     simulateInstant: "off",
     simulateKeepOpen: false,
     simulateInSeries: true,
-    secretKey: null,
-    secretScoreKey: null,
+    simulateKey: null,
+    secretPanelKey: null,
+    secretLeftKey: null,
+    secretRightKey: null,
     secretUnlock: null,
 };
+
+const RETIRED_SETTING_KEYS = ["secretKey", "secretScoreKey"];
 
 export const SIMULATE_MODES = [
     { value: "set", label: "One set at a time" },
@@ -79,7 +83,9 @@ export const shortKeyCode = (code) => (ARROWS[code] ?? formatKeyCode(code));
 export const loadSettings = () => {
     try {
         const saved = JSON.parse(localStorage.getItem(SETTINGS_LS_KEY) ?? "null");
-        return saved && typeof saved === "object" ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
+        if (!saved || typeof saved !== "object") return DEFAULT_SETTINGS;
+        const kept = Object.fromEntries(Object.entries(saved).filter(([key]) => !RETIRED_SETTING_KEYS.includes(key)));
+        return { ...DEFAULT_SETTINGS, ...kept };
     } catch {
         return DEFAULT_SETTINGS;
     }
@@ -93,7 +99,7 @@ export const saveSettings = (settings) => {
     }
 };
 
-const SECRET_SETTING_KEYS = ["secretKey", "secretScoreKey", "secretUnlock"];
+const SECRET_SETTING_KEYS = ["secretPanelKey", "secretLeftKey", "secretRightKey", "secretUnlock"];
 
 export const isDefaultSettings = (settings) =>
     Object.keys(DEFAULT_SETTINGS)
@@ -102,8 +108,9 @@ export const isDefaultSettings = (settings) =>
 
 export const resetSettingsKeepingSecret = (settings) => ({
     ...DEFAULT_SETTINGS,
-    secretKey: settings.secretKey,
-    secretScoreKey: settings.secretScoreKey,
+    secretPanelKey: settings.secretPanelKey,
+    secretLeftKey: settings.secretLeftKey,
+    secretRightKey: settings.secretRightKey,
     secretUnlock: settings.secretUnlock,
 });
 
@@ -173,25 +180,44 @@ export const useGambleKey = ({ code, hold, proceeds, enabled }) => {
     }, [code, hold, proceeds, enabled]);
 };
 
-export const useSecretKey = ({ code, scoreCode, enabled }) => {
+export const useSimulateKey = ({ code, enabled }) => {
     useEffect(() => {
-        if ((!code && !scoreCode) || !enabled) return undefined;
+        if (!code || !enabled) return undefined;
 
         const onKeyDown = (e) => {
-            if (e.code !== code && e.code !== scoreCode) return;
+            if (e.code !== code) return;
+            if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
+            const button = [...document.querySelectorAll("[data-simulate-action]")].find((element) => element.offsetParent !== null);
+            if (!button) return;
+            if ([...document.querySelectorAll("[data-key-blocker]")].some((blocker) => !blocker.contains(button))) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (!button.disabled) button.click();
+        };
+
+        window.addEventListener("keydown", onKeyDown, true);
+        return () => window.removeEventListener("keydown", onKeyDown, true);
+    }, [code, enabled]);
+};
+
+export const SECRET_EVENT = "special-mode-secret";
+
+export const useSecretKeys = ({ panelCode, leftCode, rightCode, enabled }) => {
+    useEffect(() => {
+        if ((!panelCode && !leftCode && !rightCode) || !enabled) return undefined;
+        const actions = { [panelCode]: "panel", [leftCode]: "left", [rightCode]: "right" };
+
+        const onKeyDown = (e) => {
+            const action = e.code && actions[e.code];
+            if (!action) return;
             if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
             if (document.querySelector("[data-key-blocker]")) return;
-            const button = document.querySelector("[data-secret-button]");
-            if (!button) return;
+            if (!document.querySelector("[data-secret-button]")) return;
             e.preventDefault();
-            if (e.code === code) {
-                button.click();
-                return;
-            }
-            button.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2 }));
+            window.dispatchEvent(new CustomEvent(SECRET_EVENT, { detail: action }));
         };
 
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
-    }, [code, scoreCode, enabled]);
+    }, [panelCode, leftCode, rightCode, enabled]);
 };

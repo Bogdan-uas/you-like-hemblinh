@@ -362,7 +362,8 @@ import { SwissTournamentView } from "./screens/SwissTournamentView.jsx";
 import { TournamentIntros } from "./screens/TournamentIntros.jsx";
 import { GameControlModals } from "./screens/GameControlModals.jsx";
 import { SettingsPanel } from "./components/SettingsPanel.jsx";
-import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKey, isSecretUnlocked, useSpecialModeSettings } from "./logic/settings.js";
+import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKeys, useSimulateKey, isSecretUnlocked, useSpecialModeSettings, SECRET_EVENT } from "./logic/settings.js";
+import { DEFAULT_CHEAT_DRAFT, CHEAT_SCRIPTS, TIE_SCORE, buildCheatAnchor, getCheatMiniWinner, isCheatFinished, describeCheat, getMiniRoundOdds, getRoundOdds, normalizeCheatDraft } from "./logic/secretCheats.js";
 
 function SpecialModePage() {
     const [settings, setSettings] = useState(loadSettings);
@@ -380,9 +381,15 @@ function SpecialModePage() {
         enabled: !isSettingsOpen,
     });
 
-    useSecretKey({
-        code: isSecretUnlocked(settings) ? settings.secretKey : null,
-        scoreCode: isSecretUnlocked(settings) ? settings.secretScoreKey : null,
+    useSimulateKey({
+        code: settings.simulateEnabled ? settings.simulateKey : null,
+        enabled: !isSettingsOpen,
+    });
+
+    useSecretKeys({
+        panelCode: isSecretUnlocked(settings) ? settings.secretPanelKey : null,
+        leftCode: isSecretUnlocked(settings) ? settings.secretLeftKey : null,
+        rightCode: isSecretUnlocked(settings) ? settings.secretRightKey : null,
         enabled: !isSettingsOpen,
     });
 
@@ -399,6 +406,8 @@ function SpecialModePage() {
 }
 
 function SpecialModeContent() {
+    const settingsForSecret = useSpecialModeSettings();
+    const secretUnlocked = isSecretUnlocked(settingsForSecret);
     const { smoothScroll, closeWithEscape, fastExtendedRounds, skipPodiumReveal, commentaryToasts, simulateEnabled, simulateMode, simulateSpeed, simulateSlowDown, simulateInstant, simulateInSeries } = useSpecialModeSettings();
     const extRoundPace = fastExtendedRounds ? 0.5 : 1;
     const navigate = useNavigate();
@@ -549,9 +558,12 @@ function SpecialModeContent() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
 
-    const [forceWinner, setForceWinner] = useState(null);
-    // eslint-disable-next-line no-unused-vars
-    const [cheatMode, setCheatMode] = useState(0);
+    const [activeCheat, setActiveCheat] = useState(null);
+    const [cheatDraftState, setCheatDraft] = useState(DEFAULT_CHEAT_DRAFT);
+    const cheatDraft = normalizeCheatDraft(cheatDraftState);
+    const [isSecretPanelOpen, setIsSecretPanelOpen] = useState(false);
+    const [peekedRoll, setPeekedRoll] = useState(null);
+    const peekedRawRef = useRef(null);
 
     const [neededPickemPoints, setNeededPickemPoints] = useState(() => getRandomNeededPickemPoints());
     const [finalPickemPoints, setFinalPickemPoints] = useState(0);
@@ -3813,55 +3825,82 @@ function SpecialModeContent() {
         return { left, right };
     };
 
-    const toggleSecretGuaranteedWin = () => {
-        setCheatMode((prev) => {
-            const next = (prev + 1) % 3;
+    const secretTeams = { left: seriesState.leftTeam, right: seriesState.rightTeam };
 
-            if (next === 1) {
-                setForceWinner("left");
-                toast.dismiss(SECRET_TOAST_ID);
-                toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
-                toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
-                toast.always("Don't tell anyone about this!!!", {
-                    id: SECRET_TOAST_ID,
-                    duration: 2000,
-                    icon: "🤫",
-                    group: "secret",
-                    jump: true,
-                });
-            }
-
-            if (next === 2) {
-                setForceWinner("right");
-                toast.dismiss(SECRET_TOAST_ID);
-                toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
-                toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
-                toast.always("Even the odds...", {
-                    id: SECRET_NUM_TWO_TOAST_ID,
-                    duration: 2000,
-                    icon: "😈",
-                    group: "secret",
-                    jump: true,
-                });
-            }
-
-            if (next === 0) {
-                setForceWinner(null);
-                toast.dismiss(SECRET_TOAST_ID);
-                toast.dismiss(SECRET_NUM_TWO_TOAST_ID);
-                toast.dismiss(SECRET_NUM_THREE_TOAST_ID);
-                toast.always("Secret mode disabled", {
-                    id: SECRET_NUM_THREE_TOAST_ID,
-                    duration: 2000,
-                    icon: "🔓",
-                    group: "secret",
-                    jump: true,
-                });
-            }
-
-            return next;
+    const announceCheat = (cheat, text) => {
+        const script = CHEAT_SCRIPTS.find((option) => option.value === cheat?.script);
+        toast.always(text ?? (cheat ? `Cheat on: ${describeCheat(cheat, secretTeams)}` : "Cheat off"), {
+            icon: cheat ? script?.icon ?? "🤫" : "🔓",
+            duration: 2200,
+            label: "Secret",
+            accent: cheat?.side ? secretTeams[cheat.side]?.color : "#8a63ff",
+            group: "secret",
+            jump: true,
         });
     };
+
+    const startCheat = (cheat) => {
+        const next = cheat ? { ...cheat, anchor: buildCheatAnchor(seriesState) } : null;
+        setActiveCheat(next);
+        announceCheat(next);
+    };
+
+    const toggleTeamCheat = (side) => {
+        if (!seriesState.active) return;
+        const sameTeam = activeCheat && !activeCheat.script && activeCheat.side === side;
+        startCheat(sameTeam ? null : { side, strength: cheatDraft.strength, scope: cheatDraft.scope });
+    };
+
+    const toggleCheatScript = (script, side = null) => {
+        if (!seriesState.active) return;
+        const isTie = script === "score" && side === TIE_SCORE;
+        const same = activeCheat?.script === script && (script !== "score" || activeCheat.side === (isTie ? null : side));
+        startCheat(same ? null : {
+            script,
+            side: script === "score" && !isTie ? side : null,
+            winnerRounds: isTie ? TIE_SCORE : cheatDraft.winnerRounds,
+            loserRounds: cheatDraft.loserRounds,
+        });
+    };
+
+    const updateCheatDraft = (patch) => {
+        const next = normalizeCheatDraft({ ...cheatDraft, ...patch });
+        setCheatDraft(next);
+        setActiveCheat((cheat) => {
+            if (!cheat) return cheat;
+            if (!cheat.script && (patch.strength || patch.scope)) return { ...cheat, ...patch };
+            if (cheat.script === "score" && cheat.winnerRounds !== TIE_SCORE && (patch.winnerRounds != null || patch.loserRounds != null)) {
+                return { ...cheat, winnerRounds: next.winnerRounds, loserRounds: next.loserRounds };
+            }
+            return cheat;
+        });
+    };
+
+    const toggleSecretPanel = () => {
+        if (!secretUnlocked) return;
+        setIsSecretPanelOpen((open) => !open);
+    };
+
+    const secretActionRef = useRef(null);
+    secretActionRef.current = (action) => {
+        if (!secretUnlocked || !seriesState.active) return;
+        if (action === "panel") toggleSecretPanel();
+        else toggleTeamCheat(action);
+    };
+
+    useEffect(() => {
+        const onSecret = (e) => secretActionRef.current?.(e.detail);
+        window.addEventListener(SECRET_EVENT, onSecret);
+        return () => window.removeEventListener(SECRET_EVENT, onSecret);
+    }, []);
+
+    useEffect(() => {
+        if (!seriesState.active && isSecretPanelOpen) setIsSecretPanelOpen(false);
+        if (!activeCheat || !isCheatFinished(activeCheat, seriesState)) return;
+        setActiveCheat(null);
+        if (seriesState.active && !seriesState.banner) announceCheat(null, "Cheat finished");
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [seriesState, activeCheat]);
 
     const SERIES_COMMIT_DELAY = 3500;
 
@@ -4114,14 +4153,7 @@ function SpecialModeContent() {
 
     const handleSecretButtonContextMenu = (e) => {
         e.preventDefault();
-
-        const { left, right } = getExtendedRoundsScore(seriesState.extendedRounds);
-
-        toast(`Extended Rounds: ${left}-${right}`, {
-            id: "extended-rounds-score",
-            icon: "📊",
-            duration: 2500,
-        });
+        toggleSecretPanel();
     };
 
     const getMultiplierClass = (mine, other) => {
@@ -4178,29 +4210,64 @@ function SpecialModeContent() {
 
     const computeSideRollBonus = (side, rawRoll, ctx) => computeRollBonus(side, rawRoll, ctx);
 
-    const rollRaw = () => [
+    const rollFreshRaw = () => [
         round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN)),
         round2(MULTIPLIER_MIN + Math.random() * (MULTIPLIER_MAX - MULTIPLIER_MIN)),
     ];
 
-    const rollPair = (s = seriesState, [a, b] = rollRaw()) => {
-        const ctx = buildRollContext(s);
+    const rollRaw = () => {
+        const peeked = peekedRawRef.current;
+        if (!peeked) return rollFreshRaw();
+        peekedRawRef.current = null;
+        setPeekedRoll(null);
+        return peeked;
+    };
+
+    const naturalPair = (s, [a, b], ctx = buildRollContext(s)) => {
         const edge = splitRollEdge(
             computeSideRollBonus("left", a, ctx),
             computeSideRollBonus("right", b, ctx)
         );
 
-        const a2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, a + edge.left)));
-        const b2 = round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, b + edge.right)));
+        return {
+            left: round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, a + edge.left))),
+            right: round2(Math.max(MULTIPLIER_MIN, Math.min(MULTIPLIER_MAX, b + edge.right))),
+            edgeLeft: edge.left,
+            edgeRight: edge.right,
+        };
+    };
 
-        if (!forceWinner) return { left: a2, right: b2 };
+    const rollPair = (s = seriesState, raw = rollRaw()) => {
+        const { left: a2, right: b2 } = naturalPair(s, raw);
+        const forced = getCheatMiniWinner(activeCheat, s);
+
+        if (!forced) return { left: a2, right: b2 };
 
         const hi = Math.max(a2, b2);
         let lo = Math.min(a2, b2);
         if (hi === lo) lo = round2(Math.max(MULTIPLIER_MIN, hi - 0.01));
 
-        return forceWinner === "left" ? { left: hi, right: lo } : { left: lo, right: hi };
+        return forced === "left" ? { left: hi, right: lo } : { left: lo, right: hi };
     };
+
+    const handlePeekRoll = () => {
+        if (!seriesState.active) return;
+        const raw = peekedRawRef.current ?? rollFreshRaw();
+        peekedRawRef.current = raw;
+        setPeekedRoll(naturalPair(seriesState, raw));
+    };
+
+    const secretInfo = useMemo(() => {
+        if (!isSecretPanelOpen || !seriesState.active) return null;
+        const ctx = buildRollContext(seriesState);
+        const mini = getMiniRoundOdds(() => naturalPair(seriesState, rollFreshRaw(), ctx));
+        return {
+            extendedRounds: getExtendedRoundsScore(seriesState.extendedRounds ?? { overtimes: [] }),
+            mini,
+            round: getRoundOdds(mini.left, seriesState),
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isSecretPanelOpen, seriesState]);
 
     const getPenaltyMessage = (isAttacker, attackerSucceeded) => {
         if (isAttacker) {
@@ -9492,8 +9559,23 @@ function SpecialModeContent() {
                     handleRemovePlacingsClick,
                     arePlacingButtonsArmed,
                     hasAnyPlacings,
-                    toggleSecretGuaranteedWin,
                     handleSecretButtonContextMenu,
+                    secret: {
+                        unlocked: secretUnlocked,
+                        allowTie: !!seriesState.allowTie,
+                        panelOpen: isSecretPanelOpen,
+                        togglePanel: toggleSecretPanel,
+                        closePanel: () => setIsSecretPanelOpen(false),
+                        activeCheat,
+                        draft: cheatDraft,
+                        updateDraft: updateCheatDraft,
+                        toggleTeamCheat,
+                        toggleScript: toggleCheatScript,
+                        stopCheat: () => startCheat(null),
+                        info: secretInfo,
+                        peekedRoll,
+                        peekRoll: handlePeekRoll,
+                    },
                     isRestartModalOpen,
                     confirmRestart,
                     isTerminateModalOpen,

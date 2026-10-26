@@ -362,7 +362,7 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
     const lockSecret = () => {
         setCapturing(null);
         setSecretVerified(false);
-        onChange({ ...settings, secretKey: null, secretScoreKey: null, secretUnlock: null });
+        onChange({ ...settings, secretPanelKey: null, secretLeftKey: null, secretRightKey: null, secretUnlock: null });
     };
 
     const update = (key) => (next) => onChange({ ...settings, [key]: next });
@@ -438,7 +438,7 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                                     onChange={update("gambleKey")}
                                     capturing={capturing === "gamble"}
                                     setCapturing={(on) => setCapturing(on ? "gamble" : null)}
-                                    takenKeys={secretUnlocked ? [{ code: settings.secretKey }, { code: settings.secretScoreKey }] : []}
+                                    takenKeys={[{ code: settings.simulateKey, label: "Simulate Key" }, ...(secretUnlocked ? [{ code: settings.secretPanelKey }, { code: settings.secretLeftKey }, { code: settings.secretRightKey }] : [])]}
                                 />
                                 <SettingsSwitch
                                     id="settings-gamble-key-proceeds"
@@ -524,6 +524,16 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                                 />
                             </div>
                             <div className={css.settings_row}>
+                                <KeySelect
+                                    label="Simulate Key"
+                                    hint="Presses Simulate (or Stop) while the Simulate tab is shown and opened."
+                                    value={settings.simulateKey}
+                                    onChange={update("simulateKey")}
+                                    capturing={capturing === "simulate"}
+                                    setCapturing={(on) => setCapturing(on ? "simulate" : null)}
+                                    takenKeys={[{ code: settings.gambleKey, label: "Gambling Key" }, ...(secretUnlocked ? [{ code: settings.secretPanelKey }, { code: settings.secretLeftKey }, { code: settings.secretRightKey }] : [])]}
+                                    showTaken={false}
+                                />
                                 <SettingsSwitch
                                     id="settings-simulate-slow-down"
                                     label="Slow down on important moments"
@@ -613,28 +623,47 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                                             <>
                                                 <div className={css.settings_row}>
                                                     <KeySelect
-                                                        label="Secret Key"
-                                                        hint="Press this key to use the Secret button during a series."
-                                                        value={settings.secretKey}
-                                                        onChange={update("secretKey")}
-                                                        capturing={capturing === "secret"}
-                                                        setCapturing={(on) => setCapturing(on ? "secret" : null)}
+                                                        label="Secret Panel Key"
+                                                        hint="Opens and closes the Secret panel during a series. A click on the hidden Secret button does the same."
+                                                        value={settings.secretPanelKey}
+                                                        onChange={update("secretPanelKey")}
+                                                        capturing={capturing === "panel"}
+                                                        setCapturing={(on) => setCapturing(on ? "panel" : null)}
                                                         takenKeys={[
                                                             { code: settings.gambleKey, label: "Gambling Key" },
-                                                            { code: settings.secretScoreKey, label: "Score Key" },
+                                                            { code: settings.simulateKey, label: "Simulate Key" },
+                                                            { code: settings.secretLeftKey, label: "Left Team Key" },
+                                                            { code: settings.secretRightKey, label: "Right Team Key" },
                                                         ]}
                                                         showTaken
                                                     />
                                                     <KeySelect
-                                                        label="Extended Rounds Score Key"
-                                                        hint="Press this key to see the Extended Rounds score, like a right click on the Secret button."
-                                                        value={settings.secretScoreKey}
-                                                        onChange={update("secretScoreKey")}
-                                                        capturing={capturing === "score"}
-                                                        setCapturing={(on) => setCapturing(on ? "score" : null)}
+                                                        label="Left Team Key"
+                                                        hint="Turns the cheat for the left team on or off, with the strength and the scope chosen in the Secret panel."
+                                                        value={settings.secretLeftKey}
+                                                        onChange={update("secretLeftKey")}
+                                                        capturing={capturing === "left"}
+                                                        setCapturing={(on) => setCapturing(on ? "left" : null)}
                                                         takenKeys={[
                                                             { code: settings.gambleKey, label: "Gambling Key" },
-                                                            { code: settings.secretKey, label: "Secret Key" },
+                                                            { code: settings.simulateKey, label: "Simulate Key" },
+                                                            { code: settings.secretPanelKey, label: "Panel Key" },
+                                                            { code: settings.secretRightKey, label: "Right Team Key" },
+                                                        ]}
+                                                        showTaken
+                                                    />
+                                                    <KeySelect
+                                                        label="Right Team Key"
+                                                        hint="Turns the cheat for the right team on or off, with the strength and the scope chosen in the Secret panel."
+                                                        value={settings.secretRightKey}
+                                                        onChange={update("secretRightKey")}
+                                                        capturing={capturing === "right"}
+                                                        setCapturing={(on) => setCapturing(on ? "right" : null)}
+                                                        takenKeys={[
+                                                            { code: settings.gambleKey, label: "Gambling Key" },
+                                                            { code: settings.simulateKey, label: "Simulate Key" },
+                                                            { code: settings.secretPanelKey, label: "Panel Key" },
+                                                            { code: settings.secretLeftKey, label: "Left Team Key" },
                                                         ]}
                                                         showTaken
                                                     />
@@ -642,7 +671,7 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                                                 <div className={css.settings_row}>
                                                     <div className={css.settings_option}>
                                                         <p className={css.settings_info_text}>Lock the Secret</p>
-                                                        <p className={css.settings_hint}>Turns both Secret keys off until the codes are entered again.</p>
+                                                        <p className={css.settings_hint}>Turns all three Secret keys and the Secret panel off until the codes are entered again.</p>
                                                         <button
                                                             type="button"
                                                             className={`${css.cancel_button} ${css.settings_lock_button}`}

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { resolveValue, toast } from "react-hot-toast";
 import css from "./AppToast.module.css";
 
@@ -39,16 +40,54 @@ const CrossIcon = () => (
     </svg>
 );
 
-const Countdown = ({ t }) =>
+const DRAIN_MS = 320;
+
+const Countdown = ({ t, barRef }) =>
     Number.isFinite(t.duration) ? (
         <span className={css.countdown} aria-hidden="true">
-            <span className={css.countdown_bar} style={{ animationDuration: `${t.duration}ms` }} />
+            <span ref={barRef} className={css.countdown_bar} style={{ animationDuration: `${t.duration}ms` }} />
         </span>
     ) : null;
+
+const useDrainClose = (t) => {
+    const barRef = useRef(null);
+    const closingRef = useRef(null);
+    const seqRef = useRef(t.seq ?? 0);
+
+    useEffect(() => {
+        seqRef.current = t.seq ?? 0;
+    }, [t.seq]);
+
+    const close = () => {
+        const seq = seqRef.current;
+        if (closingRef.current === seq) return;
+        closingRef.current = seq;
+
+        const bar = barRef.current;
+        if (!bar) {
+            toast.dismiss(t.id);
+            return;
+        }
+
+        const matrix = getComputedStyle(bar).transform;
+        const scale = matrix && matrix !== "none" ? Number(matrix.slice(7, -1).split(",")[0]) : 1;
+        bar.style.animation = "none";
+        bar.style.transform = `scaleX(${Number.isFinite(scale) ? scale : 1})`;
+        void bar.offsetWidth;
+        bar.style.transition = `transform ${DRAIN_MS}ms ease-in`;
+        bar.style.transform = "scaleX(0)";
+        setTimeout(() => {
+            if (seqRef.current === seq) toast.dismiss(t.id);
+        }, DRAIN_MS);
+    };
+
+    return { barRef, close };
+};
 
 const eventOf = (icon) => SERIES_EVENTS[icon] ?? { label: "Series", accent: "#747bff" };
 
 const SeriesToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
     const event = eventOf(t.icon);
     const accent = readableAccent(t.accent ?? event.accent);
     const trail = t.trail ?? [];
@@ -57,6 +96,7 @@ const SeriesToast = ({ t, message }) => {
         <div
             className={`${css.series} ${t.visible ? css.series_enter : css.series_exit}`}
             style={{ "--toast-accent": accent }}
+            onClick={close}
             {...t.ariaProps}
         >
             <span className={css.series_live}>
@@ -72,7 +112,7 @@ const SeriesToast = ({ t, message }) => {
                     <span className={css.series_label}>{t.label ?? event.label}</span>
                     <span className={css.series_message}>{message}</span>
                 </span>
-                <Countdown t={t} />
+                <Countdown t={t} barRef={barRef} />
             </div>
             {trail.length > 0 && (
                 <span className={css.series_trail} aria-hidden="true">
@@ -91,10 +131,8 @@ const SeriesToast = ({ t, message }) => {
     );
 };
 
-export function AppToast({ t }) {
-    const message = resolveValue(t.message, t);
-
-    if (t.variant === "series") return <SeriesToast t={t} message={message} />;
+const PlainToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
 
     const kind = t.type === "success" ? "success" : t.type === "error" ? "error" : t.type === "loading" ? "loading" : "custom";
     const icon =
@@ -107,12 +145,19 @@ export function AppToast({ t }) {
     return (
         <div
             className={`${css.toast} ${css[kind]} ${t.visible ? css.enter : css.exit}`}
-            onClick={() => toast.dismiss(t.id)}
+            onClick={close}
             {...t.ariaProps}
         >
             <span className={css.badge}>{icon}</span>
             <span className={css.message}>{message}</span>
-            {kind !== "loading" && <Countdown t={t} />}
+            {kind !== "loading" && <Countdown t={t} barRef={barRef} />}
         </div>
     );
+};
+
+export function AppToast({ t }) {
+    const message = resolveValue(t.message, t);
+
+    if (t.variant === "series") return <SeriesToast t={t} message={message} />;
+    return <PlainToast t={t} message={message} />;
 }

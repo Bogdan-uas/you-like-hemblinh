@@ -3,10 +3,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaForwardFast, FaStop } from "react-icons/fa6";
 import css from "../SpecialModePage.module.css";
-import { useSpecialModeSettings } from "../logic/settings.js";
+import { useSpecialModeSettings, shortKeyCode } from "../logic/settings.js";
 
 export function SimulateAttachment({ variant = "modal", canSimulate, lockedHint, running = false, onSimulate, onStop }) {
-    const { simulateMode, simulateSpeed, simulateSlowDown, simulateInstant, simulateKeepOpen } = useSpecialModeSettings();
+    const { simulateMode, simulateSpeed, simulateSlowDown, simulateInstant, simulateKeepOpen, simulateKey } = useSpecialModeSettings();
+    const keyHint = simulateKey ? <kbd className={css.gamble_key_hint}>{shortKeyCode(simulateKey)}</kbd> : null;
     const [open, setOpen] = useState(variant === "modal" && !!simulateKeepOpen);
     const expanded = open || running;
     const instant = simulateInstant && simulateInstant !== "off";
@@ -32,8 +33,9 @@ export function SimulateAttachment({ variant = "modal", canSimulate, lockedHint,
                                         <span className={css.simulate_live_dot} aria-hidden="true" />
                                         <span>Simulating {scope} {instant ? <b>instantly</b> : <>at <b>{simulateSpeed}x</b></>}...</span>
                                     </p>
-                                    <button type="button" className={`${css.gamble_button} ${css.simulate_stop_button}`} onClick={onStop}>
+                                    <button type="button" className={`${css.gamble_button} ${css.simulate_stop_button}`} onClick={onStop} data-simulate-action>
                                         <FaStop aria-hidden="true" /> Stop
+                                        {keyHint}
                                     </button>
                                 </>
                             ) : (
@@ -54,8 +56,10 @@ export function SimulateAttachment({ variant = "modal", canSimulate, lockedHint,
                                         className={`${css.gamble_button} ${css.simulate_button} ${!canSimulate ? css.locked : ""}`}
                                         disabled={!canSimulate}
                                         onClick={onSimulate}
+                                        data-simulate-action
                                     >
                                         <FaForwardFast aria-hidden="true" /> Simulate
+                                        {keyHint}
                                     </button>
                                     {!canSimulate && lockedHint ? <span className={css.simulate_subtext}>{lockedHint}</span> : null}
                                 </>

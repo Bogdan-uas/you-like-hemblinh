@@ -7940,3 +7940,335 @@ button.breakdown_er_tag:not(:disabled):hover {
     text-align: center;
     z-index: 3;
 }
+
+.secret_panel {
+    position: fixed;
+    top: 64px;
+    right: 20px;
+    z-index: 70;
+    width: 340px;
+    max-height: calc(100vh - 84px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px 16px;
+    background: var(--ui-surface);
+    border-radius: var(--ui-radius-card);
+    border: 1px solid #e2e3ee;
+    box-shadow: var(--ui-shadow-raised);
+    color: var(--ui-text);
+    text-align: left;
+    transition: none;
+}
+
+.secret_panel * {
+    transition: none;
+}
+
+.secret_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.secret_title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.secret_close {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f2f6;
+    color: var(--ui-text-muted);
+    cursor: pointer;
+}
+
+.secret_close:hover {
+    background: #e2e5f3;
+}
+
+.secret_status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: var(--ui-radius);
+    background: #f1f2f6;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ui-text-muted);
+}
+
+.secret_status_on {
+    background: #efeaff;
+    color: #4b2fb3;
+}
+
+.secret_status_dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #b5b7c4;
+}
+
+.secret_status_on .secret_status_dot {
+    background: #8a63ff;
+    box-shadow: 0 0 8px #8a63ff;
+    animation: secret-pulse 1200ms ease-in-out infinite;
+}
+
+.secret_stop {
+    margin-left: auto;
+    padding: 3px 10px;
+    border: none;
+    border-radius: var(--ui-radius-pill);
+    background: #be3939;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.secret_section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--ui-line-soft);
+}
+
+.secret_section_title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ui-text-faint);
+}
+
+.secret_label {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ui-text-muted);
+}
+
+.secret_choice {
+    display: flex;
+    width: 100%;
+}
+
+.secret_choice > button {
+    flex: 1 1 0;
+    padding: 6px 4px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.secret_choice_hint {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.75;
+}
+
+.secret_teams {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.secret_team {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border: 2px solid #ccc;
+    border-radius: var(--ui-radius-card);
+    background: #f1f2f6;
+    color: var(--ui-text);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.secret_team:hover {
+    background: #e2e5f3;
+}
+
+.secret_team_active,
+.secret_team_active:hover {
+    border-color: var(--team-color);
+    background: color-mix(in srgb, var(--team-color) 18%, #fff);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--team-color) 55%, transparent);
+}
+
+.secret_team_dot {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--team-color);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 0 3px #b5b7c4;
+}
+
+.secret_scripts {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+.secret_script {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 7px 6px;
+    border: 2px solid #ccc;
+    border-radius: var(--ui-radius-card);
+    background: #f1f2f6;
+    color: var(--ui-text);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+}
+
+.secret_script:hover {
+    background: #e2e5f3;
+}
+
+.secret_script_active,
+.secret_script_active:hover {
+    border-color: #8a63ff;
+    background: #efeaff;
+    color: #4b2fb3;
+}
+
+.secret_score {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.secret_score .secret_script {
+    flex-direction: row;
+    padding: 8px 10px;
+}
+
+.secret_score_text {
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.secret_score_select {
+    padding: 5px 4px;
+    border: 2px solid #ccc;
+    border-radius: var(--ui-radius);
+    background: #fff;
+    font-weight: 800;
+    color: var(--ui-text);
+}
+
+.secret_info {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13px;
+}
+
+.secret_info dt {
+    color: var(--ui-text-muted);
+    font-weight: 600;
+}
+
+.secret_info dd {
+    margin: 0;
+    font-weight: 800;
+    text-align: right;
+}
+
+.secret_peek {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 7px 12px;
+    border: none;
+    border-radius: var(--ui-radius);
+    background: #2e2f42;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.secret_peek_result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 6px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.secret_peek_result .settings_hint {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.cheat_indicator {
+    position: absolute;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    margin-top: -4px;
+    border-radius: 50%;
+    background: #8a63ff;
+    box-shadow: 0 0 0 2px #fff, 0 0 10px #8a63ff;
+    animation: secret-pulse 1200ms ease-in-out infinite;
+    pointer-events: none;
+}
+
+.cheat_indicator_left {
+    right: calc(100% + 8px);
+}
+
+.cheat_indicator_right {
+    left: calc(100% + 8px);
+}
+
+@keyframes secret-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.45;
+        transform: scale(0.75);
+    }
+}

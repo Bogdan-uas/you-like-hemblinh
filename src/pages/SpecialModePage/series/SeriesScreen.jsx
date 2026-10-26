@@ -31,6 +31,8 @@ import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { SetBadge, OvertimeBadge, SetHistory, PenaltyBadge, RoundBadge } from "../components/SeriesBadges.jsx";
 import { useSpecialModeSettings, shortKeyCode } from "../logic/settings.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
+import { SecretPanel } from "../components/SecretPanel.jsx";
+import { isCheatTargeting } from "../logic/secretCheats.js";
 
 export function SeriesScreen({ header, series, labels, actions }) {
     const {
@@ -43,8 +45,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
         handleRemovePlacingsClick,
         arePlacingButtonsArmed,
         hasAnyPlacings,
-        toggleSecretGuaranteedWin,
         handleSecretButtonContextMenu,
+        secret,
         isRestartModalOpen,
         confirmRestart,
         isTerminateModalOpen,
@@ -417,6 +419,11 @@ export function SeriesScreen({ header, series, labels, actions }) {
 
     return (
         <>
+            <AnimatePresence>
+                {secret?.unlocked && secret.panelOpen ? (
+                    <SecretPanel key="secret-panel" secret={secret} teams={{ left: seriesState.leftTeam, right: seriesState.rightTeam }} />
+                ) : null}
+            </AnimatePresence>
             <Header
                 setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                 setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
@@ -439,9 +446,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
             />
             <div style={{ marginTop: setsToWin === 1 ? "0px" : "-120px" }} className={css.series_container}>
                 <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", transition: "none" }}>
-                    <button
+                    {secret?.unlocked ? <button
                         type="button"
-                        onClick={toggleSecretGuaranteedWin}
+                        onClick={secret.togglePanel}
                         onContextMenu={handleSecretButtonContextMenu}
                         data-secret-button
                         tabIndex={-1}
@@ -461,7 +468,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         }}
                     >
                         Secret
-                    </button>
+                    </button> : null}
                     {seriesLabelNode}
                 </div>
                 {seriesState.tiebreakerPhase === "extended" && extendedRoundDetails && (
@@ -546,6 +553,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 className={`${css.team_name_left} ${css.team_name_fancy}`} data-side="left">
                                 <span className={css.team_name_prefix}>Team</span>{" "}
                                 <span className={css.team_name_main}>{seriesState.leftTeam?.name}</span>
+                                {isCheatTargeting(secret?.activeCheat, "left") ? <span className={`${css.cheat_indicator} ${css.cheat_indicator_left}`} aria-hidden="true" /> : null}
                             </motion.span>
                         ) : null}
 
@@ -926,6 +934,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     className={`${css.team_name_left} ${css.team_name_fancy}`} data-side="left">
                                     <span className={css.team_name_prefix}>Team</span>{" "}
                                     <span className={css.team_name_main}>{seriesState.leftTeam?.name}</span>
+                                    {isCheatTargeting(secret?.activeCheat, "left") ? <span className={`${css.cheat_indicator} ${css.cheat_indicator_left}`} aria-hidden="true" /> : null}
                                 </motion.span>
                             ) : null}
                         </div>
@@ -1047,6 +1056,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 className={`${css.team_name_right} ${css.team_name_fancy}`} data-side="right">
                                 <span className={css.team_name_prefix}>Team</span>{" "}
                                 <span className={css.team_name_main}>{seriesState.rightTeam?.name}</span>
+                                {isCheatTargeting(secret?.activeCheat, "right") ? <span className={`${css.cheat_indicator} ${css.cheat_indicator_right}`} aria-hidden="true" /> : null}
                             </motion.span>
                         ) : null}
 
@@ -1433,6 +1443,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                     className={`${css.team_name_right} ${css.team_name_fancy}`} data-side="right">
                                     <span className={css.team_name_prefix}>Team</span>{" "}
                                     <span className={css.team_name_main}>{seriesState.rightTeam?.name}</span>
+                                    {isCheatTargeting(secret?.activeCheat, "right") ? <span className={`${css.cheat_indicator} ${css.cheat_indicator_right}`} aria-hidden="true" /> : null}
                                 </motion.span>
                             ) : null}
                         </div>
