@@ -13,8 +13,16 @@ const SERIES_ROUND_ICONS = new Set(["😜", "🔥"]);
 let seriesQueue = [];
 let seriesShownAt = 0;
 let seriesTimer = null;
+let seriesShownItem = null;
 
 const isRoundToast = (item) => SERIES_ROUND_ICONS.has(item.options?.icon);
+const isReplaceableBy = (item, group) => !item || isRoundToast(item) || (!!group && item.options?.group === group);
+
+const showSeriesItem = (item) => {
+    seriesShownAt = Date.now();
+    seriesShownItem = item;
+    item.fn(item.message, seriesOptions(item.options));
+};
 
 const pumpSeriesQueue = () => {
     if (seriesTimer || seriesQueue.length === 0) return;
@@ -28,14 +36,28 @@ const pumpSeriesQueue = () => {
         return;
     }
 
-    const item = seriesQueue.shift();
-    seriesShownAt = Date.now();
-    item.fn(item.message, seriesOptions(item.options));
+    showSeriesItem(seriesQueue.shift());
     pumpSeriesQueue();
 };
 
 const enqueueSeriesToast = (fn, message, options) => {
     const item = { fn, message, options };
+
+    if (options?.jump) {
+        seriesQueue = seriesQueue.filter((queued) => !isReplaceableBy(queued, options.group));
+        const shownStillReadable = Date.now() < seriesShownAt + SERIES_MIN_DWELL_MS;
+        if (!shownStillReadable || isReplaceableBy(seriesShownItem, options.group)) {
+            if (seriesTimer) clearTimeout(seriesTimer);
+            seriesTimer = null;
+            showSeriesItem(item);
+            pumpSeriesQueue();
+        } else {
+            seriesQueue.unshift(item);
+            pumpSeriesQueue();
+        }
+        return;
+    }
+
     if (isRoundToast(item)) seriesQueue = seriesQueue.filter((queued) => !isRoundToast(queued));
     seriesQueue.push(item);
 
@@ -52,6 +74,7 @@ export const setSeriesToastMode = (active) => {
     if (!active) {
         seriesFeed = { ...seriesFeed, trail: [], current: null };
         seriesQueue = [];
+        seriesShownItem = null;
         if (seriesTimer) clearTimeout(seriesTimer);
         seriesTimer = null;
     }

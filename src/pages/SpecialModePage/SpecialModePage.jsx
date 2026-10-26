@@ -3826,6 +3826,8 @@ function SpecialModeContent() {
                     id: SECRET_TOAST_ID,
                     duration: 2000,
                     icon: "🤫",
+                    group: "secret",
+                    jump: true,
                 });
             }
 
@@ -3838,6 +3840,8 @@ function SpecialModeContent() {
                     id: SECRET_NUM_TWO_TOAST_ID,
                     duration: 2000,
                     icon: "😈",
+                    group: "secret",
+                    jump: true,
                 });
             }
 
@@ -3850,6 +3854,8 @@ function SpecialModeContent() {
                     id: SECRET_NUM_THREE_TOAST_ID,
                     duration: 2000,
                     icon: "🔓",
+                    group: "secret",
+                    jump: true,
                 });
             }
 
@@ -4625,7 +4631,9 @@ function SpecialModeContent() {
                     winner: wonOtRound ? "left" : "right",
                 });
 
-                roundToast(
+                const isKeyOtRound = otTiedBlock || updatedOtWins === OT_ROUNDS_TO_WIN || updatedOtLosses === OT_ROUNDS_TO_WIN;
+
+                if (!isKeyOtRound) roundToast(
                     <span>
                         {renderTeamLabel(wonOtRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}OT round!
                     </span>,
@@ -4851,7 +4859,7 @@ function SpecialModeContent() {
                                 ? `Another overtime ends in a tie! ${currentOT} is tied 3-3 again! Starting ${nextOT}...`
                                 : `That's a tough battle we got here! ${currentOT} is tied 3-3 again! Starting ${nextOT}...`;
 
-                    toast(msg, { icon: "🔄", duration: 4000 });
+                    toast(msg, { icon: "🔄", duration: 4000, label: "Next Overtime", accent: "#ff7a1a" });
 
                     setIsLocked(true);
                     pendingAction = makePendingAction(SERIES_ACTIONS.NEXT_OT, 4000);
@@ -5045,7 +5053,14 @@ function SpecialModeContent() {
                 winner: playerWonRound ? "left" : "right",
             });
 
-            roundToast(
+            const isKeyRegularRound =
+                roundNumber === 12 ||
+                roundNumber === 13 ||
+                (roundWins === 12 && roundLosses === 12) ||
+                roundWins >= BASE_ROUNDS_TO_WIN ||
+                roundLosses >= BASE_ROUNDS_TO_WIN;
+
+            if (!isKeyRegularRound) roundToast(
                 <span>
                     {renderTeamLabel(playerWonRound ? prev.leftTeam : prev.rightTeam)} has won this{miniWinsToWinRound === 10 ? " Extended " : " "}round!
                 </span>,

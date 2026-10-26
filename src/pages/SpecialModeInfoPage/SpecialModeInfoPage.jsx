@@ -991,7 +991,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 Here, you can set the tournament's roll on "Random", which could then any tournament from the list below or you can choose a specific tournament(s) you want to play.
                 If you choose more than one tournament in the list, random tournament out the picked ones will be activated. <br />
-                But "Random" never draws the same tournament twice in a row: once a tournament ends, it is excluded from the next roll (Official even from the next two). The "Random" option always shows, which tournaments are excluded at the moment and for how many more tournaments. Since nothing has been played yet, there are no exclusions here. <br />
+                But "Random" never draws a tournament, which has just been played: once a tournament ends, it is excluded from the next two rolls (Official even from the next three). Every time another tournament ends, these exclusions go down by one. The "Random" option always shows, which tournaments are excluded at the moment and for how many more tournaments. Since nothing has been played yet, there are no exclusions here. <br />
                 You can also see this icon in top-right corner, which can be hovered onto and it will show you the explanations for all the icons, which stand near the names of the tournaments in the modal:
             </p>
             <div className={css.image_container}>
@@ -1704,7 +1704,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
                 • <b>Champions Series Tour</b> (Tier 2) <br />
                 • <b>PEM Small Tournament</b> itself, the main event (Tier 1)
             </p>
-            <PemShot n={1} alt="Choose how you want to play modal with the PEM Small Tournament picked" />
+            <PemShot n={1} alt="Choose how you want to play modal with the PEM Small Tournament picked, Official excluded from the next 3 rolls" caption={'(Official #1 has just ended, so the "Random" option shows, that Official is excluded from the next 3 tournaments)'} />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
                 All the teams are seeded by the Leaderboard at the moment the PEM Small Tournament is chosen: <br />
                 • Top 1-12 → Autoqualify to the <b>main event</b> <br />
@@ -1913,7 +1913,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <PemShot n={35} alt="Hall of Fame, PEM Small Tournament #1: the Playoffs" />
             <PemShot n={36} alt="Hall of Fame, PEM Small Tournament #1: the podium and the 5th and 6th places" />
             <p className={css.info_text}>
-                Afterwards, I can choose between <b>Official</b> and <b>PEM Small Tournament</b>, which #2 I'm going to have (or I'll go it via "Random", who knows):
+                Afterwards, I can choose between <b>Official</b> and <b>PEM Small Tournament</b>, which #2 I'm going to have (or I'll go it via "Random", who knows). Although via "Random", neither of them could come up right now: Official is still excluded for the next 2 tournaments and the PEM Small Tournament, which has just ended, for the next 2 as well:
             </p>
             <div className={css.image_container}>
                 <img src={hardChoiceToMake} alt="Hard choice to make: Official #2 or PEM Small Tournament #2?" className={css.image} style={{ width: '35vw', height: '35vh' }} />
@@ -2130,7 +2130,7 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             <BigShot n={39} alt="Hall of Fame, PEM Big Tournament #1: the Playoffs" />
             <BigShot n={40} alt="Hall of Fame, PEM Big Tournament #1: the podium" />
             <p className={css.info_text}>
-                Afterwards, there are three tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b> and <b>PEM Big Tournament</b>. Which #2 is coming next? (Or I&apos;ll go it via "Random" again, who knows):
+                Afterwards, there are three tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b> and <b>PEM Big Tournament</b>. Which #2 is coming next? (Or I&apos;ll go it via "Random" again, who knows. But "Random" would exclude all three of them right now: Official and the PEM Small Tournament for the next tournament, the PEM Big Tournament for the next 2):
             </p>
             <div className={css.image_container}>
                 <img src={hardChoiceToMakeTwo} alt="Hard choice to make: Official #2 or PEM Small Tournament #2 or PEM Big Tournament #2?" className={css.image} style={{ width: '35vw', height: '35vh' }} />
@@ -2383,7 +2383,7 @@ const GplSubPage = ({ scrollToAnchor }) => (
             <GplShot n={35} alt="Hall of Fame, Global Pro League #1: the podium with the Global Pro League trophy" />
             <GplShot n={36} alt="Hall of Fame, Global Pro League #1: the places 5-8" />
             <p className={css.info_text}>
-                And now, there are four tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b> and <b>Global Pro League</b>. Every single one of them has had its #1 already, so which #2 comes first?
+                And now, there are four tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b> and <b>Global Pro League</b>. Every single one of them has had its #1 already, so which #2 comes first? Via "Random", the PEM Big Tournament (for the next tournament) and the Global Pro League (for the next 2) are excluded now, while Official and the PEM Small Tournament can come up again.
             </p>
         </section>
     </>
@@ -2631,7 +2631,7 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             <PbsShot n={48} alt="Hall of Fame, Premier Bounty Series Open Qualifier Season 1: the qualified teams and the link to the Premier Bounty Series" />
             <p className={css.info_text}>
                 And now, there are five tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b> and <b>Premier Bounty Series</b>.
-                Four of them are waiting for their #2, one for its Season 2. Who is going to hunt the bounties next time? (And there is one more tournament, which is played in a different city every time, see the{" "}
+                Four of them are waiting for their #2, one for its Season 2 (via "Random", the Global Pro League is excluded for the next tournament and the Premier Bounty Series for the next 2). Who is going to hunt the bounties next time? (And there is one more tournament, which is played in a different city every time, see the{" "}
                 <InfoLink onClick={scrollToAnchor("pgx-overview", "pgx")} href="?page=pgx#pgx-overview">PGX</InfoLink> tab.)
             </p>
         </section>
@@ -2835,7 +2835,7 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <PgxShot n={37} alt="Hall of Fame, PGX Grandmasters Jönköping #1: the podium with the PGX trophy" />
             <p className={css.info_text}>
                 And now, there are six tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b> and <b>PGX Grandmasters</b>.
-                Which city is going to be next?
+                Which city is going to be next? Not right now via "Random", at least: the PGX Grandmasters is excluded for the next 2 tournaments and the Premier Bounty Series for the next one.
             </p>
         </section>
     </>
