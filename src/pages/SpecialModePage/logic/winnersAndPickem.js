@@ -2,6 +2,8 @@ export const GPL_PODIUM_TROPHY_SIZE = 100;
 export const GPL_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
 export const PBS_PODIUM_TROPHY_SIZE = 100;
 export const PBS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
+export const PGX_PODIUM_TROPHY_SIZE = 100;
+export const PGX_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-74px" };
 
 export const WINNERS_TIMELINE = {
     headline: 500,

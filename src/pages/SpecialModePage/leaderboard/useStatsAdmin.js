@@ -16,6 +16,7 @@ export function useStatsAdmin({
     teamStatsRef,
     setTournamentNumber,
     setTournamentNumbers,
+    resetTournamentBans,
     ratingsSnapshotRef,
     statsSnapshotRef,
     resetTournamentStateWithSeeds,
@@ -90,6 +91,7 @@ export function useStatsAdmin({
 
         setTournamentNumbers({});
         saveTournamentNumbers({});
+        resetTournamentBans();
 
         const seeded = classifyTeamsForStages(allTeams, defaults);
 

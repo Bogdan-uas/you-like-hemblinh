@@ -8,6 +8,7 @@ export const GPL_STAGE2_AUTO_COUNT = 8;
 export const GPL_STAGE1_COUNT = 16;
 export const GPL_TEAM_COUNT = GPL_STAGE2_AUTO_COUNT + GPL_STAGE1_COUNT;
 export const GPL_SERIES_TEAM_COUNT = GPL_TEAM_COUNT + GCC_TEAM_COUNT;
+export const GPL_GCC_DIRECT_COUNT = 12;
 export const GPL_SWISS_MATCH_COUNT = 33;
 
 export const GPL_PLAYOFFS_BEST_OF = PEM_BIG_PLAYOFFS_BEST_OF;
@@ -28,6 +29,6 @@ export const buildGplSeeds = (teams, ratings) => {
     return {
         stage2Auto: sorted.slice(0, GPL_STAGE2_AUTO_COUNT),
         stage1: sorted.slice(GPL_STAGE2_AUTO_COUNT, GPL_TEAM_COUNT),
-        gcc: sorted.slice(GPL_TEAM_COUNT, GPL_SERIES_TEAM_COUNT),
+        gcc: sorted.slice(GPL_TEAM_COUNT, GPL_TEAM_COUNT + GPL_GCC_DIRECT_COUNT),
     };
 };

@@ -219,7 +219,7 @@ export function HallManagerModals({ ctx }) {
                             >
                                 <option value=""></option>
                                 {hallOfFame
-                                    .filter((item) => !item.event)
+                                    .filter((item) => !item.event && !item.format)
                                     .map((item) => (
                                         <option key={item.id} value={item.id}>
                                             {hallRecordLabel(item)}

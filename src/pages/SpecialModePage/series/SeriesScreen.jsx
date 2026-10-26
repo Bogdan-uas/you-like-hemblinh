@@ -1,6 +1,7 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
+import { setSeriesToastMode } from "../logic/renderSafeToast.js";
 import Header from "../../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,15 +10,17 @@ import { PenaltyCircles } from "../components/PenaltyCircles.jsx";
 import { ExtendedRoundsOverlay } from "../components/ExtendedRounds.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { MomentumStreakBadge } from "../components/StreakBadges.jsx";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy } from "../components/Trophies.jsx";
+import { pgxStageLabel } from "../logic/pgx.jsx";
 import { isSingleEclStage, eclStageLabel } from "../logic/ecl.jsx";
+import { SKYLINES_ROOF, skylinesStageLabel, getSkylinesFloorName } from "../logic/skylines.jsx";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isSinglePemGroupStage, pemGroupStageLabel, PEM_GROUP_QUALIFYING_STAGES } from "../logic/pemSeries.jsx";
 import { isSinglePemStage1Stage, pemStage1StageLabel, PEM_STAGE1_QUALIFYING_STAGES } from "../logic/pemStage1.jsx";
 import { PBS_STAGE_TITLES, PBS_VIEW_OF_ROUND } from "../logic/pbsConfig.js";
 import { stageLabelPlayoffs } from "../logic/playoffs.js";
-import { isSingleQualifierStage, qualifierStageLabel, QUALIFIER_QUALIFYING_STAGES } from "../logic/qualifier.jsx";
-import { swissNetTitle, GPL_SWISS_FORMAT } from "../logic/swiss.js";
+import { isSingleQualifierStage, qualifierStageLabel, QUALIFIER_QUALIFYING_STAGES, PLAY_IN_GROUP } from "../logic/qualifier.jsx";
+import { swissNetTitle, GPL_SWISS_FORMAT, PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { getDisplayedRoundNumber } from "../logic/series.js";
 import { getBrightness } from "../logic/colors.js";
 import { LeadingIndicator } from "../components/LeadingIndicator.jsx";
@@ -27,6 +30,7 @@ import { GameControlModals } from "../screens/GameControlModals.jsx";
 import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { SetBadge, OvertimeBadge, SetHistory, PenaltyBadge, RoundBadge } from "../components/SeriesBadges.jsx";
 import { useSpecialModeSettings, shortKeyCode } from "../logic/settings.js";
+import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 
 export function SeriesScreen({ header, series, labels, actions }) {
     const {
@@ -71,8 +75,13 @@ export function SeriesScreen({ header, series, labels, actions }) {
     const {
         tournamentLabel,
         pemLabel,
+        qualifierLabel,
         cstLabel,
         eclLabel,
+        skylinesLabel,
+        pgxCmLabel,
+        pgxImLabel,
+        isPgxMainPhase,
         isCstPhase,
         isPemMainPhase,
         isPemBigSeries,
@@ -85,7 +94,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
         getOvertimeLabel,
         getPenaltyMessage,
     } = labels;
-    const { handlePenaltyShot, handleSeriesGamble } = actions;
+    const { handlePenaltyShot, handleSeriesGamble, simulation } = actions;
 
     const seriesLabelNode = useMemo(() => {
         if (!seriesState.active || !seriesState.leftTeam || !seriesState.rightTeam) return null;
@@ -100,8 +109,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
         let big = "";
 
         if (seriesState.phase === "qualifier") {
-            event = pemLabel;
-            stage = `Group ${seriesState.qualifierGroup}`;
+            event = qualifierLabel ?? pemLabel;
+            stage = seriesState.qualifierGroup === PLAY_IN_GROUP ? "Open Qualifier" : `Group ${seriesState.qualifierGroup}`;
             big = qualifierStageLabel(seriesState.qualifierStage);
         } else if (seriesState.phase === "pemGroup") {
             event = pemLabel;
@@ -114,10 +123,28 @@ export function SeriesScreen({ header, series, labels, actions }) {
         } else if (seriesState.phase === "ecl") {
             event = eclLabel;
             big = eclStageLabel(seriesState.eclStage);
+        } else if (seriesState.phase === "skyline") {
+            event = skylinesLabel;
+            stage = seriesState.skylineRound === SKYLINES_ROOF
+                ? "Rooftop Final"
+                : `Round ${(seriesState.skylineRound ?? 0) + 1} · ${getSkylinesFloorName(seriesState.skylineFloor)}`;
+            big = skylinesStageLabel(seriesState.skylineStage);
         } else if (seriesState.phase === "gccLeague") {
             event = gccLabel;
             stage = "League Phase";
             big = `Matchday ${seriesState.gccMatchday}`;
+        } else if (seriesState.phase === "pgxCm") {
+            event = pgxCmLabel;
+            stage = seriesState.pgxSection === "playIn"
+                ? "Play-ins"
+                : seriesState.pgxSection === "deciders"
+                    ? "Deciders"
+                    : `Group Stage · Group ${seriesState.pgxGroup}`;
+            big = pgxStageLabel("cm", seriesState.pgxStage);
+        } else if (seriesState.phase === "pgxIm") {
+            event = pgxImLabel;
+            stage = seriesState.pgxSection === "entry" ? null : "Main Bracket";
+            big = pgxStageLabel("im", seriesState.pgxStage);
         } else if (seriesState.phase === "cstGroup") {
             event = cstLabel;
             stage = "Group Stage";
@@ -132,14 +159,15 @@ export function SeriesScreen({ header, series, labels, actions }) {
             big = stageLabelPlayoffs(seriesState.playoffsStage);
         } else if (seriesState.phase === "stage1" || seriesState.phase === "stage2" || seriesState.phase === "stage3") {
             event = tournamentLabel;
-            stage = { stage1: "Stage I", stage2: "Stage II", stage3: "Stage III" }[seriesState.phase];
+            stage = seriesState.swissFormat === PGX_SWISS_FORMAT ? "Swiss Stage" : { stage1: "Stage I", stage2: "Stage II", stage3: "Stage III" }[seriesState.phase];
             big = swissNetTitle(seriesState.swissNet);
         }
 
-        const isQualifierSeries = seriesState.phase === "qualifier";
+        const isPgxSeries = seriesState.phase === "pgxCm" || seriesState.phase === "pgxIm";
+        const isQualifierSeries = seriesState.phase === "qualifier" || seriesState.phase === "pgxCm";
         const isPemGroupSeries = seriesState.phase === "pemGroup";
         const isPemStage1Series = seriesState.phase === "pemStage1";
-        const isEclSeries = seriesState.phase === "ecl";
+        const isEclSeries = seriesState.phase === "ecl" || seriesState.phase === "skyline" || seriesState.phase === "pgxIm";
         const isGccSeries = isGccPhase && (seriesState.phase === "gccLeague" || seriesState.phase === "playoffs");
         const isCstSeries =
             (isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs")) || isEclSeries || isGccSeries;
@@ -148,6 +176,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
         const seriesMatchNumber =
             seriesState.phase === "playoffs"
                 ? seriesState.playoffsMatchNumber
+                : isPgxSeries
+                    ? seriesState.pgxMatchNumber ?? 1
                 : isQualifierSeries
                     ? seriesState.qualifierMatchNumber ?? 1
                     : isPemGroupSeries
@@ -155,21 +185,25 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         : isPemStage1Series
                             ? seriesState.pemStage1MatchNumber ?? 1
                             : isEclSeries
-                                ? seriesState.eclMatchNumber ?? 1
+                                ? (seriesState.phase === "skyline" ? seriesState.skylineMatchNumber : seriesState.eclMatchNumber) ?? 1
                                 : seriesState.phase === "cstGroup"
                                     ? seriesState.cstMatchNumber ?? 1
                                     : seriesState.phase === "gccLeague"
                                         ? seriesState.gccMatchNumber ?? 1
                                         : seriesState.swissMatchNumber ?? 1;
 
-        const showSeriesMatchNumber = isQualifierSeries
+        const showSeriesMatchNumber = seriesState.phase === "pgxCm"
+            ? ["pr1", "pr2", "uo", "dq"].includes(seriesState.pgxStage)
+            : seriesState.phase === "pgxIm"
+            ? seriesState.pgxStage === "er" || !isSingleEclStage(seriesState.pgxStage)
+            : isQualifierSeries
             ? !isSingleQualifierStage(seriesState.qualifierStage)
             : isPemGroupSeries
                 ? !isSinglePemGroupStage(seriesState.pemGroupStage)
                 : isPemStage1Series
                     ? !isSinglePemStage1Stage(seriesState.pemStage1Stage)
                     : isEclSeries
-                        ? !isSingleEclStage(seriesState.eclStage)
+                        ? (seriesState.phase === "skyline" ? seriesState.skylineStage === "o" || seriesState.skylineStage === "sf" : !isSingleEclStage(seriesState.eclStage))
                         : seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace";
 
         return (
@@ -177,7 +211,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 <span className={css.series_label}>
                     <span className={css.series_upper_label}>
                         <motion.span
-                            key={`event-${`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage ?? seriesState.qualifierStage ?? seriesState.pemGroupStage ?? seriesState.pemStage1Stage ?? seriesState.eclStage}`}`}
+                            key={`event-${`${seriesState.phase}-${seriesState.swissNet ?? seriesState.playoffsStage ?? seriesState.qualifierStage ?? seriesState.pemGroupStage ?? seriesState.pemStage1Stage ?? seriesState.eclStage ?? seriesState.skylineStage ?? seriesState.pgxStage}`}`}
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 40 }}
@@ -199,8 +233,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 <QualifierBadge height={20} />
                             ) : isCstSeries ? (
                                 <span className={css.series_label_vs}>🥇</span>
-                            ) : isPemSeries || isGplMainPhase || isPbsPhase ? (
-                                isPbsPhase ? <PbsTrophy /> : isGplMainPhase ? <GplTrophy /> : <PemSeriesTrophy type={pemType} />
+                            ) : isPemSeries || isGplMainPhase || isPbsPhase || isPgxMainPhase ? (
+                                isPbsPhase ? <PbsTrophy /> : isGplMainPhase ? <GplTrophy /> : isPgxMainPhase ? <PgxTrophy /> : <PemSeriesTrophy type={pemType} />
                             ) : (
                                 <FaTrophy />
                             )}
@@ -268,15 +302,14 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 </span>
             </>
         );
-    }, [seriesState, tournamentLabel, pemLabel, cstLabel, eclLabel, gccLabel, pbsLabel, isCstPhase, isGccPhase, isGplMainPhase, isPbsPhase, isPemMainPhase, isPemBigSeries, pemType]);
+    }, [seriesState, tournamentLabel, pemLabel, qualifierLabel, cstLabel, eclLabel, skylinesLabel, pgxCmLabel, pgxImLabel, isPgxMainPhase, gccLabel, pbsLabel, isCstPhase, isGccPhase, isGplMainPhase, isPbsPhase, isPemMainPhase, isPemBigSeries, pemType]);
 
     const getPointLabel = () => {
         if (seriesState.phase === "cstGroup" || seriesState.phase === "gccLeague") return "MATCH POINT!!!";
 
         if (seriesState.phase === "qualifier") {
-            return QUALIFIER_QUALIFYING_STAGES.includes(seriesState.qualifierStage)
-                ? "MAIN EVENT POINT!!!"
-                : "MATCH POINT!!!";
+            if (!QUALIFIER_QUALIFYING_STAGES.includes(seriesState.qualifierStage)) return "MATCH POINT!!!";
+            return qualifierLabel ? "QUALIFICATION POINT!!!" : "MAIN EVENT POINT!!!";
         }
 
         if (seriesState.phase === "pemGroup") {
@@ -289,6 +322,26 @@ export function SeriesScreen({ header, series, labels, actions }) {
             return PEM_STAGE1_QUALIFYING_STAGES.includes(seriesState.pemStage1Stage)
                 ? "STAGE II POINT!!!"
                 : "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "pgxCm") {
+            if (seriesState.pgxStage === "pr2") return "GROUP STAGE POINT!!!";
+            if (seriesState.pgxStage === "uf" || seriesState.pgxStage === "lr2") return "DECIDERS POINT!!!";
+            if (seriesState.pgxStage === "dq") return "QUALIFICATION POINT!!!";
+            return "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "pgxIm") {
+            if (seriesState.pgxStage === "er") return "MAIN BRACKET POINT!!!";
+            if (seriesState.pgxStage === "uf" || seriesState.pgxStage === "cf") return "GRAND FINAL POINT!!!";
+            if (seriesState.pgxStage === "gf") return "GRANDMASTERS POINT!!!";
+            return "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "skyline") {
+            if (seriesState.skylineStage === "sf") return "GRAND FINAL POINT!!!";
+            if (seriesState.skylineStage === "w" && seriesState.skylineFloor > 1) return "ELEVATOR POINT!!!";
+            return "MATCH POINT!!!";
         }
 
         if (seriesState.phase === "ecl") {
@@ -305,7 +358,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
 
         switch (seriesState.phase) {
             case "stage1":
-                return "STAGE II POINT!!!";
+                return seriesState.swissFormat === PGX_SWISS_FORMAT ? "PLAYOFFS POINT!!!" : "STAGE II POINT!!!";
 
             case "stage2":
                 return seriesState.swissFormat === GPL_SWISS_FORMAT ? "PLAYOFFS POINT!!!" : "STAGE III POINT!!!";
@@ -351,6 +404,11 @@ export function SeriesScreen({ header, series, labels, actions }) {
 
     const displayedRound = getDisplayedRoundNumber(seriesState);
     const bannerAtMountRef = useRef(!!seriesState.banner);
+
+    useEffect(() => {
+        setSeriesToastMode(true);
+        return () => setSeriesToastMode(false);
+    }, []);
 
     const pointPillStyle = (team) => ({
         background: team?.gradient,
@@ -839,10 +897,10 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             {isPlayoffsStyleSeries ? (
                                 <motion.span
                                     key={seriesState.leftTeam?.name}
-                                    initial={{ x: 420 }}
-                                    animate={{ x: 0 }}
-                                    exit={{ x: 420 }}
-                                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                                    initial={{ x: -36, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    exit={{ x: -36, opacity: 0 }}
+                                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                                     style={{
                                         display: "inline-block",
 
@@ -857,7 +915,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         WebkitTextFillColor: "transparent",
                                         color: "transparent",
 
-                                        transition: "all 500ms ease-in-out",
+                                        transition: "background 500ms ease-in-out",
 
                                         margin: "0",
                                         position: "absolute",
@@ -1346,10 +1404,10 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             {isPlayoffsStyleSeries ? (
                                 <motion.span
                                     key={seriesState.rightTeam?.name}
-                                    initial={{ x: -420 }}
-                                    animate={{ x: 0 }}
-                                    exit={{ x: -420 }}
-                                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                                    initial={{ x: 36, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    exit={{ x: 36, opacity: 0 }}
+                                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                                     style={{
                                         display: "inline-block",
 
@@ -1364,7 +1422,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         WebkitTextFillColor: "transparent",
                                         color: "transparent",
 
-                                        transition: "all 500ms ease-in-out",
+                                        transition: "background 500ms ease-in-out",
 
                                         margin: "0",
                                         position: "absolute",
@@ -1477,6 +1535,15 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 <kbd className={css.gamble_key_hint}>{shortKeyCode(gambleKey)}</kbd>
                             ) : null}
                         </button>
+                        {simulation?.enabled && (simulation.running || (simulation.inSeries && seriesState.tiebreakerPhase === "idle")) ? (
+                            <SimulateAttachment
+                                variant="series"
+                                canSimulate={!isButtonLocked}
+                                running={simulation.running}
+                                onSimulate={simulation.start}
+                                onStop={simulation.stop}
+                            />
+                        ) : null}
                     </div>
                 )}
             </div>

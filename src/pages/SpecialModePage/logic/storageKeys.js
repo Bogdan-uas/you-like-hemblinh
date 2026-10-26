@@ -20,9 +20,12 @@ export const LEADERBOARD_SORT_LS_KEY = "specialMode_leaderboardSort_v1";
 export const LEADERBOARD_DIVIDERS_LS_KEY = "specialMode_leaderboardDividers_v1";
 export const RATING_BASED_STATS_LS_KEY = "specialMode_ratingBasedStats_v1";
 export const TOURNAMENT_PICKER_LS_KEY = "specialMode_tournamentPicker_v1";
+export const TOURNAMENT_BANS_LS_KEY = "specialMode_tournamentBans_v1";
 export const CURRENT_TOURNAMENT_TYPE_LS_KEY = "specialMode_currentTournamentType_v1";
 export const SETTINGS_LS_KEY = "specialMode_settings_v1";
 
 export const TEAM_STATS_SNAPSHOT_LS_KEY = "specialMode_teamStats_snapshot_v1";
 
 export const PBS_DRAFT_CLOCK_LS_KEY = "specialMode_pbsDraftClock_v1";
+
+export const PGX_LAST_CITY_LS_KEY = "specialMode_pgxLastCity_v1";

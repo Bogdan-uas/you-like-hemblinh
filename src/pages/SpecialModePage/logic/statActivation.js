@@ -3,8 +3,10 @@ import { MULTIPLIER_MIN, MULTIPLIER_MAX } from "./gameConstants.js";
 import { PEM_GROUP_UPPER_STAGES, PEM_GROUP_ELIMINATION_STAGES, PEM_GROUP_QUALIFYING_STAGES, PEM_GROUP_BATTLE_STAKES } from "./pemSeries.jsx";
 import { PEM_STAGE1_UPPER_STAGES, PEM_STAGE1_ELIMINATION_STAGES, PEM_STAGE1_QUALIFYING_STAGES, PEM_STAGE1_BATTLE_STAKES } from "./pemStage1.jsx";
 import { predictLeftSeriesWin } from "./predictions.js";
-import { QUALIFIER_UPPER_STAGES, QUALIFIER_ELIMINATION_STAGES, QUALIFIER_QUALIFYING_STAGES, QUALIFIER_BATTLE_STAKES } from "./qualifier.jsx";
+import { QUALIFIER_UPPER_STAGES, QUALIFIER_ELIMINATION_STAGES, QUALIFIER_QUALIFYING_STAGES, QUALIFIER_BATTLE_STAKES, OPEN_QUALIFIER_BATTLE_STAKES } from "./qualifier.jsx";
 import { expectedScore } from "./ratings.js";
+import { SKYLINES_BATTLE_STAKES } from "./skylines.jsx";
+import { PGX_CM_BATTLE_STAKES, PGX_IM_BATTLE_STAKES, PGX_CM_UPPER_STAGES, PGX_CM_ELIMINATION_STAGES, PGX_CM_BIG_STAGE_GAINS } from "./pgx.jsx";
 import {
     clampShare,
     otherSide,
@@ -71,11 +73,17 @@ const statKindOfContext = (context) =>
                 ? "pemGroup"
                 : context?.type === "ecl"
                     ? "ecl"
+                    : context?.type === "skyline"
+                    ? "skyline"
+                    : context?.type === "pgxCm"
+                    ? "pgxCm"
+                    : context?.type === "pgxIm"
+                    ? "pgxIm"
                     : context?.type === "pemStage1"
                         ? "pemStage1"
                         : "playoffs";
 
-const BRACKET_STAT_KINDS = ["qualifier", "pemGroup", "ecl", "pemStage1"];
+const BRACKET_STAT_KINDS = ["qualifier", "pemGroup", "ecl", "pemStage1", "skyline", "pgxCm", "pgxIm"];
 
 const isBracketStatKind = (kind) => BRACKET_STAT_KINDS.includes(kind);
 
@@ -84,15 +92,24 @@ const bracketGroupStagesOf = (kind) =>
         ? { upper: PEM_GROUP_UPPER_STAGES, elimination: PEM_GROUP_ELIMINATION_STAGES, qualifying: PEM_GROUP_QUALIFYING_STAGES }
         : kind === "ecl"
             ? { upper: ECL_UNBEATEN_STAGES, elimination: ECL_ELIMINATION_STAGES, qualifying: Object.keys(ECL_BIG_STAGE_GAINS) }
+            : kind === "skyline"
+            ? { upper: ["o", "w", "sf", "gf"], elimination: ["l", "sf", "gf"], qualifying: ["w", "sf", "gf"] }
+            : kind === "pgxCm"
+            ? { upper: PGX_CM_UPPER_STAGES, elimination: PGX_CM_ELIMINATION_STAGES, qualifying: Object.keys(PGX_CM_BIG_STAGE_GAINS) }
+            : kind === "pgxIm"
+            ? { upper: ["er", ...ECL_UNBEATEN_STAGES], elimination: ["er", ...ECL_ELIMINATION_STAGES], qualifying: ["er", ...Object.keys(ECL_BIG_STAGE_GAINS)] }
             : kind === "pemStage1"
                 ? { upper: PEM_STAGE1_UPPER_STAGES, elimination: PEM_STAGE1_ELIMINATION_STAGES, qualifying: PEM_STAGE1_QUALIFYING_STAGES }
                 : { upper: QUALIFIER_UPPER_STAGES, elimination: QUALIFIER_ELIMINATION_STAGES, qualifying: QUALIFIER_QUALIFYING_STAGES };
 
 const battleStakesOf = ({ kind, swissStageKey, net, playoffsStage }) => {
     if (kind === "playoffs") return BATTLE_PLAYOFF_STAKES[playoffsStage] ?? BATTLE_PLAYOFF_STAKES.ro16;
-    if (kind === "qualifier") return QUALIFIER_BATTLE_STAKES[playoffsStage] ?? QUALIFIER_BATTLE_STAKES.uo;
+    if (kind === "qualifier") return QUALIFIER_BATTLE_STAKES[playoffsStage] ?? OPEN_QUALIFIER_BATTLE_STAKES[playoffsStage] ?? QUALIFIER_BATTLE_STAKES.uo;
     if (kind === "pemGroup") return PEM_GROUP_BATTLE_STAKES[playoffsStage] ?? PEM_GROUP_BATTLE_STAKES.uo;
     if (kind === "ecl") return ECL_BATTLE_STAKES[playoffsStage] ?? ECL_BATTLE_STAKES.uo;
+    if (kind === "skyline") return SKYLINES_BATTLE_STAKES[playoffsStage] ?? SKYLINES_BATTLE_STAKES.o;
+    if (kind === "pgxCm") return PGX_CM_BATTLE_STAKES[playoffsStage] ?? PGX_CM_BATTLE_STAKES.pr1;
+    if (kind === "pgxIm") return PGX_IM_BATTLE_STAKES[playoffsStage] ?? PGX_IM_BATTLE_STAKES.er;
     if (kind === "pemStage1") return PEM_STAGE1_BATTLE_STAKES[playoffsStage] ?? PEM_STAGE1_BATTLE_STAKES.uo;
     const base = BATTLE_SWISS_STAKES[swissStageKey] ?? BATTLE_SWISS_STAKES.stage1;
     return clampShare(base + (isProgressionOrEliminationNet(net) ? BATTLE_DECISIVE_NET_STAKES : 0));

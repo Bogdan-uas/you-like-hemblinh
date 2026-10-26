@@ -158,7 +158,7 @@ export function useLeaderboard({
     }, [isLeaderboardOpen, leaderboardSortMode, leaderboardDisplayOrder, leaderboardDividerSet, lenisRef]);
 
     const finishedTournamentRef = tournamentResults
-        ? normalizeTournamentRef(tournamentResults.tournament)
+        ? { ...normalizeTournamentRef(tournamentResults.tournament), city: tournamentResults.tournament?.city ?? null }
         : null;
     const finishedIsQualifier = tournamentResults?.kind === "pemQualifier";
     const isFinishedTournamentRecord = (record) =>
@@ -171,7 +171,7 @@ export function useLeaderboard({
     const leaderboardTitleTournament = finishedTournamentRef && pickemSummarySeen
         ? { ...finishedTournamentRef, qualifier: finishedIsQualifier }
         : latestHallTournament
-            ? { type: latestHallTournament.type, number: latestHallTournament.number, qualifier: latestHallTournament.event === "qualifier" }
+            ? { type: latestHallTournament.type, number: latestHallTournament.number, city: latestHallTournament.city ?? null, qualifier: latestHallTournament.event === "qualifier" }
             : null;
 
     return {

@@ -3,10 +3,24 @@ import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
-import { PemPlayoffsLayout, QualifierBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, QualifierBracketLayout, PlayInBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout, PgxPlayInLayout, PgxMatchesLayout } from "../components/BracketLayouts.jsx";
+import { findCurrentBracketMatch } from "../logic/brackets.js";
+import {
+    PGX_CM_GROUPS,
+    PGX_PLAYIN_STAGE_ORDER,
+    PGX_DECIDER_STAGE,
+    PGX_ENTRY_STAGE,
+    pgxPlayInSlotSource,
+    canOpenPgxCandidateMatch,
+    findCurrentPgxCandidateMatch,
+    findNextPgxCandidateMatch,
+    getBestOfForPgxCandidate,
+} from "../logic/pgx.jsx";
 import { PbsDraftSlot, PbsDraftSpacer, PbsLandedPair } from "../components/PbsDraftShow.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
+import { SkylinesBuilding, SkylinesSwitch, SkylinesFloorNav } from "../components/SkylinesView.jsx";
+import { getSkylinesNavEntries, SKYLINES_ROOF, SKYLINES_BLOCKS, SKYLINES_FLOOR_STAGES, SKYLINES_ROOF_STAGES, skylinesSlotSource, getBestOfForSkylines } from "../logic/skylines.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
 import { PlaceholderRect, MatchRect, SwissResultBox, SwissResultBoxGradients } from "../components/SwissMatch.jsx";
 import { getMatchWinnerTeam, getMatchLoserTeam } from "../logic/brackets.js";
@@ -30,12 +44,13 @@ import { PBS_STAGE_TITLES } from "../logic/pbsConfig.js";
 import { isPemPlayoffsKind, pemGroupSlotSource, canOpenPemGroupMatch, getBestOfForPemGroup, isSinglePemGroupStage, findCurrentPemGroupMatch, findNextPemGroupMatch } from "../logic/pemSeries.jsx";
 import { pemStage1SlotSource, canOpenPemStage1Match, getBestOfForPemStage1, isSinglePemStage1Stage, findCurrentPemStage1Match, findNextPemStage1Match } from "../logic/pemStage1.jsx";
 import { canOpenPlayoffsMatch, getBestOfForPlayoffs } from "../logic/playoffs.js";
-import { qualifierSlotSource, canOpenQualifierMatch, getBestOfForQualifier, isSingleQualifierStage, findCurrentQualifierMatch, findNextQualifierMatch } from "../logic/qualifier.jsx";
+import { qualifierSlotSource, canOpenQualifierMatch, getBestOfForQualifier, isSingleQualifierStage, findCurrentQualifierMatch, findNextQualifierMatch, PLAY_IN_GROUP, QUALIFIER_GROUPS, isByeOpeningBracket, makeByeOpeningSlotSource } from "../logic/qualifier.jsx";
 import { getQualifiedBy, getEliminatedBy, getBo1Tiebreak } from "../logic/series.js";
-import { isNetUnlocked, teamsInNet, getBestOfForSwissNet, GPL_SWISS_FORMAT } from "../logic/swiss.js";
+import { isNetUnlocked, teamsInNet, getBestOfForSwissNet, getSwissLayoutFormat, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 
 export function createTournamentRenderers({
     pemLabel,
+    qualifierLabel,
     navRef,
     viewPhase,
     indicator,
@@ -96,8 +111,28 @@ export function createTournamentRenderers({
     pbsLabel,
     pbsDraftView,
     teamsById,
+    skylines,
+    skylinesLabel,
+    skylinesRoundView,
+    setSkylinesRoundView,
+    currentSkylinesMatchId,
+    nextSkylinesMatchId,
+    openSkylinesMatchModal,
+    openArchivedSkylinesMatchModal,
+    isSkylinesPhase,
+    officialPausedStage,
+    scrollPageTo,
+    pgxCm,
+    pgxIm,
+    pgxView,
+    setPgxView,
+    pgxCmLabel,
+    pgxImLabel,
+    isPgxMainPhase,
+    openPgxMatchModal,
+    openArchivedPgxMatchModal,
 }) {
-    const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = pemLabel, gap = 6 } = {}) => (
+    const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = qualifierLabel ?? pemLabel, gap = 6 } = {}) => (
         <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
             <QualifierBadge height={badgeHeight} />
             <span>{label}</span>
@@ -133,21 +168,32 @@ export function createTournamentRenderers({
             },
         ];
 
+        const phaseNow = officialPausedStage ?? activePhase;
+
+        if (isPgxMainPhase) {
+            phases.forEach((phase) => {
+                if (phase.id !== "stage1") return;
+                phase.activeLabel = "Swiss Stage";
+                phase.resultsLabel = "Results of Swiss Stage";
+            });
+        }
+
         const unlocked = phases.filter((phase) => {
             if (isGplMainPhase && phase.id === "stage3") return false;
+            if (isPgxMainPhase && (phase.id === "stage2" || phase.id === "stage3")) return false;
 
             switch (phase.id) {
                 case "playoffs":
-                    return activePhase === "playoffs";
+                    return phaseNow === "playoffs";
 
                 case "stage3":
-                    return activePhase === "stage3" || activePhase === "playoffs";
+                    return phaseNow === "stage3" || phaseNow === "playoffs";
 
                 case "stage2":
                     return (
-                        activePhase === "stage2" ||
-                        activePhase === "stage3" ||
-                        activePhase === "playoffs"
+                        phaseNow === "stage2" ||
+                        phaseNow === "stage3" ||
+                        phaseNow === "playoffs"
                     );
 
                 case "stage1":
@@ -176,7 +222,7 @@ export function createTournamentRenderers({
                     gap: 10,
                     transition: "none",
                     marginRight:
-                        !isGplMainPhase && (viewPhase === "playoffs" ||
+                        !isGplMainPhase && !isPgxMainPhase && (viewPhase === "playoffs" ||
                             viewPhase === "results_playoffs")
                             ? 86
                             : 0,
@@ -234,6 +280,9 @@ export function createTournamentRenderers({
     };
 
     const getStageTitleForView = () => {
+        if (isPgxMainPhase && (viewPhase === "stage1" || viewPhase === "results_stage1"))
+            return <>{tournamentLabel} | Swiss Stage</>;
+
         if (viewPhase === "stage1")
             return <>{tournamentLabel} | Stage I</>;
 
@@ -349,7 +398,7 @@ export function createTournamentRenderers({
 
                             <div className={css.net_stack}>
                                 <div className={css.net_base}>
-                                    {(unlocked ? matches : buildLockedPlaceholdersForNet(net, stageObj?.format)).map((m, idx, arr) => {
+                                    {(unlocked ? matches : buildLockedPlaceholdersForNet(net, format)).map((m, idx, arr) => {
                                         const isClickable = archived
                                             ? unlocked && !!m.played
                                             : unlocked && !isMatchRectLocked && (m.played || canOpenSwissMatch(stageObj, net, m));
@@ -385,7 +434,7 @@ export function createTournamentRenderers({
                                                 }
                                                 className={highlightClass}
                                                 dataNet={net}
-                                                dataFormat={stageObj?.format ?? undefined}
+                                                dataFormat={format ?? undefined}
                                                 dataIdx={idx + 1}
                                                 dataPos={idx === 0 ? "first" : idx === arr.length - 1 ? "last" : undefined}
                                                 dataNotStarted={notStartedEdge ? "true" : undefined}
@@ -396,7 +445,7 @@ export function createTournamentRenderers({
 
                                 {!unlocked && lockedRects && (
                                     <div className={css.net_overlay}>
-                                        <PlaceholderRect height={getPlaceholderHeightForNet(net, stageObj?.format)} teams={placeholderTeams} />
+                                        <PlaceholderRect height={getPlaceholderHeightForNet(net, format)} teams={placeholderTeams} />
                                     </div>
                                 )}
                             </div>
@@ -425,7 +474,7 @@ export function createTournamentRenderers({
         const e03 = getEliminatedBy(stageObj, "0:3");
         const e13 = getEliminatedBy(stageObj, "1:3");
         const e23 = getEliminatedBy(stageObj, "2:3");
-        const format = stageObj.format ?? null;
+        const format = getSwissLayoutFormat(stageObj.format);
         const columnOptions = { archived, record, format };
 
         return (
@@ -1082,7 +1131,7 @@ export function createTournamentRenderers({
         return (
             <div
                 className={css.bracket_container}
-                style={{ transition: "none", marginLeft: hasRoundOf16 ? '28px' : 0, minWidth: bracketKind === "gpl" ? 1171 : undefined }}
+                style={{ transition: "none", marginLeft: hasRoundOf16 ? '28px' : 0, minWidth: bracketKind === "gpl" || (!bracketKind && !hasRoundOf16) ? 1171 : undefined }}
             >
                 <div className={css.bracket_inner}>
                     {hasRoundOf16 && (
@@ -1310,6 +1359,25 @@ export function createTournamentRenderers({
     };
 
     const renderQualifierMatch = (bracket, m, stage, idx, { archived = false, record = null, current = null, next = null, format = qualifierMatchFormat } = {}) => {
+        if (m.bye) {
+            const byeTeam = m.slotA ?? m.slotB;
+            return (
+                <div key={m.id} className={css.qualifier_match_wrapper}>
+                    <div data-bracket-rect={`${stage}-${idx}`} className={`${css.match_rect} ${css.match_bye} ${css.no_hover}`}>
+                        <div className={css.match_content}>
+                            <div className={css.team_row}>
+                                <div className={css.team_cell}>
+                                    {byeTeam ? <div className={css.team_circle} style={{ background: byeTeam.color }} title={`Team ${byeTeam.name}`} /> : null}
+                                </div>
+                                <div className={css.team_name_placeholder}>{byeTeam?.name ? `Team ${byeTeam.name}` : "TBD"}</div>
+                            </div>
+                            <div className={css.match_bye_label}>Bye</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         const isPlayed = !!m.played;
 
         const isUserWin =
@@ -1336,8 +1404,8 @@ export function createTournamentRenderers({
         const isBo1Tie = !!bo1History && bo1History.wins === bo1History.losses;
         const isCornerScore = (score) => isBo1 && String(score ?? "").length > 1;
         const scorePositions = [
-            isCornerScore(displayScoreLeft) ? { top: 4, right: -4 } : { left: "85%" },
-            isCornerScore(displayScoreRight) ? { bottom: 4, right: -4 } : { left: "83%" },
+            isCornerScore(displayScoreLeft) ? { right: -2 } : { left: "85%" },
+            isCornerScore(displayScoreRight) ? { right: -2 } : { left: "83%" },
         ];
 
         const resultClass = isPlayed ? (isUserWin ? css.playoffs_match_win : css.playoffs_match_loss) : "";
@@ -1398,7 +1466,7 @@ export function createTournamentRenderers({
 
                 <div
                     style={{ color: !isPlayed ? "" : isWinner ? "#2e7d32" : "red" }}
-                    className={`${css.team_name_placeholder} ${isCornerScore(score) ? css.bo1_team_name : ""}`}
+                    className={`${css.team_name_placeholder} ${isCornerScore(score) ? `${css.bo1_team_name} ${css.wide_score_team_name}` : ""}`}
                 >
                     {team?.name ? `Team ${team.name}` : "TBD"}
                 </div>
@@ -1410,8 +1478,8 @@ export function createTournamentRenderers({
                         position: "absolute",
                         ...scorePosition,
                         zIndex: 1,
-                        fontSize: isCornerScore(score) ? 40 : 72,
-                        lineHeight: isCornerScore(score) ? 1 : undefined,
+                        fontSize: isCornerScore(score) ? 60 : 72,
+                        letterSpacing: isCornerScore(score) ? "-4px" : undefined,
                         opacity: isLoser && !isBo1Tie ? 0.4 : 1,
                     }}
                     className={isBo1Tie ? css.tieScoreShadow : isWinner ? css.winnerScoreShadow : css.loserScoreShadow}
@@ -1444,7 +1512,7 @@ export function createTournamentRenderers({
                     </div>
                     {!format.isSingle(stage) ? (
                         <div className={`${css.no_playoffs_label} ${noLabelResultClass}`} style={labelHighlight}>
-                            #{idx + 1}
+                            #{(bracket?.[stage] || []).slice(0, idx + 1).filter((match) => !match.bye).length}
                         </div>
                     ) : null}
                     <div className={css.match_content}>
@@ -1498,13 +1566,31 @@ export function createTournamentRenderers({
 
         const current = archived ? null : findCurrentQualifierMatch(bracket);
         const next = archived ? null : findNextQualifierMatch(bracket, current);
+        const owner = archived ? record?.owner ?? null : qualifier?.owner ?? null;
+        const format = {
+            ...qualifierMatchFormat,
+            ...(owner ? { bestOf: (stage) => getBestOfForQualifier(stage, owner) } : {}),
+            ...(isByeOpeningBracket(bracket) ? { slotSource: makeByeOpeningSlotSource(bracket) } : {}),
+        };
+
+        if (bracket.group === PLAY_IN_GROUP) {
+            return (
+                <PlayInBracketLayout
+                    key={`${archived ? "hall" : "live"}-${bracket.group}`}
+                    bracket={bracket}
+                    renderMatch={(m, stage, idx) =>
+                        renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next, format })
+                    }
+                />
+            );
+        }
 
         return (
             <QualifierBracketLayout
                 key={`${archived ? "hall" : "live"}-${bracket.group}`}
                 bracket={bracket}
                 renderMatch={(m, stage, idx) =>
-                    renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next })
+                    renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next, format })
                 }
             />
         );
@@ -1576,6 +1662,151 @@ export function createTournamentRenderers({
                     renderQualifierMatch(bracket, m, stage, idx, { archived, record, current, next, format: eclMatchFormat })
                 }
             />
+        );
+    };
+
+    const skylinesPositionOf = (holder, stages, matchId) => {
+        if (!holder || !matchId) return null;
+        for (const stage of stages) {
+            const index = (holder[stage] || []).findIndex((m) => m.id === matchId);
+            if (index >= 0) return { stage, index };
+        }
+        return null;
+    };
+
+    const skylinesMatchFormatFor = (floor, currentId) => ({
+        slotSource: skylinesSlotSource,
+        canOpen: (bracket, stage, idx) => !!currentId && bracket?.[stage]?.[idx]?.id === currentId,
+        bestOf: (stage) => getBestOfForSkylines(stage, floor),
+        isSingle: (stage) => stage !== "o" && stage !== "sf",
+        open: (_group, _stage, matchId) => openSkylinesMatchModal(matchId),
+        openArchived: (record, _group, _stage, _idx, match) => openArchivedSkylinesMatchModal(record, match),
+    });
+
+    const renderSkylinesBuilding = (sk, { archived = false, record = null, roundView = skylinesRoundView } = {}) => {
+        if (!sk) return null;
+
+        const currentId = archived ? null : currentSkylinesMatchId;
+        const nextId = archived ? null : nextSkylinesMatchId;
+
+        const renderWith = (holder, stages, floor) => (m, stage, idx) =>
+            renderQualifierMatch(holder, m, stage, idx, {
+                archived,
+                record,
+                current: skylinesPositionOf(holder, stages, currentId),
+                next: skylinesPositionOf(holder, stages, nextId),
+                format: skylinesMatchFormatFor(floor, currentId),
+            });
+
+        return (
+            <SkylinesBuilding
+                key={archived ? `hall-${record?.id}` : "live"}
+                skylines={sk}
+                roundView={roundView}
+                currentMatchId={currentId}
+                renderMatch={(floorRound, m, stage, idx) => renderWith(floorRound, SKYLINES_FLOOR_STAGES, floorRound.floor)(m, stage, idx)}
+                renderRoofMatch={(rooftop, m, stage, idx) => renderWith(rooftop, SKYLINES_ROOF_STAGES, null)(m, stage, idx)}
+            />
+        );
+    };
+
+    const renderSkylinesSwitch = () => {
+        if (!skylines || isGplMainPhase) return null;
+
+        return (
+            <SkylinesSwitch
+                value={viewPhase === "skylines" ? "skylines" : "official"}
+                onChange={(next) => {
+                    if (next === "skylines") {
+                        setViewPhase("skylines");
+                        return;
+                    }
+                    setViewPhase(officialPausedStage ? `results_${officialPausedStage}` : activePhase);
+                }}
+            />
+        );
+    };
+
+    const skylinesRoundCaption = (roundView) => {
+        const block = SKYLINES_BLOCKS.findIndex((rounds) => rounds.includes(roundView));
+        const after = ["Stage I", "Stage II", "Stage III"][block] ?? "Stage III";
+        const isLive = isSkylinesPhase && skylines?.block === block;
+        const isDone = skylines?.finished || (skylines?.block ?? -1) > block || (skylines?.block === block && !isSkylinesPhase && activePhase !== "stage1");
+
+        if (isLive && roundView === SKYLINES_ROOF) return <>Played right after <b>{after}</b> of the Official. The 4 teams of the Penthouse play for the title.</>;
+        if (isLive) return <>Played right after <b>{after}</b> of the Official. The Ground Floor starts, the Penthouse plays last.</>;
+        if (isDone && !isLive) return <>Played after <b>{after}</b> of the Official.</>;
+        return <>Starts as soon as <b>{after}</b> of the Official is finished.</>;
+    };
+
+    const renderSkylinesPage = () => {
+        const champion = tournamentResults?.kind === "skylines" ? tournamentResults.winner : null;
+        const showEndButtons = showPickemLine2 && !!champion;
+        const roundView = skylinesRoundView;
+
+        const jumpToFloor = (floor) => {
+            const target = document.querySelector(`[data-skyline-floor="${floor}"]`);
+            const sticky = document.querySelector("[data-skylines-sticky]");
+            if (!target) return;
+            const stickyBottom = sticky ? sticky.getBoundingClientRect().bottom : 0;
+            scrollPageTo(Math.max(0, target.getBoundingClientRect().top + window.scrollY - stickyBottom - 24));
+        };
+
+        return (
+            <>
+            {renderSkylinesSwitch()}
+            <div className={css.skylines_page}>
+                <StickyBelow
+                    anchor='[data-sticky-anchor="skylines-switch"]'
+                    style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: showEndButtons ? "18px 0 36px" : "6px 0 16px" }}
+                >
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {skylinesLabel} | {roundView === SKYLINES_ROOF ? "Rooftop Final" : `Round ${roundView + 1}`}
+                    </div>
+                    <div data-skylines-sticky className={css.skylines_header_caption}>{skylinesRoundCaption(roundView)}</div>
+
+                    {showEndButtons ? (
+                        <div className={css.skylines_header_side}>
+                            <button
+                                className={`${css.gamble_button} ${css.back_button}`}
+                                onClick={() => setShowPickemSummary(true)}
+                            >
+                                Back to the Pick'em challenge summary
+                            </button>
+                            <button
+                                className={`${css.gamble_button} ${css.back_back_button}`}
+                                style={{ backgroundColor: hover ? champion.hoverOn : champion.color }}
+                                onMouseEnter={() => setHover(true)}
+                                onMouseLeave={() => setHover(false)}
+                                onClick={() => setShowWinnersScreen(true)}
+                            >
+                                Back to the Winners' screen
+                            </button>
+                            <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
+                                Proceed
+                            </button>
+                        </div>
+                    ) : (
+                        <div className={css.skylines_header_side} style={{ alignItems: "center", gap: 0 }}>
+                            <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                            <span className={css.points}>
+                                <CountUp
+                                    start={0}
+                                    duration={1.2}
+                                    end={skylines?.neededPickemPoints ?? 0}
+                                    key={skylines?.neededPickemPoints ?? 0}
+                                />
+                            </span>
+                        </div>
+                    )}
+                </StickyBelow>
+
+                {renderPhaseNav(getSkylinesNavEntries(skylines), "34%", { value: roundView, onChange: setSkylinesRoundView, fixedRight: "calc(50% + 724px)" })}
+                <SkylinesFloorNav onJump={jumpToFloor} />
+
+                {renderSkylinesBuilding(skylines, { roundView })}
+            </div>
+            </>
         );
     };
 
@@ -1765,6 +1996,224 @@ export function createTournamentRenderers({
         );
     };
 
+    const pgxCandidateFormat = (cm, section, { archived, record }) => ({
+        slotSource: section === "playIn" ? pgxPlayInSlotSource : section === "groups" ? pemStage1SlotSource : () => null,
+        canOpen: (bracket, stage, idx) => !archived && canOpenPgxCandidateMatch(cm, section, bracket, stage, idx),
+        bestOf: getBestOfForPgxCandidate,
+        isSingle: (stage) => !["pr1", "pr2", "uo", "dq"].includes(stage),
+        open: (_group, _stage, matchId) => openPgxMatchModal("pgxCm", matchId),
+        openArchived: (_record, _group, _stage, _idx, match) => openArchivedPgxMatchModal("pgxCm", record, match, section),
+    });
+
+    const renderPgxCandidateSection = (cm, view, { archived = false, record = null } = {}) => {
+        if (!cm) return null;
+        const section = view === "P" ? "playIn" : view === "DQ" ? "deciders" : "groups";
+        const holder = section === "playIn" ? cm.playIn : section === "deciders" ? cm.deciders : cm.groups?.[view];
+
+        if (!holder) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    {section === "deciders" ? "The Deciders start after the Group Stage." : "The Groups are drawn after the Play-ins."}
+                </div>
+            );
+        }
+
+        const current = archived
+            ? null
+            : section === "groups"
+                ? findCurrentPgxCandidateMatch(cm, view)
+                : cm.phase === section
+                    ? findCurrentPgxCandidateMatch(cm)
+                    : null;
+        const next = archived ? null : findNextPgxCandidateMatch(cm, holder, section, current);
+        const format = pgxCandidateFormat(cm, section, { archived, record });
+        const renderMatch = (match, stage, idx) =>
+            renderQualifierMatch(holder, match, stage, idx, { archived, record, current, next, format });
+
+        if (section === "playIn") return <PgxPlayInLayout key={archived ? "hall-pi" : "pi"} playIn={holder} renderMatch={renderMatch} />;
+        if (section === "deciders") {
+            return (
+                <PgxMatchesLayout
+                    title={archived ? null : "Deciders"}
+                    stage={PGX_DECIDER_STAGE}
+                    matches={holder.dq}
+                    renderMatch={renderMatch}
+                    caption={() => <>Winner qualifies to <b>PGX International Masters</b></>}
+                />
+            );
+        }
+        return <PemStage1BracketLayout key={`${archived ? "hall" : "live"}-${view}`} bracket={holder} renderMatch={renderMatch} />;
+    };
+
+    const pgxInternationalFormat = (im, section, { archived, record }) => ({
+        slotSource: section === "bracket" ? eclSlotSource : () => null,
+        canOpen: (bracket, stage, idx) => !archived && im?.phase === section && (section === "bracket" ? canOpenEclMatch(bracket, stage, idx) : !bracket?.[stage]?.[idx]?.played),
+        bestOf: (stage) => (stage === PGX_ENTRY_STAGE ? 3 : getBestOfForEcl(stage)),
+        isSingle: (stage) => stage !== PGX_ENTRY_STAGE && isSingleEclStage(stage),
+        open: (_group, _stage, matchId) => openPgxMatchModal("pgxIm", matchId),
+        openArchived: (_record, _group, _stage, _idx, match) => openArchivedPgxMatchModal("pgxIm", record, match, section),
+    });
+
+    const renderPgxInternationalSection = (im, view, { archived = false, record = null } = {}) => {
+        if (!im) return null;
+        const section = view === "M" ? "bracket" : "entry";
+
+        if (section === "entry") {
+            const current = archived || im.phase !== "entry" ? null : findCurrentBracketMatch([PGX_ENTRY_STAGE], im.entry);
+            const format = pgxInternationalFormat(im, "entry", { archived, record });
+            return (
+                <PgxMatchesLayout
+                    title={archived ? null : "Entry Round"}
+                    stage={PGX_ENTRY_STAGE}
+                    matches={im.entry?.er}
+                    renderMatch={(match, stage, idx) => renderQualifierMatch(im.entry, match, stage, idx, { archived, record, current, next: null, format })}
+                    caption={() => <>Winner goes to the <b>Main Bracket</b></>}
+                />
+            );
+        }
+
+        if (!im.bracket) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    The Main Bracket is drawn after the Entry Round.
+                </div>
+            );
+        }
+
+        const current = archived || im.phase !== "bracket" ? null : findCurrentEclMatch(im.bracket);
+        const next = archived ? null : findNextEclMatch(im.bracket, current);
+        const format = pgxInternationalFormat(im, "bracket", { archived, record });
+        return (
+            <EclBracketLayout
+                key={archived ? "hall-pgxi" : "pgxi"}
+                bracket={im.bracket}
+                renderMatch={(match, stage, idx) => renderQualifierMatch(im.bracket, match, stage, idx, { archived, record, current, next, format })}
+            />
+        );
+    };
+
+    const renderPgxPage = (kind) => {
+        const isCm = kind === "pgxCm";
+        const phases = isCm
+            ? [
+                { id: "P", label: "Play-ins" },
+                ...(pgxCm?.groups ? [{ id: "G", label: "Group Stage" }] : []),
+                ...(pgxCm?.deciders ? [{ id: "DQ", label: "Deciders" }] : []),
+            ]
+            : [
+                { id: "E", label: "Entry Round" },
+                ...(pgxIm?.bracket ? [{ id: "M", label: "Main Bracket" }] : []),
+            ];
+        const isGroupView = isCm && !!pgxCm?.groups && PGX_CM_GROUPS.includes(pgxView);
+        const phaseValue = isGroupView
+            ? "G"
+            : phases.some((phase) => phase.id === pgxView) ? pgxView : phases[phases.length - 1].id;
+        const view = isGroupView ? pgxView : phaseValue === "G" ? "A" : phaseValue;
+        const sectionTitle = isCm
+            ? ({ P: "Play-ins", DQ: "Deciders" }[view] ?? "Group Stage")
+            : ({ E: "Entry Round", M: "Main Bracket" }[view]);
+        const handlePhaseChange = (id) => {
+            if (id !== "G") {
+                setPgxView(id);
+                return;
+            }
+            setPgxView(PGX_CM_GROUPS.find((group) => findCurrentPgxCandidateMatch(pgxCm, group)) ?? "A");
+        };
+
+        const finished = tournamentResults?.kind === kind;
+        const showEndButtons = showPickemLine2 && finished;
+        const highlightTeam = isCm ? tournamentResults?.qualifiers?.[0] : tournamentResults?.winner;
+
+        const title = isCm
+            ? renderQualifierTitle({ badgeHeight: 34, label: <>{pgxCmLabel} | {sectionTitle}</> })
+            : <>{pgxImLabel} | {sectionTitle}</>;
+
+        const side = showEndButtons ? (
+            <div
+                style={{
+                    position: "absolute",
+                    top: isGroupView ? "50%" : 12,
+                    right: "calc(50% - 670px)",
+                    transform: isGroupView ? "translateY(-50%)" : undefined,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 10,
+                }}
+            >
+                <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => setShowPickemSummary(true)}>
+                    Back to the Pick'em challenge summary
+                </button>
+                <button
+                    className={`${css.gamble_button} ${css.back_back_button}`}
+                    style={highlightTeam ? { backgroundColor: hover ? highlightTeam.hoverOn : highlightTeam.color } : undefined}
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                    onClick={() => setShowWinnersScreen(true)}
+                >
+                    Back to the Winners' screen
+                </button>
+                <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
+                    Proceed
+                </button>
+            </div>
+        ) : (
+            <div
+                style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "calc(50% - 670px)",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                }}
+            >
+                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                <span className={css.points}>
+                    <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                </span>
+            </div>
+        );
+
+        const content = isCm ? renderPgxCandidateSection(pgxCm, view) : renderPgxInternationalSection(pgxIm, view);
+        const phaseNav = phases.length > 1 ? renderPhaseNav(phases, "10%", { value: phaseValue, onChange: handlePhaseChange }) : null;
+
+        if (isGroupView) {
+            return (
+                <>
+                    <QualifierGroupNav fixed value={view} onChange={setPgxView} groups={PGX_CM_GROUPS} />
+                    <div className={css.qualifier_page} style={{ position: "relative", minWidth: 1464 }}>
+                        {phaseNav}
+                        <StickyBelow
+                            anchor='[data-sticky-anchor="qualifier-groups"]'
+                            style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: showEndButtons ? "18px 0 36px" : "6px 0 16px" }}
+                        >
+                            <div className={css.stage_title} style={{ marginBottom: 0, marginTop: "-28px" }}>
+                                {title}
+                            </div>
+                            {side}
+                        </StickyBelow>
+                        <div className={css.pem_stage1_area}>{content}</div>
+                    </div>
+                </>
+            );
+        }
+
+        return (
+            <div className={css.cst_page} style={{ paddingTop: 56 }}>
+                {phaseNav}
+                <div className={css.ecl_header} style={showEndButtons ? { minHeight: 176, padding: "18px 0 36px" } : { padding: "6px 0 16px" }}>
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {title}
+                    </div>
+                    {side}
+                </div>
+                <div style={{ marginTop: 24 }}>{content}</div>
+            </div>
+        );
+    };
+
     const renderQualifierPage = () => {
         const group = qualifierGroupView;
         const firstQualified = tournamentResults?.kind === "pemQualifier"
@@ -1773,7 +2222,7 @@ export function createTournamentRenderers({
 
         return (
             <>
-                <QualifierGroupNav fixed value={group} onChange={setQualifierGroupView} />
+                <QualifierGroupNav fixed value={group} onChange={setQualifierGroupView} groups={qualifier?.[PLAY_IN_GROUP] ? [PLAY_IN_GROUP, ...QUALIFIER_GROUPS] : QUALIFIER_GROUPS} />
                 <div className={css.qualifier_page}>
                     <StickyBelow
                         anchor='[data-sticky-anchor="qualifier-groups"]'
@@ -1975,15 +2424,15 @@ export function createTournamentRenderers({
         { id: groupStageViewId, label: "Group Stage" },
     ]);
 
-    const renderPhaseNav = (entries, top = "10%") => {
+    const renderPhaseNav = (entries, top = "10%", { value = viewPhase, onChange = setViewPhase, fixedRight = null } = {}) => {
         return (
             <div
                 ref={navRef}
                 className={css.phase_nav}
                 style={{
-                    position: "absolute",
+                    position: fixedRight ? "fixed" : "absolute",
                     top,
-                    left: "2%",
+                    ...(fixedRight ? { right: fixedRight } : { left: "2%" }),
                     zIndex: 19,
                     display: "flex",
                     flexDirection: "column",
@@ -1993,12 +2442,12 @@ export function createTournamentRenderers({
                 }}
             >
                 {entries.map((entry) => {
-                    const isActive = viewPhase === entry.id;
+                    const isActive = value === entry.id;
                     return (
                         <button
                             key={entry.id}
                             data-results-active={isActive}
-                            onClick={() => setViewPhase(entry.id)}
+                            onClick={() => onChange(entry.id)}
                             className={`${css.resultsNavigationButton} ${isActive ? css.resultsNavigationButtonActive : ""}`}
                         >
                             {entry.label}
@@ -2437,5 +2886,11 @@ export function createTournamentRenderers({
         renderPemStage1Bracket,
         renderPemGroupBracket,
         renderQualifierBracket,
+        renderSkylinesPage,
+        renderSkylinesBuilding,
+        renderSkylinesSwitch,
+        renderPgxPage,
+        renderPgxCandidateSection,
+        renderPgxInternationalSection,
     };
 }

@@ -1,5 +1,6 @@
-import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription } from "../components/TournamentTypeInfo.jsx";
-import { TOURNAMENT_NUMBERS_LS_KEY, TOURNAMENT_PICKER_LS_KEY, CURRENT_TOURNAMENT_TYPE_LS_KEY } from "./storageKeys.js";
+import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription, PgxDescription } from "../components/TournamentTypeInfo.jsx";
+import { SKYLINES_TYPE_ID } from "./skylines.jsx";
+import { TOURNAMENT_NUMBERS_LS_KEY, TOURNAMENT_PICKER_LS_KEY, TOURNAMENT_BANS_LS_KEY, CURRENT_TOURNAMENT_TYPE_LS_KEY } from "./storageKeys.js";
 
 export const PEM_SMALL_TYPE_ID = "PEM Small Tournament";
 export const PEM_BIG_TYPE_ID = "PEM Big Tournament";
@@ -8,13 +9,16 @@ export const ECL_TYPE_ID = "Elite Competition League";
 export const GPL_TYPE_ID = "Global Pro League";
 export const GCC_TYPE_ID = "Global Challenger Cup";
 export const PBS_TYPE_ID = "Premier Bounty Series";
+export const PGX_GM_TYPE_ID = "PGX Grandmasters";
+export const PGX_IM_TYPE_ID = "PGX International Masters";
+export const PGX_CM_TYPE_ID = "PGX Candidate Masters";
 
 export const TOURNAMENT_TYPES = [
     {
         id: "Official",
         label: "Official",
         tier: "official",
-        description: "Biggest tournament. 64 teams, seeded by the Leaderboard: places 33-64 start in Stage I, places 17-32 join in Stage II and the top 16 in Stage III. 16 teams advance from each Swiss Stage, ending in the 16-team Playoffs.",
+        description: "Biggest tournament. 32 teams, seeded by the Leaderboard: places 17-32 start in Stage I, places 9-16 join in Stage II and the top 8 in Stage III. 8 teams advance from each Swiss Stage, ending in the 8-team Playoffs. Places 33-64 play the Official Skylines (Tier 2) next to it: 8 Floors of 4 teams, 4 Rounds with an elevator (1st goes up 2 Floors, 2nd up 1, 3rd down 1, 4th down 2) and a Rooftop Final for the 4 teams on the Penthouse.",
         highlightCard: true,
         fields: [
             { key: "stage1", label: "Qualifiers to Stage I", multi: true, exactCount: 32 },
@@ -57,12 +61,21 @@ export const TOURNAMENT_TYPES = [
         numberPrefix: "Season ",
         descriptionNode: <PbsDescription />,
     },
+    {
+        id: PGX_GM_TYPE_ID,
+        label: "PGX Grandmasters",
+        tier: "tier1",
+        descriptionNode: <PgxDescription />,
+    },
 ];
 
 const EVENT_TOURNAMENT_TYPES = [
     { id: CST_TYPE_ID, label: "Champions Series Tour", tier: "tier2" },
     { id: ECL_TYPE_ID, label: "Elite Competition League", tier: "tier2" },
     { id: GCC_TYPE_ID, label: "Global Challenger Cup", tier: "tier2" },
+    { id: SKYLINES_TYPE_ID, label: "Official Skylines", tier: "tier2" },
+    { id: PGX_IM_TYPE_ID, label: "PGX International Masters", tier: "tier2" },
+    { id: PGX_CM_TYPE_ID, label: "PGX Candidate Masters", tier: "qualifier" },
 ];
 
 export const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAMENT_TYPES];
@@ -135,15 +148,67 @@ export const saveCurrentTournamentType = (type) => {
     }
 };
 
+export const TOURNAMENT_BAN_ROLLS = 1;
+
+export const TOURNAMENT_BAN_EXCEPTIONS = [
+    { id: ACTIVE_TOURNAMENT_TYPE, rolls: 2 },
+];
+
+export const getTournamentBanRolls = (id) =>
+    TOURNAMENT_BAN_EXCEPTIONS.find((exception) => exception.id === id)?.rolls ?? TOURNAMENT_BAN_ROLLS;
+
+export const DEFAULT_TOURNAMENT_BANS = { bans: {}, lastEnded: null };
+
+export const loadTournamentBans = () => {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(TOURNAMENT_BANS_LS_KEY) || "null");
+        const bans = Object.fromEntries(
+            Object.entries(parsed?.bans ?? {}).filter(([id, rolls]) => isKnownTournamentType(id) && Number.isInteger(rolls) && rolls > 0)
+        );
+        return { bans, lastEnded: typeof parsed?.lastEnded === "string" ? parsed.lastEnded : null };
+    } catch {
+        return DEFAULT_TOURNAMENT_BANS;
+    }
+};
+
+export const saveTournamentBans = (tournamentBans) => {
+    try {
+        localStorage.setItem(TOURNAMENT_BANS_LS_KEY, JSON.stringify(tournamentBans));
+    } catch {
+        console.error("Couldn't save the tournament bans");
+    }
+};
+
+export const applyTournamentBan = (tournamentBans, id, endedKey) => {
+    if (!isKnownTournamentType(id) || tournamentBans?.lastEnded === endedKey) return tournamentBans;
+
+    const bans = Object.fromEntries(
+        Object.entries(tournamentBans?.bans ?? {})
+            .map(([bannedId, rolls]) => [bannedId, rolls - 1])
+            .filter(([, rolls]) => rolls > 0)
+    );
+    const rolls = getTournamentBanRolls(id);
+    if (rolls > 0) bans[id] = rolls;
+
+    return { bans, lastEnded: endedKey };
+};
+
+export const getTournamentBanList = (tournamentBans) =>
+    TOURNAMENT_TYPES
+        .filter((type) => (tournamentBans?.bans?.[type.id] ?? 0) > 0)
+        .map((type) => ({ type, rolls: tournamentBans.bans[type.id] }));
+
 const pickRandomItem = (items) => items[Math.floor(Math.random() * items.length)];
 
-export const pickTournamentType = (picker) => {
+export const pickTournamentType = (picker, tournamentBans = DEFAULT_TOURNAMENT_BANS) => {
     if (!picker?.random) {
         const chosen = (picker?.ids ?? []).filter(isKnownTournamentType);
         if (chosen.length > 0) return pickRandomItem(chosen);
     }
 
-    return pickRandomItem(TOURNAMENT_TYPES.map((type) => type.id));
+    const allIds = TOURNAMENT_TYPES.map((type) => type.id);
+    const allowedIds = allIds.filter((id) => !(tournamentBans?.bans?.[id] > 0));
+    return pickRandomItem(allowedIds.length > 0 ? allowedIds : allIds);
 };
 
 export const normalizeTournamentRef = (value) => {

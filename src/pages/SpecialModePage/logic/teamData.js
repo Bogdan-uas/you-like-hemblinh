@@ -1,5 +1,6 @@
 import { COLORS_ORDER_INDEX } from "./colors.js";
 import { totalSecondPlaces, totalThirdPlaces } from "./placings.jsx";
+import { OFFICIAL_STAGE3_AUTO_COUNT, OFFICIAL_STAGE2_AUTO_COUNT, OFFICIAL_TEAM_COUNT } from "./gameConstants.js";
 import {
     TEAM_RATINGS_LS_KEY,
     DEFAULT_STATS_PANELS_STATE,
@@ -56,11 +57,15 @@ export const buildModalStatsKey = ({ modalContext, currentModalMatch, hallRecord
                         ? `pemGroup:${modalContext.group}:${modalContext.stage}`
                         : modalContext.type === "ecl"
                             ? `ecl:${modalContext.stage}`
+                            : modalContext.type === "skyline"
+                            ? `skyline:${modalContext.stage}`
+                            : modalContext.type === "pgxCm" || modalContext.type === "pgxIm"
+                            ? `${modalContext.type}:${modalContext.stage}`
                             : modalContext.type === "pemStage1"
                                 ? `pemStage1:${modalContext.group}:${modalContext.stage}`
                                 : modalContext.type === "gccLeague"
                                     ? `gccLeague:${modalContext.matchday}`
-                                    : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : modalContext.kind === "pemBig" ? "pemBigPlayoffs" : modalContext.kind === "gpl" ? "gplPlayoffs" : modalContext.kind === "gcc" ? "gccPlayoffs" : "playoffs"}:${modalContext.stage}`;
+                                    : `${modalContext.kind === "cst" ? "cstPlayoffs" : modalContext.kind === "pem" ? "pemPlayoffs" : modalContext.kind === "pemBig" ? "pemBigPlayoffs" : modalContext.kind === "gpl" ? "gplPlayoffs" : modalContext.kind === "gcc" ? "gccPlayoffs" : modalContext.kind === "pgx" ? "pgxPlayoffs" : "playoffs"}:${modalContext.stage}`;
     const originPart = modalContext.isArchivedHallOfFame
         ? `hall:${hallRecordId ?? ""}:`
         : `t${tournamentNumber}:`;
@@ -353,7 +358,7 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000000 + ((p?.pemBigWins ?? 0) + (p?.gplWins ?? 0)) * 1000000000 + (p?.pbsWins ?? 0) * 1000000 + (p?.tier1Wins ?? 0) * 1000 + (p?.tier2Wins ?? 0); break;
+            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000000 + ((p?.pemBigWins ?? 0) + (p?.gplWins ?? 0)) * 1000000000 + (p?.pbsWins ?? 0) * 1000000 + ((p?.tier1Wins ?? 0) + (p?.pgxWins ?? 0)) * 1000 + (p?.tier2Wins ?? 0); break;
             case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
             case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;
@@ -375,9 +380,9 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
 export const classifyTeamsForStages = (teams, ratings) => {
     const { sorted } = buildLeaderboard(teams, ratings);
     return {
-        stage3Seeds: sorted.slice(0, 16).map((t) => ({ ...t })),
-        stage2Seeds: sorted.slice(16, 32).map((t) => ({ ...t })),
-        stage1Seeds: sorted.slice(32).map((t) => ({ ...t })),
+        stage3Seeds: sorted.slice(0, OFFICIAL_STAGE3_AUTO_COUNT).map((t) => ({ ...t })),
+        stage2Seeds: sorted.slice(OFFICIAL_STAGE3_AUTO_COUNT, OFFICIAL_STAGE3_AUTO_COUNT + OFFICIAL_STAGE2_AUTO_COUNT).map((t) => ({ ...t })),
+        stage1Seeds: sorted.slice(OFFICIAL_STAGE3_AUTO_COUNT + OFFICIAL_STAGE2_AUTO_COUNT, OFFICIAL_TEAM_COUNT).map((t) => ({ ...t })),
     };
 };
 

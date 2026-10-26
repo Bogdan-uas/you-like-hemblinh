@@ -3,11 +3,11 @@ import css from "../SpecialModePage.module.css";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { FaTrophy } from "react-icons/fa";
 import { ReactFitty } from "react-fitty";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy } from "../components/Trophies.jsx";
 import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
 import { PodiumEffect, ConfettiRain } from "../components/PodiumEffects.jsx";
 import { useSpecialModeSettings } from "../logic/settings.js";
-import { PODIUM_QUOTES, WINNERS_TIMELINE, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { PODIUM_QUOTES, WINNERS_TIMELINE, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 
 const RISE_EASE = [0.16, 1, 0.3, 1];
 const POP_SPRING = { type: "spring", stiffness: 260, damping: 15 };
@@ -81,7 +81,7 @@ export function WinnersScreen({ winners, labels, actions }) {
         showPodium,
         showProceed,
     } = winners;
-    const { cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, tournamentLabel, pemType } = labels;
+    const { cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxImLabel, pgxGmLabel, tournamentLabel, pemType } = labels;
     const { handleProceed } = actions;
     const reduceMotion = useReducedMotion();
 
@@ -91,14 +91,16 @@ export function WinnersScreen({ winners, labels, actions }) {
         return list[index];
     };
 
-    const isTier2Results = tournamentResults.kind === "cst" || tournamentResults.kind === "ecl" || tournamentResults.kind === "gcc";
+    const isTier2Results = tournamentResults.kind === "cst" || tournamentResults.kind === "ecl" || tournamentResults.kind === "gcc" || tournamentResults.kind === "skylines" || tournamentResults.kind === "pgxIm";
+    const isPgxResults = tournamentResults.kind === "pgx";
+    const isPgxQualifiedWinner = tournamentResults.kind === "pgxIm";
     const isPemResults = tournamentResults.kind === "pem";
     const isGplResults = tournamentResults.kind === "gpl";
     const isPbsResults = tournamentResults.kind === "pbs";
     const animated = !hasPlayedWinnerAnimation;
     const { podiumEffects } = useSpecialModeSettings();
     const effects = animated && !reduceMotion && podiumEffects;
-    const finalLabel = tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : isPemResults ? pemLabel : isPbsResults ? pbsLabel : tournamentLabel;
+    const finalLabel = tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : tournamentResults.kind === "skylines" ? skylinesLabel : tournamentResults.kind === "pgxIm" ? pgxImLabel : isPgxResults ? pgxGmLabel : isPemResults ? pemLabel : isPbsResults ? pbsLabel : tournamentLabel;
     const headlineKey = hasPlayedWinnerAnimation ? "top-4" : winnersText;
 
     const renderTrophy = () => (
@@ -108,6 +110,8 @@ export function WinnersScreen({ winners, labels, actions }) {
                 ? <GplTrophy size={GPL_PODIUM_TROPHY_SIZE} style={GPL_PODIUM_TROPHY_STYLE} />
                 : isPbsResults
                     ? <PbsTrophy size={PBS_PODIUM_TROPHY_SIZE} style={PBS_PODIUM_TROPHY_STYLE} />
+                    : isPgxResults
+                    ? <PgxTrophy size={PGX_PODIUM_TROPHY_SIZE} style={PGX_PODIUM_TROPHY_STYLE} />
                     : <FaTrophy />
     );
 
@@ -195,6 +199,17 @@ export function WinnersScreen({ winners, labels, actions }) {
                     >
                         {place.labelText}
                     </motion.span>
+                    {isWinner && isPgxQualifiedWinner ? (
+                        <motion.span
+                            className={`${css.pgx_qualified_badge} ${css.pgx_podium_badge}`}
+                            initial={animated ? { opacity: 0, y: 12, scale: 0.8 } : false}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={animated ? { ...POP_SPRING, ...at(0.45) } : { duration: 0 }}
+                        >
+                            <PgxTrophy size={22} />
+                            <span>Qualified to PGX Grandmasters</span>
+                        </motion.span>
+                    ) : null}
                     {!isTier2Results ? (
                         <motion.span
                             className={place.quote}

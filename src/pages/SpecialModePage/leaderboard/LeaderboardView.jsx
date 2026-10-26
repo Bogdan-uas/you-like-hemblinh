@@ -9,7 +9,7 @@ import { LeaderboardDividerSelect } from "../components/LeaderboardDividerSelect
 import { getLeaderboardDividers } from "../logic/leaderboardDividers.js";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import { TeamStatsHoverPopover } from "../components/TeamStatsHoverPopover.jsx";
-import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
+import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
 import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "../logic/placings.jsx";
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
@@ -146,7 +146,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                             {renderTournamentLabelFor(
                                 leaderboardTitleTournament.type,
                                 leaderboardTitleTournament.number,
-                                { highlightName: false, qualifier: leaderboardTitleTournament.qualifier }
+                                { highlightName: false, qualifier: leaderboardTitleTournament.qualifier, city: leaderboardTitleTournament.city }
                             )}
                         </span>
                     )}
@@ -214,7 +214,8 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                     const pemBigTrophyDisplay = trophyCountToDisplay(p.pemBigWins);
                     const gplTrophyDisplay = trophyCountToDisplay(p.gplWins);
                     const pbsTrophyDisplay = trophyCountToDisplay(p.pbsWins);
-                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay || !!pbsTrophyDisplay;
+                    const pgxTrophyDisplay = trophyCountToDisplay(p.pgxWins);
+                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay || !!pbsTrophyDisplay || !!pgxTrophyDisplay;
 
                     const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
                     const pointsRank = rankById[t.id] ?? rank;
@@ -257,6 +258,16 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                 ) : (
                                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
                                         {pbsTrophyDisplay.n} <PbsTrophy />
+                                    </span>
+                                ))}
+                            {pgxTrophyDisplay &&
+                                (pgxTrophyDisplay.mode === "icons" ? (
+                                    Array.from({ length: pgxTrophyDisplay.n }).map((_, k) => (
+                                        <PgxTrophy key={k} style={{ transition: "none" }} />
+                                    ))
+                                ) : (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
+                                        {pgxTrophyDisplay.n} <PgxTrophy />
                                     </span>
                                 ))}
                             {tier1TrophyDisplay &&
@@ -417,7 +428,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                                 </span>
                                             )}
                                             {buildPlacingItems(p, null)
-                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins" && item.key !== "pbsWins")
+                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins" && item.key !== "pbsWins" && item.key !== "pgxWins")
                                                 .map((item) => (
                                                     <MedalWithBreakdown
                                                         key={item.key}

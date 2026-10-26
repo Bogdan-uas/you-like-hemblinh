@@ -11,6 +11,7 @@ export function SwissTournamentView({ view, renderers, actions }) {
         viewPhase,
         swissToRender,
         setHover,
+        hasSkylinesSwitch,
     } = view;
     const { renderResultsNav, getStageTitleForView, renderPlayoffsBracket, renderSwissBracket } = renderers;
     const {
@@ -30,7 +31,7 @@ export function SwissTournamentView({ view, renderers, actions }) {
                             <div
                                 style={{
                                     position: "absolute",
-                                    top: 10,
+                                    top: showPickemLine2 && viewPhase === "playoffs" ? 76 : 10,
                                     right: 10,
                                     zIndex: 5,
                                     display: "flex",
@@ -92,7 +93,7 @@ export function SwissTournamentView({ view, renderers, actions }) {
                                 )}
                             </div>
 
-                            <div style={{ marginTop: viewPhase === "playoffs" ? 32 : 64, transition: "none" }}>
+                            <div style={{ marginTop: viewPhase !== "playoffs" ? 64 : hasSkylinesSwitch ? 120 : 32, transition: "none" }}>
                                 <div className={css.stage_title}>
                                     {getStageTitleForView()}
                                 </div>

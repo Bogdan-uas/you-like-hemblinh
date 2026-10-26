@@ -23,12 +23,23 @@ export const EXT_ROUND_COMMENTARY_DELAY_MS = 3000;
 export const EXT_ROUND_FINAL_COMPARE_MS = 3000;
 export const PENALTY_DISPLAY_CIRCLES = 6;
 
+export const SIMULATE_MINI_MS = 90;
+export const SIMULATE_IMPORTANT_MINI_MS = 420;
+export const SIMULATE_INSTANT_BATCH = 40;
+
 export const MULTIPLIER_MIN = 0.0;
 export const MULTIPLIER_MAX = 5.0;
 
 export const MIN_NEEDED_PICKEM = 351;
 export const MAX_NEEDED_PICKEM = 576;
 
+export const OFFICIAL_STAGE3_AUTO_COUNT = 8;
+export const OFFICIAL_STAGE2_AUTO_COUNT = 8;
+export const OFFICIAL_TEAM_COUNT = 32;
+export const OFFICIAL_SWISS_MATCH_COUNT = 33;
+export const OFFICIAL_MIN_NEEDED_PICKEM = 179;
+export const OFFICIAL_MAX_NEEDED_PICKEM = 293;
+
 export const getRandomNeededPickemPoints = () =>
-    Math.floor(Math.random() * (MAX_NEEDED_PICKEM - MIN_NEEDED_PICKEM + 1)) +
-    MIN_NEEDED_PICKEM;
+    Math.floor(Math.random() * (OFFICIAL_MAX_NEEDED_PICKEM - OFFICIAL_MIN_NEEDED_PICKEM + 1)) +
+    OFFICIAL_MIN_NEEDED_PICKEM;

@@ -20,8 +20,18 @@ export const isProgressionOrEliminationNet = (net) =>
     net === "2:2";
     
 export const GPL_SWISS_FORMAT = "gpl";
+export const OFFICIAL_SWISS_FORMAT = "official32";
+export const PGX_SWISS_FORMAT = "pgx";
+
+export const isSixteenTeamSwissFormat = (format) =>
+    format === GPL_SWISS_FORMAT || format === OFFICIAL_SWISS_FORMAT || format === PGX_SWISS_FORMAT;
+
+export const getSwissLayoutFormat = (format) =>
+    isSixteenTeamSwissFormat(format) ? GPL_SWISS_FORMAT : null;
 
 export const getBestOfForSwissNet = (net, stageKey, format = null) => {
+    if (format === PGX_SWISS_FORMAT) return 3;
+
     if (format === GPL_SWISS_FORMAT) {
         return stageKey === "stage2" && isProgressionOrEliminationNet(net) ? 5 : 3;
     }
@@ -67,7 +77,7 @@ const GPL_BOX_SLOTS = {
 };
 
 export const getSwissBoxSlots = (title, format = null) =>
-    (format === GPL_SWISS_FORMAT ? GPL_BOX_SLOTS : BOX_SLOTS)[title] ?? 6;
+    (isSixteenTeamSwissFormat(format) ? GPL_BOX_SLOTS : BOX_SLOTS)[title] ?? 6;
 
 const makeSwissTeam = (t) => ({
     ...t,

@@ -3,6 +3,8 @@ import { GCC_KNOCKOUT_BEST_OF } from "./gcc.js";
 import { PEM_PLAYOFFS_BEST_OF, PEM_BIG_PLAYOFFS_BEST_OF } from "./pemConfig.js";
 import { PBS_BEST_OF } from "./pbsConfig.js";
 
+const PGX_PLAYOFFS_BEST_OF = { qf: 3, sf: 5, thirdPlace: 5, gf: 7 };
+
 export const stageLabelPlayoffs = (stage) => {
     switch (stage) {
         case "po": return "Knockout Play-off";
@@ -22,6 +24,7 @@ export const getBestOfForPlayoffs = (stage, kind = null) => {
     if (kind === "pemBig" || kind === "gpl") return PEM_BIG_PLAYOFFS_BEST_OF[stage] ?? 5;
     if (kind === "gcc") return GCC_KNOCKOUT_BEST_OF[stage] ?? 3;
     if (kind === "pbs") return PBS_BEST_OF[stage] ?? 3;
+    if (kind === "pgx") return PGX_PLAYOFFS_BEST_OF[stage] ?? 3;
     if (stage === "gf") return 9;
     if (stage === "sf") return 7;
     if (stage === "thirdPlace") return 7;
@@ -114,12 +117,12 @@ export const buildPlayoffsBracket = (teams16) => {
 
 const GPL_QUARTERFINAL_ORDER = [[0, 7], [3, 4], [1, 6], [2, 5]];
 
-export const buildGplPlayoffs = (qualifiedTeams) => {
+const buildEightTeamPlayoffs = (qualifiedTeams, kind = null) => {
     const seeded = buildPlayoffSeeds(qualifiedTeams);
     const mk = (stage, i, slotA = null, slotB = null) => ({
         id: `${stage}-${i + 1}`,
         stage,
-        gpl: true,
+        ...(kind ? { [kind]: true } : {}),
         slotA,
         slotB,
         played: false,
@@ -132,7 +135,7 @@ export const buildGplPlayoffs = (qualifiedTeams) => {
     });
 
     return {
-        kind: "gpl",
+        ...(kind ? { kind } : {}),
         ro16: [],
         qf: GPL_QUARTERFINAL_ORDER.map(([a, b], i) => mk("qf", i, seeded[a] ?? null, seeded[b] ?? null)),
         sf: [0, 1].map((i) => mk("sf", i)),
@@ -140,6 +143,12 @@ export const buildGplPlayoffs = (qualifiedTeams) => {
         gf: [mk("gf", 0)],
     };
 };
+
+export const buildGplPlayoffs = (qualifiedTeams) => buildEightTeamPlayoffs(qualifiedTeams, "gpl");
+
+export const buildOfficialPlayoffs = (qualifiedTeams) => buildEightTeamPlayoffs(qualifiedTeams);
+
+export const buildPgxPlayoffs = (qualifiedTeams) => buildEightTeamPlayoffs(qualifiedTeams, "pgx");
 
 export const canOpenPlayoffsMatch = (bracket, stage, matchIndex) => {
     const stageArr = bracket[stage];

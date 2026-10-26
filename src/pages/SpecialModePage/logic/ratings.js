@@ -5,7 +5,9 @@ import { GPL_SWISS_RATING_WEIGHTS, GPL_PLAYOFFS_RATING_WEIGHTS } from "./gpl.js"
 import { PBS_RATING_WEIGHTS } from "./pbsConfig.js";
 import { PEM_GROUP_RATING_WEIGHTS, PEM_PLAYOFFS_RATING_WEIGHTS, PEM_BIG_GROUP_RATING_WEIGHTS, PEM_BIG_PLAYOFFS_RATING_WEIGHTS } from "./pemSeries.jsx";
 import { PEM_STAGE1_RATING_WEIGHTS } from "./pemStage1.jsx";
-import { QUALIFIER_RATING_WEIGHTS } from "./qualifier.jsx";
+import { QUALIFIER_RATING_WEIGHTS, OPEN_QUALIFIER_RATING_WEIGHTS } from "./qualifier.jsx";
+import { SKYLINES_FLOOR_RATING_WEIGHTS, SKYLINES_ROOF_RATING_WEIGHTS } from "./skylines.jsx";
+import { PGX_CM_RATING_WEIGHTS, PGX_IM_RATING_WEIGHTS, PGX_GM_SWISS_RATING_WEIGHT, PGX_GM_PLAYOFFS_RATING_WEIGHTS } from "./pgx.jsx";
 import { buildLeaderboard, clampMin0 } from "./teamData.js";
 
 export const expectedScore = (ratingA, ratingB) => {
@@ -36,6 +38,8 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
             ? swissStageWeight(swissStageKey)
             : phase === "qualifier"
                 ? (QUALIFIER_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                : phase === "openQualifier"
+                ? (OPEN_QUALIFIER_RATING_WEIGHTS[playoffsStage] ?? 0.66)
                 : phase === "pemGroup"
                     ? (PEM_GROUP_RATING_WEIGHTS[playoffsStage] ?? 1.0)
                     : phase === "cstGroup"
@@ -46,6 +50,8 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
                                 ? (PEM_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
                                 : phase === "ecl"
                                     ? (ECL_RATING_WEIGHTS[playoffsStage] ?? 1.0)
+                                    : phase === "skyline"
+                                    ? (SKYLINES_ROOF_RATING_WEIGHTS[playoffsStage] ?? SKYLINES_FLOOR_RATING_WEIGHTS[Number(String(playoffsStage).slice(1)) - 1] ?? 1.0)
                                     : phase === "pemStage1"
                                         ? (PEM_STAGE1_RATING_WEIGHTS[playoffsStage] ?? 1.0)
                                         : phase === "pemBigGroup"
@@ -54,6 +60,14 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
                                                 ? (PEM_BIG_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
                                                 : phase === "gplSwiss"
                                                     ? (GPL_SWISS_RATING_WEIGHTS[swissStageKey] ?? 1.0)
+                                                    : phase === "pgxCm"
+                                                    ? (PGX_CM_RATING_WEIGHTS[playoffsStage] ?? 0.86)
+                                                    : phase === "pgxIm"
+                                                    ? (PGX_IM_RATING_WEIGHTS[playoffsStage] ?? 0.9)
+                                                    : phase === "pgxSwiss"
+                                                    ? PGX_GM_SWISS_RATING_WEIGHT
+                                                    : phase === "pgxPlayoffs"
+                                                    ? (PGX_GM_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 2.0)
                                                     : phase === "gplPlayoffs"
                                                         ? (GPL_PLAYOFFS_RATING_WEIGHTS[playoffsStage] ?? 1.0)
                                                         : phase === "gccLeague"
@@ -182,7 +196,7 @@ export const applyRatings = ({
     );
 
     const isGrandFinal =
-        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "gplPlayoffs", "gccPlayoffs", "pbsPlayoffs", "ecl"].includes(phase) && playoffsStage === "gf";
+        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "gplPlayoffs", "gccPlayoffs", "pbsPlayoffs", "ecl", "skyline", "pgxIm", "pgxPlayoffs"].includes(phase) && playoffsStage === "gf";
 
     if (isGrandFinal) {
         losePoints = Math.round(winPoints * 0.2);

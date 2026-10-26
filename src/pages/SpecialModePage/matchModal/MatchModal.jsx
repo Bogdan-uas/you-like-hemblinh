@@ -14,7 +14,9 @@ import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { centerOverflowX } from "../../../rubber.js";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy, BountyGem } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, BountyGem } from "../components/Trophies.jsx";
+import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
+import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isPemPlayoffsKind } from "../logic/pemSeries.jsx";
@@ -62,7 +64,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         breakdownPointLabel,
     } = modal;
     const { placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings } = teams;
-    const { closeMatchModal, handleChooseLeft, handleChooseRight, handleStartMatch } = actions;
+    const { closeMatchModal, handleChooseLeft, handleChooseRight, handleStartMatch, handleSimulateMatch, simulateEnabled } = actions;
     const { getOvertimeShortLabel } = labels;
 
     const placementColorLeft = placementColors[rankById[modalLeftTeam?.id]] || "#ffffff";
@@ -425,13 +427,15 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             rightTeam: modalRightTeam,
 
                             phase: modalContext?.type === "swiss"
-                                ? (modalContext?.format === GPL_SWISS_FORMAT ? "gplSwiss" : "swiss")
+                                ? (modalContext?.format === PGX_SWISS_FORMAT ? "pgxSwiss" : modalContext?.format === GPL_SWISS_FORMAT ? "gplSwiss" : "swiss")
                                 : modalContext?.type === "qualifier"
-                                    ? "qualifier"
+                                    ? (modalContext?.owner ? "openQualifier" : "qualifier")
                                     : modalContext?.type === "pemGroup"
                                         ? (isPemBigModal ? "pemBigGroup" : "pemGroup")
                                         : modalContext?.type === "ecl"
                                             ? "ecl"
+                                            : modalContext?.type === "skyline"
+                                            ? "skyline"
                                             : modalContext?.type === "pemStage1"
                                                 ? "pemStage1"
                                                 : modalContext?.type === "cstGroup"
@@ -444,6 +448,12 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                 ? "gccPlayoffs"
                                                                 : modalContext?.kind === "gpl"
                                                                     ? "gplPlayoffs"
+                                                                    : modalContext?.kind === "pgx"
+                                                                    ? "pgxPlayoffs"
+                                                                    : modalContext?.type === "pgxCm"
+                                                                    ? "pgxCm"
+                                                                    : modalContext?.type === "pgxIm"
+                                                                    ? "pgxIm"
                                                                     : modalContext?.kind === "pbs"
                                                                         ? "pbsPlayoffs"
                                                                         : modalContext?.kind === "pemBig"
@@ -462,7 +472,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     ? modalContext?.net
                                     : null,
 
-                            playoffsStage: isEliminationModal ? modalContext?.stage : null,
+                            playoffsStage: modalContext?.type === "skyline" ? modalContext.ratingStage : isEliminationModal || modalContext?.kind === "pgx" ? modalContext?.stage : null,
 
                             bestOf: modalBestOf,
                             loserSetsWon: 0,
@@ -895,7 +905,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
 
                             const getPlacementBadge = (isWinner, isLoser) => {
                                 if (isGrandFinal) {
-                                    if (isWinner && (modalContext?.kind === "cst" || modalContext?.kind === "gcc" || modalContext?.type === "ecl")) {
+                                    if (isWinner && (modalContext?.kind === "cst" || modalContext?.kind === "gcc" || modalContext?.type === "ecl" || modalContext?.type === "skyline" || modalContext?.type === "pgxIm")) {
                                         return (
                                             <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
                                                 🥇+
@@ -913,6 +923,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                         return (
                                             <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
                                                 <PbsTrophy />+
+                                            </span>
+                                        );
+                                    }
+                                    if (isWinner && modalContext?.kind === "pgx") {
+                                        return (
+                                            <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <PgxTrophy />+
                                             </span>
                                         );
                                     }
@@ -1133,7 +1150,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                             <div className={css.modal_vs}>
                                                 <span
                                                     style={{
-                                                        color: isTieResult
+                                                        color: isTieResult || modalDisplayScoreLeft === modalDisplayScoreRight
                                                             ? "#5a5a5a"
                                                             : winnerIsLeft
                                                                 ? "#2e7d32"
@@ -1152,7 +1169,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                         maskImage: "linear-gradient(to right, transparent 0%, black 65%, black 100%)",
                                                     }}
                                                     className={
-                                                        isTieResult
+                                                        isTieResult || modalDisplayScoreLeft === modalDisplayScoreRight
                                                             ? css.swissTieScoreShadow
                                                             : winnerIsLeft
                                                                 ? css.swissWinnerScoreShadow
@@ -1177,7 +1194,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 </div>
                                                 <span
                                                     style={{
-                                                        color: isTieResult
+                                                        color: isTieResult || modalDisplayScoreLeft === modalDisplayScoreRight
                                                             ? "#5a5a5a"
                                                             : winnerIsRight
                                                                 ? "#2e7d32"
@@ -1196,7 +1213,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                         maskImage: "linear-gradient(to left, transparent 0%, black 65%, black 100%)",
                                                     }}
                                                     className={
-                                                        isTieResult
+                                                        isTieResult || modalDisplayScoreLeft === modalDisplayScoreRight
                                                             ? css.swissTieScoreShadow
                                                             : winnerIsRight
                                                                 ? css.swissWinnerScoreShadow
@@ -2348,6 +2365,10 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             );
                         })()}
                 </motion.div>
+
+                {!isPlayedModal && !modalContext.readOnly && simulateEnabled ? (
+                    <SimulateAttachment canSimulate={hasChosen} lockedHint="Choose a team first" onSimulate={handleSimulateMatch} />
+                ) : null}
 
                 {(() => {
                     const orientedView = isPlayedModal

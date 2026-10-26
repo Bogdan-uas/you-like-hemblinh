@@ -5,6 +5,7 @@ import introImg from "../../../assets/images/image.png";
 import scoreBoardImg from "../../../assets/images/image-2.png";
 import dashedDividerImg from "../../../assets/images/image-3.png";
 import dashedDividerTwoImg from "../../../assets/images/image-4.png";
+import dashedDividerThreeImg from "../../../assets/images/image-4.01.png";
 import hoveredTeamRedsStatsTabOne from "../../../assets/images/image-4.1.png";
 import hoveredTeamRedsStatsTabTwo from "../../../assets/images/image-4.2.png";
 import emptyHallOfFame from "../../../assets/images/image-4.3.png";
@@ -13,6 +14,8 @@ import openedTournamentSelectionModalHoveredOn from "../../../assets/images/imag
 import settingsPanelImg from "../../../assets/images/image-4.6.png";
 import tournamentIntroScreenImg from "../../../assets/images/image-5.png";
 import tournamentIntroScreenHoverImg from "../../../assets/images/image-5.5.png";
+import simulateModalImg from "../../../assets/images/image-8.6.png";
+import simulateRunningImg from "../../../assets/images/image-11.6.png";
 import swissStageImg from "../../../assets/images/image-6.png";
 import locatedMatchRect from "../../../assets/images/image-6.5.png";
 import matchModal from "../../../assets/images/image-7.png";
@@ -65,6 +68,8 @@ import hallOfFameOfficialOnePartThree from "../../../assets/images/image-24.4.pn
 import hallOfFameOfficialOnePartFour from "../../../assets/images/image-24.5.png";
 import hallOfFameOfficialOnePartFive from "../../../assets/images/image-24.6.png";
 import hallOfFameOfficialOnePartSix from "../../../assets/images/image-24.7.png";
+import hallOfFameOfficialOnePartSeven from "../../../assets/images/image-24.8.png";
+import hallOfFameOfficialOnePartEight from "../../../assets/images/image-24.9.png";
 import tournamentIntroScreenImgTwo from "../../../assets/images/image-25.png";
 import hardChoiceToMake from "../../../assets/images/image-26.png";
 import hardChoiceToMakeTwo from "../../../assets/images/image-27.png";
@@ -257,6 +262,10 @@ const OFFICIAL_SECTIONS = [
         label: "Leaderboard format and points system",
     },
     {
+        id: "official-skylines",
+        label: "Official Skylines",
+    },
+    {
         id: "what-happens",
         label: "What happens next?",
     },
@@ -318,6 +327,10 @@ const GPL_SECTIONS = [
         label: "Around the globe",
     },
     {
+        id: "gcc-open-qualifier",
+        label: "Global Challenger Cup Open Qualifier",
+    },
+    {
         id: "gcc",
         label: "Global Challenger Cup",
     },
@@ -337,12 +350,39 @@ const PBS_SECTIONS = [
         label: "Hunting for bounties",
     },
     {
+        id: "pbs-open-qualifier",
+        label: "Premier Bounty Series Open Qualifier",
+    },
+    {
         id: "pbs-draft",
-        label: "Live draft and the Stages",
+        label: "Premier Bounty Series",
     },
     {
         id: "pbs-rewards",
         label: "The emerald trophy and Hall of Fame",
+    },
+];
+
+const PGX_SECTIONS = [
+    {
+        id: "pgx-overview",
+        label: "A city of its own",
+    },
+    {
+        id: "pgx-cm",
+        label: "PGX Candidate Masters",
+    },
+    {
+        id: "pgx-im",
+        label: "PGX International Masters",
+    },
+    {
+        id: "pgx-gm",
+        label: "PGX Grandmasters",
+    },
+    {
+        id: "pgx-rewards",
+        label: "The PGX trophy and Hall of Fame",
     },
 ];
 
@@ -612,16 +652,16 @@ const StatExplanations = () => (
 );
 
 const LEADERBOARD_TIERS = [
-    { from: 1, to: 16, points: 1150, label: "Start in Stage III", color: "#2e7d32" },
-    { from: 17, to: 32, points: 1100, label: "Start in Stage II", color: "#f9a825" },
-    { from: 33, to: 64, points: 1050, label: "Start in Stage I", color: "#c62828" },
+    { from: 1, to: 8, points: 1150, label: "Start in Stage III", color: "#2e7d32" },
+    { from: 9, to: 16, points: 1150, label: "Start in Stage II", color: "#f9a825" },
+    { from: 17, to: 32, points: 1100, label: "Start in Stage I", color: "#c62828" },
+    { from: 33, to: 64, points: 1050, label: "Play in Official Skylines", color: "#8a8d99" },
 ];
 
 const STAGE_WEIGHTS = [
     ["Stage I", 1.0],
     ["Stage II", 1.25],
     ["Stage III", 1.5],
-    ["Round of 16", 1.75],
     ["Quarterfinals", 2.5],
     ["Semifinals", 3.0],
     ["Third Place Decider", 3.25],
@@ -637,7 +677,7 @@ const BEST_OF_WEIGHTS = [
 ];
 
 const POINTS_EXAMPLES = [
-    { match: "Two equal teams (1,050 vs 1,050)", where: "Stage I, BO1", win: 10, loss: 5 },
+    { match: "Two equal teams (1,100 vs 1,100)", where: "Stage I, BO1", win: 10, loss: 5 },
     { match: "Favourite beats underdog (1,150 vs 1,050)", where: "Stage I, BO1", win: 6, loss: 3 },
     { match: "Underdog beats favourite (1,050 vs 1,150)", where: "Stage I, BO1", win: 12, loss: 9 },
     { match: "Two equal teams, close win 2:1", where: "Stage I, BO3", win: 13, loss: 7 },
@@ -781,6 +821,14 @@ const LeaderboardExplained = () => {
     );
 };
 
+const SKYLINES_IMAGES = import.meta.glob("../../../assets/images/skylines-*.png", { eager: true, import: "default" });
+
+const SkyShot = ({ n, alt, width = "34vw" }) => (
+    <div className={css.image_container}>
+        <img src={SKYLINES_IMAGES[`../../../assets/images/skylines-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+    </div>
+);
+
 const OfficialSubPage = ({ scrollToAnchor }) => (
     <>
         <section>
@@ -791,7 +839,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 Special Mode is a tournament simulator, which includes multiple tournaments with different formats.
                 Here, I will explain how the general mechanics of this simulator function and I will make it with examples from the very first tournament created in this simulator and the biggest one, which is the <b>Official</b> (all the other tournaments are in another tabs). <br />
-                Official includes 64 teams, each being a specific color.
+                There are 64 teams in this simulator, each being a specific color, and the top 32 of them play in an Official, while the other 32 play the <b>Official Skylines</b> right next to it.
                 Throughout the tournament, they will have opportunities to play against other teams and gain placement points to become higher in the <b>Leaderboard</b>.
             </p>
             <p className={css.info_text}>
@@ -827,17 +875,32 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <div className={css.image_container}>
                 <img src={dashedDividerTwoImg} alt="Divider, which show the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '73vh' }} />
             </div>
+            <p className={css.info_text}>
+                And even further below, after the 32nd place, there is one more divider, but this one is dark:
+            </p>
+            <div className={css.image_container}>
+                <img src={dashedDividerThreeImg} alt="Divider, which shows the edge between qualifiers for Stage I and the teams, which don't play" className={css.image} style={{ width: '40vw', height: '73vh' }} />
+            </div>
             <p style={{ marginBottom: '24px' }} className={css.info_text}>
-                As you can read it, these should be dividers to show which Stages of Official, which teams autoqualify to.
+                As you can read it, these should be dividers to show which Stages of Official, which teams autoqualify to, and the dark one shows the teams, which don&apos;t play in the Official itself, but in its side event, the Official Skylines.
                 The upper pill (with ▲) is the group above the divider and the lower one (with ▼) is the group below it, and both of them show which places they cover. <br /> <i>— But wait, what are "Stages" meant here?</i> <br />
                 There are three stages throughout the whole Official, which are being played in Swiss Format: <b>Stage I</b>, <b>Stage II</b> and <b>Stage III</b>. <br />
-                After Stage III, there will stay only 16 teams remaining, which will play in Playoffs (or another name for it, Knockout Stage), starting from Round of 16.
+                After Stage III, there will stay only 8 teams remaining, which will play in Playoffs (or another name for it, Knockout Stage), starting from the Quarterfinals.
             </p>
             <p className={css.info_text}>
                 Qualification rules:
-                <br />• Top 16 → Autoqualify to <b>Stage III</b>
-                <br />• Top 17–32 → Autoqualify to <b>Stage II</b>
-                <br />• Top 33–64 → Start in <b>Stage I</b>
+                <br />• Top 8 → Autoqualify to <b>Stage III</b>
+                <br />• Top 9–16 → Autoqualify to <b>Stage II</b>
+                <br />• Top 17–32 → Start in <b>Stage I</b>
+                <br />• Top 33–64 → Play in the <b>Official Skylines</b> (see{" "}
+                <a
+                    style={{ color: 'Highlight', fontStyle: 'italic' }}
+                    onClick={scrollToAnchor("official-skylines")}
+                    href='#official-skylines'
+                >
+                    Official Skylines
+                </a>
+                )
             </p>
             <p style={{ marginBottom: '12px' }} className={css.info_text}>
                 Based on these rules, teams start the tournament depending on their placements before the tournament. How do these Stages look? <br />
@@ -902,6 +965,12 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <br />• <b>The key also presses Proceed and Continue</b>: the same key will also move you through the Tournament Intro Screens, the results and the Winners&apos; Screens
                 <br />• <b>Hold to keep gambling</b>: while you hold the key, it keeps gambling every time the "Gamble" button is ready again
                 <br />• <b>Show the key on the Gamble button</b>: puts a small badge with your key on the "Gamble" button, so you don&apos;t forget it
+                <br />• <b>Show the Simulate button</b>: the "Simulate" tab below the match window and below the "Gamble" button, which can play a match by itself (more on it in{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("during-match")} href='#during-match'>What do I do during the match?</a>)
+                <br />• <b>Instant simulate</b>: "Don&apos;t allow" plays the simulated rounds one by one, "Per set" and "Whole series" skip the playback and decide the set or the whole series at once
+                <br />• <b>Keep it open in the match window</b> and <b>Show it on the series screen</b>: whether the Simulate tab is already opened in every match window and whether it is there on the series screen at all
+                <br />• <b>What it simulates</b> and <b>Speed</b>: one set at a time or the whole series, at 1x, 2x, 4x or 8x
+                <br />• <b>Slow down on important moments</b>: plays the rounds slower, when a team is one round away from taking the set
                 <br />• <b>Faster Extended Rounds</b>: halves the pauses between the comparisons in the Extended Rounds
                 <br />• <b>Close windows with Esc</b>: Esc closes the match window, the Detailed Match Breakdown and the "Restart" / "Terminate" pop-ups
                 <br />• <b>Commentary notifications</b>: turn them off to hide the play-by-play notifications, like "Second Half begins" (the warnings will still be shown)
@@ -910,7 +979,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <br />• <b>Winners&apos; Screen effects</b>: the rays, sparkles and confetti around the podium
             </p>
             <p className={css.info_text}>
-                The greyed out options only become available once you choose a Gambling Key (or turn off "Skip the podium reveal" for the effects). All the settings are saved, so they stay the same after reloading the page, and the "Reset settings" button brings them back to their defaults (with a chance to undo it, of course).
+                The greyed out options only become available once you choose a Gambling Key (or turn off "Skip the podium reveal" for the effects, or allow the playback of the simulated rounds for "What it simulates", "Speed" and "Slow down on important moments"). All the settings are saved, so they stay the same after reloading the page, and the "Reset settings" button brings them back to their defaults (with a chance to undo it, of course).
                 Gambling Key is "Off" by default, so nothing changes until you pick one.
             </p>
             <p className={css.info_text}>
@@ -922,6 +991,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 Here, you can set the tournament's roll on "Random", which could then any tournament from the list below or you can choose a specific tournament(s) you want to play.
                 If you choose more than one tournament in the list, random tournament out the picked ones will be activated. <br />
+                But "Random" never draws the same tournament twice in a row: once a tournament ends, it is excluded from the next roll (Official even from the next two). The "Random" option always shows, which tournaments are excluded at the moment and for how many more tournaments. Since nothing has been played yet, there are no exclusions here. <br />
                 You can also see this icon in top-right corner, which can be hovered onto and it will show you the explanations for all the icons, which stand near the names of the tournaments in the modal:
             </p>
             <div className={css.image_container}>
@@ -955,7 +1025,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </span>
             </div>
             <p className={css.info_text}>
-                This is the Swiss Stage, I have told you about. This here is <br /> Stage I (Stage 1) with the lowest ranked teams (top 33–64).
+                This is the Swiss Stage, I have told you about. This here is <br /> Stage I (Stage 1) with the lowest ranked teams, which play (top 17–32).
             </p>
         </section>
         <section>
@@ -985,8 +1055,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p style={{ marginTop: '12px' }} className={css.info_text}>
-                We have 32 teams in one "pool". We have to put them all into 1v1 match-ups but in what order? Previously, it was pure shuffling and the match-ups were always randomly generated. <br />
-                But now, it depends on the placements. All the 32 teams in the poll are being sorted by their placements in descending order. Then, highest ranked team in the pool is being put with the lowest ranked team in the pool. Second match-up is then second highest ranked team vs second lowest ranked team and so on... The match-ups are being shuffled then, so their order is random.
+                We have 16 teams in one "pool". We have to put them all into 1v1 match-ups but in what order? Previously, it was pure shuffling and the match-ups were always randomly generated. <br />
+                But now, it depends on the placements. All the 16 teams in the pool are being sorted by their placements in descending order. Then, highest ranked team in the pool is being put with the lowest ranked team in the pool. Second match-up is then second highest ranked team vs second lowest ranked team and so on... The match-ups are being shuffled then, so their order is random.
                 This works in 0:0 net, 1:0 net and in 0:1 net.
                 But then in Round 3 (in 2:0, 1:1, 0:2) and afterwards in Round 4 (2:1 and 1:2) and Round 5 (2:2), there are possible rematches between some teams. To avoid these, there is a so called Buchholz method. <br />
                 In Buchholz method, each team has its Buchholz score, which is that or that big, based on all the team's opponents' total wins (by the time their Buchholz score is needed).
@@ -1020,7 +1090,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                     #1
                 </div>
                 <div className={css.team_cell_ro32}>
-                    <TeamCircle team={COLORS.raspberry} shouldPlaceholderCirclesBeRendered={false} />
+                    <TeamCircle team={COLORS.lavender} shouldPlaceholderCirclesBeRendered={false} />
                 </div>
 
                 <div className={css.vs_cell_ro32} style={{ textAlign: "center" }}>
@@ -1030,7 +1100,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </div>
 
                 <div className={css.team_cell_ro32}>
-                    <TeamCircle team={COLORS.charcoal} shouldPlaceholderCirclesBeRendered={false} />
+                    <TeamCircle team={COLORS.salmon} shouldPlaceholderCirclesBeRendered={false} />
                 </div>
             </div>
             <span style={{ fontStyle: 'italic', color: 'black' }} className={css.info_text}>(This yellow glow shows that this match is current)</span>
@@ -1053,7 +1123,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                     #1
                 </div>
                 <div className={css.team_cell_ro32}>
-                    <TeamCircle team={COLORS.seafoam} shouldPlaceholderCirclesBeRendered={false} />
+                    <TeamCircle team={COLORS.coral} shouldPlaceholderCirclesBeRendered={false} />
                 </div>
 
                 <div className={css.vs_cell_ro32} style={{ textAlign: "center" }}>
@@ -1063,7 +1133,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </div>
 
                 <div className={css.team_cell_ro32}>
-                    <TeamCircle team={COLORS.slate} shouldPlaceholderCirclesBeRendered={false} />
+                    <TeamCircle team={COLORS.khaki} shouldPlaceholderCirclesBeRendered={false} />
                 </div>
             </div>
             <span style={{ fontStyle: 'italic', color: 'black', marginBottom: '24px' }} className={css.info_text}>(Dashed border shows that it is the next match)</span>
@@ -1093,7 +1163,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <i>P.s.: Some stats have the <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span> badge near them: this means, they don't influence the performance of a team in this match and they will not increment or decrement after this match, no matter the performance of the team. </i> <br />
                 At the bottom, there is a blue button with "Start this 0:0 Match" text on it. <br />
                 <b style={{ display: "block", marginTop: '8px', marginBottom: '-16px' }}>(In this case, it's 0:0 Match. Different matches will have another text depicted on this button)</b> <br />
-                You will be able to click it, once you choose one of the teams: <br />
+                You will be able to click it, once you choose one of the teams. And right below the modal, there is a small "SIMULATE" tab, which I will explain in the next section: <br />
             </p>
             <div className={css.image_container}>
                 <img src={chosenLeftTeamModal} alt="Chosen left team on the match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
@@ -1123,7 +1193,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 In the center, there is the scoreboard. In the middle, there is a leading indicator, which is a grey diamond while the score is tied. As soon as a team leads, it turns into chevrons in the color of that team, pointing at it: one chevron for a lead of 1-2 rounds, two for 3-5 and three pulsing ones for 6 rounds or more. Right under it, the "ROUND" badge counts the rounds of the set (it doesn&apos;t move on when a set has just ended or before the next Overtime has really started). On the left and on the right, there are these big numbers, which tell who how much rounds has a team already taken (every new round slides in from below), and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
                 Below the scoreboard, there is the Overtime badge, like "OVERTIME | First to 16". It smoothly shows up, once it's Overtime: the left part tells which Overtime it is and the "Double" or "Triple" in it mean that Overtime was pushed to multiple ones, like "Triple Overtime" means word-to-word: "Third Overtime" (every Overtime has its own color: orange for the first one, then a darker orange, red and pink for the Quadruple Overtime), and the right part tells how many rounds a team needs to win the set. <br />
                 Below it, after every roll, both multipliers show up: the higher one is green, the lower one is red, and under each of them it says whether that team gets the mini-round or not (if both teams rolled the same, both are grey and no one gets it). <br />
-                At the bottom, there&apos;s gamble button. <br />
+                At the bottom, there&apos;s gamble button and the "SIMULATE" tab below it. <br />
                 In general, all the rules are from Extended Mode. In order to win a set here, 13 rounds are required to be won. Maximum of a normal regulation is 24 rounds, so if it is a tie 12-12 after 24 rounds, it's Overtime, where 6 rounds are played and the one who takes 4 first, wins. Once again, if in Overtime, it's 15-15, so each team won 3 OT rounds, we go onto Double Overtime and it can go up to 4 Overtimes. If after 4 Overtimes, there's still a tie, then there will be taken another tiebreaker system. This "another" tiebreaker system is explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("tiebreaker-system")} href='#tiebreaker-system'>here</a>. 1 round is won when 5 mini-rounds are won. <i>But there are <b>exceptions</b>: 1st Round, 13th Round and each first round of every Overtime require 10 mini-wins to win a round, that's why, they are called <strong>Extended Rounds</strong> or <strong>Extended OT rounds</strong>.</i> <br /> In order for a team to win a mini-round, they need a specific number. Why do they specifically need this number, it is because: <br />
             </p>
             <p className={css.info_text}>
@@ -1141,16 +1211,16 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </b>
             </p>
             <div className={css.image_container}>
-                <img src={miniRoundWonChocolate} alt="Won mini-round for Team Charcoal" className={css.image} style={{ width: '33vw', height: '36vh' }} />
-                <img src={miniRoundWonIvory} alt="Won mini-round for Team Raspberry" className={css.image} style={{ width: '33vw', height: '36vh' }} />
+                <img src={miniRoundWonChocolate} alt="Won mini-round for Team Salmon" className={css.image} style={{ width: '33vw', height: '36vh' }} />
+                <img src={miniRoundWonIvory} alt="Won mini-round for Team Lavender" className={css.image} style={{ width: '33vw', height: '36vh' }} />
             </div>
             <p className={css.info_text}>And by taking a round, a team gets a lead and leading indicator will show to the team, which has a lead:</p>
             <div className={css.image_container}>
-                <img src={wholeRoundWonChocolate} alt="Won round for Team Charcoal" className={css.image} style={{ width: '33vw', height: '36vh' }} />
+                <img src={wholeRoundWonChocolate} alt="Won round for Team Salmon" className={css.image} style={{ width: '33vw', height: '36vh' }} />
             </div>
             <p className={css.info_text}>And as it is a Best of 1 in 0:0 net of Stage I, a team needs one set to win:</p>
             <div className={css.image_container}>
-                <img src={matchPointImg} alt="MATCH POINT!!! for the Charcoal!" className={css.image} style={{ width: '34vw', height: '38vh' }} />
+                <img src={matchPointImg} alt="MATCH POINT!!! for the Salmon!" className={css.image} style={{ width: '34vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Once a team is one round away from taking a set, they have a "SET POINT!" pill in their color above their names. But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". This label differs itself in some specific matches, but I'll leave it already to you to find "some other specific cases" out)
                 </span>
@@ -1162,8 +1232,27 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 The winner side is light-green and the loser side is light-red on the rectangle. Depending if your chosen team won, a green check icon appears and a red cross appears, if lost. The "VS" is replaced by the final score of the match: <br />
             </p>
             <div className={css.image_container}>
-                <img src={teamChocolateGoesTo10Net} alt="Team Charcoal goes to 1:0 net and Team Raspberry goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                <img src={teamChocolateGoesTo10Net} alt="Team Salmon goes to 1:0 net and Team Lavender goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
             </div>
+            <p className={css.info_text}>
+                And what if you don&apos;t feel like pressing "Gamble" for every single mini-round of a long series? That&apos;s what the <b>Simulate</b> tab is for.
+                It sits below the match modal and below the "Gamble" button and by clicking on "SIMULATE", it opens itself and tells you what it&apos;s going to do.
+                In the match modal, the "Simulate" button only becomes clickable, once you have chosen your team, and then it starts the match and plays it by itself right away:
+            </p>
+            <div className={css.image_container}>
+                <img src={simulateModalImg} alt="Opened Simulate tab below the match modal of the second match of the 0:0 net" className={css.image} style={{ width: '35vw', height: 'auto' }} />
+            </div>
+            <p className={css.info_text}>
+                On the series screen, it&apos;s the same tab below the "Gamble" button. While the simulation is running, the rolls are made by themselves at the chosen speed, a red dot tells that it&apos;s simulating, and the "Stop" button gives you the control back at any moment:
+            </p>
+            <div className={css.image_container}>
+                <img src={simulateRunningImg} alt="Running simulation of a set on the series screen with the Stop button" className={css.image} style={{ width: '32vw', height: 'auto' }} />
+            </div>
+            <p className={css.info_text}>
+                By default, it plays one set at a time at 1x and plays slower when a team is one round away from taking the set, but all of that (and whether it should play the whole series or even decide it <b>instantly</b>, without any playback) can be changed in the{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("starting-off")} href='#starting-off'>Settings</a>.
+                The simulation always stops by itself before Extended Rounds and Penalties, so the most dramatic moments are still yours to gamble. The results, the Leaderboard points, the stats and the Pick&apos;em points of a simulated match are counted exactly the same way as the ones of a gambled match.
+            </p>
         </section>
         <section>
             <div id="results-match" style={{ marginTop: '24px' }} className={css.divider_container}>
@@ -1180,7 +1269,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the check icon again (it can also be a cross icon but if the match would have lost). <br />
                 And there is also a pill on the right of the "BEST OF" badge, which tells how many <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("pickem-system")} href='#pickem-system'>Pick&apos;em points</a> you got: it&apos;s green with a ✓, if your team won the match, red with a ✗, if it got nothing, and orange with a half-filled circle, if your team lost the match, but still took some sets (and therefore some Pick&apos;em points). <br />
-                In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 50th place to 33rd place. Loser team loses 5 points and moves from 47th place to 64th place.<br />
+                In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 26th place to 17th place. Loser team loses 5 points and moves from 23rd place to 32nd place.<br />
                 Also, the winner team got an <strong>Unbeaten Streak</strong>: consecutive wins without a loss in between will increment it. <br />
                 In the footer, there is a precise series summary. Here, you can see total played rounds, which is also a clickable button (we will come back to it soon in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("breakdown-explained")} href='#breakdown-explained'>Detailed Match Results</a> section), the score after 1st Half, the score after 2nd Half and in some cases, like here as well, the score after all OTs (here, it was only 1x OT).
             </p>
@@ -1243,7 +1332,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <div className={css.image_container}>
                 <img src={miniRoundStrips} alt="Close-up of Round 1 (an Extended Round) and Round 2 with their mini-round strips" className={css.image} style={{ width: '34vw', height: 'auto', margin: "0 auto" }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
-                    (In Round 1, Team Charcoal took the first four mini-rounds, Team Raspberry answered with two in a row, and then Team Charcoal won the next six to take the Extended Round 10:2)
+                    (In Round 1, Team Salmon took the first four mini-rounds, Team Lavender answered with two in a row, and then Team Salmon won the next six to take the Extended Round 10:2)
                 </span>
             </div>
             <p className={css.info_text}>
@@ -1317,7 +1406,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn&apos;t been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. Instead of the "ROUND" badge, the "PENALTY SERIES | Attempt n" badge below the score tells which attempt it is, and if nobody is ahead after the 5th attempt, it turns into a pulsing "SUDDEN DEATH" badge. The rules are now different as from normal series.
-                The point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The team that will take the Pen first, is always random, and the pill in the color of the team above the scoreboard, like "TEAM ROSE&apos;S TURN", always tells whose turn it is. But, here are also simultaneous pair rolls of each team. During an attempt of e.g. left team, left team should roll a bigger number than their opponent to gain a successful attempt, like here:
+                The point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The team that will take the Pen first, is always random, and the pill in the color of the team above the scoreboard, like "TEAM CHARTREUSE&apos;S TURN", always tells whose turn it is. But, here are also simultaneous pair rolls of each team. During an attempt of e.g. left team, left team should roll a bigger number than their opponent to gain a successful attempt, like here:
             </p>
             <div className={css.image_container}>
                 <img src={successfulAttemptForLeft} alt="Successful attempt for the left team" className={css.image} style={{ width: '32vw', height: '36vh' }} />
@@ -1399,39 +1488,110 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <LeaderboardExplained />
         </section>
         <section>
+            <div id="official-skylines" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Official Skylines</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                Remember the dark divider after the 32nd place? The 32 teams below it (places 33-64) don&apos;t just watch the Official: they play the <b>Official Skylines</b>, a Tier 2 tournament with its own number, which starts together with every Official.
+                So, together with Official #1, there was also <b>Official Skylines #1</b>. It doesn&apos;t have Swiss Stages or a bracket, but a whole building: <b>8 Floors with 4 teams each</b>, from the golden <b>Penthouse</b> at the top, over Floors 2-7, down to the <b>Ground Floor</b>.
+                The teams move into the building by their placements: places 33-36 into the Penthouse, 37-40 into Floor 2 and so on, until places 61-64 on the Ground Floor.
+            </p>
+            <p className={css.info_text}>
+                The Official Skylines isn&apos;t played all at once, but in three blocks in between the Official: <b>Rounds 1 and 2</b> right after Stage I, <b>Rounds 3 and 4</b> right after Stage II and the <b>Rooftop Final</b> right after Stage III, before the Playoffs of the Official begin.
+                So, after the last match of Stage I, the Official takes a short break and the Tournament Intro Screen of the Official Skylines shows up with every Floor and its 4 teams:
+            </p>
+            <SkyShot n={1} alt="Tournament Intro Screen of Official Skylines #1 with all 8 Floors" />
+            <p className={css.info_text}>
+                After "Continue", there is the building itself. At the top, the navigation "Official | Official Skylines" lets you switch between both tournaments at any moment (it&apos;s there during the whole Official, also in the Stages), and the vertical navigations on both sides take you to every Round (on the left) and to every Floor (on the right, where the Penthouse is golden).
+                Every Floor is a small Double Elimination bracket of its own: two <b>Opening</b> matches, the <b>Winners&apos; Match</b> of both winners and the <b>Losers&apos; Match</b> of both losers, which decide the places 1-4 on that Floor.
+                The Penthouse and Floor 2 play <b>Best of 3</b>, all the other Floors play <b>Best of 1</b>. Above the Penthouse, the roof already waits for the Rooftop Final:
+            </p>
+            <SkyShot n={2} alt="Round 1 of Official Skylines #1 at the top of the building: the roof and the Penthouse" />
+            <p className={css.info_text}>
+                Each Round starts on the Ground Floor and ends in the Penthouse, so the current match with the yellow glow climbs up the building, floor by floor.
+                The match modal tells the Round and the Floor, and since none of these teams had played a single match before, the very first one, Team Azure against Team Royal, was an absolute 50/50:
+            </p>
+            <SkyShot n={3} alt="Match modal of the first Opening Match on the Ground Floor" width="35vw" />
+            <p className={css.info_text}>
+                And here comes the most important rule of the Official Skylines, the <b>elevator</b>. Once a Floor is done, its 1st place goes <b>up 2 Floors</b>, the 2nd place <b>up 1 Floor</b>, the 3rd place <b>down 1 Floor</b> and the 4th place <b>down 2 Floors</b>.
+                Nobody can go higher than the Penthouse or lower than the Ground Floor, so at the top and at the bottom of the building, the moves are a bit shorter, but every Floor always has its 4 teams for the next Round.
+                On the Ground Floor, Team Blush beat Team Jade 13-4 and Team Royal 13-10 in the Winners&apos; Match, so it was the first one to take the elevator 2 Floors up:
+            </p>
+            <SkyShot n={4} alt="The finished Ground Floor in Round 1" />
+            <p className={css.info_text}>
+                Once the whole Round is played, every team shows its move next to its circle (one arrow for a Floor, two arrows for two Floors) and the elevator shaft on the right side of the building shows who leaves each Floor and where to.
+                Team Seafoam, which started on Floor 2 (the 40th place of the Leaderboard), won both of its matches 2:0 and went straight up into the Penthouse, while the Penthouse&apos;s Team Sapphire and Team Amber went down:
+            </p>
+            <SkyShot n={5} alt="The finished Round 1 with the moves of every team" />
+            <SkyShot n={6} alt="Round 2: Team Seafoam and Team Apricot in the Penthouse" />
+            <p className={css.info_text}>
+                Right after Round 2, a notification tells that Stage II of the Official starts now, and the Official goes on, as if nothing has happened. After Stage II, Rounds 3 and 4 follow the same way.
+            </p>
+            <p className={css.info_text}>
+                And the story of my Official Skylines #1 is the one of Team Sand. It started on Floor 2 and lost both of its matches in Round 1, so it went 2 Floors down to Floor 4.
+                In Round 2, it lost only the Winners&apos; Match there and went 1 Floor up, in Round 3, it won the whole Floor 3 and went 2 Floors up, right into the Penthouse.
+                Team Seafoam, on the other hand, stayed in the Penthouse until Round 4, where it lost both of its matches and fell down to Floor 3.
+                After Round 4, the 4 teams of the Penthouse climb up to the roof and play the <b>Rooftop Final</b>: the Semifinals (#1 against #4 and #2 against #3 of the Penthouse) and the Third Place Decider are <b>Best of 3</b>, the Grand Final is <b>Best of 5</b>:
+            </p>
+            <SkyShot n={7} alt="The Rooftop Final of Official Skylines #1 before the Semifinals" />
+            <p className={css.info_text}>
+                Team Apricot, which started on Floor 3 as the 44th team of the Leaderboard, beat Team Ivory 2:0 in the Semifinal, and Team Sand beat Team Forest 2:0. So, the Grand Final was Team Apricot against Team Sand, and the prediction was clearly on the side of Team Apricot:
+            </p>
+            <SkyShot n={8} alt="Match modal of the Rooftop Grand Final" width="35vw" />
+            <p className={css.info_text}>
+                But Team Sand won it 3:2, from Floor 4 to the top of the building in two Rounds. Team Ivory took the Third Place 2:0 against Team Forest.
+                The Official Skylines is a Tier 2 tournament, so the Winners&apos; Screen has neither quotes nor a trophy and the winner gets a 🥇:
+            </p>
+            <SkyShot n={9} alt="Winners' screen of Official Skylines #1" width="28vw" />
+            <p className={css.info_text}>
+                The Official Skylines has its own Pick&apos;em challenge as well. While it is played, the needed Pick&apos;em points in the top-right corner are the ones of the Official Skylines, and its Pick&apos;em summary counts every Round on its own and then the Rooftop Final.
+                This one, I won: 133 out of 119 needed Pick&apos;em points.
+            </p>
+            <SkyShot n={10} alt="Pick'em summary of Official Skylines #1" width="30vw" />
+            <p className={css.info_text}>
+                "To the bracket" shows the finished building one more time, and "Proceed" there takes me back to the Official, right into its Playoffs:
+            </p>
+            <SkyShot n={11} alt="The finished Official Skylines #1 with the Proceed button" />
+            <p className={css.info_text}>
+                The Leaderboard points of the Official Skylines are counted the same way as everywhere else: the higher the Floor, the more a match is worth, and the Rooftop Final is worth the most. That&apos;s why, in the Leaderboard after Official #1, Team Apricot went 27 places up to the 17th place with 86 more points.
+            </p>
+        </section>
+        <section>
             <div id="what-happens" style={{ marginTop: '24px' }} className={css.divider_container}>
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>What happens next?</h3>
                 <div className={css.divider} />
             </div>
-            <p className={css.info_text}>After that, you can proceed with further matches. When all the match-ups in Stage I are finished, only 16 teams are left. They qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
+            <p className={css.info_text}>After that, you can proceed with further matches. When all the match-ups in Stage I are finished, only 8 teams are left. After the first two Rounds of the{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("official-skylines")} href='#official-skylines'>Official Skylines</a>, they qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
             <div className={css.image_container}>
                 <img src={stageTwoQualifiersImg} alt="Stage II Qualifiers" className={css.image} style={{ width: '30vw', height: '40vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={stageTwoImg} alt="Stage II" className={css.image} style={{ width: '33vw', height: '42vh' }} />
+                <img src={stageTwoImg} alt="Stage II" className={css.image} style={{ width: '33vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (There is a navigation menu in top left corner, where you can also see Stage III and Playoffs, once you finish Stage II)
                 </span>
             </div>
-            <p className={css.info_text}>And so you can proceed from Stage II to Stage III and from Stage III to Playoffs:</p>
+            <p className={css.info_text}>And so you can proceed from Stage II to Stage III and from Stage III to Playoffs (with Rounds 3 and 4 and the Rooftop Final of the Official Skylines in between):</p>
             <div className={css.image_container}>
                 <img src={playoffsQualifiersImg} alt="Playoffs Qualifiers" className={css.image} style={{ width: '30vw', height: '40vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={playoffsImg} alt="Playoffs" className={css.image} style={{ width: '29vw', height: '40vh' }} />
+                <img src={playoffsImg} alt="Playoffs" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>
-            <p className={css.info_text}>As I mentioned above, Round of 16 and Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and the Grand Final is <b>BO9</b>.</p>
+            <p className={css.info_text}>As I mentioned above, the Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and the Grand Final is <b>BO9</b>.</p>
             <p className={css.info_text}>
                 Playoffs are single-elimination stage, which means that once a team loses a series, it flies out of the tournament directly. By the time we reach Grand Final, there should be only two teams left:
             </p>
             <div className={css.image_container}>
-                <img src={grandFinalistsImg} alt="Two contenders for the championship remaining" className={css.image} style={{ width: '29vw', height: '38vh' }} />
+                <img src={grandFinalistsImg} alt="Two contenders for the championship remaining" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>
             <p className={css.info_text}>
                 In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner&apos;s screen, where the first 4 places of the tournament show up one by one: at first the Fourth Place, then the Third Place, the Runner-Up and at the very end, the Winner. Every place rises with its own little celebration: blue embers for the Fourth Place, bronze sparkles for the Third Place, silver rays for the Runner-Up and golden rays, fireworks and confetti all over the screen for the Winner:
             </p>
             <div className={css.image_container}>
-                <img src={winnersScreenImg} alt="Team Seafoam as Winner, Team Yellow as Runner-up, Team Salmon as Third Place, Team Rose as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
+                <img src={winnersScreenImg} alt="Team Indigo as Winner, Team Blue as Runner-up, Team Lime as Third Place, Team Navy as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
             </div>
             <p className={css.info_text}>After clicking "Proceed", we are redirected to Pick&apos;em summary, where you can see how many matches overall you've guessed correctly throughout the tournament and your final Pick&apos;em points score and also whether you won the Pick'em challenge or not:</p>
             <div className={css.image_container}>
@@ -1445,7 +1605,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button and I'm getting indeed redirected to the playoffs results:</p>
             <div className={css.image_container}>
-                <img src={playoffsResultsAndTournamentFinished} alt="Playoffs Results and Finished Tournament Results" className={css.image} style={{ width: '33vw', height: '40vh' }} />
+                <img src={playoffsResultsAndTournamentFinished} alt="Playoffs Results and Finished Tournament Results" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>
             <p className={css.info_text}>
                 Five buttons are replacing now the Needed Pick&apos;em points and they explain by themselves, what they do. Also, in the Header, we can open the updated Leaderboard:
@@ -1460,7 +1620,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Right after a tournament, the Leaderboard also shows what this tournament has changed. The green or red number with the double arrow tells how many places a team went up or down,
                 and the green or red points right after the team name tell how many points it gained or lost in this tournament.
                 For the Top 10, the places are shown right before the placement, and for all the other teams, right before the team circle. <br />
-                For example, Team Seafoam went from the 40th place right up to the 1st one (39 places up), gaining 416 points along the way.
+                For example, Team Indigo went from the 10th place right up to the 1st one (9 places up), gaining 331 points along the way, and Team Salmon, which started all the way down in Stage I and made it to the Quarterfinals, went from the 26th place to the 6th one (20 places up, +82 points).
                 If a team&apos;s points or place didn&apos;t change, nothing is shown for that part. <br />
                 These changes are always only from the last finished tournament: they stay in the Leaderboard until the next tournament starts, and once that one is finished, its own changes replace them.
                 If you sort the Leaderboard by something else than points, the change of places moves next to the "Original ranking", because it always belongs to the ranking by points.
@@ -1475,19 +1635,28 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Here, I can finally go to Hall of Fame and see something:
             </p>
             <div className={css.image_container}>
-                <img src={hallOfFameWithOfficialOne} alt="Hall of Fame with the Official #1 card" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameWithOfficialOne} alt="Hall of Fame with the Official #1 and the Official Skylines #1 cards" className={css.image} style={{ width: '34vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>
-                Hall of Fame has stored the very first played Tournament with its Pick'em points info and Podium. In top-right corner, we see also a change. This way, any played tournament will be stored here. Here is the full look of it, when we open the Official #1 overview:
+                Hall of Fame has stored the very first played Tournaments with their Pick'em points info and Podiums: the Official #1 card on the left (the newest card is always on the left) and the Official Skylines #1 card next to it, since that one was finished before the Playoffs of the Official. In top-right corner, we see also a change: 1 Pick'em challenge won, 1 lost, and the Pick'em points score of -26 (-40 from the Official and +14 from the Official Skylines). This way, any played tournament will be stored here. Here is the full look of it, when we open the Official #1 overview: first the teams of every Stage, then the whole Stage I, all teams to Stage II, the whole Stage II, all teams to Stage III, the whole Stage III, all teams to Playoffs and the Playoffs, and at the end the Podium, the 5th-8th places and a link to the summary of the Official Skylines (every match in there can be clicked and opened, just like during the tournament):
             </p>
             <div className={css.image_container} style={{ gap: 24 }}>
                 <img src={hallOfFameOfficialOnePartOne} alt="Hall of Fame, Official #1: the challenge result and the teams of every Stage" className={css.image} style={{ width: '34vw', height: '35vh' }} />
-                <img src={hallOfFameOfficialOnePartTwo} alt="Hall of Fame, Official #1: all 16 Playoffs qualifiers and the Playoffs bracket" className={css.image} style={{ width: '34vw', height: '35vh' }} />
-                <img src={hallOfFameOfficialOnePartThree} alt="Hall of Fame, Official #1: the rest of the Playoffs bracket, the Third Place Decider and the top of the podium" className={css.image} style={{ width: '34vw', height: '35vh' }} />
-                <img src={hallOfFameOfficialOnePartFour} alt="Hall of Fame, Official #1: the podium and the start of 5th-16th places" className={css.image} style={{ width: '34vw', height: '35vh' }} />
-                <img src={hallOfFameOfficialOnePartFive} alt="Hall of Fame, Official #1: 7th to 14th places" className={css.image} style={{ width: '34vw', height: '35vh' }} />
-                <img src={hallOfFameOfficialOnePartSix} alt="Hall of Fame, Official #1: 9th to 16th places" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartTwo} alt="Hall of Fame, Official #1: the whole Stage I" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartThree} alt="Hall of Fame, Official #1: all teams to Stage II and Stage II" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartFour} alt="Hall of Fame, Official #1: all teams to Stage III and Stage III" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartFive} alt="Hall of Fame, Official #1: all teams to Playoffs and the start of the Playoffs bracket" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartSix} alt="Hall of Fame, Official #1: the whole Playoffs bracket with the Third Place Decider" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartSeven} alt="Hall of Fame, Official #1: the podium" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={hallOfFameOfficialOnePartEight} alt="Hall of Fame, Official #1: the end of the podium, 5th-8th places and the link to the Official Skylines" className={css.image} style={{ width: '34vw', height: '35vh' }} />
             </div>
+            <p className={css.info_text}>
+                The Official Skylines has its own card as you have seen. Its summary starts with all 32 teams, then comes the whole building, where the navigation lets me look at every Round and the Rooftop Final (and it stays below the title, while scrolling down).
+                At the end, there are the podium and the places 5-12, which are the Floors 2 and 3 after Round 4, and a link to the summary of the Official, which was played at the same time:
+            </p>
+            <SkyShot n={12} alt="Hall of Fame, Official Skylines #1: all teams and the Rooftop Final" />
+            <SkyShot n={13} alt="Hall of Fame, Official Skylines #1: Round 1 of the building" />
+            <SkyShot n={16} alt="Hall of Fame, Official Skylines #1: the places 5-12 and the link to Official #1" />
             <p className={css.info_text}>
                 Afterwards, I could go try out new tournaments, which I'm explaining in the further tabs. But here, I decided to go onto the second tournament:
             </p>
@@ -1587,12 +1756,13 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <PemShot n={5} alt="Match modal of an Opening Round in Group A" width="35vw" height="27vh" />
             <PemShot n={6} alt="Series screen of a Qualifier match with the Qualifier badge" width="30vw" caption="(The trophy icon in the series screen is replaced by the Qualifier badge here)" />
             <p className={css.info_text}>
-                In my Qualifier, Team Rose and Team Moss won their Upper Finals, while Team Periwinkle and Team Sunflower went the long way and won the Consolidation Finals.
+                In my Qualifier, Team Green and Team Lavender won their Upper Finals (Team Green only 3:2 against Team Beige, Team Lavender 3:0 against Team Pink), while Team Khaki and Team Red went the long way and won the Consolidation Finals. Team Khaki lost its Upper Quarterfinal against Team Beige and then won five Lower Bracket matches in a row, the last one 3:1 against that same Team Beige.
+                And Team Seafoam, which was too low in the Leaderboard to even play in Official #1, didn&apos;t make it through the Qualifier either: 0:2 against Team Ruby and 0:2 against Team Black.
                 Once the last match is played, instead of a podium, there&apos;s a screen with the 4 qualifiers and the round they qualified through:
             </p>
             <PemShot n={7} alt="The 4 qualifiers of PEM Small Tournament #1" />
             <p className={css.info_text}>
-                "Proceed" leads to the Pick&apos;em summary as always, but this one counts the guessed matches of every round of the Qualifier. This time, I won it:
+                "Proceed" leads to the Pick&apos;em summary as always, but this one counts the guessed matches of every round of the Qualifier. This time, I lost it with 128 out of 181 needed Pick&apos;em points:
             </p>
             <PemShot n={8} alt="Pick'em summary of the Qualifier" />
             <p className={css.info_text}>
@@ -1621,16 +1791,16 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 And here is the one thing that only exists in the Champions Series Tour: a match <b>can end in a tie</b>.
                 If the score is 12-12 after the regulation and the first Overtime ends 3-3 as well, so 15-15, nobody wins and the match is over.
-                In my very first match of the Champions Series Tour, Team Spring and Team Ruby did exactly that, so instead of "GG!", a grey "TIE!" shows up and none of the sides fades out:
+                In my very first match of the Champions Series Tour, Team Ivory and Team Azure did exactly that, so instead of "GG!", a grey "TIE!" shows up and none of the sides fades out:
             </p>
             <PemShot n={13} alt="TIE! at 15-15 in the series screen" />
             <p className={css.info_text}>
-                A tie gives no Pick&apos;em points, no matter which team I picked. The Leaderboard points still move a bit: the favourite loses a few points to the underdog, because a draw against a weaker team is not a good result
+                A tie gives no Pick&apos;em points, no matter which team I picked. The Leaderboard points can still move a bit: the favourite loses a few points to the underdog, because a draw against a weaker team is not a good result
                 (see{" "}
                 <InfoLink onClick={scrollToAnchor("leaderboard-explained", "official")} href="?page=official#leaderboard-explained">Leaderboard format and points system</InfoLink>
                 ).
             </p>
-            <PemShot n={14} alt="Match modal of the 15-15 tie" width="35vw" height="27vh" caption="(Team Spring was the slight favourite, so it gave 1 point to Team Ruby)" />
+            <PemShot n={14} alt="Match modal of the 15-15 tie" width="35vw" height="27vh" caption="(Team Ivory and Team Azure were exactly as strong as each other, a 50/50, so nobody was the favourite and no points moved)" />
             <p className={css.info_text}>
                 The tables are sorted by points: <b>a win gives 3 points, a tie 1 point</b>. If teams have the same points, the round difference (RD, won minus lost rounds) decides, then the rounds won and then the match between those two teams.
                 Columns: M = matches played, W = wins, T = ties, L = losses, P = points. Once all 40 matches are played, the <b>top 2 of every Group</b> (with a green check mark) go to the Playoffs:
@@ -1638,7 +1808,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <PemShot
                 n={15}
                 alt="Finished Group Stage of the Champions Series Tour"
-                caption="(Team Azure and Team Honey both had 9 points in Group C, but Team Honey had the better round difference: +10 against +1)"
+                caption="(Team Moss and Team Blush both had 6 points in Group B, but Team Moss had the better round difference: +5 against -8)"
             />
             <p className={css.info_text}>
                 The Playoffs are a classic 8-team bracket: every Group winner meets a second-placed team of another Group in the Quarterfinals.
@@ -1646,7 +1816,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             </p>
             <PemShot n={16} alt="Champions Series Tour Playoffs before the Quarterfinals" />
             <p className={css.info_text}>
-                Team Azure, which only made it out of its Group thanks to the second place, didn&apos;t lose a single set in the Playoffs and won the Grand Final 3:0 against Team Royal:
+                Team Jade, the only team besides Team Frost which didn&apos;t lose a single Group Stage match, beat Team Moss 2:1 and Team Raspberry 2:0 and won the Grand Final 3:1 against Team Charcoal. Team Frost, the only team with four wins out of four, flew out in the Quarterfinals against Team Ivory, which then took the Third Place:
             </p>
             <PemShot n={17} alt="Winners' screen of Champions Series Tour #1" width="28vw" />
             <p className={css.info_text}>
@@ -1671,18 +1841,18 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <PemShot n={20} alt="Group A of the main event before the first match" />
             <p className={css.info_text}>
                 This time, a Group doesn&apos;t end with a Consolidation Final. <b>Three teams of every Group</b> go to the Playoffs instead: both Upper Finalists and the winner of the Lower Final.
-                Team Seafoam, the champion of Official #1 and the clear favourite, lost its very first match against Team Periwinkle, one of the teams from the Qualifier,
-                and had to fight through the whole Lower Bracket of Group A. In Group B, Team Moss, another qualifier, did the same after losing to Team Yellow:
+                This time, none of the four teams from the Qualifier made it: Team Red and Team Lavender lost both of their matches, Team Green beat Team Cyan in the Lower Bracket and then lost to Team Lime,
+                and Team Khaki beat Team Brown in the Opening Round, but lost to Team Salmon and in the Lower Semifinal to that same Team Brown. Team Indigo, the champion of Official #1, won Group A 3:2 in the Upper Final against Team Orange, and in Group B, Team Blue beat Team Salmon 3:2:
             </p>
-            <PemShot n={21} alt="Finished Group B of the main event" caption="(Team Moss won all three Lower Bracket matches, including the Lower Final 3:0 against Team Crimson)" />
+            <PemShot n={21} alt="Finished Group B of the main event" caption="(Team Silver lost its Upper Semifinal against Team Blue and then won the Lower Bracket, the Lower Final 3:0 against Team Brown)" />
             <p className={css.info_text}>
                 The Playoffs have 6 teams. The <b>winners of the Upper Finals</b> are rewarded and start right in the Semifinals. The losers of the Upper Finals and the winners of the Lower Finals play the Quarterfinals crosswise against the other Group.
                 Quarterfinals, Semifinals and the Third Place Decider are <b>Best of 5</b>, the Grand Final is <b>Best of 7</b>.
             </p>
-            <PemShot n={22} alt="Main event Playoffs before the Quarterfinals" caption="(Three of the four Quarterfinalists came through the Qualifier: Team Sunflower, Team Periwinkle and Team Moss)" />
+            <PemShot n={22} alt="Main event Playoffs before the Quarterfinals" caption="(Team Indigo and Team Blue won their Upper Finals, so they already wait in the Semifinals)" />
             <p className={css.info_text}>
-                Team Seafoam didn&apos;t lose a single set anymore: 3:0 against Team Sunflower, 3:0 against Team Salmon and 4:0 in the Grand Final against Team Yellow.
-                And Team Moss, which started the whole PEM Small Tournament in the Qualifier, beat Team Salmon in the Third Place Decider and took the bronze medal.
+                Team Lime beat Team Salmon 3:0 and Team Silver beat Team Orange 3:1 in the Quarterfinals, but both Semifinals were 3:0s for the Group winners. So the Grand Final was Team Indigo, the champion of Official #1, against Team Blue, the runner-up of Official #1, and this time, Team Blue won it 4:3, in the seventh set.
+                Team Silver beat Team Lime 3:0 in the Third Place Decider and took the bronze medal.
                 Instead of the black Official trophy, the champion gets the silver <b>PEM Small Tournament trophy</b>:
             </p>
             <PemShot n={23} alt="Winners' screen of PEM Small Tournament #1 with the PEM trophy" width="28vw" />
@@ -1699,7 +1869,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 Now, let&apos;s open the Leaderboard. The winner of the PEM Small Tournament gets the silver PEM trophy, which shows up next to the Official trophies.
-                Team Seafoam has both now, and its fire icon tells that its Unbeaten Streak continues (they gained only three as they have already lost one match during Group Stage and they were blocked from gaining Unbeaten Streak up until Playoffs; see{" "}
+                Team Blue has it now, and its fire icon tells that it is on an Unbeaten Streak of 5: it won every single match of the main event (see{" "}
                 <InfoLink onClick={scrollToAnchor("stats-explained", "official")} href="?page=official#stats-explained">Team stats and how do they work</InfoLink>
                 ):
             </p>
@@ -1708,22 +1878,22 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
                 The green and red numbers are the changes of the last finished tournament again (see{" "}
                 <InfoLink onClick={scrollToAnchor("finale", "official")} href="?page=official#finale">Finale? Or not?</InfoLink>
                 ). This time, it&apos;s the PEM Small Tournament itself, because the Qualifier and the Champions Series Tour are tournaments of their own, so their changes have already been replaced.
-                Team Seafoam gained another 105 points, and Team Moss went 3 places up to the 3rd one.
+                Team Blue gained 242 points and went 5 places up to the 1st one, and Team Silver went 8 places up to the 3rd one.
             </p>
             <p className={css.info_text}>
                 Second and third places of Tier 1 and Tier 2 tournaments don&apos;t get their own icons, they are counted together with the Official ones.
-                By hovering onto a medal, I can see where they come from. Team Yellow lost the Grand Finals of Official #1 and of PEM Small Tournament #1, so it has two silver medals:
+                By hovering onto a medal, I can see where it comes from. Team Indigo won Official #1, but lost the Grand Final of PEM Small Tournament #1, so next to its Official trophy, it has a silver medal from a Tier 1 tournament:
             </p>
-            <PemShot n={27} alt="Hovered medal of Team Yellow: 1 from Official, 1 from Tier 1 tournament" width="28vw" />
+            <PemShot n={27} alt="Hovered medal of Team Indigo: 1 from Tier 1 tournament" width="28vw" />
             <p className={css.info_text}>
-                The winner of the Champions Series Tour gets a 🥇 medal instead of a trophy, so Team Azure, the 33rd team in the Leaderboard, can show off its title as well:
+                The winner of the Champions Series Tour gets a 🥇 medal instead of a trophy, so Team Jade, the 24th team in the Leaderboard, can show off its title as well:
             </p>
-            <PemShot n={28} alt="Hovered gold medal of Team Azure: 1 from Tier 2 tournament" width="28vw" />
+            <PemShot n={28} alt="Hovered gold medal of Team Jade: 1 from Tier 2 tournament" width="28vw" />
             <p className={css.info_text}>
                 And in the Hall of Fame, there are three new cards now, one for every tournament of PEM Small Tournament #1. The newest one is always on the left.
-                Each card shows the result of its Pick&apos;em challenge as well: I won all three, so the Pick&apos;em points score and the counts in the top-right corner went up:
+                Each card shows the result of its Pick&apos;em challenge as well: I lost all three, so the Pick&apos;em points score and the counts in the top-right corner went down (the cards of Official #1 and Official Skylines #1 are still there, on the right):
             </p>
-            <PemShot n={29} alt="Hall of Fame with the cards of the main event, the Champions Series Tour, the Qualifier and Official #1" />
+            <PemShot n={29} alt="Hall of Fame with the cards of the main event, the Champions Series Tour, the Qualifier, Official #1 and Official Skylines #1" />
             <p className={css.info_text}>
                 By clicking on a card, I see the whole summary of that tournament, built the same way as{" "}
                 <InfoLink onClick={scrollToAnchor("finale", "official")} href="?page=official#finale">the one of Official</InfoLink>.
@@ -1797,15 +1967,15 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             <BigShot n={2} alt="Tournament Intro Screen of the PEM Big Tournament Qualifier" />
             <BigShot n={3} alt="Group A of the PEM Big Tournament Qualifier before the first match" />
             <p className={css.info_text}>
-                And it was a bad Qualifier for the favourites. Team Azure, the champion of{" "}
-                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, lost both of its matches, each of them 1:2, and flew out right away.
-                In Group A, Team Orange won all of its matches, but it was close: the Upper Final against Team Blue went to the Decider and ended 3:2.
-                Team Blue then fought back through the Consolidation Final with a 3:0 against Team Chartreuse.
-                In Group B, it was the same story: Team Violet beat Team Copper 3:1 in the Upper Final and Team Copper then beat Team Sand 3:1 in the Consolidation Final:
+                And it was a bad Qualifier for the champions of the smaller tournaments. Team Jade, the champion of{" "}
+                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, lost both of its matches (0:2 against Team Raspberry and 1:2 against Team Amber) and flew out right away.
+                In Group A, Team Mint won all of its matches, but it was close: the Upper Final against Team Charcoal went to the Decider and ended 3:2.
+                Team Charcoal then fought back through the Consolidation Final with a 3:1 against Team Crimson, which had won four Lower Bracket matches in a row before.
+                In Group B, Team Yellow beat Team Magenta 3:1 in the Upper Final and Team Black then beat that same Team Magenta 3:0 in the Consolidation Final:
             </p>
             <BigShot n={4} alt="The 4 qualifiers of PEM Big Tournament #1" />
             <p className={css.info_text}>
-                The Pick&apos;em summary looks the same as in the PEM Small Tournament Qualifier. With only 5/16 Opening Rounds, this one was over pretty early for me:
+                The Pick&apos;em summary looks the same as in the PEM Small Tournament Qualifier. I guessed 11/16 Opening Rounds, but it still wasn&apos;t enough: 143 out of 155 needed Pick&apos;em points:
             </p>
             <BigShot n={5} alt="Pick'em summary of the PEM Big Tournament Qualifier" />
             <BigShot n={6} alt="Finished Group B of the Qualifier with the Proceed button" />
@@ -1829,7 +1999,7 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 The formats are different from all the other brackets: the whole Upper Bracket is <b>Best of 1</b>, except the Upper Final, which is <b>Best of 3</b>.
                 The whole Lower Bracket is <b>Best of 3</b> and the Grand Final is <b>Best of 5</b>. So, a team can lose its only Bo1 in the Upper Bracket and still get a full Bo3 in the Lower Bracket.
-                The very first match was the top seed Team Forest against the last seed Team Midnight:
+                The very first match was the top seed Team Apricot against the last seed Team Rose:
             </p>
             <BigShot n={9} alt="Match modal of the first Opening Round of the Elite Competition League" width="35vw" />
             <BigShot n={10} alt="Series screen of a Bo1 Opening Round" width="30vw" caption="(It's not Playoffs, so the series screen keeps the usual HUD)" />
@@ -1840,16 +2010,16 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
                 ).
             </p>
             <p className={css.info_text}>
-                Team Forest won 13-10, but it lost its next match 3-13 against Team Apricot and then Team Midnight again in Lower Round 2, which went the long way:
-                four Lower Bracket wins in a row, up until the Lower Final. There, Team Bronze stopped it. And Team Bronze is the real story of this Elite Competition League:
-                it lost its very first match 5-13 against Team Charcoal and then won six Lower Bracket matches in a row, including the Consolidation Final against Team Honey,
-                which had lost the Upper Final against Team Charcoal before.
+                Team Rose, the last seed, won it 16-14 in Overtime, but then lost 10-13 against Team Azure and, in Lower Round 3, against Team Moss.
+                The real story of this Elite Competition League is Team Honey: it won its first match 19-16 in Double Overtime against Team Sunflower, lost its Upper Quarterfinal 9-13 against Team Sand
+                and then won four Lower Bracket matches in a row (against Team Bronze, Team Sapphire, Team Sand and, in the Lower Final, Team Azure), until Team Chocolate stopped it 2:0 in the Consolidation Final.
+                And Team Seafoam was down there as well and lost both of its matches.
             </p>
             <BigShot n={13} alt="Finished Upper Bracket of the Elite Competition League with the Grand Final" />
             <BigShot n={14} alt="Finished Lower Bracket of the Elite Competition League" />
             <p className={css.info_text}>
-                And in the Grand Final, Team Charcoal met Team Bronze again. Team Charcoal won the first two sets, Team Bronze took the third one 13-8,
-                but the fourth went to Overtime and Team Charcoal won it 22-19. So, Team Charcoal won the Grand Final 3:1, without losing a single match.
+                And in the Grand Final, Team Royal met Team Chocolate again, which it had already beaten 2:0 in the Upper Final. This time, Team Chocolate won the first set 19-17 in Double Overtime and the third one 13-5,
+                but Team Royal won the fourth and the fifth set (13-5 and 13-6). So, Team Royal won the Grand Final 3:2, without losing a single match.
                 The placements are different from the other Playoffs as well: the loser of the Grand Final is 2nd, the loser of the Consolidation Final 3rd and the loser of the Lower Final 4th.
                 The Winners&apos; screen is the same as in the Champions Series Tour, without quotes and without a trophy:
             </p>
@@ -1877,9 +2047,9 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             <BigShot n={16} alt="Group A of Stage I before the first match" />
             <BigShot n={17} alt="Match modal of the first Opening Round of Stage I" width="35vw" />
             <p className={css.info_text}>
-                In Group A, both teams from the Qualifier made it: Team Orange won both of its matches and Team Copper came back through the Decider Match.
-                Team Red, the 13th team of the Leaderboard, lost both of its matches. In Group B, Team Gray won the Winners&apos; Match and Team Violet, the third qualifier, beat Team Cyan in the Decider Match.
-                Only Team Blue, the fourth qualifier, lost both of its matches and flew out:
+                In Group A, Team Yellow from the Qualifier won both of its matches, while Team Mint, the other qualifier, beat Team Cyan in the Opening Round, lost the Winners&apos; Match against Team Yellow and then lost the Decider Match against that same Team Cyan.
+                In Group B, Team Teal won the Winners&apos; Match against Team Black, and Team Black, the third qualifier, came back through the Decider Match with a 2:0 against Team Violet.
+                Only Team Charcoal, the fourth qualifier, lost both of its matches and flew out:
             </p>
             <BigShot n={18} alt="Finished Group A of Stage I" />
             <BigShot n={19} alt="Finished Group B of Stage I" />
@@ -1891,30 +2061,30 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             </p>
             <BigShot n={20} alt="Group A of Stage II before the first match, with the Stage navigation" />
             <p className={css.info_text}>
-                Team Seafoam, the champion of Official #1 and PEM Small Tournament #1, didn&apos;t lose a single set in Group A and beat Team Moss 3:0 in the Upper Final.
-                In Group B, Team Orange went even further: it beat Team Salmon and Team Periwinkle and only lost the Upper Final 0:3 against Team Yellow.
-                So a team, which started the whole PEM Big Tournament in the Qualifier, was in the Playoffs now:
+                Team Blue, the champion of PEM Small Tournament #1, won Group A and beat Team Navy 3:0 in the Upper Final.
+                In Group B, Team Black, which started the whole PEM Big Tournament in the Qualifier, even beat Team Indigo, the champion of Official #1, in the Opening Round, but then lost against Team Gray and in the Lower Semifinal against that same Team Indigo.
+                Team Red won the Upper Final 3:2 against Team Gray:
             </p>
             <BigShot n={21} alt="Finished Group A of Stage II" />
-            <BigShot n={22} alt="Finished Group B of Stage II" caption="(Team Emerald won the Lower Final 3:2 against Team Periwinkle)" />
+            <BigShot n={22} alt="Finished Group B of Stage II" caption="(Team Indigo won the Lower Final 3:2 against Team Lime)" />
             <p className={css.info_text}>
                 The Playoffs are the same 6-team bracket as in the PEM Small Tournament, but bigger: the Quarterfinals are <b>Best of 5</b>, the Semifinals and the Third Place Decider are <b>Best of 7</b>{" "}
                 and the Grand Final is <b>Best of 9</b>, exactly the same formats as in the Playoffs of Official.
             </p>
             <BigShot n={23} alt="Playoffs of PEM Big Tournament #1 before the Quarterfinals" />
             <p className={css.info_text}>
-                Team Orange&apos;s run ended with a 1:3 against Team Rose in the Quarterfinals. Team Moss beat Team Emerald 3:0 and then Team Yellow 4:2 in a Semifinal with a 17-19 set in Overtime,
-                while Team Seafoam beat Team Rose 4:1. And so, the Grand Final was Team Seafoam against Team Moss, a Best of 9:
+                Team Gray beat Team Silver 3:1 and Team Indigo beat Team Navy 3:2 in the Quarterfinals, with two sets in Double Overtime (19-17 for Team Navy and 19-16 for Team Indigo).
+                Then both Semifinals ended 4:0: Team Blue against Team Gray and Team Indigo against Team Red. And so, the Grand Final was the same as in PEM Small Tournament #1: Team Blue against Team Indigo, a Best of 9:
             </p>
             <BigShot n={24} alt="Match modal of the Grand Final of PEM Big Tournament #1" width="35vw" />
             <BigShot n={25} alt="Series screen of the Bo9 Grand Final with the golden PEM trophy" width="30vw" caption="(The trophy icon in the series screen is the golden PEM trophy now)" />
             <p className={css.info_text}>
-                Team Moss won the first set 13-9, but then Team Seafoam won five sets in a row: 5:1. Team Yellow beat Team Rose 4:1 in the Third Place Decider.
+                Team Blue won the first two sets, Team Indigo took the third one 13-1, but then Team Blue won three sets in a row, the first of them 16-13 in Overtime: 5:1. Team Gray beat Team Red 4:2 in the Third Place Decider.
                 Every Tier 1 tournament has its own trophy: the PEM Small Tournament has the silver one, the PEM Big Tournament has the <b>golden PEM trophy</b>:
             </p>
             <BigShot n={26} alt="Winners' screen of PEM Big Tournament #1 with the golden PEM trophy" width="28vw" />
             <p className={css.info_text}>
-                And the Pick&apos;em challenge was the closest one I&apos;ve had so far: 125 out of 130 needed Pick&apos;em points.
+                And the Pick&apos;em challenge was lost again: 120 out of 145 needed Pick&apos;em points.
             </p>
             <BigShot n={27} alt="Pick'em summary of PEM Big Tournament #1" width="30vw" />
             <BigShot n={28} alt="Finished Playoffs of PEM Big Tournament #1 with the end buttons" />
@@ -1926,18 +2096,18 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 In the Leaderboard, the golden trophy gets its own icon, the same way the silver one does, and it&apos;s placed before it.
-                Team Seafoam has all three trophies now: the golden PEM trophy, the silver PEM trophy and the Official trophy. Its Unbeaten Streak went up to 8 as well.
+                Team Blue has both PEM trophies now: the golden one and the silver one. Its Unbeaten Streak went up to 10 as well, and Team Indigo has two 🥈 medals from both PEM Grand Finals.
                 The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with the PEM Small Tournament (see{" "}
                 <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">Trophies, medals and Hall of Fame</InfoLink>
                 ):
             </p>
             <BigShot n={29} alt="Leaderboard after PEM Big Tournament #1" />
             <p className={css.info_text}>
-                The changes in the Leaderboard are from the PEM Big Tournament itself again: Team Moss went 1 place up to the 2nd one, Team Yellow 1 place down to the 3rd one, and Team Seafoam gained 94 more points.
+                The changes in the Leaderboard are from the PEM Big Tournament itself again: Team Gray went 7 places up to the 3rd one, and Team Blue gained 149 more points.
             </p>
             <p className={css.info_text}>
                 In the Hall of Fame, there are three new cards again: the PEM Big Tournament card with the golden trophy on top, the Elite Competition League card and the Qualifier card.
-                I lost all three Pick&apos;em challenges this time, so the Pick&apos;em points score went down:
+                I lost all three Pick&apos;em challenges again, so the Pick&apos;em points score went down even further:
             </p>
             <BigShot n={30} alt="Hall of Fame with the cards of PEM Big Tournament #1" />
             <p className={css.info_text}>
@@ -1983,8 +2153,9 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 After two PEM Tournaments, there is a fourth option in the "Choose how you want to play" modal: the <b>Global Pro League</b> (GPL), another Tier 1 tournament.
-                But this time, there is no Qualifier at all. Instead, there are only two tournaments, played one after another: <br />
-                • <b>Global Challenger Cup</b> (GCC), a Tier 2 tournament, comes first <br />
+                And same as the PEM Tournaments, it is three tournaments, played one after another: <br />
+                • <b>Global Challenger Cup Open Qualifier</b> (Qualifier) comes first <br />
+                • <b>Global Challenger Cup</b> (GCC), a Tier 2 tournament, comes second <br />
                 • <b>Global Pro League</b> itself (Tier 1) comes right after it
             </p>
             <GplShot n={1} alt="Choose how you want to play modal with the Global Pro League picked" />
@@ -1992,20 +2163,22 @@ const GplSubPage = ({ scrollToAnchor }) => (
                 As always, the teams are seeded by the Leaderboard at the moment the Global Pro League starts: <br />
                 • Top 1-8 → Autoqualify to <b>Stage II</b> of the Global Pro League <br />
                 • Top 9-24 → Start in <b>Stage I</b> of the Global Pro League <br />
-                • Top 25-40 → Play in the <b>Global Challenger Cup</b> <br />
-                • Top 41-64 → <i>— Wait, and what about them?</i> They don&apos;t play at all. Not every tournament needs every team, right?
+                • Top 25-36 → Autoqualify to the <b>Global Challenger Cup</b> <br />
+                • Top 37-56 → Play in the <b>Open Qualifier</b> for the 4 remaining places of the Global Challenger Cup <br />
+                • Top 57-64 → Start the Open Qualifier in its <b>Play-in</b>
             </p>
             <p className={css.info_text}>
-                That&apos;s why the "Stage dividers" select of the Leaderboard has its own "Global Pro League" option now. When you pick it, you see where every team starts
-                and, at the end, the edge between the Global Challenger Cup and the teams, which are NOT playing. In this divider, the lower pill and the diamond are red, on the side of the not playing teams:
+                That&apos;s why the "Stage dividers" select of the Leaderboard has its own "Global Pro League" option now. When you pick it, you see where every team starts:
+                between Stage I and the Global Challenger Cup, between the Global Challenger Cup and the Open Qualifier and, at the very end, between the Open Qualifier and its Play-in:
             </p>
             <GplShot n={2} alt="Leaderboard with the Global Pro League dividers between Stage I and the Global Challenger Cup" />
-            <GplShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
+            <GplShot n={3} alt="Leaderboard with the divider between the Global Challenger Cup and the Open Qualifier" />
+            <GplShot n={37} alt="Leaderboard with the divider between the Open Qualifier and its Play-in" />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
                 (The Global Pro League hasn&apos;t started yet here, so the green and red numbers in the Leaderboard are still the changes from the PEM Big Tournament.)
             </p>
             <p style={{ marginTop: '12px' }} className={css.info_text}>
-                Both tournaments have their own numbers (Global Challenger Cup #1 and Global Pro League #1) and "Proceed" leads from the first one into the second one, same as in the PEM Tournaments.
+                The Open Qualifier carries the number of the Global Challenger Cup it qualifies for, both of the other tournaments have their own numbers (Global Challenger Cup #1 and Global Pro League #1), and "Proceed" leads from one tournament into the next one, same as in the PEM Tournaments.
                 How a match is played itself, you can see in{" "}
                 <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
                 of the Official tab. I chose the Global Pro League explicitly and clicked "Start Game", right after{" "}
@@ -2013,12 +2186,56 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
         </section>
         <section>
+            <div id="gcc-open-qualifier" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Global Challenger Cup Open Qualifier</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The first tournament is the <b>Global Challenger Cup Open Qualifier</b>. "Open", because it is open for nearly the whole bottom of the Leaderboard: 28 teams play for the 4 last places of the Global Challenger Cup.
+                Its Tournament Intro Screen shows the <b>Play-in</b> with the 8 lowest teams (places 57-64) and <b>Group A</b> and <b>Group B</b> with 10 teams each (places 37-56, dealt one by one, same as in the PEM Qualifiers), where the 2 empty circles wait for the winners of the Play-in:
+            </p>
+            <GplShot n={38} alt="Tournament Intro Screen of the Global Challenger Cup Open Qualifier with the Play-in and both Groups" />
+            <p className={css.info_text}>
+                After "Continue", the navigation at the top has a third tab next to both Groups: the <b>Play-in</b>. It&apos;s played first and it&apos;s just 4 Best of 3 matches (the best team of the Play-in against the worst one and so on). Below every match, it already says, which Group the winner goes to:
+            </p>
+            <GplShot n={39} alt="The Play-in of the Global Challenger Cup Open Qualifier before the first match" />
+            <GplShot n={40} alt="Match modal of Play-in #1 of the Open Qualifier" width="35vw" />
+            <p className={css.info_text}>
+                All four Play-ins were clear: Team Spring beat Team Copper 2:0, Team Sunflower beat Team Rose 2:0, Team Lilac beat Team Bronze 2:1 and Team Seafoam beat Team Forest 2:0.
+                Then both Groups can be played. Each of them is a <b>Double Elimination</b> bracket, like a Group of the{" "}
+                <InfoLink onClick={scrollToAnchor("pem-qualifier", "pem-small")} href="?page=pem-small#pem-qualifier">PEM Small Tournament Qualifier</InfoLink>, but with 12 teams instead of 16.
+                That&apos;s why the 4 best seeds of every Group get a bye: they skip the Opening Round and wait in the Upper Quarterfinals for its winners.
+                And since there are only 4 Opening Rounds, there is no Lower Round 1 either: the losers of the Opening Round go straight into Lower Round 2, where they meet the losers of the Upper Quarterfinals (the bent lines show, where they go).
+                The Opening Round, the Upper Quarterfinals and the Upper Semifinals are <b>Best of 1</b>, everything else is <b>Best of 3</b>:
+            </p>
+            <GplShot n={41} alt="Group A of the Open Qualifier before the first match: the 4 best seeds wait in the Upper Quarterfinals" />
+            <p className={css.info_text}>
+                Same as in the PEM Qualifiers, the <b>2 best teams of every Group</b> qualify: the winner of the Upper Final and the winner of the Consolidation Final.
+                In Group A, Team Ruby, the best seed of the whole Open Qualifier, won all three of its matches (the Upper Final 2:0 against Team Chocolate).
+                But the story of Group A is Team Spring: it came from the Play-in as the 57th team, beat Team Raspberry 13-11 and Team Peach 13-4, lost the Upper Semifinal against Team Chocolate
+                and then fought back through the Lower Bracket (2:0 against Team Raspberry and 2:0 against Team Lilac, another team from the Play-in), until Team Chocolate stopped it once more, 2:0 in the Consolidation Final.
+                In Group B, Team Ivory beat Team Periwinkle 2:0 in the Upper Final, and Team Periwinkle then beat Team Denim 2:0 in the Consolidation Final:
+            </p>
+            <GplShot n={42} alt="The finished Lower Bracket of Group A, from Lower Round 2 to the Consolidation Final" />
+            <GplShot n={43} alt="The 4 qualifiers of Global Challenger Cup #1" />
+            <p className={css.info_text}>
+                The Pick&apos;em summary counts the Play-ins and every round of both Groups, and this one, I won: 61 out of 57 needed Pick&apos;em points.
+                (The Open Qualifier is a Qualifier, so the needed Pick&apos;em points are smaller here.)
+            </p>
+            <GplShot n={44} alt="Pick'em summary of the Global Challenger Cup Open Qualifier" width="30vw" />
+            <p className={css.info_text}>
+                In the Hall of Fame, its summary starts with all teams of both Groups, then come the Play-in, both Group brackets (with the "Group A | Group B" navigation, which stays below the title while scrolling), the qualified teams and a link to the summary of the Global Challenger Cup:
+            </p>
+            <GplShot n={45} alt="Hall of Fame, Global Challenger Cup Open Qualifier #1: all teams and the Play-in" />
+            <GplShot n={46} alt="Hall of Fame, Global Challenger Cup Open Qualifier #1: the qualified teams and the link to the Global Challenger Cup" />
+        </section>
+        <section>
             <div id="gcc" style={{ marginTop: '24px' }} className={css.divider_container}>
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Global Challenger Cup</h3>
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
-                The Global Challenger Cup has a format, which doesn&apos;t exist anywhere else in this simulator: a <b>League Phase</b>. Its 16 teams are dealt into <b>4 Pots</b> of 4 teams,
+                After "Proceed", the Global Challenger Cup starts with places 25-36 and the 4 teams from the Open Qualifier, and it has a format, which doesn&apos;t exist anywhere else in this simulator: a <b>League Phase</b>. Its 16 teams are dealt into <b>4 Pots</b> of 4 teams,
                 Pot 1 with the best 4 of them and Pot 4 with the worst 4, and that&apos;s what the Tournament Intro Screen shows:
             </p>
             <GplShot n={4} alt="Tournament Intro Screen of Global Challenger Cup #1 with all teams and the 4 Pots" />
@@ -2038,10 +2255,11 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <GplShot n={6} alt="Match modal of the first League Phase match with the Pots of both teams" width="35vw" />
             <p className={css.info_text}>
-                And the Pots didn&apos;t mean much in my Global Challenger Cup #1. Team Amber, the 36th team of the Leaderboard from Pot 3, won all four of its matches and finished first.
-                Team Indigo from Pot 2 did the same and had the same Sets Difference, so only the Rounds Difference put it second. And on the other side, Team Blue, the best seeded team of the whole Cup, lost all four of its matches.
-                Team Azure, the champion of{" "}
-                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, finished last with 0 wins:
+                And the table was really tight in my Global Challenger Cup #1: five teams won 3 of their 4 matches. Team Magenta from Pot 1 finished first thanks to the best Sets and Rounds Difference,
+                and Team Amber from Pot 3 made it into the top 4 as well, while Team Coral, also with 3 wins, had the worst Rounds Difference of them and had to go through the Knockout Play-offs.
+                Team Charcoal, the best seeded team of the whole Cup, only finished 12th, and Team Periwinkle lost all four of its matches.
+                Team Jade, the champion of{" "}
+                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, finished 7th:
             </p>
             <GplShot n={7} alt="Finished League Phase of Global Challenger Cup #1" />
             <p className={css.info_text}>
@@ -2052,15 +2270,15 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <GplShot n={8} alt="Knockout Stage of Global Challenger Cup #1 before the first Knockout Play-off" />
             <p className={css.info_text}>
-                Team Red, the 12th one, beat the 5th one, Team Lilac, 2:0 with an overtime set (16-13) and lost its Quarterfinal only in the Decider against Team Sapphire.
-                Team Amber won its Quarterfinal, the first set 19-17 in overtime, but in the Semifinal, Team Sapphire beat it 2:0. Team Indigo got through Team Plum and Team Steel.
-                And so, the Grand Final was Team Indigo against Team Sapphire: it went to the fifth set and Team Indigo won it 13-4. Team Amber still took the Third Place 2:1 against Team Steel.
+                All four Knockout Play-offs went to the Decider, and Team Plum, the 10th one, went the furthest of those teams: it beat Team Jade, then Team Royal (2nd) in the Quarterfinals, and only lost its Semifinal against Team Chartreuse.
+                Team Amber beat Team Coral and then Team Magenta, the 1st one, 2:1 in the Semifinal.
+                And so, the Grand Final was Team Chartreuse against Team Amber: Team Chartreuse won the first two sets (the first one 16-13 in Overtime), Team Amber the next two (the fourth one 19-16 in Double Overtime), and Team Chartreuse took the fifth set 13-9. Team Plum beat Team Magenta 2:1 for the Third Place.
                 Same as all the other Tier 2 tournaments, the Winners&apos; screen has neither quotes nor a trophy:
             </p>
             <GplShot n={9} alt="Winners' screen of Global Challenger Cup #1" width="28vw" />
             <p className={css.info_text}>
                 The Pick&apos;em summary counts the League Phase matches together and then every round of the Knockout Stage. The Third Place Decider and the Grand Final are only mentioned, if I guessed them.
-                And this time, I won the Pick&apos;em challenge: 98 out of 88 needed Pick&apos;em points.
+                And this one, I lost: 88 out of 121 needed Pick&apos;em points.
             </p>
             <GplShot n={10} alt="Pick'em summary of Global Challenger Cup #1" width="30vw" />
         </section>
@@ -2076,17 +2294,17 @@ const GplSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 If you have played Official already, then you know these Stages: they are <b>Swiss Stages</b> (see{" "}
                 <InfoLink onClick={scrollToAnchor("swiss-stage", "official")} href="?page=official#swiss-stage">What is this Swiss Stage even about!?</InfoLink>
-                ). <b>BUT</b>, they are half as big: only 16 teams in each Stage, 3 wins to go through, 3 losses to fly out, and only 8 teams go through.
-                That&apos;s why every net has half as many matches (8 matches in the 0:0 net, 2 matches in the 2:0 net and so on) and the boxes in the corners have only 2 or 3 places.
-                And there is no Best of 1 here at all: in Stage I, every single match is <b>Best of 3</b>:
+                ). They are exactly as big as the Stages of Official: 16 teams in each Stage, 3 wins to go through, 3 losses to fly out, and 8 teams go through.
+                <b>BUT</b>, there are only two of them, and there is no Best of 1 here at all: in Stage I, every single match is <b>Best of 3</b>:
             </p>
             <GplShot n={12} alt="Stage I of Global Pro League #1 before the first match" />
             <GplShot n={13} alt="Match modal of the first Stage I match" width="35vw" />
             <p className={css.info_text}>
-                Team Violet and Team Copper, both of them came through the{" "}
+                Team Khaki and Team Mint, which came through the{" "}
+                <InfoLink onClick={scrollToAnchor("pem-qualifier", "pem-small")} href="?page=pem-small#pem-qualifier">PEM Small Tournament Qualifier</InfoLink>{" "}
+                and the{" "}
                 <InfoLink onClick={scrollToAnchor("big-qualifier", "pem-big")} href="?page=pem-big#big-qualifier">PEM Big Tournament Qualifier</InfoLink>{" "}
-                before, won Stage I with 3:0. The comeback of this Stage was Team Frost&apos;s, the 22nd team: it lost its first two matches and then won three in a row to 3:2.
-                The highest seeded team in Stage I, Team Sunflower, went through with 3:1:
+                before, won Stage I with 3:0. The highest seeded team in Stage I, Team Red, went through with 3:1, and Team Olive and Team White flew out without a single win:
             </p>
             <GplShot n={14} alt="Finished Stage I of Global Pro League #1" />
             <p className={css.info_text}>
@@ -2096,31 +2314,31 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <GplShot n={15} alt="Stage II of Global Pro League #1 before the first match, with the navigation" />
             <p className={css.info_text}>
-                Team Seafoam and Team Yellow went through with 3:0. Seven auto-qualifiers made it to the Playoffs and only Team Emerald didn&apos;t: it lost its Deciding Match 0:3 against Team Orange.
-                And the eighth team was Team Copper again: it lost its first two matches, then won three Best of 5s in a row (3:1 against Team Frost, 3:0 against Team Green and 3:2 against Team Sunflower)
-                and was the only team from Stage I, which reached the Playoffs:
+                Team Blue and Team Indigo went through with 3:0, Team Blue with a 3:0 against Team Red in the 2:0 net. But this time, three auto-qualifiers didn&apos;t make it: Team Navy lost all three of its matches,
+                Team Gray finished 1:3 and Team Silver lost its Deciding Match 1:3 against Team Lime. Three teams from Stage I took their places: Team Mint (3:1), Team Salmon (3:2)
+                and Team Cyan, which lost its first two matches and then won three Best of 5s in a row (3:2 against Team Crimson, 3:1 against Team Gray and 3:2 against Team Khaki):
             </p>
             <GplShot n={16} alt="Finished Stage II of Global Pro League #1" />
             <p className={css.info_text}>
                 The Playoffs are the standard 8-team ones: Quarterfinals, Semifinals, Third Place Decider and Grand Final. The teams are seeded by their records in Stage II,
-                so the 3:0 teams are on top and the best two of them could only meet in the Grand Final. The formats are the same as in the Official (but without Round of 16 :0):
+                so the 3:0 teams are on top and the best two of them could only meet in the Grand Final. The formats are exactly the same as in the Playoffs of Official:
                 the Quarterfinals are <b>Best of 5</b>, the Semifinals and the Third Place Decider are <b>Best of 7</b> and the Grand Final is <b>Best of 9</b>:
             </p>
             <GplShot n={17} alt="Playoffs of Global Pro League #1 before the Quarterfinals" />
             <p className={css.info_text}>
-                And Team Copper just went on: it beat Team Yellow, one of the two 3:0 teams, 3:0 in the Quarterfinals and then Team Moss 4:2 in the Semifinals, with a 16-14 set in overtime.
-                On the other side, Team Seafoam didn&apos;t lose a single set: 3:0 against Team Orange and 4:0 against Team Rose.
-                So, the Grand Final was Team Copper, which started the PEM Big Tournament in its Qualifier, against Team Seafoam. The prediction gave Team Copper <b>0.4%</b>:
+                Team Blue didn&apos;t lose a single set: 3:0 against Team Cyan and 4:0 against Team Black, which had beaten Team Mint 3:2.
+                On the other side, Team Indigo beat Team Lime 3:1 and then Team Yellow 4:3, in the seventh set.
+                So, the Grand Final was Team Blue against Team Indigo, for the third tournament in a row. The prediction gave Team Indigo only <b>8%</b>:
             </p>
             <GplShot n={18} alt="Match modal of the Grand Final of Global Pro League #1" width="35vw" />
             <GplShot n={19} alt="Series screen of the Bo9 Grand Final with the Global Pro League trophy" width="30vw" caption="(The trophy icon in the series screen is the Global Pro League trophy now)" />
             <p className={css.info_text}>
-                Team Copper even won two sets in a row (13-11 and 13-9), but Team Seafoam won the Grand Final 5:2. Team Moss won the Third Place 4:1 against Team Rose.
-                The Global Pro League has its own trophy: a black one with a <b>golden globe</b> on top, which Team Seafoam holds on the Winners&apos; screen the same way as all the other trophies:
+                Team Indigo won the second and the fourth set (both 13-11), but Team Blue won the Grand Final 5:2. Team Yellow won the Third Place 4:2 against Team Black.
+                The Global Pro League has its own trophy: a black one with a <b>golden globe</b> on top, which Team Blue holds on the Winners&apos; screen the same way as all the other trophies:
             </p>
             <GplShot n={20} alt="Winners' screen of Global Pro League #1 with the Global Pro League trophy" width="28vw" />
             <p className={css.info_text}>
-                The Pick&apos;em summary looks like the one of Official, only with 33 matches per Stage instead of 66. And again, it was super close: 228 out of 233 needed Pick&apos;em points:
+                The Pick&apos;em summary looks like the one of Official, with 33 matches per Stage, only with two Stages instead of three. And finally, I won a Pick&apos;em challenge again: 223 out of 182 needed Pick&apos;em points:
             </p>
             <GplShot n={21} alt="Pick'em summary of Global Pro League #1" width="30vw" />
             <GplShot n={22} alt="Finished Playoffs of Global Pro League #1 with the end buttons" />
@@ -2132,24 +2350,24 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 In the Leaderboard, the Global Pro League trophy gets its own icon and it is placed before all the other trophies. It is worth the same as the golden PEM trophy, so when you sort by "Trophies and first places",
-                both of them count as much. Team Seafoam has four different trophies now and its Unbeaten Streak went up to 14. Team Indigo got a 🥇 for the Global Challenger Cup and,
+                both of them count as much. Team Blue has three different trophies now and its Unbeaten Streak went up to 16. Team Chartreuse got a 🥇 for the Global Challenger Cup, Team Indigo has its third 🥈 and,
                 same as with every other Tier 1 or Tier 2 tournament, the 2nd and 3rd places count into the 🥈 and 🥉 totals:
             </p>
             <GplShot n={23} alt="Leaderboard after Global Pro League #1" />
             <p className={css.info_text}>
                 The changes in the Leaderboard are only from the Global Pro League, not from the Global Challenger Cup, since both of them are tournaments of their own.
-                Team Copper made the biggest jump among the top teams: 11 places up to the 4th place with 216 more points.
+                Team Yellow gained the most points among the top teams (137) and went 3 places up to the 3rd place, and Team Mint, which started in Stage I, went 8 places up to the 9th one with 100 more points.
             </p>
             <p className={css.info_text}>
-                In the Hall of Fame, there are two new cards: the Global Pro League card with its trophy above the name and the top four, and the Global Challenger Cup card, the same as the other Tier 2 cards:
+                In the Hall of Fame, there are three new cards: the Global Pro League card with its trophy above the name and the top four, the Global Challenger Cup card, the same as the other Tier 2 cards, and the card of the Open Qualifier with the Qualifier badge:
             </p>
-            <GplShot n={24} alt="Hall of Fame with the cards of Global Pro League #1 and Global Challenger Cup #1" />
+            <GplShot n={24} alt="Hall of Fame with the cards of Global Pro League #1, Global Challenger Cup #1 and its Open Qualifier" />
             <p className={css.info_text}>
-                The Global Challenger Cup&apos;s summary starts with all teams and the 4 Pots. Then come the whole League Phase with its final table, the whole Knockout Stage and the podium.
+                The Global Challenger Cup&apos;s summary starts with all teams and the 4 Pots, where the 4 teams from the Open Qualifier glow golden (hovering onto them says "via the Open Qualifier") and a link leads to the Open Qualifier&apos;s bracket. Then come the whole League Phase with its final table, the whole Knockout Stage and the podium.
                 At the end, there are the places 5-12: the losers of the Quarterfinals are 5th to 8th and the losers of the Knockout Play-offs are 9th to 12th, each of them in the order of the matches,
                 so the loser of Quarterfinal #1 is 5th:
             </p>
-            <GplShot n={25} alt="Hall of Fame, Global Challenger Cup #1: all teams and the Pots" />
+            <GplShot n={25} alt="Hall of Fame, Global Challenger Cup #1: all teams and the Pots with the glowing teams from the Open Qualifier" />
             <GplShot n={26} alt="Hall of Fame, Global Challenger Cup #1: the League Phase" />
             <GplShot n={27} alt="Hall of Fame, Global Challenger Cup #1: the Knockout Stage" />
             <GplShot n={28} alt="Hall of Fame, Global Challenger Cup #1: the podium" />
@@ -2185,22 +2403,23 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 The fifth option in the "Choose how you want to play" modal is the <b>Premier Bounty Series</b> (PBS), a Tier 1 tournament like no other one.
-                It is only one tournament: no Qualifier, no Tier 2 tournament before it. And it doesn&apos;t even count with a "#": every edition is a <b>Season</b>,
+                It is only two tournaments: the <b>Premier Bounty Series Open Qualifier</b> and the Premier Bounty Series itself, with no Tier 2 tournament in between. And it doesn&apos;t even count with a "#": every edition is a <b>Season</b>,
                 so the very first one is the <b>Premier Bounty Series Season 1</b>.
             </p>
             <PbsShot n={1} alt="Choose how you want to play modal with the Premier Bounty Series picked" />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
-                Only the <b>top 32</b> of the Leaderboard play, and they are split into two Pots right at the start: <br />
+                The <b>top 28</b> of the Leaderboard and the 4 teams from the Open Qualifier play, and they are split into two Pots right at the start: <br />
                 • Top 1-16 → <b>High-Seed Pot</b>. Every team of it carries a <b>bounty</b> of Bounty Gems: Seed #1 carries 60 of them, every next seed 3 less, down to 15 for Seed #16 <br />
-                • Top 17-32 → <b>Low-Seed Pot</b>, with no bounty at all. Nothing to lose, everything to win <br />
-                • Top 33-64 → they don&apos;t play, same as the last places in the{" "}
-                <InfoLink onClick={scrollToAnchor("gpl-overview", "gpl")} href="?page=gpl#gpl-overview">Global Pro League</InfoLink>
+                • Top 17-28 and the 4 qualifiers → <b>Low-Seed Pot</b>, with no bounty at all. Nothing to lose, everything to win <br />
+                • Top 29-56 → Play in the <b>Open Qualifier</b> <br />
+                • Top 57-64 → Start the Open Qualifier in its <b>Play-in</b>
             </p>
             <p className={css.info_text}>
-                The "Stage dividers" select of the Leaderboard has a "Premier Bounty Series" option for it: one divider between both Pots and the red one before the teams, which are NOT playing:
+                The "Stage dividers" select of the Leaderboard has a "Premier Bounty Series" option for it: one divider between both Pots, one before the Open Qualifier and one before its Play-in:
             </p>
             <PbsShot n={2} alt="Leaderboard with the divider between the High-Seed Pot and the Low-Seed Pot" />
-            <PbsShot n={3} alt="Leaderboard with the red divider before the teams, which are not playing" />
+            <PbsShot n={3} alt="Leaderboard with the divider between the Low-Seed Pot and the Open Qualifier" />
+            <PbsShot n={40} alt="Leaderboard with the divider between the Open Qualifier and its Play-in" />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
                 (The green and red numbers in the Leaderboard are still the changes from the Global Pro League here, since the Premier Bounty Series hasn&apos;t started yet.)
             </p>
@@ -2214,9 +2433,42 @@ const PbsSubPage = ({ scrollToAnchor }) => (
                 <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
                 of the Official tab. I chose the Premier Bounty Series explicitly and clicked "Start Game", right after{" "}
                 <InfoLink onClick={scrollToAnchor("gpl-rewards", "gpl")} href="?page=gpl#gpl-rewards">Global Pro League #1</InfoLink>.
-                The Tournament Intro Screen shows all 32 teams first and then both Pots, every team with its seed and its bounty below the circle:
+                The Open Qualifier comes first (see the next section), and once it is over, the Tournament Intro Screen of the Premier Bounty Series shows all 32 teams first and then both Pots, every team with its seed and its bounty below the circle:
             </p>
             <PbsShot n={4} alt="Tournament Intro Screen of Premier Bounty Series Season 1 with all teams and both Pots" />
+        </section>
+        <section>
+            <div id="pbs-open-qualifier" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Premier Bounty Series Open Qualifier</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                Before the bounty hunt begins, the last 4 places of the Low-Seed Pot are played for in the <b>Premier Bounty Series Open Qualifier</b>.
+                It is built the same way as the{" "}
+                <InfoLink onClick={scrollToAnchor("gcc-open-qualifier", "gpl")} href="?page=gpl#gcc-open-qualifier">Global Challenger Cup Open Qualifier</InfoLink>:
+                the 8 lowest teams (places 57-64) play the <b>Play-in</b> (4 Best of 3 matches) and its 4 winners join places 29-56 in <b>Group A</b> and <b>Group B</b>.
+                But here, both Groups have <b>16 teams</b> (14 direct ones and 2 from the Play-in), so there are no byes: every team starts in the Opening Round and there is a Lower Round 1 again.
+                It carries the "Season" of the Premier Bounty Series it qualifies for:
+            </p>
+            <PbsShot n={41} alt="Tournament Intro Screen of the Premier Bounty Series Open Qualifier" />
+            <PbsShot n={42} alt="The Play-in of the Premier Bounty Series Open Qualifier before the first match" />
+            <p className={css.info_text}>
+                The Play-in winners go into the Opening Round against the two best seeds of each Group, which wait for them with a "TBD" below. Same as before, the Opening Round, the Upper Quarterfinals and the Upper Semifinals are <b>Best of 1</b>, the rest is <b>Best of 3</b>,
+                and the winners of the Upper Finals and the Consolidation Finals qualify:
+            </p>
+            <PbsShot n={43} alt="Group B of the Premier Bounty Series Open Qualifier before the first match" />
+            <p className={css.info_text}>
+                In Group A, Team Royal beat Team Olive 2:0 in the Upper Final. And Team Jade, the champion of{" "}
+                <InfoLink onClick={scrollToAnchor("pem-cst", "pem-small")} href="?page=pem-small#pem-cst">Champions Series Tour #1</InfoLink>, did something special:
+                it lost its very first match 8-13 against Team Midnight and then won five Best of 3s in a row in the Lower Bracket (against Team Chocolate, Team Midnight, Team Frost, Team Sapphire and Team Blush),
+                until Team Olive stopped it 2:0 in the Consolidation Final. In Group B, Team Beige beat Team White 2:0 in the Upper Final and Team White then beat Team Azure 2:0 in the Consolidation Final:
+            </p>
+            <PbsShot n={44} alt="The finished Lower Bracket of Group A of the Premier Bounty Series Open Qualifier" />
+            <PbsShot n={45} alt="The 4 qualifiers of Premier Bounty Series Season 1" />
+            <p className={css.info_text}>
+                I won this Pick&apos;em challenge as well, 109 out of 99 needed Pick&apos;em points. After "Proceed", the 4 qualifiers take the seeds 29-32 of the Premier Bounty Series, at the very end of the Low-Seed Pot:
+            </p>
+            <PbsShot n={46} alt="Pick'em summary of the Premier Bounty Series Open Qualifier" width="30vw" />
         </section>
         <section>
             <div id="pbs-draft" style={{ marginTop: '24px' }} className={css.divider_container}>
@@ -2235,42 +2487,43 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             </p>
             <PbsShot n={6} alt="The Low-Seed Pot flies into the left slots of the matches" />
             <p className={css.info_text}>
-                Then, the High-Seed Pot moves into the middle of the header and the picks begin. The best seed of the Low-Seed Pot picks first, so Team Amber (Seed #17) is highlighted
+                Then, the High-Seed Pot moves into the middle of the header and the picks begin. The best seed of the Low-Seed Pot picks first, so Team Orange (Seed #17) is highlighted
                 and, like a real coach, it goes through the teams it is considering: the yellow ring jumps from circle to circle, until the decision is made and the chosen team flies into the right slot.
             </p>
-            <PbsShot n={7} alt="Team Amber (Seed #17) is making the pick, Team Green is being considered" />
+            <PbsShot n={7} alt="Team Orange (Seed #17) is making the pick, the yellow ring jumps over the High-Seed Pot" />
             <p className={css.info_text}>
                 Every coach weighs two things: the chance to win the match and the reward, which is half of the opponent&apos;s bounty (and its better seed).
                 And every coach has its own character: most of them play it safe, some are ambitious and a few of them are real bounty hunters.
                 That&apos;s why the header always says, what kind of pick it was: one "picks the most beatable opponent", another one "takes a calculated risk" and a third one "goes for the biggest bounty".
-                Team Amber went for Team Khaki (Seed #16, the smallest bounty of 15), Team Cyan, on the other hand, took a calculated risk with Team Emerald (Seed #11, 30 Bounty Gems):
+                Team Orange took a calculated risk with Team Gray (Seed #8, 39 Bounty Gems), while Team Teal, right after it, went for the most beatable opponent, Team Pink (Seed #14, 21 Bounty Gems):
             </p>
-            <PbsShot n={8} alt="Team Cyan takes a calculated risk: Team Emerald flies into match #4" />
+            <PbsShot n={8} alt="Team Orange takes a calculated risk: Team Gray flies into match #1" />
             <p className={css.info_text}>
                 On the right side, there is the <b>Speed</b> select (1x, 2x, 4x or 8x), a pause button and an emerald button with the time left, which finishes the show right away.
                 The speed starts at 1x again in every Stage. During the show, the page can&apos;t be scrolled by hand: the show itself scrolls to every team, which is picking, so nothing is ever hidden.
                 And if the page is reloaded in the middle of it, the show goes on from the exact same moment, even in the middle of a flight.
             </p>
-            <PbsShot n={9} alt="Team Gray (Seed #28) is making the pick, only five teams are left in the High-Seed Pot" />
+            <PbsShot n={9} alt="Team Charcoal (Seed #28) is making the pick, only five teams are left in the High-Seed Pot" />
             <p className={css.info_text}>
-                The last team of the Low-Seed Pot doesn&apos;t have a choice anymore: Team Bronze (Seed #32) got the only team left, Team Seafoam (Seed #1, 60 Bounty Gems).
+                The last team of the Low-Seed Pot doesn&apos;t have a choice anymore: Team White (Seed #32) got the only team left, Team Indigo (Seed #2, 57 Bounty Gems).
                 Then the header slides down, the page scrolls back up and match #1 glows yellow as the current one:
             </p>
             <PbsShot n={10} alt="The Round of 32 after the draft, match #1 is the current one" />
             <p className={css.info_text}>
                 All the matches of the Round of 32 are <b>Best of 3</b>. Since the seeds and the bounties are everything here, the match modal shows them above both circles.
-                And a better seed doesn&apos;t mean a better team: Team Amber and Team Khaki both had 1,171 points, but Team Amber was the favourite with 60.2%:
+                And the very first match was a clear one on paper: Team Gray had 100 points more than Team Orange (1,273 against 1,173) and was the favourite with 57.6%:
             </p>
-            <PbsShot n={11} alt="Match modal of Round of 32 #1 with the seeds and bounties of Team Amber and Team Khaki" width="35vw" />
+            <PbsShot n={11} alt="Match modal of Round of 32 #1 with the seeds and bounties of Team Orange and Team Gray" width="35vw" />
             <PbsShot n={12} alt="Series screen of a Round of 32 match with the Premier Bounty Series trophy" width="30vw" caption="(The trophy icon in the series screen is the Premier Bounty Series trophy)" />
             <p className={css.info_text}>
                 The stakes in the match modal have a second line now. The winner "qualifies to Round of 16" and, if it was the High-Seed Pot team, "keeps its bounty". If it was the Low-Seed Pot team, it "takes the bounty away".
-                The loser "flies out of the tournament". Once the match is finished, the modal shows what changed: Team Amber won the Decider 13-11 and went from Seed #17 to #16 and from 0 to 8 Bounty Gems,
-                while Team Khaki lost all of its 15:
+                The loser "flies out of the tournament". Once the match is finished, the modal shows what changed: Team Gray won the Decider 16-14 in Overtime, so it kept its Seed #8 and all of its 39 Bounty Gems,
+                while Team Orange flew out with nothing:
             </p>
-            <PbsShot n={13} alt="Finished match modal of Round of 32 #1: Team Amber takes Seed #16 and 8 Bounty Gems" width="35vw" />
+            <PbsShot n={13} alt="Finished match modal of Round of 32 #1: Team Gray keeps Seed #8 and its 39 Bounty Gems" width="35vw" />
             <p className={css.info_text}>
-                That was one of only two upsets of the Round of 32. The other one was Team Beige (Seed #22), which beat Team Jade (Seed #15) 2:0, the second set 16-14 in Overtime.
+                There were three upsets in the Round of 32: Team Teal (Seed #18) beat Team Pink (Seed #14), Team Brown (Seed #21) beat Team Red (Seed #12), and the biggest one of them:
+                Team White, the very last seed, beat Team Indigo (Seed #2) 2:0, the first set 16-14 in Overtime. So Team White jumped from Seed #32 to <b>Seed #2</b> and took 29 of Team Indigo&apos;s 57 Bounty Gems.
                 Everywhere else, the High-Seed Pot kept its bounties. The navigation in the top left corner leads back to Stage I at any moment:
             </p>
             <PbsShot n={14} alt="Finished Stage I of Premier Bounty Series Season 1" />
@@ -2285,59 +2538,60 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             <PbsShot n={16} alt="The live draft of the Round of 16" />
             <PbsShot n={17} alt="The Round of 16 after the draft" />
             <p className={css.info_text}>
-                This time, the Low-Seed Pot hit back: four of the eight matches went to the underdogs. Team Sunflower beat Team Orange 2:0 (13-6 and 13-6), Team Navy beat Team Periwinkle 2:0
-                and Team Emerald beat Team Salmon in the Decider. But the biggest one was Team Indigo (Seed #14): it lost the first set 3-13 against Team Moss, Seed #2 and the runner-up of
-                <InfoLink onClick={scrollToAnchor("big-main-event", "pem-big")} href="?page=pem-big#big-main-event"> PEM Big Tournament #1</InfoLink>,
-                then won the second one 16-12 in Overtime and the Decider 13-9. So Team Indigo jumped from Seed #14 to <b>Seed #2</b> and from 21 to 50 Bounty Gems:
+                This time, the Low-Seed Pot hit back: four of the eight matches went to the underdogs. Team Mint (Seed #9) beat Team White 2:0, Team Salmon beat Team Gray 2:0
+                and Team Green beat Team Cyan 2:0. But the biggest one was Team Chartreuse (Seed #16), the champion of
+                <InfoLink onClick={scrollToAnchor("gcc", "gpl")} href="?page=gpl#gcc"> Global Challenger Cup #1</InfoLink>: it beat Team Blue, Seed #1 and the champion of three Tier 1 tournaments in a row, 2:0 (13-11 and 13-10).
+                That was the end of Team Blue&apos;s Unbeaten Streak, and Team Chartreuse jumped from Seed #16 to <b>Seed #1</b> and from 15 to 45 Bounty Gems:
             </p>
             <PbsShot n={18} alt="Finished Stage II of Premier Bounty Series Season 1" />
             <p className={css.info_text}>
                 The last 8 teams go to the <b>Finals</b>, again with a Tournament Intro Screen and again with a new draft.
                 The Finals have the <b>Quarterfinals</b> (<b>Best of 5</b>) on the left, but they are not connected to the Semifinals: after the Quarterfinals, the 4 teams left are drafted one more time.
-                And look at the Pots: Team Indigo is in the High-Seed Pot with Seed #2, while Team Rose has more Bounty Gems (62) than Team Indigo (50), but only Seed #5:
+                And look at the Pots: Team Chartreuse is in the High-Seed Pot with Seed #1, while Team Black has more Bounty Gems (55) than Team Chartreuse (45), but only Seed #5:
             </p>
             <PbsShot n={19} alt="Tournament Intro Screen of the Finals with the Pots of the last 8 teams" />
             <PbsShot n={20} alt="The live draft of the Quarterfinals" />
             <p className={css.info_text}>
-                Team Rose went for exactly that Team Indigo. Team Navy took Team Copper (Seed #4), Team Emerald took Team Yellow (Seed #3) and Team Sunflower was left with Team Seafoam (Seed #1):
+                Team Black went for exactly that Team Chartreuse. Team Green took Team Lime (Seed #4), Team Silver took Team Mint (Seed #2) and Team Salmon was left with Team Yellow (Seed #3):
             </p>
             <PbsShot n={21} alt="The Quarterfinals after the draft" />
             <p className={css.info_text}>
                 In the Quarterfinals, the loser&apos;s stake text is "path ends here, for now!" and the winner&apos;s second line is the bounty again.
-                And Team Indigo did it once more: it won the first set 16-12 in Overtime, lost the second and the fourth one and won the Decider 13-11. 3:2, and Team Rose&apos;s 62 Bounty Gems were gone, 31 of them went to Team Indigo:
+                And Team Black didn&apos;t give Team Chartreuse a single set: 3:0, the first one 16-13 in Overtime. So Team Black took over Seed #1, and 23 of Team Chartreuse&apos;s 45 Bounty Gems went to it:
             </p>
-            <PbsShot n={22} alt="Finished match modal of Quarterfinal #1: Team Indigo beats Team Rose 3:2" width="35vw" />
+            <PbsShot n={22} alt="Finished match modal of Quarterfinal #1: Team Black beats Team Chartreuse 3:0" width="35vw" />
             <p className={css.info_text}>
-                Team Copper, Team Yellow and Team Seafoam won their Quarterfinals 3:1. Team Seafoam even needed a double Overtime for it (19-17 in the third set against Team Sunflower).
+                And the other three Quarterfinals went to the Low-Seed Pot as well: Team Green beat Team Lime 3:1, Team Mint beat Team Silver 3:2 and Team Salmon beat Team Yellow 3:2.
                 Then, the draft of the <b>Semifinals</b> took place. As soon as a Semifinal is built, the circles in the Grand Final and in the Third Place Decider already show, which two teams can get there:
             </p>
             <PbsShot n={23} alt="The live draft of the Semifinals, the Grand Final and the Third Place Decider already show their contenders" />
             <p className={css.info_text}>
-                The Semifinals and the Third Place Decider are <b>Best of 7</b>, the Grand Final is <b>Best of 9</b>. Both Semifinals were over quickly: Team Yellow beat Team Indigo 4:0 and took over its Seed #2
-                and Team Seafoam beat Team Copper 4:0. In the Third Place Decider, there is no bounty to win anymore (both losers of the Semifinals lost theirs),
-                so it has no second stake line. Team Copper won it 4:3, only in the seventh set (13-7):
+                The Semifinals and the Third Place Decider are <b>Best of 7</b>, the Grand Final is <b>Best of 9</b>. Both Semifinals went the full seven sets: Team Salmon beat Team Black 4:3 and took over its Seed #1,
+                and Team Green lost the first three sets against Team Mint and then won four in a row. In the Third Place Decider, there is no bounty to win anymore (both losers of the Semifinals lost theirs),
+                so it has no second stake line. Team Mint won it 4:3, the seventh set 13-11:
             </p>
             <PbsShot n={24} alt="The Finals after the Semifinals, the Grand Final is next" />
             <p className={css.info_text}>
-                The Grand Final was Team Yellow (Seed #2, 126 Bounty Gems) against Team Seafoam (Seed #1, 138 Bounty Gems). The prediction gave Team Yellow <b>0.4%</b>:
+                The Grand Final was Team Salmon (Seed #1, 124 Bounty Gems) against Team Green (Seed #2, 118 Bounty Gems), two teams, which started the whole Premier Bounty Series in the Low-Seed Pot. The prediction gave Team Green <b>46.6%</b>:
             </p>
             <PbsShot n={25} alt="Match modal of the Grand Final of Premier Bounty Series Season 1" width="35vw" />
             <PbsShot n={26} alt="Series screen of the Bo9 Grand Final" width="30vw" />
             <p className={css.info_text}>
-                And Team Yellow didn&apos;t win a single set: 5:0. Team Seafoam is the champion, and the Premier Bounty Series has its own trophy, a white one with an emerald Bounty Gem on top:
+                And it went all the way to the ninth set. Team Salmon won the third set 22-20 in Triple Overtime and led 4:3 after seven sets, but Team Green won the last two (13-10 and 13-9). 5:4, Team Green is the champion,
+                and the Premier Bounty Series has its own trophy, a white one with an emerald Bounty Gem on top:
             </p>
             <PbsShot n={27} alt="Winners' screen of Premier Bounty Series Season 1 with the Premier Bounty Series trophy" width="28vw" />
             <p className={css.info_text}>
                 The Pick&apos;em summary counts every round: the Rounds of 32 and 16, the Quarterfinals and the Semifinals, and the Third Place Decider and the Grand Final, if they were guessed.
-                This time, I won it: 110 out of 92 needed Pick&apos;em points.
+                This time, I won it: 103 out of 76 needed Pick&apos;em points.
             </p>
             <PbsShot n={28} alt="Pick'em summary of Premier Bounty Series Season 1" width="30vw" />
             <p className={css.info_text}>
                 One last thing about the bounties: a team which ends the tournament still holding a bounty, gets a <b>bonus</b> on top of its last match. The final bounty is divided by 4 and rounded up,
                 and the result is added to the team&apos;s points as a free addition, outside of all the usual limits. It has its own green label below the usual points in the match modal.
-                Team Seafoam finished with <b>201 Bounty Gems</b> (138 of its own and 63 from Team Yellow), so it got +51 points on top of its +33:
+                Team Green finished with <b>180 Bounty Gems</b> (118 of its own and 62 from Team Salmon), so it got +45 points on top of its +146:
             </p>
-            <PbsShot n={29} alt="Finished match modal of the Grand Final with the +51 bounty bonus of Team Seafoam" width="35vw" />
+            <PbsShot n={29} alt="Finished match modal of the Grand Final with the +45 bounty bonus of Team Green" width="35vw" />
             <PbsShot n={30} alt="Finished Finals of Premier Bounty Series Season 1 with the end buttons" />
         </section>
         <section>
@@ -2347,20 +2601,20 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 In the Leaderboard, the Premier Bounty Series trophy gets its own icon. It is worth more than the silver PEM trophy and less than the golden one, so it is placed between them.
-                Team Seafoam has all five trophies now, 1,821 points and its Unbeaten Streak went up to 19. The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament (see{" "}
+                Team Green has it now, while Team Blue is still the 1st one with 1,742 points, even without its Unbeaten Streak. The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament (see{" "}
                 <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">Trophies, medals and Hall of Fame</InfoLink>
                 ):
             </p>
             <PbsShot n={31} alt="Leaderboard after Premier Bounty Series Season 1" />
             <p className={css.info_text}>
-                Team Seafoam gained 101 points in this tournament (the 51 points of the Bounty bonus are included in them), and Team Yellow and Team Copper went 1 place up each, to the 2nd and the 3rd place.
+                Team Green gained 332 points in this tournament (the 45 points of the Bounty bonus are included in them) and went 11 places up to the 2nd place, and Team Salmon went 5 places up to the 5th one.
             </p>
             <p className={css.info_text}>
-                In the Hall of Fame, the new card has the trophy on top, then "Premier Bounty Series Season 1" and the top four:
+                In the Hall of Fame, there are two new cards: the card of the Premier Bounty Series with the trophy on top, then "Premier Bounty Series Season 1" and the top four, and the card of its Open Qualifier:
             </p>
             <PbsShot n={32} alt="Hall of Fame with the card of Premier Bounty Series Season 1" />
             <p className={css.info_text}>
-                Its summary starts with all teams and both Pots with their seeds and bounties. Then come the whole Stage I, all teams to Stage II with their new seeds and bounties, the whole Stage II,
+                Its summary starts with all teams and both Pots with their seeds and bounties, where the 4 teams from the Open Qualifier glow golden, and a link to the Open Qualifier&apos;s bracket. Then come the whole Stage I, all teams to Stage II with their new seeds and bounties, the whole Stage II,
                 all teams to the Finals, the Finals themselves, the podium with the trophy and the 5th-8th places. The losers of the Quarterfinals are 5th to 8th, in the order of the matches:
             </p>
             <PbsShot n={33} alt="Hall of Fame, Premier Bounty Series Season 1: all teams and both Pots" />
@@ -2371,8 +2625,217 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             <PbsShot n={38} alt="Hall of Fame, Premier Bounty Series Season 1: the podium with the trophy" />
             <PbsShot n={39} alt="Hall of Fame, Premier Bounty Series Season 1: the places 5-8" />
             <p className={css.info_text}>
+                And the Open Qualifier&apos;s summary looks the same as the one of the Global Challenger Cup Open Qualifier: all teams, the Play-in, both Group brackets and the qualified teams with a link to the summary of the Premier Bounty Series:
+            </p>
+            <PbsShot n={47} alt="Hall of Fame, Premier Bounty Series Open Qualifier Season 1: all teams and the Play-in" />
+            <PbsShot n={48} alt="Hall of Fame, Premier Bounty Series Open Qualifier Season 1: the qualified teams and the link to the Premier Bounty Series" />
+            <p className={css.info_text}>
                 And now, there are five tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b> and <b>Premier Bounty Series</b>.
-                Four of them are waiting for their #2, one for its Season 2. Who is going to hunt the bounties next time?
+                Four of them are waiting for their #2, one for its Season 2. Who is going to hunt the bounties next time? (And there is one more tournament, which is played in a different city every time, see the{" "}
+                <InfoLink onClick={scrollToAnchor("pgx-overview", "pgx")} href="?page=pgx#pgx-overview">PGX</InfoLink> tab.)
+            </p>
+        </section>
+    </>
+);
+
+const PGX_IMAGES = import.meta.glob("../../../assets/images/pgx-*.png", { eager: true, import: "default" });
+const pgxImg = (n) => PGX_IMAGES[`../../../assets/images/pgx-${String(n).padStart(2, "0")}.png`];
+
+const PgxShot = ({ n, ...props }) => <PemShot src={pgxImg(n)} {...props} />;
+
+const PgxSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="pgx-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>A city of its own</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The sixth option in the "Choose how you want to play" modal is the <b>PGX Grandmasters</b>, a Tier 1 tournament, which, for the first time, includes nearly every team of the Leaderboard.
+                Same as the PEM Tournaments, it is three tournaments, played one after another, but here, every one of them is a step on the same ladder: <br />
+                • <b>PGX Candidate Masters</b> (Qualifier): its 4 best teams go up to the International Masters <br />
+                • <b>PGX International Masters</b> (Tier 2): only its winner goes up to the Grandmasters <br />
+                • <b>PGX Grandmasters</b> itself (Tier 1)
+            </p>
+            <PgxShot n={1} alt="Choose how you want to play modal with the PGX Grandmasters picked" />
+            <p className={css.info_text}>
+                And every edition is played in its own <b>host city</b>. When the PGX Grandmasters is started, a city is drawn from the cities, which have already hosted big tournaments in North America, Europe, Asia and Australia
+                (never the same city twice in a row), and all three tournaments carry its name. My very first one took place in <b>Jönköping</b>, so it was the <b>PGX Grandmasters Jönköping #1</b>.
+                The city stays with the tournament everywhere: in the titles, in the series screen, in the Hall of Fame and even in the title of the Leaderboard after it.
+            </p>
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                The teams are seeded by the Leaderboard at the moment the PGX Grandmasters is started: <br />
+                • Top 1-15 → Invited straight to the <b>PGX Grandmasters</b> <br />
+                • Top 16-26 → Start in the <b>Main Bracket</b> of the International Masters <br />
+                • Top 27-32 → Start in the <b>Entry Round</b> of the International Masters <br />
+                • Top 33-40 → Start in the <b>Group Stage</b> of the Candidate Masters <br />
+                • Top 41-64 → Start in the <b>Play-ins</b> of the Candidate Masters
+            </p>
+            <p className={css.info_text}>
+                The "Stage dividers" select of the Leaderboard has a "PGX Grandmasters" option as well, with a divider before every one of these places:
+            </p>
+            <PgxShot n={2} alt="Leaderboard with the divider between the PGX Grandmasters and the PGX International Masters" />
+            <PgxShot n={3} alt="Leaderboard with the divider between the Main Bracket and the Entry Round" />
+            <PgxShot n={4} alt="Leaderboard with the divider between the International Masters and the Group Stage of the Candidate Masters" />
+            <PgxShot n={5} alt="Leaderboard with the divider between the Group Stage and the Play-ins of the Candidate Masters" />
+            <p className={css.info_text}>
+                How a match itself is played, you can see in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. I chose the PGX Grandmasters explicitly and clicked "Start Game", right after{" "}
+                <InfoLink onClick={scrollToAnchor("pbs-rewards", "pbs")} href="?page=pbs#pbs-rewards">Premier Bounty Series Season 1</InfoLink>.
+            </p>
+        </section>
+        <section>
+            <div id="pgx-cm" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>PGX Candidate Masters</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The first step is the <b>PGX Candidate Masters</b>, a Qualifier for the 32 lowest teams. Its Tournament Intro Screen shows them split by where they start: the 8 teams of the Group Stage (places 33-40) and the 24 teams of the Play-ins (places 41-64):
+            </p>
+            <PgxShot n={6} alt="Tournament Intro Screen of PGX Candidate Masters Jönköping #1" />
+            <p className={css.info_text}>
+                The <b>Play-ins</b> are two knockout rounds, all <b>Best of 3</b>. In <b>Play-in Round 1</b>, places 49-64 play each other (the best of them against the worst one and so on),
+                and in <b>Play-in Round 2</b>, places 41-48 wait for them: the best of them meets the winner of the closest match of Round 1 (56th against 57th), the worst of them meets the winner of 49th against 64th. The 8 winners of Round 2 go to the Group Stage:
+            </p>
+            <PgxShot n={7} alt="The Play-ins of the Candidate Masters before the first match" />
+            <PgxShot n={8} alt="Match modal of Play-in Round 1 #1" width="35vw" />
+            <p className={css.info_text}>
+                Team Spring, the 57th team, won both of its Play-ins 2:0, the second one against Team Emerald, the best team of Round 2. Team Copper, the very last one, beat Team Sapphire and Team Wine, and Team Midnight and Team Apricot went through both rounds as well:
+            </p>
+            <PgxShot n={9} alt="The finished Play-ins of the Candidate Masters" />
+            <p className={css.info_text}>
+                Once the Play-ins are over, the <b>Group Stage</b> starts right away and a new navigation shows up on the left: <b>Play-ins</b>, <b>Group Stage</b> and <b>Deciders</b>, every phase as soon as it exists, so you can always look back.
+                The Group Stage has <b>Groups A-D</b> with 4 teams each: the places 33-40 and the 8 Play-in winners are drawn from 4 Pots, so every Group gets two teams of each kind,
+                and only while you are on the Group Stage, the "Group A | Group B | Group C | Group D" navigation at the top lets you switch between them (it stays below the title, while scrolling, same as in the{" "}
+                <InfoLink onClick={scrollToAnchor("big-main-event", "pem-big")} href="?page=pem-big#big-main-event">PEM Big Tournament</InfoLink>).
+                Every Group is the same small Double Elimination bracket as in Stage I of the PEM Big Tournament, but the <b>Opening Round is Best of 1</b>, while the Winners&apos; Match, the Elimination Match and the Decider Match are <b>Best of 3</b>.
+                The winner of the Winners&apos; Match is 1st of the Group, the winner of the Decider Match is 2nd:
+            </p>
+            <PgxShot n={10} alt="The finished Group C of the Candidate Masters with the vertical navigation on the left and the Group navigation at the top" />
+            <p className={css.info_text}>
+                Remember Team Honey from{" "}
+                <InfoLink onClick={scrollToAnchor("big-ecl", "pem-big")} href="?page=pem-big#big-ecl">Elite Competition League #1</InfoLink>? Here, it started in the Group Stage as the 35th team, beat Team Midnight 13-2,
+                lost the Winners&apos; Match 1:2 against Team Frost and then beat that same Team Midnight 2:0 in the Decider Match. Keep an eye on it.
+            </p>
+            <p className={css.info_text}>
+                The 1st and the 2nd team of every Group then play the <b>Deciders</b>, 4 matches crosswise: 1st of Group A against 2nd of Group B, 1st of Group B against 2nd of Group A, and the same with Groups C and D. All of them are <b>Best of 3</b>
+                and the 4 winners qualify for the International Masters. Team Blush beat Team Azure 2:1, Team Jade beat Team Ivory 2:0, Team Frost beat Team Apricot 2:1 and Team Honey beat Team Ruby 2:1:
+            </p>
+            <PgxShot n={11} alt="The finished Deciders of the Candidate Masters with the end buttons" />
+            <PgxShot n={12} alt="The 4 qualifiers of PGX Candidate Masters Jönköping #1" />
+            <p className={css.info_text}>
+                And the Pick&apos;em challenge? Lost by a single point: 79 out of 80 needed Pick&apos;em points. Painful.
+            </p>
+            <PgxShot n={13} alt="Pick'em summary of the Candidate Masters" width="30vw" />
+        </section>
+        <section>
+            <div id="pgx-im" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>PGX International Masters</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The second step is the <b>PGX International Masters</b>, a Tier 2 tournament with 21 teams: places 16-26 start right in the Main Bracket, while places 27-32 and the 4 teams from the Candidate Masters (which glow golden) have to go through the Entry Round first:
+            </p>
+            <PgxShot n={14} alt="Tournament Intro Screen of PGX International Masters Jönköping #1" />
+            <p className={css.info_text}>
+                The <b>Entry Round</b> has 5 <b>Best of 3</b> matches, and the qualifiers get it the hard way: they play against the best teams of the Entry Round. The 5 winners join the 11 teams of the Main Bracket.
+                The navigation on the left has the <b>Entry Round</b> and, once it is over, the <b>Main Bracket</b>:
+            </p>
+            <PgxShot n={15} alt="The Entry Round of the International Masters before the first match" />
+            <PgxShot n={16} alt="Match modal of the first Entry Round match" width="35vw" />
+            <p className={css.info_text}>
+                All 4 qualifiers made it: Team Frost beat Team Magenta, Team Blush beat Team Gold, Team Honey beat Team Charcoal and Team Jade beat Team Royal, and Team Olive beat Team Beige for the fifth spot.
+                The <b>Main Bracket</b> is a Double Elimination bracket with a Grand Final, exactly like the one of the{" "}
+                <InfoLink onClick={scrollToAnchor("big-ecl", "pem-big")} href="?page=pem-big#big-ecl">Elite Competition League</InfoLink>: the Opening Round, the Upper Quarterfinals and the Upper Semifinals are <b>Best of 1</b>,
+                the Grand Final is <b>Best of 5</b> and all the other matches are <b>Best of 3</b>. But here, there are no medals to share: <b>only the winner</b> goes up to the Grandmasters.
+            </p>
+            <p className={css.info_text}>
+                And that winner was Team Honey again. It lost its Opening Round 10-13 against Team Brown and then won every single Best of 3 in the Lower Bracket: against Team Violet, Team White, Team Pink, Team Brown (2:0, revenge!),
+                Team Crimson in the Lower Final and Team Teal in the Consolidation Final. And in the Grand Final, it beat Team Amber, which had won the Upper Bracket, 3:1:
+            </p>
+            <PgxShot n={17} alt="The finished Upper Bracket of the International Masters with the Grand Final" />
+            <PgxShot n={18} alt="The finished Lower Bracket of the International Masters" />
+            <p className={css.info_text}>
+                The Winners&apos; Screen is a Tier 2 one, so there are no quotes and the winner gets a 🥇. But the winner also gets a golden <b>"Qualified to PGX Grandmasters"</b> badge with the PGX trophy on its podium:
+            </p>
+            <PgxShot n={19} alt="Winners' screen of PGX International Masters Jönköping #1 with the Qualified to PGX Grandmasters badge" />
+            <p className={css.info_text}>
+                This Pick&apos;em challenge, I won: 68 out of 54 needed Pick&apos;em points.
+            </p>
+            <PgxShot n={20} alt="Pick'em summary of the International Masters" width="30vw" />
+        </section>
+        <section>
+            <div id="pgx-gm" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>PGX Grandmasters</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The last step is the <b>PGX Grandmasters</b>: the 15 teams invited via the Leaderboard and the winner of the International Masters, Team Honey, which started the whole PGX Grandmasters as the 35th team:
+            </p>
+            <PgxShot n={21} alt="Tournament Intro Screen of PGX Grandmasters Jönköping #1" />
+            <p className={css.info_text}>
+                It starts with one <b>Swiss Stage</b> of 16 teams, the same as the Stages of{" "}
+                <InfoLink onClick={scrollToAnchor("swiss-stage", "official")} href="?page=official#swiss-stage">Official</InfoLink>: 3 wins to go through, 3 losses to fly out and 8 teams go through. But here, <b>every single match is Best of 3</b>, from the 0:0 net to the 2:2 net:
+            </p>
+            <PgxShot n={22} alt="The Swiss Stage of PGX Grandmasters Jönköping #1 before the first match" />
+            <PgxShot n={23} alt="Match modal of the first Swiss Stage match" width="35vw" />
+            <p className={css.info_text}>
+                The PGX Grandmasters has its own trophy, a silver one with golden details, and the series screen shows it in its medallion:
+            </p>
+            <PgxShot n={24} alt="Series screen of a Swiss Stage match with the PGX trophy" width="30vw" />
+            <p className={css.info_text}>
+                Team Blue and Team Silver went through with 3:0. And Team Honey? It lost its first two matches against Team Yellow and Team Khaki, so it stood at 0:2, one loss away from the exit.
+                And then it won three Best of 3s in a row: against Team Black, Team Cyan and, in the 2:2 net, against that same Team Khaki, 2:0:
+            </p>
+            <PgxShot n={25} alt="The finished Swiss Stage of PGX Grandmasters Jönköping #1" />
+            <p className={css.info_text}>
+                The Playoffs are the standard 8-team ones, but with their own formats: the Quarterfinals are <b>Best of 3</b>, the Semifinals and the Third Place Decider are <b>Best of 5</b> and the Grand Final is <b>Best of 7</b>.
+                Team Honey&apos;s journey ended there, 1:2 against Team Silver. Team Green beat Team Silver 3:2 in the Semifinal, Team Blue didn&apos;t lose a single set against Team Salmon and Team Indigo,
+                and in the Grand Final, Team Blue beat Team Green 4:1. Team Indigo took the Third Place 3:2 against Team Silver:
+            </p>
+            <PgxShot n={26} alt="The finished Playoffs of PGX Grandmasters Jönköping #1 with the end buttons" />
+            <PgxShot n={27} alt="Winners' screen of PGX Grandmasters Jönköping #1 with the PGX trophy" width="28vw" />
+            <p className={css.info_text}>
+                And the last Pick&apos;em challenge of Jönköping was won as well: 130 out of 109 needed Pick&apos;em points.
+            </p>
+            <PgxShot n={28} alt="Pick'em summary of PGX Grandmasters Jönköping #1" width="30vw" />
+        </section>
+        <section>
+            <div id="pgx-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The PGX trophy and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The PGX trophy gets its own icon in the Leaderboard, worth the same as the silver PEM trophy, and the title of the Leaderboard tells the city as well: "Leaderboard after PGX Grandmasters Jönköping #1".
+                Team Blue is still the 1st one, now with one more trophy and a new Unbeaten Streak of 6:
+            </p>
+            <PgxShot n={29} alt="Leaderboard after PGX Grandmasters Jönköping #1" />
+            <p className={css.info_text}>
+                In the Hall of Fame, there are three new cards, all with the city in their names: the PGX Grandmasters card with the trophy on top, the International Masters card with the "Qualified to PGX Grandmasters" badge below its winner, and the Candidate Masters card with the Qualifier badge and its 4 qualifiers:
+            </p>
+            <PgxShot n={30} alt="Hall of Fame with the cards of PGX Grandmasters Jönköping #1" />
+            <p className={css.info_text}>
+                The Candidate Masters&apos; summary starts with all teams, split into the Group Stage and the Play-ins. Then come the Play-ins, all teams to the Group Stage, the Group Stage (one Group at a time, with the Group navigation, which stays below the title),
+                all teams to the Deciders, the Deciders and the qualified teams with a link to the International Masters:
+            </p>
+            <PgxShot n={31} alt="Hall of Fame, PGX Candidate Masters Jönköping #1: all teams and the Play-ins" />
+            <PgxShot n={32} alt="Hall of Fame, PGX Candidate Masters Jönköping #1: the Group Stage with its navigation and the Deciders" />
+            <PgxShot n={33} alt="Hall of Fame, PGX Candidate Masters Jönköping #1: the qualified teams and the link to the International Masters" />
+            <p className={css.info_text}>
+                The International Masters&apos; summary has all teams, split into the Main Bracket and the Entry Round, where the 4 qualifiers glow golden (hovering onto them says "via the Candidate Masters") and a link leads back to the Candidate Masters.
+                Then come the Entry Round, all teams to the Main Bracket, the Main Bracket and the podium with the badge, and a link to the Grandmasters:
+            </p>
+            <PgxShot n={34} alt="Hall of Fame, PGX International Masters Jönköping #1: all teams with the glowing qualifiers and the Entry Round" />
+            <PgxShot n={35} alt="Hall of Fame, PGX International Masters Jönköping #1: the podium with the Qualified to PGX Grandmasters badge" />
+            <p className={css.info_text}>
+                And the Grandmasters&apos; summary has all teams, where Team Honey glows golden ("via the International Masters") with a link to the International Masters, then the Swiss Stage, all teams to the Playoffs, the Playoffs, the podium with the trophy and the 5th-8th places:
+            </p>
+            <PgxShot n={36} alt="Hall of Fame, PGX Grandmasters Jönköping #1: all teams, the link to the International Masters and the Swiss Stage" />
+            <PgxShot n={37} alt="Hall of Fame, PGX Grandmasters Jönköping #1: the podium with the PGX trophy" />
+            <p className={css.info_text}>
+                And now, there are six tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b> and <b>PGX Grandmasters</b>.
+                Which city is going to be next?
             </p>
         </section>
     </>
@@ -2381,7 +2844,7 @@ const PbsSubPage = ({ scrollToAnchor }) => (
 const INFO_SUB_PAGES = [
     {
         id: "official",
-        label: <>General Mechanics /<br />Official</>,
+        label: <>General Mechanics /<br />Official Skylines /<br/>Official</>,
         sections: OFFICIAL_SECTIONS,
         Content: OfficialSubPage,
     },
@@ -2399,15 +2862,21 @@ const INFO_SUB_PAGES = [
     },
     {
         id: "gpl",
-        label: <>Global Challenger Cup /<br />Global Pro League</>,
+        label: <>Global Challenger Cup Open Qualifier /<br />Global Challenger Cup /<br />Global Pro League</>,
         sections: GPL_SECTIONS,
         Content: GplSubPage,
     },
     {
         id: "pbs",
-        label: <>Premier Bounty Series</>,
+        label: <>Premier Bounty Series Open Qualifier /<br />Premier Bounty Series</>,
         sections: PBS_SECTIONS,
         Content: PbsSubPage,
+    },
+    {
+        id: "pgx",
+        label: <>PGX Candidate Masters /<br />PGX International Masters /<br />PGX Grandmasters</>,
+        sections: PGX_SECTIONS,
+        Content: PgxSubPage,
     },
 ];
 

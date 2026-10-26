@@ -9,18 +9,21 @@ import { PbsTeamTags } from "../components/PbsDraftShow.jsx";
 import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
-import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy } from "../components/Trophies.jsx";
+import { SkylinesHallSummary } from "../components/SkylinesView.jsx";
+import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy } from "../components/Trophies.jsx";
+import { PGX_CM_GROUPS } from "../logic/pgx.jsx";
 import { CST_GROUPS } from "../logic/cst.js";
 import { hallRecordTime } from "../logic/hallOfFameDb.js";
 import { PEM_QUALIFIED_HIGHLIGHT, getPemSeriesConfig } from "../logic/pemConfig.js";
 import { isPemPlayoffsKind, PEM_MAIN_GROUPS } from "../logic/pemSeries.jsx";
 import { PEM_BIG_STAGE2_AUTO_COUNT } from "../logic/pemStage1.jsx";
 import { getBestOfForPlayoffs } from "../logic/playoffs.js";
-import { QUALIFIER_GROUPS } from "../logic/qualifier.jsx";
+import { OFFICIAL_SWISS_FORMAT } from "../logic/swiss.js";
+import { QUALIFIER_GROUPS, PLAY_IN_GROUP } from "../logic/qualifier.jsx";
 import { formatOrdinal } from "../logic/teamData.js";
 import { PBS_POT_SIZE } from "../logic/pbsConfig.js";
 import { getTournamentTypeConfig, formatTournamentNumber, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
-import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 import { HallManagerModals } from "./HallManagerModals.jsx";
 
 export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, page }) {
@@ -104,14 +107,18 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         renderQualifierWinnersBlock,
         renderGccLeague,
         renderSwissBracket,
+        renderSkylinesBuilding,
+        renderPgxCandidateSection,
+        renderPgxInternationalSection,
+        renderPgxQualifierWinnersBlock,
         hallManagerScrollRef,
         getTypeNumber,
         allTeams,
     } = page;
 
-    const hallTeamCircle = (team, size = 52, highlighted = false) => (
+    const hallTeamCircle = (team, size = 52, highlighted = false, highlightedNote = "(via the Qualifier)") => (
         <div
-            title={team ? `Team ${team.name}${highlighted ? " (via the Qualifier)" : ""}` : "Unknown team"}
+            title={team ? `Team ${team.name}${highlighted ? ` ${highlightedNote}` : ""}` : "Unknown team"}
             style={{
                 width: size,
                 height: size,
@@ -182,7 +189,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </div>
     );
 
-    const renderHallTeamRow = (teams, size = 38, highlightedIds = null) => (
+    const renderHallTeamRow = (teams, size = 38, highlightedIds = null, highlightedNote = "(via the Qualifier)") => (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {(teams || []).length === 0
                 ? <span className={css.info_text} style={{ fontSize: 14 }}>No teams saved.</span>
@@ -193,7 +200,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             key={`${team?.id ?? "team"}-${index}`}
                             title={`Team ${team?.name}`}
                         >
-                            {hallTeamCircle(team, size, highlighted)}
+                            {hallTeamCircle(team, size, highlighted, highlightedNote)}
                         </span>
                     );
                 })}
@@ -201,7 +208,11 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
     );
 
     const hallRecordLabel = (item) =>
-        item?.event === "qualifier"
+        item?.event === "pgxCm" || item?.event === "pgxIm" || item?.event === "pgxGm"
+            ? `${getTournamentTypeConfig(item.type).label} ${item.city ?? ""} #${item.number}`
+            : item?.event === "qualifier" && item?.owner
+            ? `${getTournamentTypeConfig(item.type).label} Open Qualifier ${formatTournamentNumber(item.type, item.number)}`
+            : item?.event === "qualifier"
             ? `${getPemSeriesConfig(item.type).label} Qualifier #${item.number}`
             : item?.event === "main"
                 ? `${getPemSeriesConfig(item.type).longLabel} #${item.number}`
@@ -220,9 +231,58 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </>
     );
 
+    const OPEN_QUALIFIER_CARD_WORDS = {
+        gpl: ["Global", "Challenger", "Cup"],
+        pbs: ["Premier", "Bounty", "Series"],
+    };
+
+    const renderOpenQualifierHallCardName = (item) => (
+        <>
+            {(OPEN_QUALIFIER_CARD_WORDS[item.owner] || []).map((word) => (
+                <span key={word} style={{ display: "block" }}>{word}</span>
+            ))}
+            <span style={{ display: "block", fontSize: 30, fontStyle: "normal" }}>Open Qualifier</span>
+            <span style={{ display: "block", whiteSpace: "nowrap", ...getTournamentNumberStyle(getTournamentTheme(item.number)) }}>
+                {formatTournamentNumber(item.type, item.number)}
+            </span>
+        </>
+    );
+
+    const getPgxGmCitySize = (item) => (`${item.city ?? ""} #${item.number}`.length > 14 ? 32 : 40);
+
+    const renderPgxHallCardName = (item, words) => (
+        <>
+            {["PGX", ...words].map((word) => (
+                <span key={word} style={{ display: "block" }}>{word}</span>
+            ))}
+            <span style={{ display: "block", whiteSpace: "nowrap", fontSize: getPgxGmCitySize(item) }}>
+                {item.city}{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
+            </span>
+        </>
+    );
+
+    const renderPgxCardName = (item, words, height) => (
+        <span style={{ display: "flex", flexDirection: "column", justifyContent: "center", height, fontSize: 24 }}>
+            {words.map((word) => (
+                <span key={word} style={{ display: "block" }}>{word}</span>
+            ))}
+            <span style={{ display: "block", whiteSpace: "nowrap", fontSize: `${item.city ?? ""} #${item.number}`.length > 14 ? 32 : 36 }}>
+                {item.city}{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
+            </span>
+        </span>
+    );
+
+    const renderPgxQualifierCardName = (item) => renderPgxCardName(item, ["PGX", "Candidate", "Masters"], 124);
+
+    const renderPgxTier2CardName = (item) => renderPgxCardName(item, ["PGX", "International"], 87);
+
     const renderQualifierHallCard = (item) => {
         const won = item.pickemWon;
-        const qualifiedTeams = QUALIFIER_GROUPS.flatMap((group) => item.results?.qualifiers?.[group] || []);
+        const qualifiedTeams = item.event === "pgxCm"
+            ? item.qualifiers || []
+            : QUALIFIER_GROUPS.flatMap((group) => item.results?.qualifiers?.[group] || []);
 
         return (
             <button
@@ -230,6 +290,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 key={item.id}
                 onClick={() => {
                     setHallQualifierGroup("A");
+                    setHallStage1Group("A");
                     setSelectedHallTournament(item);
                 }}
                 className={won ? css.cardPickemWin : css.cardPickemLoss}
@@ -311,7 +372,9 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         fontSize: 20,
                     }}
                 >
-                    {renderPemHallCardName(item.number, item.type)}
+                    {item.event === "pgxCm"
+                        ? renderPgxQualifierCardName(item)
+                        : item.owner ? renderOpenQualifierHallCardName(item) : renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div style={{ position: "relative", zIndex: 2, marginTop: 12 }}>
@@ -347,7 +410,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         );
     };
 
-    const renderTier2HallCard = (item, [firstWord, secondWord, lastWord]) => {
+    const renderTier2HallCard = (item, [firstWord, secondWord, lastWord], { nameNode = null, winnerBadge = null } = {}) => {
         const won = item.pickemWon;
         const results = item.results || {};
 
@@ -379,7 +442,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             fontWeight: 700,
                             color: "#fff",
                             position: "absolute",
-                            top: "-60px",
+                            top: item.event === "skylines" ? "-74px" : "-60px",
                             left: "-8px"
                         }}
                     >
@@ -391,7 +454,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             fontWeight: 700,
                             color: won ? "#2e7d32" : "#be3939",
                             position: "absolute",
-                            top: "-60px",
+                            top: item.event === "skylines" ? "-74px" : "-60px",
                             right: "-8px"
                         }}
                     >
@@ -412,12 +475,16 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         fontSize: 30,
                     }}
                 >
-                    <span style={{ display: "block" }}>{firstWord}</span>
-                    <span style={{ display: "block" }}>{secondWord}</span>
-                    <span style={{ display: "block", whiteSpace: "nowrap" }}>
-                        {lastWord}{" "}
-                        <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
-                    </span>
+                    {nameNode ?? (
+                        <>
+                            <span style={{ display: "block" }}>{firstWord}</span>
+                            <span style={{ display: "block" }}>{secondWord}</span>
+                            <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                                {lastWord}{" "}
+                                <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
+                            </span>
+                        </>
+                    )}
                 </div>
 
                 <div
@@ -425,7 +492,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        marginTop: 34,
+                        marginTop: winnerBadge ? 26 : 34,
                         position: "relative"
                     }}
                 >
@@ -468,9 +535,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     >
                         1st place
                     </span>
+                    {winnerBadge}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14, position: "relative", zIndex: 2 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: winnerBadge ? 26 : 14, position: "relative", zIndex: 2 }}>
                     {hallPlaceRow("2nd place", results.runnerUp, 56)}
                     {hallPlaceRow("3rd place", results.thirdPlace, 46)}
                     {hallPlaceRow("4th place", results.fourthPlace, 40)}
@@ -506,6 +574,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         const results = item.results || {};
         const isGpl = item.event === "gpl";
         const isPbs = item.event === "pbs";
+        const isPgx = item.event === "pgxGm";
 
         return (
             <button
@@ -539,7 +608,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             fontWeight: 700,
                             color: "#fff",
                             position: "absolute",
-                            top: "-32px",
+                            top: isPgx ? "-36px" : "-32px",
                             left: "-8px"
                         }}
                     >
@@ -548,13 +617,13 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     <span
                         style={{
                             position: "absolute",
-                            top: "-30px",
+                            top: isPgx ? "-34px" : "-30px",
                             left: "50%",
                             transform: "translateX(-50%)",
                             display: "flex",
                         }}
                     >
-                        {isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
+                        {isPgx ? <PgxTrophy size={28} /> : isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
                     </span>
                     <span
                         style={{
@@ -562,7 +631,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             fontWeight: 700,
                             color: won ? "#2e7d32" : "#be3939",
                             position: "absolute",
-                            top: "-32px",
+                            top: isPgx ? "-36px" : "-32px",
                             right: "-8px"
                         }}
                     >
@@ -581,10 +650,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         lineHeight: 1,
                         textTransform: "none",
                         fontSize: 20,
-                        marginTop: isPbs ? "4px" : isGpl ? "20px" : ""
+                        marginTop: isPbs ? "4px" : isGpl || isPgx ? "20px" : ""
                     }}
                 >
-                    {isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
+                    {isPgx ? <span style={{ fontSize: 30 }}>{renderPgxHallCardName(item, ["Grandmasters"])}</span> : isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div
@@ -592,7 +661,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        marginTop: isPbs ? 38 : isGpl ? 52 : 36,
+                        marginTop: isPbs ? 38 : isGpl ? 52 : isPgx ? 76 - getPgxGmCitySize(item) : 36,
                         position: "relative"
                     }}
                 >
@@ -651,6 +720,20 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         if (item.event === "ecl") return renderTier2HallCard(item, ["Elite", "Competition", "League"]);
         if (item.event === "main" || item.event === "gpl" || item.event === "pbs") return renderPemMainHallCard(item);
         if (item.event === "gcc") return renderTier2HallCard(item, ["Global", "Challenger", "Cup"]);
+        if (item.event === "skylines") return renderTier2HallCard(item, ["Official", "", "Skylines"]);
+        if (item.event === "pgxCm") return renderQualifierHallCard(item);
+        if (item.event === "pgxIm") {
+            return renderTier2HallCard(item, [], {
+                nameNode: renderPgxTier2CardName(item),
+                winnerBadge: (
+                    <span className={`${css.pgx_qualified_badge} ${css.pgx_hall_card_badge}`}>
+                        <PgxTrophy size={16} />
+                        Qualified to PGX Grandmasters
+                    </span>
+                ),
+            });
+        }
+        if (item.event === "pgxGm") return renderPemMainHallCard(item);
 
         const won = item.pickemWon;
         const config = getTournamentTypeConfig(item.type);
@@ -1114,17 +1197,32 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </div>
     );
 
-    const findPemCounterpartRecord = (record, event) => {
+    const findPemCounterpartRecord = (record, event, later = event === "main") => {
         const finishedAt = hallRecordTime(record);
         return hallOfFame
             .filter((item) =>
                 item.type === (record.type ?? PEM_SMALL_TYPE_ID) &&
                 item.event === event &&
                 item.number === record.number &&
-                (event === "main" ? hallRecordTime(item) >= finishedAt : hallRecordTime(item) <= finishedAt)
+                (later ? hallRecordTime(item) >= finishedAt : hallRecordTime(item) <= finishedAt)
             )
             .sort((a, b) => Math.abs(hallRecordTime(a) - finishedAt) - Math.abs(hallRecordTime(b) - finishedAt))[0] ?? null;
     };
+
+    const findOpenQualifierLink = (record) => {
+        const openQualifierRecord = findPemCounterpartRecord(record, "qualifier");
+        const ids = new Set(Object.values(openQualifierRecord?.results?.qualifiers || {}).flat().map((team) => team?.id));
+        return { openQualifierRecord, openQualifiedIds: ids.size ? ids : null };
+    };
+
+    const renderOpenQualifierLink = (openQualifierRecord) => openQualifierRecord && (
+        <div style={{ marginTop: 20 }}>
+            {renderHallLink(
+                "See how the glowing teams came through the Open Qualifier",
+                () => openLinkedHallRecord(openQualifierRecord, "qualifier-bracket")
+            )}
+        </div>
+    );
 
     const renderHallLink = (label, onClick) => (
         <button type="button" className={css.hall_link} onClick={onClick}>
@@ -1132,7 +1230,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </button>
     );
 
-    const renderHallPodium = (podium, trophy = null) => (
+    const renderHallPodium = (podium, trophy = null, winnerBadge = null) => (
         <div className={css.winnerPodium} style={{ height: "732px" }}>
             {podium.runnerUp && (
                 <div className={css.podiumRow}>
@@ -1156,6 +1254,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             Team <b>{podium.winner.name}</b>
                         </ReactFitty>
                         <span className={css.firstPlaceLabel}>Winner</span>
+                        {winnerBadge}
                     </div>
                 </div>
             )}
@@ -1503,6 +1602,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
 
         if (record.event === "gcc") {
             const podium = record.results || {};
+            const { openQualifierRecord, openQualifiedIds } = findOpenQualifierLink(record);
             const restPlaces = (record.places || []).filter((entry) => entry.place >= 5 && entry.place <= 12);
             const placementColors = {
                 5: "#40e0d0",
@@ -1542,7 +1642,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         </div>
 
                         <HallOfFameSectionTitle text="All teams" />
-                        {renderHallTeamRow(record.teams?.length ? record.teams : record.league?.teams)}
+                        {renderHallTeamRow(record.teams?.length ? record.teams : record.league?.teams, 38, openQualifiedIds, "(via the Open Qualifier)")}
 
                         <div style={{ display: "flex", gap: 56, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
                             {(record.league?.pots || []).map((pot, potIndex) => (
@@ -1550,10 +1650,11 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                     <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
                                         Pot {potIndex + 1}
                                     </h4>
-                                    {renderHallTeamRow(pot)}
+                                    {renderHallTeamRow(pot, 38, openQualifiedIds, "(via the Open Qualifier)")}
                                 </div>
                             ))}
                         </div>
+                        {renderOpenQualifierLink(openQualifierRecord)}
 
                         <HallOfFameSectionTitle text="League Phase" marginTop="64px" />
                         {renderGccLeague(record.league, { archived: true, record })}
@@ -1679,12 +1780,13 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 8: "#81c784",
             };
             const drawIds = (draw) => [...(draw?.high || []), ...(draw?.low || [])];
+            const { openQualifierRecord, openQualifiedIds } = findOpenQualifierLink(record);
 
-            const renderPbsTeamRow = (ids, status) => (
+            const renderPbsTeamRow = (ids, status, highlightedIds = null) => (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {ids.map((id) => (
                         <span key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                            {hallTeamCircle(teamById[id], 38)}
+                            {hallTeamCircle(teamById[id], 38, !!highlightedIds?.has(id), "(via the Open Qualifier)")}
                             <PbsTeamTags seed={status?.[id]?.seed} bounty={status?.[id]?.bounty ?? 0} size="small" />
                         </span>
                     ))}
@@ -1723,22 +1825,23 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         </div>
 
                         <HallOfFameSectionTitle text="All teams" />
-                        {renderHallTeamRow(teams)}
+                        {renderHallTeamRow(teams, 38, openQualifiedIds, "(via the Open Qualifier)")}
 
                         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content", marginTop: 36 }}>
                             <div>
                                 <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
                                     High-Seed Pot
                                 </h4>
-                                {renderPbsTeamRow(draws.ro32?.high ?? allIds.slice(0, PBS_POT_SIZE), ro32Status)}
+                                {renderPbsTeamRow(draws.ro32?.high ?? allIds.slice(0, PBS_POT_SIZE), ro32Status, openQualifiedIds)}
                             </div>
                             <div>
                                 <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
                                     Low-Seed Pot
                                 </h4>
-                                {renderPbsTeamRow(draws.ro32?.low ?? allIds.slice(PBS_POT_SIZE), ro32Status)}
+                                {renderPbsTeamRow(draws.ro32?.low ?? allIds.slice(PBS_POT_SIZE), ro32Status, openQualifiedIds)}
                             </div>
                         </div>
+                        {renderOpenQualifierLink(openQualifierRecord)}
 
                         <HallOfFameSectionTitle text="Stage I" marginTop="64px" />
                         {renderArchivedPlayoffsBracket(record, "pbsStage1")}
@@ -1762,6 +1865,281 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                             {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
                         </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "pgxCm" || record.event === "pgxIm" || record.event === "pgxGm") {
+            const findPgxRecord = (event) =>
+                hallOfFame.find((item) => item.event === event && item.number === record.number && item.city === record.city) ?? null;
+            const titleName = { pgxCm: "PGX Candidate Masters", pgxIm: "PGX International Masters", pgxGm: "PGX Grandmasters" }[record.event];
+            const podium = record.results || {};
+            const divisionRow = (columns, highlightedIds = null, highlightedNote) => (
+                <div style={{ display: "flex", gap: 24, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
+                    {columns.map(([title, teams]) => (
+                        <div key={title} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                {title}
+                            </h4>
+                            {renderHallTeamRow(teams, 38, highlightedIds, highlightedNote)}
+                        </div>
+                    ))}
+                </div>
+            );
+
+            let content = null;
+
+            if (record.event === "pgxCm") {
+                const cm = record.candidate;
+                const imRecord = findPgxRecord("pgxIm");
+                const groupTeams = PGX_CM_GROUPS.flatMap((group) => cm?.groups?.[group]?.teams || []);
+                const deciderTeams = (cm?.deciders?.dq || []).flatMap((match) => [match.slotA, match.slotB]).filter(Boolean);
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams)}
+                        {divisionRow([["Group Stage", cm?.directTeams], ["Play-ins", cm?.playIn?.teams]])}
+
+                        <HallOfFameSectionTitle text="Play-ins" marginTop="64px" />
+                        {renderPgxCandidateSection(cm, "P", { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="All teams to the Group Stage" marginTop="64px" />
+                        {renderHallTeamRow(groupTeams)}
+
+                        <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <StickyBelow
+                                anchor='[data-sticky-anchor="hall-pgx"]'
+                                style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                            >
+                                <QualifierGroupNav value={PGX_CM_GROUPS.includes(hallStage1Group) ? hallStage1Group : "A"} onChange={setHallStage1Group} groups={PGX_CM_GROUPS} />
+                            </StickyBelow>
+                            {renderPgxCandidateSection(cm, PGX_CM_GROUPS.includes(hallStage1Group) ? hallStage1Group : "A", { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams to the Deciders" marginTop="64px" />
+                        {renderHallTeamRow(deciderTeams)}
+
+                        <HallOfFameSectionTitle text="Deciders" marginTop="64px" />
+                        {renderPgxCandidateSection(cm, "DQ", { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Qualified teams" marginTop="64px" />
+                        {renderPgxQualifierWinnersBlock(record.qualifiers)}
+                        {imRecord && (
+                            <div style={{ marginTop: 40 }}>
+                                {renderHallLink(
+                                    `See how the qualified teams did in PGX International Masters ${record.city} #${record.number}`,
+                                    () => openLinkedHallRecord(imRecord)
+                                )}
+                            </div>
+                        )}
+                    </>
+                );
+            } else if (record.event === "pgxIm") {
+                const im = record.international;
+                const cmRecord = findPgxRecord("pgxCm");
+                const gmRecord = findPgxRecord("pgxGm");
+                const cmQualifiedIds = new Set((cmRecord?.qualifiers ?? (im?.teams || []).slice(-4)).map((team) => team?.id));
+                const viaCandidate = "(via the Candidate Masters)";
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, cmQualifiedIds, viaCandidate)}
+                        {divisionRow([["Main Bracket", im?.direct], ["Entry Round", im?.entry?.teams]], cmQualifiedIds, viaCandidate)}
+                        {cmRecord && (
+                            <div style={{ marginTop: 24 }}>
+                                {renderHallLink(
+                                    `See where the 4 qualifiers came from in PGX Candidate Masters ${record.city} #${record.number}`,
+                                    () => openLinkedHallRecord(cmRecord)
+                                )}
+                            </div>
+                        )}
+
+                        <HallOfFameSectionTitle text="Entry Round" marginTop="64px" />
+                        {renderPgxInternationalSection(im, "E", { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="All teams to the Main Bracket" marginTop="64px" />
+                        {renderHallTeamRow(im?.bracket?.teams)}
+
+                        <HallOfFameSectionTitle text="Main Bracket" marginTop="64px" />
+                        {renderPgxInternationalSection(im, "M", { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, null, (
+                            <span className={`${css.pgx_qualified_badge} ${css.pgx_podium_badge}`}>
+                                <PgxTrophy size={22} />
+                                <span>Qualified to PGX Grandmasters</span>
+                            </span>
+                        ))}
+                        {gmRecord && (
+                            <div style={{ marginTop: 40 }}>
+                                {renderHallLink(
+                                    `See how Team ${podium.winner?.name ?? "—"} did in PGX Grandmasters ${record.city} #${record.number}`,
+                                    () => openLinkedHallRecord(gmRecord)
+                                )}
+                            </div>
+                        )}
+                    </>
+                );
+            } else {
+                const imRecord = findPgxRecord("pgxIm");
+                const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+                const placementColors = { 5: "#40e0d0", 6: "#ba68c8", 7: "#ff5e2d", 8: "#81c784" };
+                const championIds = record.imChampion ? new Set([record.imChampion.id]) : null;
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, championIds, "(via the International Masters)")}
+                        {imRecord && (
+                            <div style={{ marginTop: 24 }}>
+                                {renderHallLink(
+                                    `See how Team ${record.imChampion?.name ?? "—"} won PGX International Masters ${record.city} #${record.number}`,
+                                    () => openLinkedHallRecord(imRecord)
+                                )}
+                            </div>
+                        )}
+
+                        <HallOfFameSectionTitle text="Swiss Stage" marginTop="64px" />
+                        {renderSwissBracket(record.stages?.stage1, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="All teams to Playoffs" marginTop="64px" />
+                        {renderHallTeamRow(record.qualifiers?.playoffs)}
+
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" marginBottom="88px" />
+                        <div>{renderArchivedPlayoffsBracket(record)}</div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, <PgxTrophy size={PGX_PODIUM_TROPHY_SIZE} style={PGX_PODIUM_TROPHY_STYLE} />)}
+
+                        <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+                    </>
+                );
+            }
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header} data-sticky-anchor="hall-pgx">
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                {record.event === "pgxCm" ? renderQualifierTitle({
+                                    badgeHeight: 36,
+                                    label: (
+                                        <>
+                                            {titleName} {record.city}{" "}
+                                            <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                                #{record.number}
+                                            </span>
+                                        </>
+                                    ),
+                                }) : (
+                                    <span>
+                                        {titleName} {record.city}{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
+                                    </span>
+                                )}
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        {content}
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "skylines") {
+            const podium = record.results || {};
+            const restPlaces = (record.places || []).filter((entry) => entry.place >= 5 && entry.place <= 12);
+            const placementColors = {
+                5: "#40e0d0",
+                6: "#ba68c8",
+                7: "#ff5e2d",
+                8: "#81c784",
+                9: "#f9e4a1",
+                10: "#b0bec5",
+            };
+            const officialRecord = hallOfFame.find((item) => !item.event && item.skylinesNumber === record.number) ?? null;
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header} data-sticky-anchor="hall-skylines">
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                <span>
+                                    Official Skylines{" "}
+                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                        #{record.number}
+                                    </span>
+                                </span>
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams?.length ? record.teams : record.skylines?.teams)}
+
+                        <HallOfFameSectionTitle text="The building" marginTop="64px" />
+                        <SkylinesHallSummary
+                            skylines={record.skylines}
+                            anchor='[data-sticky-anchor="hall-skylines"]'
+                            renderBuilding={(roundView) => renderSkylinesBuilding(record.skylines, { archived: true, record, roundView })}
+                        />
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium)}
+
+                        <HallOfFameSectionTitle text="5th - 12th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+
+                        {officialRecord && (
+                            <div style={{ marginTop: 40 }}>
+                                {renderHallLink(
+                                    `See how the top 32 teams did in Official #${officialRecord.number}`,
+                                    () => openLinkedHallRecord(officialRecord)
+                                )}
+                            </div>
+                        )}
 
                         {renderHallManagerModals()}
                     </div>
@@ -2051,7 +2429,12 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             const allQualifierTeams = Array.from({ length: 16 }).flatMap((_, i) =>
                 QUALIFIER_GROUPS.map((group) => groups[group]?.[i]).filter(Boolean)
             );
-            const mainEventRecord = findPemCounterpartRecord(record, "main");
+            const openOwner = record.owner ?? null;
+            const mainEventRecord = openOwner
+                ? findPemCounterpartRecord(record, openOwner === "gpl" ? "gcc" : "pbs", true)
+                : findPemCounterpartRecord(record, "main");
+            const mainEventName = openOwner === "gpl" ? "the Global Challenger Cup" : openOwner === "pbs" ? "the Premier Bounty Series" : "the main event";
+            const playInBracket = record.qualifier?.[PLAY_IN_GROUP] ?? null;
 
             return (
                 <>
@@ -2075,9 +2458,9 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                     badgeHeight: 36,
                                     label: (
                                         <>
-                                            {getPemSeriesConfig(record.type).longLabel}{" "}
+                                            {openOwner ? `${getTournamentTypeConfig(record.type).label} Open Qualifier` : getPemSeriesConfig(record.type).longLabel}{" "}
                                             <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                                #{record.number}
+                                                {openOwner ? formatTournamentNumber(record.type, record.number) : `#${record.number}`}
                                             </span>
                                         </>
                                     ),
@@ -2134,6 +2517,13 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             ))}
                         </div>
 
+                        {playInBracket ? (
+                            <>
+                                <HallOfFameSectionTitle text="Play-in" marginTop="64px" />
+                                {renderQualifierBracket(playInBracket, { archived: true, record })}
+                            </>
+                        ) : null}
+
                         <HallOfFameSectionTitle text="Qualifier bracket" marginTop="64px" sectionId="qualifier-bracket" />
                         <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
                             <StickyBelow
@@ -2150,7 +2540,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         {mainEventRecord && (
                             <div style={{ marginTop: 40 }}>
                                 {renderHallLink(
-                                    "See how the qualified teams did in the main event",
+                                    `See how the qualified teams did in ${mainEventName}`,
                                     () => openLinkedHallRecord(mainEventRecord)
                                 )}
                             </div>
@@ -2168,6 +2558,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         const stage3Lineup = record.stages?.stage3?.teams || [];
         const podium = record.results || {};
         const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+        const isThirtyTwoTeamOfficial = record.format === OFFICIAL_SWISS_FORMAT;
+        const skylinesRecord = record.skylinesNumber
+            ? hallOfFame.find((item) => item.event === "skylines" && item.number === record.skylinesNumber) ?? null
+            : null;
 
         const qualificationOrder = [
             0, 8, 12, 4,
@@ -2176,9 +2570,9 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             5, 13, 9, 1
         ];
 
-        const playoffsByQualificationOrder = qualificationOrder.map(
-            (seed) => record.qualifiers.playoffs[seed]
-        );
+        const playoffsByQualificationOrder = isThirtyTwoTeamOfficial
+            ? (record.qualifiers?.playoffs || [])
+            : qualificationOrder.map((seed) => record.qualifiers.playoffs[seed]);
 
         const placementColors = {
             1: "gold",
@@ -2305,18 +2699,42 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         </div>
                     </div>
 
-                    <HallOfFameSectionTitle text="All teams to Stage II" />
-                    {renderHallTeamRow(stage2Lineup)}
+                    {isThirtyTwoTeamOfficial ? (
+                        <>
+                            <HallOfFameSectionTitle text="Stage I" marginTop="64px" />
+                            {renderSwissBracket(record.stages?.stage1, { archived: true, record })}
 
-                    <HallOfFameSectionTitle text="All teams to Stage III" />
-                    {renderHallTeamRow(stage3Lineup)}
+                            <HallOfFameSectionTitle text="All teams to Stage II" marginTop="64px" />
+                            {renderHallTeamRow(stage2Lineup)}
 
-                    <HallOfFameSectionTitle text="All 16 playoffs qualifiers" />
-                    {renderHallTeamRow(playoffsByQualificationOrder)}
+                            <HallOfFameSectionTitle text="Stage II" marginTop="64px" />
+                            {renderSwissBracket(record.stages?.stage2, { archived: true, record })}
+
+                            <HallOfFameSectionTitle text="All teams to Stage III" marginTop="64px" />
+                            {renderHallTeamRow(stage3Lineup)}
+
+                            <HallOfFameSectionTitle text="Stage III" marginTop="64px" />
+                            {renderSwissBracket(record.stages?.stage3, { archived: true, record })}
+
+                            <HallOfFameSectionTitle text="All teams to Playoffs" marginTop="64px" />
+                            {renderHallTeamRow(playoffsByQualificationOrder)}
+                        </>
+                    ) : (
+                        <>
+                            <HallOfFameSectionTitle text="All teams to Stage II" />
+                            {renderHallTeamRow(stage2Lineup)}
+
+                            <HallOfFameSectionTitle text="All teams to Stage III" />
+                            {renderHallTeamRow(stage3Lineup)}
+
+                            <HallOfFameSectionTitle text="All 16 playoffs qualifiers" />
+                            {renderHallTeamRow(playoffsByQualificationOrder)}
+                        </>
+                    )}
 
                     {Object.keys(record.playoffs || {}).length > 0 && (
                         <>
-                            <HallOfFameSectionTitle text="Playoffs" marginBottom="88px" />
+                            <HallOfFameSectionTitle text="Playoffs" marginTop={isThirtyTwoTeamOfficial ? "64px" : undefined} marginBottom="88px" />
                             <div>
                                 {renderArchivedPlayoffsBracket(record)}
                             </div>
@@ -2326,7 +2744,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     <HallOfFameSectionTitle text="Podium" marginTop="102px" />
                     {renderHallPodium(podium, <FaTrophy />)}
 
-                    <HallOfFameSectionTitle text="5th - 16th places" marginTop="82px" />
+                    <HallOfFameSectionTitle text={isThirtyTwoTeamOfficial ? "5th - 8th places" : "5th - 16th places"} marginTop="82px" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                         {restPlaces.map((entry) => (
                             <div
@@ -2343,6 +2761,15 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             </div>
                         ))}
                     </div>
+
+                    {skylinesRecord && (
+                        <div style={{ marginTop: 40 }}>
+                            {renderHallLink(
+                                "See how places 33-64 did in the Official Skylines",
+                                () => openLinkedHallRecord(skylinesRecord)
+                            )}
+                        </div>
+                    )}
 
                     {renderHallManagerModals()}
                 </div>

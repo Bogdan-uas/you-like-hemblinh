@@ -3,6 +3,7 @@ import css from "../SpecialModePage.module.css";
 import PemTrophyIcon from "../../../components/PemTrophyIcon/PemTrophyIcon.jsx";
 import GplTrophyIcon from "../../../components/GplTrophyIcon/GplTrophyIcon.jsx";
 import PbsTrophyIcon from "../../../components/PbsTrophyIcon/PbsTrophyIcon.jsx";
+import PgxTrophyIcon from "../../../components/PgxTrophyIcon/PgxTrophyIcon.jsx";
 import { PEM_TROPHY_SILVER, PEM_TROPHY_GOLD } from "../logic/pemConfig.js";
 import { PBS_TROPHY_BODY, PBS_TROPHY_GEM } from "../logic/pbsConfig.js";
 import { PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
@@ -36,6 +37,15 @@ export const PbsTrophy = ({ style, ...props }) => (
     <PbsTrophyIcon
         color={PBS_TROPHY_BODY}
         gemColor={PBS_TROPHY_GEM}
+        style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
+        {...props}
+    />
+);
+
+export const PgxTrophy = ({ style, ...props }) => (
+    <PgxTrophyIcon
+        color={{ top: "#ffffff", middle: "#c0c0c0", bottom: "#6f6f6f" }}
+        accentColor="linear-gradient(180deg, #fff7b3 0%, gold 45%, #c49000 100%)"
         style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
         {...props}
     />

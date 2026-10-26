@@ -4,18 +4,20 @@ import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { WhiteCaretIcon, TournamentTierInfo, TournamentTierBadge } from "../components/TournamentTypeInfo.jsx";
-import { TOURNAMENT_TYPES } from "../logic/tournamentTypes.jsx";
+import { TOURNAMENT_TYPES, getTournamentBanList } from "../logic/tournamentTypes.jsx";
 
 export function StartPage({ intro, picker, actions }) {
     const { colorSeq } = intro;
     const {
         isTournamentPickerOpen,
         tournamentPicker,
+        tournamentBans,
         handlePickRandomTournament,
         setIsTournamentPickerOpen,
         handleToggleTournamentType,
     } = picker;
     const { handleTournamentStart, navigate } = actions;
+    const bannedTournaments = getTournamentBanList(tournamentBans);
 
 
     return (
@@ -134,8 +136,21 @@ export function StartPage({ intro, picker, actions }) {
                             <span className={css.tournament_option_description}>
                                 Random order of tournaments.
                                 <br />
-                                Every tournament has the same chance to occur each time.
+                                Every tournament has the same chance to occur each time, except the ones, which have just been played.
                             </span>
+                            {bannedTournaments.length > 0 && (
+                                <span className={css.tournament_option_description} style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+                                    <b>Excluded from the next rolls:</b>
+                                    {bannedTournaments.map(({ type, rolls }) => (
+                                        <span key={type.id} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                            <TournamentTierBadge tier={type.tier} size={16} />
+                                            <span>
+                                                <b>{type.longLabel ?? type.label}</b> for {rolls === 1 ? "the next tournament" : `the next ${rolls} tournaments`}
+                                            </span>
+                                        </span>
+                                    ))}
+                                </span>
+                            )}
                         </button>
 
                         <div className={css.divider} />

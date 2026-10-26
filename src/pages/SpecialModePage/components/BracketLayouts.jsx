@@ -5,30 +5,61 @@ import { ECL_CONNECTOR_LINKS, ECL_COLUMN_TITLES } from "../logic/ecl.jsx";
 import { PBS_ROUND_TITLES } from "../logic/pbsConfig.js";
 import { PEM_GROUP_COLUMN_TITLES } from "../logic/pemSeries.jsx";
 import { PEM_STAGE1_CONNECTOR_LINKS, PEM_STAGE1_STAGE_LABELS } from "../logic/pemStage1.jsx";
-import { QUALIFIER_COLUMN_TITLES } from "../logic/qualifier.jsx";
+import { QUALIFIER_COLUMN_TITLES, isByeOpeningBracket } from "../logic/qualifier.jsx";
+import { PGX_PLAYIN_CONNECTOR_LINKS } from "../logic/pgx.jsx";
+
+export const PlayInBracketLayout = ({ bracket, renderMatch }) => (
+    <div className={css.play_in_bracket}>
+        <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Play-in</h4>
+        <div className={css.play_in_matches}>
+            {(bracket?.pi || []).map((match, idx) => (
+                <div key={match.id} className={css.play_in_slot}>
+                    {renderMatch(match, "pi", idx)}
+                    {match.dest ? (
+                        <span className={css.play_in_destination}>
+                            Winner goes to <b>Group {match.dest.group}</b>
+                        </span>
+                    ) : null}
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const isByeOpeningLink = (bracket, link) => {
+    const [stage, idx] = link.from.split("-");
+    return stage === "lr1" || (stage === "uo" && !!bracket.uo[Number(idx)]?.bye);
+};
 
 export const QualifierBracketLayout = ({ bracket, renderMatch }) => {
+    const byeOpening = isByeOpeningBracket(bracket);
+    const links = byeOpening
+        ? QUALIFIER_CONNECTOR_LINKS.filter((link) => !isByeOpeningLink(bracket, link))
+        : QUALIFIER_CONNECTOR_LINKS;
+
     const column = (stage, columnClass) => (
         <div key={stage} className={css.column_container} style={{ width: 170, transition: "none" }}>
             <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{QUALIFIER_COLUMN_TITLES[stage]}</h4>
             <div className={columnClass} style={{ width: "100%", transition: "none" }}>
-                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+                {(bracket?.[stage] || []).map((match, idx) =>
+                    byeOpening && stage === "uo" && match.bye ? null : renderMatch(match, stage, idx)
+                )}
             </div>
         </div>
     );
 
     return (
         <div className={css.qualifier_bracket}>
-            <BracketConnectors links={QUALIFIER_CONNECTOR_LINKS} />
+            <BracketConnectors links={links} />
 
-            {column("uo", css.columnRo16)}
+            {column("uo", byeOpening ? css.columnQuarters : css.columnRo16)}
             {column("uqf", css.columnQuarters)}
             <div />
             {column("usf", css.columnSemis)}
             <div />
             {column("uf", css.columnGrandFinal)}
 
-            {column("lr1", css.columnRo16)}
+            {byeOpening ? <div /> : column("lr1", css.columnRo16)}
             {column("lr2", css.columnRo16)}
             {column("lr3", css.columnQuarters)}
             {column("lsf", css.columnQuarters)}
@@ -263,3 +294,33 @@ export const PbsStageLayout = ({ bracket, view, renderMatch }) => {
         </div>
     );
 };
+
+export const PgxPlayInLayout = ({ playIn, renderMatch }) => (
+    <div className={css.pgx_playin_bracket}>
+        <BracketConnectors links={PGX_PLAYIN_CONNECTOR_LINKS} />
+        <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Play-in Round 1</h4>
+        <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Play-in Round 2</h4>
+        {(playIn?.pr2 || []).map((match, idx) => {
+            const feeder = 7 - idx;
+            return [renderMatch(playIn.pr1[feeder], "pr1", feeder), renderMatch(match, "pr2", idx)];
+        })}
+    </div>
+);
+
+export const PgxMatchesLayout = ({ title, stage, matches, renderMatch, caption }) => (
+    <div className={css.play_in_bracket}>
+        {title ? <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{title}</h4> : null}
+        <div className={css.play_in_matches}>
+            {(matches || []).map((match, idx) => (
+                <div
+                    key={match.id}
+                    className={css.play_in_slot}
+                    style={matches.length % 2 === 1 && idx === matches.length - 1 ? { gridColumn: "1 / -1", justifySelf: "center", width: 170 } : undefined}
+                >
+                    {renderMatch(match, stage, idx)}
+                    {caption ? <span className={css.play_in_destination}>{caption(match, idx)}</span> : null}
+                </div>
+            ))}
+        </div>
+    </div>
+);

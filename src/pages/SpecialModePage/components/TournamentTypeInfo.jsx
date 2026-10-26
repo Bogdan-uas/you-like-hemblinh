@@ -125,13 +125,20 @@ export const PemBigDescription = () => (
 
 export const GplDescription = () => (
     <>
-        Two tournaments, played one after another:
+        Three tournaments, played one after another:
+        <PemSmallEventLine tier="qualifier">
+            <b>Global Challenger Cup Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>
+            (4 Bo3 matches) and its 4 winners join places 37-56 in Group A and Group B (12 teams each, the 4 best
+            seeds of every Group skip the Opening Round and the Lower Round 1). Every Group is a Double Elimination
+            bracket (Opening Round, Upper Quarterfinals and Upper Semifinals are Bo1, the rest Bo3) and every
+            Group&apos;s top 2 teams qualify to the Global Challenger Cup.
+        </PemSmallEventLine>
         <PemSmallEventLine tier="tier2">
-            <b>Global Challenger Cup</b> — places 25-40 of the Leaderboard in one League Phase: 4 Pots of 4 teams
+            <b>Global Challenger Cup</b> — places 25-36 of the Leaderboard and the 4 teams from the Open Qualifier in one League Phase: 4 Pots of 4 teams
             and 4 Matchdays, so every team plays one team of every Pot (all Bo3) and all 16 teams share one table.
             The top 4 go straight to the Quarterfinals, places 5-12 play the Knockout Play-offs for the other 4
             spots and places 13-16 are out. Knockout Play-offs, Quarterfinals, Semifinals and Third Place Decider
-            are Bo3, the Grand Final is Bo5. Places 41-64 don&apos;t play at all.
+            are Bo3, the Grand Final is Bo5.
         </PemSmallEventLine>
         <PemSmallEventLine tier="tier1">
             <b>Global Pro League</b> — places 9-24 of the Leaderboard start in <b>Stage I</b>, its 8 best teams join
@@ -142,11 +149,41 @@ export const GplDescription = () => (
     </>
 );
 
+export const PgxDescription = () => (
+    <>
+        Three tournaments in one host city, played one after another:
+        <PemSmallEventLine tier="qualifier">
+            <b>PGX Candidate Masters</b> — places 41-64 of the Leaderboard play the <b>Play-ins</b> (two Bo3 knockout
+            rounds: places 49-64 play first, places 41-48 join in the second round). Its 8 winners join places 33-40
+            in the <b>Group Stage</b>: Groups A-D of 4 teams (Opening Round Bo1, Winners&apos; Match, Elimination
+            Match and Decider Match Bo3). Every Group&apos;s top 2 teams play the <b>Deciders</b> (4 Bo3 matches)
+            and their 4 winners qualify to the International Masters.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier2">
+            <b>PGX International Masters</b> — places 16-32 of the Leaderboard and the 4 teams from the Candidate
+            Masters. The 10 lowest seeds play the Bo3 <b>Entry Round</b>, its 5 winners join the other 11 teams in a
+            Double Elimination bracket (Opening Round, Upper Quarterfinals and Upper Semifinals Bo1, Grand Final Bo5,
+            the rest Bo3). Only the winner qualifies to the Grandmasters.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>PGX Grandmasters</b> — the main event: places 1-15 of the Leaderboard and the winner of the
+            International Masters in one Swiss Stage (16 teams, all Bo3). Its 8 best teams play the Playoffs:
+            Quarterfinals are Bo3, Semifinals and Third Place Decider Bo5, the Grand Final Bo7.
+        </PemSmallEventLine>
+    </>
+);
+
 export const PbsDescription = () => (
     <>
-        One tournament, played on its own:
+        Two tournaments, played one after another:
+        <PemSmallEventLine tier="qualifier">
+            <b>Premier Bounty Series Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>
+            (4 Bo3 matches) and its 4 winners join places 29-56 in Group A and Group B (16 teams each). Every Group
+            is a Double Elimination bracket (Opening Round, Upper Quarterfinals and Upper Semifinals are Bo1, the
+            rest Bo3) and every Group&apos;s top 2 teams qualify to the Premier Bounty Series.
+        </PemSmallEventLine>
         <PemSmallEventLine tier="tier1">
-            <b>Premier Bounty Series</b> — places 1-32 of the Leaderboard, places 33-64 don&apos;t play at all.
+            <b>Premier Bounty Series</b> — places 1-28 of the Leaderboard and the 4 teams from the Open Qualifier.
             Seeds 1-16 form the High-Seed Pot and carry a bounty (60 Bounty Gems for Seed #1 down to 15 for
             Seed #16), seeds 17-32 form the Low-Seed Pot without one. Before the <b>Round of 32</b> (Stage I),
             the <b>Round of 16</b> (Stage II), the <b>Quarterfinals</b> and the <b>Semifinals</b> (both in the

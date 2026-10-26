@@ -13,12 +13,17 @@ import { toBaseTeam } from "./teams.js";
 
 const PBS_ROUND_SIZES = { ro32: 16, ro16: 8, qf: 4, sf: 2, thirdPlace: 1, gf: 1 };
 
-export const buildPbsSeeds = (teams, ratings) =>
-    buildLeaderboard(teams, ratings).sorted.slice(0, PBS_TEAM_COUNT).map((team, i) => ({
+export const PBS_DIRECT_COUNT = 28;
+
+export const buildPbsSeedsFromTeams = (teams) =>
+    teams.slice(0, PBS_TEAM_COUNT).map((team, i) => ({
         ...toBaseTeam(team),
         seed: i + 1,
         bounty: pbsSeedBounty(i + 1),
     }));
+
+export const buildPbsSeeds = (teams, ratings) =>
+    buildPbsSeedsFromTeams(buildLeaderboard(teams, ratings).sorted.slice(0, PBS_DIRECT_COUNT));
 
 export const buildPbsStatus = (seeds) =>
     Object.fromEntries(seeds.map((team) => [team.id, { seed: team.seed, bounty: team.bounty }]));

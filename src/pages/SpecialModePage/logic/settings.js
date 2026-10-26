@@ -13,10 +13,35 @@ export const DEFAULT_SETTINGS = {
     smoothScroll: true,
     podiumEffects: true,
     skipPodiumReveal: false,
+    simulateEnabled: true,
+    simulateMode: "set",
+    simulateSpeed: 1,
+    simulateSlowDown: true,
+    simulateInstant: "off",
+    simulateKeepOpen: false,
+    simulateInSeries: true,
     secretKey: null,
     secretScoreKey: null,
     secretUnlock: null,
 };
+
+export const SIMULATE_MODES = [
+    { value: "set", label: "One set at a time" },
+    { value: "series", label: "The whole series" },
+];
+
+export const SIMULATE_SPEEDS = [1, 2, 4, 8];
+
+export const SIMULATE_YES_NO = [
+    { value: true, label: "Yes" },
+    { value: false, label: "No" },
+];
+
+export const SIMULATE_INSTANT_MODES = [
+    { value: "off", label: "Don't allow" },
+    { value: "set", label: "Per set" },
+    { value: "series", label: "Whole series" },
+];
 
 export const isSecretUnlocked = (settings) =>
     isSecretCodeConfigured() && settings.secretUnlock === SECRET_KEY_CODE_HASH;

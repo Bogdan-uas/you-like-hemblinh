@@ -2,9 +2,11 @@ import { useState, useLayoutEffect, useRef } from "react";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-import { QUALIFIER_GROUPS } from "../logic/qualifier.jsx";
+import { QUALIFIER_GROUPS, PLAY_IN_GROUP } from "../logic/qualifier.jsx";
 
-export const QualifierGroupNav = ({ value, onChange, fixed = false }) => {
+const qualifierGroupLabel = (group) => (group === PLAY_IN_GROUP ? "Play-in" : `Group ${group}`);
+
+export const QualifierGroupNav = ({ value, onChange, fixed = false, groups = QUALIFIER_GROUPS, labelOf = qualifierGroupLabel, anchorId = "qualifier-groups" }) => {
     const wrapRef = useRef(null);
     const hasMeasuredRef = useRef(false);
     const [indicator, setIndicator] = useState({ left: 0, width: 0, animate: false });
@@ -29,10 +31,10 @@ export const QualifierGroupNav = ({ value, onChange, fixed = false }) => {
     return (
         <div
             className={fixed ? css.groups_header : css.groups_header_inline}
-            data-sticky-anchor={fixed ? "qualifier-groups" : undefined}
+            data-sticky-anchor={fixed ? anchorId : undefined}
         >
             <div ref={wrapRef} className={css.groups_navigation}>
-                {QUALIFIER_GROUPS.map((group) => {
+                {groups.map((group) => {
                     const isActive = value === group;
                     return (
                         <button
@@ -42,7 +44,7 @@ export const QualifierGroupNav = ({ value, onChange, fixed = false }) => {
                             onClick={() => onChange(group)}
                             className={`${css.resultsNavigationButton} ${css.groupNavigationButton} ${isActive ? css.resultsNavigationButtonActive : ""}`}
                         >
-                            Group {group}
+                            {labelOf(group)}
                         </button>
                     );
                 })}

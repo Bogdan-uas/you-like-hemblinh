@@ -12,6 +12,10 @@ import {
     formatKeyCode,
     isDefaultSettings,
     isSecretUnlocked,
+    SIMULATE_MODES,
+    SIMULATE_SPEEDS,
+    SIMULATE_INSTANT_MODES,
+    SIMULATE_YES_NO,
 } from "../logic/settings.js";
 import { checkResetCode, checkSecretCode, isResetCodeConfigured, isSecretCodeConfigured } from "../logic/codeHash.js";
 
@@ -49,6 +53,31 @@ function SettingsSwitch({ id, label, hint, checked, disabled = false, onChange }
                     <FaXmark className={css.settings_switch_off} aria-hidden="true" />
                 </span>
             </label>
+        </div>
+    );
+}
+
+function SettingsChoice({ label, hint, value, options, disabled = false, onChange }) {
+    return (
+        <div className={`${css.settings_option} ${disabled ? css.settings_disabled : ""}`}>
+            <p className={css.settings_info_text}>{label}</p>
+            {hint ? <p className={css.settings_hint}>{hint}</p> : null}
+            <div className={css.settings_choice} role="radiogroup" aria-label={label}>
+                {options.map((option) => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={value === option.value}
+                        className={`${css.settings_choice_option} ${value === option.value ? css.settings_choice_option_active : ""}`}
+                        disabled={disabled}
+                        data-no-press
+                        onClick={() => onChange(option.value)}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
         </div>
     );
 }
@@ -436,6 +465,72 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                                     checked={settings.showGambleKey}
                                     disabled={!hasKey}
                                     onChange={update("showGambleKey")}
+                                />
+                            </div>
+
+                            <div className={css.settings_divider} />
+                            <h3 className={css.settings_section_title}>Simulate</h3>
+                            <div className={css.settings_row}>
+                                <SettingsSwitch
+                                    id="settings-simulate-enabled"
+                                    label="Show the Simulate button"
+                                    hint="The Simulate tab below the match window and the Gamble button. Turn it off to hide it completely."
+                                    checked={settings.simulateEnabled}
+                                    onChange={update("simulateEnabled")}
+                                />
+                                <SettingsChoice
+                                    label="Instant simulate"
+                                    hint="Skips the playback and decides the set or the whole series at once, no matter the Bo format."
+                                    value={settings.simulateInstant}
+                                    options={SIMULATE_INSTANT_MODES}
+                                    disabled={!settings.simulateEnabled}
+                                    onChange={update("simulateInstant")}
+                                />
+                            </div>
+                            <div className={css.settings_row}>
+                                <SettingsChoice
+                                    label="Keep it open in the match window"
+                                    hint="Opens the Simulate tab right away every time you open a match."
+                                    value={settings.simulateKeepOpen}
+                                    options={SIMULATE_YES_NO}
+                                    disabled={!settings.simulateEnabled}
+                                    onChange={update("simulateKeepOpen")}
+                                />
+                                <SettingsChoice
+                                    label="Show it on the series screen"
+                                    hint="The Simulate tab below the Gamble button. A running simulation still shows its Stop button."
+                                    value={settings.simulateInSeries}
+                                    options={SIMULATE_YES_NO}
+                                    disabled={!settings.simulateEnabled}
+                                    onChange={update("simulateInSeries")}
+                                />
+                            </div>
+                            <div className={css.settings_row}>
+                                <SettingsChoice
+                                    label="What it simulates"
+                                    hint="One set and then you decide again, or every set until the series is over."
+                                    value={settings.simulateMode}
+                                    options={SIMULATE_MODES}
+                                    disabled={!settings.simulateEnabled || settings.simulateInstant !== "off"}
+                                    onChange={update("simulateMode")}
+                                />
+                                <SettingsChoice
+                                    label="Speed"
+                                    hint="How fast the simulated rounds are played."
+                                    value={settings.simulateSpeed}
+                                    options={SIMULATE_SPEEDS.map((speed) => ({ value: speed, label: `${speed}x` }))}
+                                    disabled={!settings.simulateEnabled || settings.simulateInstant !== "off"}
+                                    onChange={update("simulateSpeed")}
+                                />
+                            </div>
+                            <div className={css.settings_row}>
+                                <SettingsSwitch
+                                    id="settings-simulate-slow-down"
+                                    label="Slow down on important moments"
+                                    hint="Plays the rounds slower when a team is one round away from taking the set."
+                                    checked={settings.simulateSlowDown}
+                                    disabled={!settings.simulateEnabled || settings.simulateInstant !== "off"}
+                                    onChange={update("simulateSlowDown")}
                                 />
                             </div>
 

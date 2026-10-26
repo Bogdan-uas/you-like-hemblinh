@@ -9,11 +9,22 @@ import SpecialModePage from "../../pages/SpecialModePage/SpecialModePage.jsx";
 import SpecialModeInfoPage from '../../pages/SpecialModeInfoPage/SpecialModeInfoPage'
 
 import { Toaster } from "react-hot-toast";
+import { AppToast } from "./AppToast.jsx";
+import { useModalPresence } from "./useModalPresence.js";
 
 function App() {
+  const isModalOpen = useModalPresence();
+
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster
+        position={isModalOpen ? "bottom-right" : "top-center"}
+        reverseOrder={false}
+        gutter={10}
+        containerStyle={isModalOpen ? { bottom: 24, right: 24 } : undefined}
+      >
+        {(t) => <AppToast t={t} />}
+      </Toaster>
       <Suspense fallback={<Loader />}>
         <Layout>
           <Routes>
