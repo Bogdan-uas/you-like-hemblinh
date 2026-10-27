@@ -1,3 +1,5 @@
+import { SECRET_PANEL_LS_KEY } from "./storageKeys.js";
+
 export const CHEAT_STRENGTHS = [
     { value: "nudge", label: "Nudge", hint: "~60%", force: 0.25 },
     { value: "strong", label: "Strong", hint: "~75%", force: 0.5 },
@@ -35,6 +37,23 @@ export const normalizeCheatDraft = (draft) => {
     const merged = { ...DEFAULT_CHEAT_DRAFT, ...draft };
     const winnerRounds = SET_WINNER_SCORES.includes(merged.winnerRounds) ? merged.winnerRounds : DEFAULT_CHEAT_DRAFT.winnerRounds;
     return { ...merged, winnerRounds, loserRounds: clampLoserRounds(winnerRounds, merged.loserRounds) };
+};
+
+export const loadCheatDraft = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem(SECRET_PANEL_LS_KEY) || "null");
+        return normalizeCheatDraft(saved && typeof saved === "object" ? saved : DEFAULT_CHEAT_DRAFT);
+    } catch {
+        return DEFAULT_CHEAT_DRAFT;
+    }
+};
+
+export const saveCheatDraft = (draft) => {
+    try {
+        localStorage.setItem(SECRET_PANEL_LS_KEY, JSON.stringify(draft));
+    } catch {
+        console.error("Couldn't save the Secret panel");
+    }
 };
 
 const OTHER = { left: "right", right: "left" };

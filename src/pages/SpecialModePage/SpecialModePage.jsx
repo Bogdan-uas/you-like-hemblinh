@@ -363,7 +363,7 @@ import { TournamentIntros } from "./screens/TournamentIntros.jsx";
 import { GameControlModals } from "./screens/GameControlModals.jsx";
 import { SettingsPanel } from "./components/SettingsPanel.jsx";
 import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKeys, useSimulateKey, isSecretUnlocked, useSpecialModeSettings, SECRET_EVENT } from "./logic/settings.js";
-import { DEFAULT_CHEAT_DRAFT, CHEAT_SCRIPTS, TIE_SCORE, buildCheatAnchor, getCheatMiniWinner, isCheatFinished, describeCheat, getMiniRoundOdds, getRoundOdds, normalizeCheatDraft } from "./logic/secretCheats.js";
+import { DEFAULT_CHEAT_DRAFT, CHEAT_SCRIPTS, TIE_SCORE, buildCheatAnchor, getCheatMiniWinner, isCheatFinished, describeCheat, getMiniRoundOdds, getRoundOdds, normalizeCheatDraft, loadCheatDraft, saveCheatDraft } from "./logic/secretCheats.js";
 
 function SpecialModePage() {
     const [settings, setSettings] = useState(loadSettings);
@@ -559,7 +559,7 @@ function SpecialModeContent() {
     const [isLocked, setIsLocked] = useState(false);
 
     const [activeCheat, setActiveCheat] = useState(null);
-    const [cheatDraftState, setCheatDraft] = useState(DEFAULT_CHEAT_DRAFT);
+    const [cheatDraftState, setCheatDraft] = useState(loadCheatDraft);
     const cheatDraft = normalizeCheatDraft(cheatDraftState);
     const [isSecretPanelOpen, setIsSecretPanelOpen] = useState(false);
     const [peekedRoll, setPeekedRoll] = useState(null);
@@ -3866,6 +3866,7 @@ function SpecialModeContent() {
     const updateCheatDraft = (patch) => {
         const next = normalizeCheatDraft({ ...cheatDraft, ...patch });
         setCheatDraft(next);
+        saveCheatDraft(next);
         setActiveCheat((cheat) => {
             if (!cheat) return cheat;
             if (!cheat.script && (patch.strength || patch.scope)) return { ...cheat, ...patch };
