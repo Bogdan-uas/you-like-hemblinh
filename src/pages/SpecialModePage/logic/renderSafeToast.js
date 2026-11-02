@@ -2,6 +2,8 @@ import toastLib from "react-hot-toast";
 
 let commentaryMuted = false;
 let seriesToastMode = false;
+let seriesHud = null;
+const LOWER_THIRD_HUDS = new Set(["pem", "gpl", "pbs", "pgx", "cst", "ecl", "gcc"]);
 
 const SERIES_TRAIL_LENGTH = 4;
 const SERIES_DEFAULT_DURATION = 2000;
@@ -14,6 +16,7 @@ let seriesQueue = [];
 let seriesShownAt = 0;
 let seriesTimer = null;
 let seriesShownItem = null;
+const seriesHeldTimers = new Set();
 
 const isRoundToast = (item) => SERIES_ROUND_ICONS.has(item.options?.icon);
 const isReplaceableBy = (item, group) => !item || isRoundToast(item) || (!!group && item.options?.group === group);
@@ -41,6 +44,16 @@ const pumpSeriesQueue = () => {
 };
 
 const enqueueSeriesToast = (fn, message, options) => {
+    const holdFor = options?.holdUntil && LOWER_THIRD_HUDS.has(seriesHud) ? options.holdUntil - Date.now() : 0;
+    if (holdFor > 0) {
+        const timer = setTimeout(() => {
+            seriesHeldTimers.delete(timer);
+            enqueueSeriesToast(fn, message, { ...options, holdUntil: null, jump: true });
+        }, holdFor);
+        seriesHeldTimers.add(timer);
+        return;
+    }
+
     const item = { fn, message, options };
 
     if (options?.jump) {
@@ -77,7 +90,20 @@ export const setSeriesToastMode = (active) => {
         seriesShownItem = null;
         if (seriesTimer) clearTimeout(seriesTimer);
         seriesTimer = null;
+        seriesHeldTimers.forEach((timer) => clearTimeout(timer));
+        seriesHeldTimers.clear();
     }
+};
+
+export const setSeriesHud = (hud) => {
+    if (seriesHud === hud) return;
+    seriesHud = hud;
+
+    const alive = seriesFeed.id && Date.now() < seriesFeed.until - 120;
+    if (!hud || !alive || !seriesShownItem) return;
+    toastLib.remove(seriesFeed.id);
+    seriesFeed = { ...seriesFeed, id: null, current: null };
+    showSeriesItem(seriesShownItem);
 };
 
 const seriesOptions = (options) => {
@@ -94,7 +120,9 @@ const seriesOptions = (options) => {
         current: { icon: options?.icon ?? null, accent: options?.accent ?? null },
     };
 
-    return { ...options, duration, variant: "series", id: seriesFeed.id, seq: seriesFeed.seq, trail: seriesFeed.trail };
+    const position = LOWER_THIRD_HUDS.has(seriesHud) ? { position: "bottom-left" } : {};
+
+    return { ...options, ...position, duration, variant: "series", hud: seriesHud, id: seriesFeed.id, seq: seriesFeed.seq, trail: seriesFeed.trail };
 };
 
 const inSeries = (fn) => (message, options) =>

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
-import { setSeriesToastMode } from "../logic/renderSafeToast.js";
+import { setSeriesToastMode, setSeriesHud } from "../logic/renderSafeToast.js";
 import Header from "../../../components/Header/Header.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,7 +13,7 @@ import { MomentumStreakBadge } from "../components/StreakBadges.jsx";
 import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy } from "../components/Trophies.jsx";
 import { pgxStageLabel } from "../logic/pgx.jsx";
 import { isSingleEclStage, eclStageLabel } from "../logic/ecl.jsx";
-import { SKYLINES_ROOF, skylinesStageLabel, getSkylinesFloorName } from "../logic/skylines.jsx";
+import { SKYLINES_ROOF, SKYLINES_FLOOR_COUNT, skylinesStageLabel, getSkylinesFloorName } from "../logic/skylines.jsx";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isSinglePemGroupStage, pemGroupStageLabel, PEM_GROUP_QUALIFYING_STAGES } from "../logic/pemSeries.jsx";
 import { isSinglePemStage1Stage, pemStage1StageLabel, PEM_STAGE1_QUALIFYING_STAGES } from "../logic/pemStage1.jsx";
@@ -33,6 +33,16 @@ import { useSpecialModeSettings, shortKeyCode } from "../logic/settings.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { SecretPanel } from "../components/SecretPanel.jsx";
 import { isCheatTargeting } from "../logic/secretCheats.js";
+import { PemScorebug, PemIntro } from "./hud/PemHud.jsx";
+import { PemExtendedRoundsOverlay } from "./hud/PemExtendedRounds.jsx";
+import { PbsScorebug, PbsIntro } from "./hud/PbsHud.jsx";
+import { PgxScorebug, PgxIntro } from "./hud/PgxHud.jsx";
+import { CstScorebug, CstIntro } from "./hud/CstHud.jsx";
+import { EclScorebug, EclIntro, EclExtendedRoundsOverlay } from "./hud/EclHud.jsx";
+import { isFreshPemSeries, PEM_ENTRANCE_MS } from "./hud/pemHud.js";
+import { OfficialIntro } from "./hud/OfficialIntro.jsx";
+import { SkylinePlate, SkylineFloorFrame, SkylineStreak } from "./hud/SkylinesHud.jsx";
+import skyCss from "./hud/Skylines.module.css";
 
 export function SeriesScreen({ header, series, labels, actions }) {
     const {
@@ -58,7 +68,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
         setIsScoreBoardResetModalOpen,
         navigate,
     } = header;
-    const { gambleKey, showGambleKey } = useSpecialModeSettings();
+    const { gambleKey, showGambleKey, broadcastIntro } = useSpecialModeSettings();
     const {
         seriesState,
         activePhase,
@@ -95,16 +105,18 @@ export function SeriesScreen({ header, series, labels, actions }) {
         pbsLabel,
         getOvertimeLabel,
         getPenaltyMessage,
+        seriesHud = "official",
+        hudEventName,
+        hudEventNumber,
     } = labels;
-    const { handlePenaltyShot, handleSeriesGamble, simulation } = actions;
+    const isBroadcastHud = seriesHud === "pem" || seriesHud === "gpl" || seriesHud === "pbs" || seriesHud === "pgx" || seriesHud === "cst" || seriesHud === "ecl" || seriesHud === "gcc";
+    const hudTrophyType = seriesHud === "pgx"
+        ? seriesState.phase === "pgxCm" ? "pgxCm" : seriesState.phase === "pgxIm" ? "pgxIm" : "pgx"
+        : seriesHud === "gpl" || seriesHud === "pbs" || seriesHud === "cst" || seriesHud === "ecl" || seriesHud === "gcc" ? seriesHud : pemType;
+    const { handlePenaltyShot, handleSeriesGamble, setIntroPlaying, simulation } = actions;
 
-    const seriesLabelNode = useMemo(() => {
+    const labelParts = useMemo(() => {
         if (!seriesState.active || !seriesState.leftTeam || !seriesState.rightTeam) return null;
-
-        const {
-            setsToWin,
-            setNumber,
-        } = seriesState;
 
         let event = null;
         let stage = null;
@@ -208,6 +220,15 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         ? (seriesState.phase === "skyline" ? seriesState.skylineStage === "o" || seriesState.skylineStage === "sf" : !isSingleEclStage(seriesState.eclStage))
                         : seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace";
 
+        return { event, stage, big, isQualifierSeries, isCstSeries, isPemSeries, seriesMatchNumber, showSeriesMatchNumber };
+    }, [seriesState, tournamentLabel, pemLabel, qualifierLabel, cstLabel, eclLabel, skylinesLabel, pgxCmLabel, pgxImLabel, gccLabel, pbsLabel, isCstPhase, isGccPhase, isPbsPhase, isPemMainPhase, isPemBigSeries]);
+
+    const seriesLabelNode = useMemo(() => {
+        if (!labelParts) return null;
+
+        const { setsToWin, setNumber } = seriesState;
+        const { event, stage, big, isQualifierSeries, isCstSeries, isPemSeries, seriesMatchNumber, showSeriesMatchNumber } = labelParts;
+
         return (
             <>
                 <span className={css.series_label}>
@@ -229,9 +250,11 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -40 }}
                             transition={{ duration: 0.6 }}
-                            className={`${css.series_label_medallion} ${isQualifierSeries ? css.series_label_medallion_wide : ""}`}
+                            className={seriesState.phase === "skyline" ? skyCss.label_plate : `${css.series_label_medallion} ${isQualifierSeries ? css.series_label_medallion_wide : ""}`}
                         >
-                            {isQualifierSeries ? (
+                            {seriesState.phase === "skyline" ? (
+                                <SkylinePlate seriesState={seriesState} />
+                            ) : isQualifierSeries ? (
                                 <QualifierBadge height={20} />
                             ) : isCstSeries ? (
                                 <span className={css.series_label_vs}>🥇</span>
@@ -304,7 +327,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 </span>
             </>
         );
-    }, [seriesState, tournamentLabel, pemLabel, qualifierLabel, cstLabel, eclLabel, skylinesLabel, pgxCmLabel, pgxImLabel, isPgxMainPhase, gccLabel, pbsLabel, isCstPhase, isGccPhase, isGplMainPhase, isPbsPhase, isPemMainPhase, isPemBigSeries, pemType]);
+    }, [labelParts, seriesState, isGplMainPhase, isPbsPhase, isPgxMainPhase, pemType]);
 
     const getPointLabel = () => {
         if (seriesState.phase === "cstGroup" || seriesState.phase === "gccLeague") return "MATCH POINT!!!";
@@ -412,6 +435,44 @@ export function SeriesScreen({ header, series, labels, actions }) {
         return () => setSeriesToastMode(false);
     }, []);
 
+    useEffect(() => {
+        setSeriesHud(seriesHud);
+        return () => setSeriesHud(null);
+    }, [seriesHud]);
+
+    const [openingMode] = useState(() => (!isFreshPemSeries(seriesState) ? "none" : broadcastIntro ? "intro" : isBroadcastHud ? "entrance" : "none"));
+    const [isIntroPlaying, setIsIntroPlaying] = useState(openingMode !== "none");
+
+    useEffect(() => {
+        if (openingMode !== "entrance") return undefined;
+        const timer = setTimeout(() => setIsIntroPlaying(false), PEM_ENTRANCE_MS);
+        return () => clearTimeout(timer);
+    }, [openingMode]);
+
+    useLayoutEffect(() => {
+        setIntroPlaying?.(isIntroPlaying);
+    }, [isIntroPlaying, setIntroPlaying]);
+
+    useLayoutEffect(() => () => setIntroPlaying?.(false), [setIntroPlaying]);
+    const isGambleLocked = isButtonLocked || isIntroPlaying;
+
+    const hudStageText = labelParts
+        ? [
+            seriesState.phase === "qualifier" && !String(labelParts.stage ?? "").includes("Qualifier") ? "Qualifier" : null,
+            seriesState.phase === "playoffs" ? null : labelParts.stage,
+            `${labelParts.big}${labelParts.showSeriesMatchNumber ? ` #${labelParts.seriesMatchNumber}` : ""}`,
+        ].filter(Boolean).join(isBroadcastHud ? " | " : " · ")
+        : "";
+
+    const hasLeftPoint = isSeriesPointWins || isSetPointWins;
+    const hasRightPoint = isSeriesPointLosses || isSetPointLosses;
+    const hudPoint = hasLeftPoint || hasRightPoint
+        ? {
+            side: hasLeftPoint && hasRightPoint ? "both" : hasLeftPoint ? "left" : "right",
+            label: ((hasLeftPoint ? isSeriesPointWins : isSeriesPointLosses) ? getPointLabel() : "Set point").replace(/!+$/, ""),
+        }
+        : null;
+
     const pointPillStyle = (team) => ({
         background: team?.gradient,
         color: getBrightness(team?.color ?? "#2e2f42") > 190 ? "#2e2f42" : "#ffffff",
@@ -424,6 +485,66 @@ export function SeriesScreen({ header, series, labels, actions }) {
                     <SecretPanel key="secret-panel" secret={secret} teams={{ left: seriesState.leftTeam, right: seriesState.rightTeam }} />
                 ) : null}
             </AnimatePresence>
+            {openingMode === "intro" && !isBroadcastHud ? (
+                <OfficialIntro
+                    seriesState={seriesState}
+                    labelParts={labelParts}
+                    medallion={labelParts?.isQualifierSeries ? <QualifierBadge height={30} /> : <FaTrophy />}
+                    plate={seriesState.phase === "skyline" ? <SkylinePlate seriesState={seriesState} size={84} caption /> : null}
+                    ride={seriesState.phase === "skyline" ? (seriesState.skylineRound === SKYLINES_ROOF ? SKYLINES_FLOOR_COUNT : SKYLINES_FLOOR_COUNT - (seriesState.skylineFloor ?? SKYLINES_FLOOR_COUNT)) : null}
+                    rideTop={seriesState.phase === "skyline" && seriesState.skylineRound === SKYLINES_ROOF}
+                    setsToWin={setsToWin}
+                    onDone={() => setIsIntroPlaying(false)}
+                />
+            ) : openingMode === "intro" && seriesHud === "ecl" ? (
+                <EclIntro
+                    seriesState={seriesState}
+                    eventName={hudEventName}
+                    eventNumber={hudEventNumber}
+                    stageText={hudStageText}
+                    setsToWin={setsToWin}
+                    onDone={() => setIsIntroPlaying(false)}
+                />
+            ) : openingMode === "intro" && seriesHud === "cst" ? (
+                <CstIntro
+                    seriesState={seriesState}
+                    eventName={hudEventName}
+                    eventNumber={hudEventNumber}
+                    stageText={hudStageText}
+                    setsToWin={setsToWin}
+                    onDone={() => setIsIntroPlaying(false)}
+                />
+            ) : openingMode === "intro" && seriesHud === "pgx" ? (
+                <PgxIntro
+                    seriesState={seriesState}
+                    eventName={hudEventName}
+                    eventNumber={hudEventNumber}
+                    stageText={hudStageText}
+                    setsToWin={setsToWin}
+                    pemType={hudTrophyType}
+                    onDone={() => setIsIntroPlaying(false)}
+                />
+            ) : openingMode === "intro" && seriesHud === "pbs" ? (
+                <PbsIntro
+                    seriesState={seriesState}
+                    eventName={hudEventName}
+                    eventNumber={hudEventNumber}
+                    stageText={hudStageText}
+                    setsToWin={setsToWin}
+                    pemType={hudTrophyType}
+                    onDone={() => setIsIntroPlaying(false)}
+                />
+            ) : openingMode === "intro" ? (
+                <PemIntro
+                    seriesState={seriesState}
+                    eventName={hudEventName}
+                    eventNumber={hudEventNumber}
+                    stageText={hudStageText}
+                    setsToWin={setsToWin}
+                    pemType={hudTrophyType} theme={seriesHud}
+                    onDone={() => setIsIntroPlaying(false)}
+                />
+            ) : null}
             <Header
                 setIsRestartModalOpen={() => setIsRestartModalOpen(true)}
                 setIsTerminateModalOpen={() => setIsTerminateModalOpen(true)}
@@ -444,7 +565,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 hasAnyPlacings={hasAnyPlacings}
                 onInfoPage={() => navigate("/special-mode-info")}
             />
-            <div style={{ marginTop: setsToWin === 1 ? "0px" : "-120px" }} className={css.series_container}>
+            <div style={{ marginTop: isBroadcastHud ? (setsToWin === 1 ? "-20px" : "-60px") : setsToWin === 1 ? "0px" : "-120px" }} className={css.series_container}>
                 <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", transition: "none" }}>
                     {secret?.unlocked ? <button
                         type="button"
@@ -469,14 +590,117 @@ export function SeriesScreen({ header, series, labels, actions }) {
                     >
                         Secret
                     </button> : null}
-                    {seriesLabelNode}
+                    {isBroadcastHud ? (
+                        seriesHud === "ecl" ? (
+                        <EclScorebug
+                            entrance={openingMode === "entrance"}
+                            seriesState={seriesState}
+                            setsToWin={setsToWin}
+                            displayedRound={displayedRound}
+                            eventName={hudEventName}
+                            eventNumber={hudEventNumber}
+                            stageText={hudStageText}
+                            displayedMiniSquares={displayedMiniSquares}
+                            overtimeToWin={overtimeToWin}
+                            point={banner ? null : hudPoint}
+                            activeCheat={secret?.activeCheat}
+                            finalRoundMinis={finalRoundMinis}
+                            penaltyAttempt={currentAttempt}
+                            suddenDeath={inSuddenDeath}
+                            penaltyAttempts={attemptsToDisplay}
+                        />
+                        ) : seriesHud === "cst" ? (
+                        <CstScorebug
+                            entrance={openingMode === "entrance"}
+                            seriesState={seriesState}
+                            setsToWin={setsToWin}
+                            displayedRound={displayedRound}
+                            eventName={hudEventName}
+                            eventNumber={hudEventNumber}
+                            stageText={hudStageText}
+                            displayedMiniSquares={displayedMiniSquares}
+                            overtimeToWin={overtimeToWin}
+                            point={banner ? null : hudPoint}
+                            activeCheat={secret?.activeCheat}
+                            finalRoundMinis={finalRoundMinis}
+                            penaltyAttempt={currentAttempt}
+                            suddenDeath={inSuddenDeath}
+                            penaltyAttempts={attemptsToDisplay}
+                        />
+                        ) : seriesHud === "pgx" ? (
+                        <PgxScorebug
+                            entrance={openingMode === "entrance"}
+                            seriesState={seriesState}
+                            setsToWin={setsToWin}
+                            displayedRound={displayedRound}
+                            eventName={hudEventName}
+                            eventNumber={hudEventNumber}
+                            stageText={hudStageText}
+                            pemType={hudTrophyType}
+                            displayedMiniSquares={displayedMiniSquares}
+                            overtimeToWin={overtimeToWin}
+                            point={banner ? null : hudPoint}
+                            activeCheat={secret?.activeCheat}
+                            finalRoundMinis={finalRoundMinis}
+                            penaltyAttempt={currentAttempt}
+                            suddenDeath={inSuddenDeath}
+                            penaltyAttempts={attemptsToDisplay}
+                        />
+                        ) : seriesHud === "pbs" ? (
+                        <PbsScorebug
+                            entrance={openingMode === "entrance"}
+                            ready={!isIntroPlaying}
+                            seriesState={seriesState}
+                            setsToWin={setsToWin}
+                            displayedRound={displayedRound}
+                            eventName={hudEventName}
+                            eventNumber={hudEventNumber}
+                            stageText={hudStageText}
+                            pemType={hudTrophyType}
+                            displayedMiniSquares={displayedMiniSquares}
+                            overtimeToWin={overtimeToWin}
+                            point={banner ? null : hudPoint}
+                            activeCheat={secret?.activeCheat}
+                            finalRoundMinis={finalRoundMinis}
+                            penaltyAttempt={currentAttempt}
+                            suddenDeath={inSuddenDeath}
+                            penaltyAttempts={attemptsToDisplay}
+                        />
+                        ) : (
+                        <PemScorebug
+                            entrance={openingMode === "entrance"}
+                            seriesState={seriesState}
+                            setsToWin={setsToWin}
+                            displayedRound={displayedRound}
+                            eventName={hudEventName}
+                            eventNumber={hudEventNumber}
+                            stageText={hudStageText}
+                            pemType={hudTrophyType} theme={seriesHud}
+                            displayedMiniSquares={displayedMiniSquares}
+                            overtimeToWin={overtimeToWin}
+                            point={banner ? null : hudPoint}
+                            loserOpacity={loserOpacity}
+                            activeCheat={secret?.activeCheat}
+                            finalRoundMinis={finalRoundMinis}
+                            penaltyAttempt={currentAttempt}
+                            suddenDeath={inSuddenDeath}
+                            penaltyAttempts={attemptsToDisplay}
+                        />
+                        )
+                    ) : seriesLabelNode}
                 </div>
                 {seriesState.tiebreakerPhase === "extended" && extendedRoundDetails && (
-                    <ExtendedRoundsOverlay seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} />
+                    seriesHud === "ecl" ? (
+                        <EclExtendedRoundsOverlay seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} eventName={hudEventName} eventNumber={hudEventNumber} />
+                    ) : isBroadcastHud ? (
+                        <PemExtendedRoundsOverlay seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} pemType={hudTrophyType} theme={seriesHud} />
+                    ) : (
+                        <ExtendedRoundsOverlay seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} />
+                    )
                 )}
                 <div className={css.turn_slot_floating}>
                         <AnimatePresence mode="wait" initial={false}>
-                            {seriesState.tiebreakerPhase === "penalties" && !seriesState.penaltyResolved ? (
+                            {!isBroadcastHud && seriesState.tiebreakerPhase === "penalties" && !seriesState.penaltyResolved ? (
                                 <motion.div
                                     key={seriesState.penaltyTurn}
                                     initial={{ opacity: 0, rotateX: -90, y: 6 }}
@@ -504,7 +728,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                             ) : null}
                         </AnimatePresence>
                 </div>
-                <div className={css.scoreboard} style={{ backgroundColor: "#fff" }}>
+                {!isBroadcastHud ? (<>
+                <div className={`${css.scoreboard} ${seriesState.phase === "skyline" ? skyCss.host : ""}`} style={{ backgroundColor: "#fff" }}>
+                    {seriesState.phase === "skyline" ? <SkylineFloorFrame seriesState={seriesState} /> : null}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative" }}>
                         <AnimatePresence initial={false}>
                             {isSeriesPointWins || isSetPointWins ? (
@@ -670,7 +896,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         </div>
                                     ) : null}
                                 </div>
-                                {seriesState.tiebreakerPhase === "idle" && (
+                                {seriesState.phase === "skyline" ? (
+                                    <SkylineStreak value={seriesState.tiebreakerPhase === "idle" && !banner ? seriesState.liveStats?.left?.momentum ?? 0 : 0} />
+                                ) : seriesState.tiebreakerPhase === "idle" && (
                                     <MomentumStreakBadge value={seriesState.liveStats?.left?.momentum} animated />
                                 )}
                             </div>
@@ -1180,7 +1408,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         </div>
                                     ) : null}
                                 </div>
-                                {seriesState.tiebreakerPhase === "idle" && (
+                                {seriesState.phase === "skyline" ? (
+                                    <SkylineStreak value={seriesState.tiebreakerPhase === "idle" && !banner ? seriesState.liveStats?.right?.momentum ?? 0 : 0} />
+                                ) : seriesState.tiebreakerPhase === "idle" && (
                                     <MomentumStreakBadge value={seriesState.liveStats?.right?.momentum} animated />
                                 )}
                             </div>
@@ -1477,9 +1707,10 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         ) : null}
                     </AnimatePresence>
                 </div>
+                </>) : null}
 
                 <div className={css.seriesGambleMessage}>
-                    {banner ? (
+                    {banner && !isBroadcastHud ? (
                         <div className={css.series_banner_slot}>
                             <SeriesBanner
                                 tie={!!banner.tie}
@@ -1532,8 +1763,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 {!banner && (
                     <div className={css.series_gamble_wrapper}>
                         <button
-                            className={`${css.gamble_button} ${isButtonLocked || banner ? css.locked : ""}`}
-                            disabled={isButtonLocked || !!banner}
+                            className={`${css.gamble_button} ${isGambleLocked || banner ? css.locked : ""}`}
+                            disabled={isGambleLocked || !!banner}
                             data-gamble-button
                             onClick={
                                 seriesState.tiebreakerPhase === "penalties"
@@ -1549,7 +1780,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         {simulation?.enabled && (simulation.running || (simulation.inSeries && seriesState.tiebreakerPhase === "idle")) ? (
                             <SimulateAttachment
                                 variant="series"
-                                canSimulate={!isButtonLocked}
+                                canSimulate={!isGambleLocked}
                                 running={simulation.running}
                                 onSimulate={simulation.start}
                                 onStop={simulation.stop}

@@ -970,11 +970,13 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <br />• <b>Instant simulate</b>: "Don&apos;t allow" plays the simulated rounds one by one, "Per set" and "Whole series" skip the playback and decide the set or the whole series at once
                 <br />• <b>Keep it open in the match window</b> and <b>Show it on the series screen</b>: whether the Simulate tab is already opened in every match window and whether it is there on the series screen at all
                 <br />• <b>What it simulates</b> and <b>Speed</b>: one set at a time or the whole series, at 1x, 2x, 4x or 8x
+                <br />• <b>Simulate Key</b>: a key, which presses "Simulate" (or "Stop"), while the Simulate tab is shown and opened
                 <br />• <b>Slow down on important moments</b>: plays the rounds slower, when a team is one round away from taking the set
                 <br />• <b>Faster Extended Rounds</b>: halves the pauses between the comparisons in the Extended Rounds
                 <br />• <b>Close windows with Esc</b>: Esc closes the match window, the Detailed Match Breakdown and the "Restart" / "Terminate" pop-ups
                 <br />• <b>Commentary notifications</b>: turn them off to hide the play-by-play notifications, like "Second Half begins" (the warnings will still be shown)
                 <br />• <b>Smooth scrolling</b>: turn it off, if you prefer the instant, normal mouse wheel scrolling
+                <br />• <b>Series opening</b>: plays a short intro with both teams, every time a series starts. When it&apos;s off, the scoreboard just makes a quick entrance instead
                 <br />• <b>Skip the podium reveal</b>: the Winners&apos; Screen shows the whole Top 4 at once instead of revealing them one by one
                 <br />• <b>Winners&apos; Screen effects</b>: the rays, sparkles and confetti around the podium
             </p>
@@ -1182,7 +1184,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>After starting the match, you're being redirected to the "series screen":</p>
             <div className={css.image_container}>
-                <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '32vw', height: '36vh' }} />
+                <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Matches in Playoffs have a bit different scoreboard)
                 </span>
@@ -1211,16 +1213,16 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </b>
             </p>
             <div className={css.image_container}>
-                <img src={miniRoundWonChocolate} alt="Won mini-round for Team Salmon" className={css.image} style={{ width: '33vw', height: '36vh' }} />
-                <img src={miniRoundWonIvory} alt="Won mini-round for Team Lavender" className={css.image} style={{ width: '33vw', height: '36vh' }} />
+                <img src={miniRoundWonChocolate} alt="Won mini-round for Team Salmon" className={css.image} style={{ width: '32vw', height: '38vh' }} />
+                <img src={miniRoundWonIvory} alt="Won mini-round for Team Lavender" className={css.image} style={{ width: '32vw', height: '38vh' }} />
             </div>
             <p className={css.info_text}>And by taking a round, a team gets a lead and leading indicator will show to the team, which has a lead:</p>
             <div className={css.image_container}>
-                <img src={wholeRoundWonChocolate} alt="Won round for Team Salmon" className={css.image} style={{ width: '33vw', height: '36vh' }} />
+                <img src={wholeRoundWonChocolate} alt="Won round for Team Salmon" className={css.image} style={{ width: '32vw', height: '38vh' }} />
             </div>
             <p className={css.info_text}>And as it is a Best of 1 in 0:0 net of Stage I, a team needs one set to win:</p>
             <div className={css.image_container}>
-                <img src={matchPointImg} alt="MATCH POINT!!! for the Salmon!" className={css.image} style={{ width: '34vw', height: '38vh' }} />
+                <img src={matchPointImg} alt="MATCH POINT!!! for the Salmon!" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Once a team is one round away from taking a set, they have a "SET POINT!" pill in their color above their names. But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". This label differs itself in some specific matches, but I'll leave it already to you to find "some other specific cases" out)
                 </span>
@@ -1232,7 +1234,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 The winner side is light-green and the loser side is light-red on the rectangle. Depending if your chosen team won, a green check icon appears and a red cross appears, if lost. The "VS" is replaced by the final score of the match: <br />
             </p>
             <div className={css.image_container}>
-                <img src={teamChocolateGoesTo10Net} alt="Team Salmon goes to 1:0 net and Team Lavender goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                <img src={teamChocolateGoesTo10Net} alt="Team Salmon goes to 1:0 net and Team Lavender goes to 0:1 net" className={css.image} style={{ width: '30vw', height: '42vh' }} />
             </div>
             <p className={css.info_text}>
                 And what if you don&apos;t feel like pressing "Gamble" for every single mini-round of a long series? That&apos;s what the <b>Simulate</b> tab is for.
@@ -1252,6 +1254,13 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 By default, it plays one set at a time at 1x and plays slower when a team is one round away from taking the set, but all of that (and whether it should play the whole series or even decide it <b>instantly</b>, without any playback) can be changed in the{" "}
                 <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("starting-off")} href='#starting-off'>Settings</a>.
                 The simulation always stops by itself before Extended Rounds and Penalties, so the most dramatic moments are still yours to gamble. The results, the Leaderboard points, the stats and the Pick&apos;em points of a simulated match are counted exactly the same way as the ones of a gambled match.
+            </p>
+            <p className={css.info_text}>
+                One more thing about the series screen: everything above is the HUD of Official, and it stays the same in all of its Stages and in its Playoffs. The other tournaments don&apos;t use it, though: every one of them has its own <b>broadcast HUD</b>, made after the scoreboard of a real tournament broadcast,
+                with its own colors and its own animations for the round ends, Overtimes, set ends and the match end. You&apos;ll find each of them explained in the tab of its tournament.
+                And if the "Series opening" setting is on (see{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("starting-off")} href='#starting-off'>Settings</a>
+                ), every series starts with a short intro, which shows the tournament, the match and both teams, before the series screen shows up.
             </p>
         </section>
         <section>
@@ -1520,6 +1529,28 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <SkyShot n={4} alt="The finished Ground Floor in Round 1" />
             <p className={css.info_text}>
+                Since the Official Skylines is a part of the Official, its series screen is the one of the Official, with the same scoreboard, the same badges and the same "GG!". But it has a twist: the series is played <b>on its Floor</b>.
+                With the "Series opening" setting on, the series starts with an elevator ride: the floors of the building rush past, until the elevator stops on the Floor of the match, which lights up yellow, and the match and both teams show up on it.
+                In the middle, instead of the trophy, there is the plate of the Floor ("G" for the Ground Floor, the number of a Floor or the golden "PH" for the Penthouse). These are from Round 3, on the Ground Floor:
+            </p>
+            <SkyShot n={17} alt="The elevator ride of the series opening, on the way to the Ground Floor" />
+            <SkyShot n={18} alt="The series opening has arrived on the Ground Floor: Team Raspberry against Team Jade" />
+            <p className={css.info_text}>
+                On the series screen, the scoreboard stands inside a slice of the building: the Floor with its ledges above and below, the walls on both sides and the same yellow glow, which the current Floor has in the building.
+                In the Penthouse, the ledges are golden, and the plate in the middle tells the Floor all the time:
+            </p>
+            <SkyShot n={19} alt="The series screen of an Opening Match on the Ground Floor" />
+            <p className={css.info_text}>
+                And the Momentum Streak is an elevator floor display here: from 5 rounds in a row on, a small display below the score shows the count with an arrow riding up, and every new round rolls the number up, like a floor.
+                From 7 on, the digits turn red, and from 10 on, they turn green, the display gets a golden frame and two arrows ride up. (The Official itself keeps its fire.)
+            </p>
+            <p className={css.info_text}>
+                And when the match is over, both teams show right away where they go next, with a small elevator car next to it. After an Opening Match, it&apos;s the Winners&apos; Match and the Losers&apos; Match, after the Winners&apos; Match and the Losers&apos; Match, it&apos;s the elevator:
+                green arrows go up (two of them for two Floors), red ones go down, and after Round 4, the best teams of the Penthouse go "Up to the Rooftop":
+            </p>
+            <SkyShot n={20} alt="After the Opening Match: Team Raspberry goes to the Winners' Match, Team Jade to the Losers' Match" />
+            <SkyShot n={21} alt="After the Winners' Match on the Ground Floor: Team Raspberry goes up to Floor 6, Team Moss up to Floor 7" />
+            <p className={css.info_text}>
                 Once the whole Round is played, every team shows its move next to its circle (one arrow for a Floor, two arrows for two Floors) and the elevator shaft on the right side of the building shows who leaves each Floor and where to.
                 Team Seafoam, which started on Floor 2 (the 40th place of the Leaderboard), won both of its matches 2:0 and went straight up into the Penthouse, while the Penthouse&apos;s Team Sapphire and Team Amber went down:
             </p>
@@ -1539,6 +1570,11 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Team Apricot, which started on Floor 3 as the 44th team of the Leaderboard, beat Team Ivory 2:0 in the Semifinal, and Team Sand beat Team Forest 2:0. So, the Grand Final was Team Apricot against Team Sand, and the prediction was clearly on the side of Team Apricot:
             </p>
             <SkyShot n={8} alt="Match modal of the Rooftop Grand Final" width="35vw" />
+            <p className={css.info_text}>
+                On the roof, the elevator ride of the series opening goes all the way up, to the open sky, and the scoreboard stands on the roof itself: with the railing on top, the golden glow of the roof and the golden "RF" plate in the middle:
+            </p>
+            <SkyShot n={22} alt="The series opening of the Rooftop Grand Final under the open sky" />
+            <SkyShot n={23} alt="The series screen of the Rooftop Grand Final with the railing on top" />
             <p className={css.info_text}>
                 But Team Sand won it 3:2, from Floor 4 to the top of the building in two Rounds. Team Ivory took the Third Place 2:0 against Team Forest.
                 The Official Skylines is a Tier 2 tournament, so the Winners&apos; Screen has neither quotes nor a trophy and the winner gets a 🥇:
@@ -1754,7 +1790,39 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
                 The match modal looks as usual, it only tells the Group and the round now:
             </p>
             <PemShot n={5} alt="Match modal of an Opening Round in Group A" width="35vw" height="27vh" />
-            <PemShot n={6} alt="Series screen of a Qualifier match with the Qualifier badge" width="30vw" caption="(The trophy icon in the series screen is replaced by the Qualifier badge here)" />
+            <p className={css.info_text}>
+                And here comes the first big difference to Official: the series screen. The PEM Tournaments have their own <b>broadcast HUD</b>, a blue one, made after the scoreboards of big LAN tournaments.
+                If the "Series opening" setting is on, every series starts with a short intro: a blue band with the PEM trophy, the tournament, the match and both teams:
+            </p>
+            <PemShot n={37} alt="Series opening of the first Qualifier match: Team White against Team Peach" />
+            <p className={css.info_text}>
+                Then the HUD slides in. At the top, there is the set history of the series (the current set has a pulsing red dot), and below it, a strip with the tournament and its number on the left, the trophy in the middle and the stage and the match on the right.
+                The bar itself has the team circles at both ends, a small grey square for every set a team needs (it lights up white, once that set is taken), the mini-round squares, the big round scores with a bar in the team&apos;s color below them and, in the middle, the current round and the half.
+                The team names are below the bar. And as soon as a team wins 5 rounds in a row, its Momentum Streak shows up: the bar under its score turns into a meter, which fills up in orange with a light running along it, and a small "5 IN A ROW" tab hangs below it. From 7 rounds in a row on, the tab starts to glow, and from 10 on, it takes the color of the team and the light runs faster. On the left side, there is always my picked team, so here, it&apos;s Team White:
+            </p>
+            <PemShot n={38} alt="The PEM HUD at 0-5: the strip, the set history, the bar and the Momentum Streak of Team Peach" />
+            <p className={css.info_text}>
+                The play-by-play notifications don&apos;t come from the top anymore. In every broadcast HUD, they slide in at the bottom-left corner as a lower third in the style of the HUD:
+            </p>
+            <PemShot n={6} alt="Series screen of a Qualifier match with the PEM HUD and a lower third notification" width="34vw" caption='(The Qualifier, the Group and the match are written in the strip on the right now)' />
+            <p className={css.info_text}>
+                One round away from the set, the middle of the bar turns red with "SET POINT" (or "MATCH POINT", if it&apos;s the last set a team needs) and the whole bar pulses in red:
+            </p>
+            <PemShot n={39} alt="SET POINT for Team Peach at 11-12" />
+            <p className={css.info_text}>
+                At 12-12, a band wipes over the bar and announces the Overtime. Once the Overtime runs, the box below the middle tells, which Overtime it is and how many rounds a team needs. The same band comes back between the sets with the result of the set:
+            </p>
+            <PemShot n={40} alt="The Overtime band at 12-12" />
+            <PemShot n={41} alt="The PEM HUD in the Overtime with the OVERTIME | First to 16 box" />
+            <PemShot n={42} alt="The band between the sets: Set 1 to Team Peach 13-16, Set 2 next" />
+            <p className={css.info_text}>
+                And when the series is over, the middle turns into a "GG" in the color of the winner, the winner&apos;s half lights up with rays and confetti and its name gets a crown, while the loser&apos;s half fades:
+            </p>
+            <PemShot n={43} alt="GG: Team Peach wins the series 2-0" />
+            <p className={css.info_text}>
+                Penalties and the Extended Rounds have the same look: during the Penalties, the mini-round squares turn into the shots of both teams, and the Extended Rounds comparison opens in the colors of the HUD.
+                The main event and the PEM Big Tournament use this HUD as well, only with their own trophies in the middle of the strip. And the Detailed Match Breakdown of a PEM match shows every round in this HUD too.
+            </p>
             <p className={css.info_text}>
                 In my Qualifier, Team Green and Team Lavender won their Upper Finals (Team Green only 3:2 against Team Beige, Team Lavender 3:0 against Team Pink), while Team Khaki and Team Red went the long way and won the Consolidation Finals. Team Khaki lost its Upper Quarterfinal against Team Beige and then won five Lower Bracket matches in a row, the last one 3:1 against that same Team Beige.
                 And Team Seafoam, which was too low in the Leaderboard to even play in Official #1, didn&apos;t make it through the Qualifier either: 0:2 against Team Ruby and 0:2 against Team Black.
@@ -1789,11 +1857,31 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             <PemShot n={11} alt="Group Stage of the Champions Series Tour before the first match" />
             <PemShot n={12} alt="Match modal of a Champions Series Tour Group Stage match" width="35vw" height="27vh" />
             <p className={css.info_text}>
+                The Champions Series Tour doesn&apos;t use the blue PEM HUD, but a HUD of its own: a dark, angular one with a red "LIVE" tag, made after the broadcasts of a big Tier 2 series.
+                Its series opening shows the tournament, the match and both teams in slanted tiles:
+            </p>
+            <PemShot n={44} alt="Series opening of the first Champions Series Tour match: Team Ivory against Team Azure" />
+            <p className={css.info_text}>
+                The team names are at both outer ends of the bar, the circles sit right next to the scores, and in the middle, there is the round "of 24" (or "of 30" in the Overtime and so on).
+                Below the bar, there are three slanted tabs: the mini-round pips of each team and the half in the middle. Every time a team wins a round, "TEAM WON THE ROUND" slides out of its logo tile over its name and slides back in a moment later:
+            </p>
+            <PemShot n={45} alt="IVORY WON THE ROUND slides out of the logo tile of Team Ivory" />
+            <p className={css.info_text}>
+                A Momentum Streak of 5 or more shows up as a slanted speed tag with the count right next to the team name, on the side of its logo, with speed lines running through it. It&apos;s orange from 5 rounds in a row on, red from 7 on and white-hot, with even faster lines, from 10 on. One round before the end, the middle tab turns red with "MATCH POINT" (or "SET POINT") and a red frame pulses around the bar:
+            </p>
+            <PemShot n={46} alt="Team Ivory on a Momentum Streak of 5" />
+            <PemShot n={47} alt="MATCH POINT for Team Azure at 11-12" />
+            <p className={css.info_text}>
+                At 12-12, the bar turns into an orange Overtime card, which then shrinks into the middle tab below the bar: "OVERTIME · FIRST TO 16":
+            </p>
+            <PemShot n={48} alt="The Overtime card at 12-12" />
+            <PemShot n={49} alt="The Champions Series Tour HUD in the Overtime with the OVERTIME · FIRST TO 16 tab" />
+            <p className={css.info_text}>
                 And here is the one thing that only exists in the Champions Series Tour: a match <b>can end in a tie</b>.
                 If the score is 12-12 after the regulation and the first Overtime ends 3-3 as well, so 15-15, nobody wins and the match is over.
-                In my very first match of the Champions Series Tour, Team Ivory and Team Azure did exactly that, so instead of "GG!", a grey "TIE!" shows up and none of the sides fades out:
+                In my very first match of the Champions Series Tour, Team Ivory and Team Azure did exactly that, so instead of a winner, the HUD says "DRAW" and "SERIES DRAWN" and none of the sides fades out:
             </p>
-            <PemShot n={13} alt="TIE! at 15-15 in the series screen" />
+            <PemShot n={13} alt="DRAW at 15-15 in the Champions Series Tour HUD" />
             <p className={css.info_text}>
                 A tie gives no Pick&apos;em points, no matter which team I picked. The Leaderboard points can still move a bit: the favourite loses a few points to the underdog, because a draw against a weaker team is not a good result
                 (see{" "}
@@ -2002,7 +2090,33 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
                 The very first match was the top seed Team Apricot against the last seed Team Rose:
             </p>
             <BigShot n={9} alt="Match modal of the first Opening Round of the Elite Competition League" width="35vw" />
-            <BigShot n={10} alt="Series screen of a Bo1 Opening Round" width="30vw" caption="(It's not Playoffs, so the series screen keeps the usual HUD)" />
+            <p className={css.info_text}>
+                The Elite Competition League has a HUD of its own too, a dark grey one, where the team colors do most of the work, made after the broadcasts of a big online league.
+                Its series opening is the most cinematic one: the tournament name spreads out over the whole screen, and both teams slide in from the sides, with the glow of their colors behind them:
+            </p>
+            <BigShot n={41} alt="Series opening of the first Elite Competition League match: Team Apricot against Team Rose" />
+            <BigShot n={10} alt="Series screen of a Bo1 Opening Round with the Elite Competition League HUD" width="34vw" />
+            <p className={css.info_text}>
+                The bar has a big tile for every team, filled with its color, with its circle at the outer end and its name next to it. The scores sit in the dark middle part, with the round "of 24" between them and a star for every set a team needs next to each score.
+                The mini-round ticks are below the bar. And every round has its own little show: a "ROUND ● WINNER" banner floods over the bar in the color of the round winner, its circle grows in the middle and flashes, and then the banner shrinks and fades away:
+            </p>
+            <BigShot n={42} alt="ROUND WINNER banner in the color of Team Rose" />
+            <p className={css.info_text}>
+                The Momentum Streak lives in the team&apos;s tile: from 5 won rounds in a row on, the tile starts to glow and to throw embers, and the count with "STREAK" below it replaces the circle.
+                One round before the end, the round in the middle says "MATCH POINT" (or "SET POINT") in red and the whole bar glows red:
+            </p>
+            <BigShot n={43} alt="Team Rose on a Momentum Streak of 5" />
+            <BigShot n={44} alt="MATCH POINT for Team Apricot at 12-11" />
+            <p className={css.info_text}>
+                At 12-12, the bar turns into an orange "OVERTIME · FIRST TO 16" banner, which then morphs into a small orange tag below the bar for as long as the Overtime lasts.
+                And the end of the series is the biggest banner of them all: "MATCH ● WINNER", with the circle of the winner, rings and sparks, and the name of the winner with a crown below:
+            </p>
+            <BigShot n={45} alt="The OVERTIME · FIRST TO 16 banner at 12-12" />
+            <BigShot n={46} alt="The Elite Competition League HUD in the Overtime with the orange tag below the bar" />
+            <BigShot n={47} alt="MATCH WINNER: Team Rose wins 16-14" />
+            <p className={css.info_text}>
+                Even the Extended Rounds comparison has its own look here, on a dark floor with a grid, and the Detailed Match Breakdown of an Elite Competition League match shows every round in this HUD.
+            </p>
             <p className={css.info_text}>
                 Since a Bo1 has only one set, its match rect shows the rounds of that set, e.g. 13-10, instead of 1-0. If a Bo1 is decided via Extended Rounds or Penalties,
                 both scores turn gray (it was a tie after all) and the result of the tiebreaker shows up on the divider between both teams (see{" "}
@@ -2077,7 +2191,7 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
                 Then both Semifinals ended 4:0: Team Blue against Team Gray and Team Indigo against Team Red. And so, the Grand Final was the same as in PEM Small Tournament #1: Team Blue against Team Indigo, a Best of 9:
             </p>
             <BigShot n={24} alt="Match modal of the Grand Final of PEM Big Tournament #1" width="35vw" />
-            <BigShot n={25} alt="Series screen of the Bo9 Grand Final with the golden PEM trophy" width="30vw" caption="(The trophy icon in the series screen is the golden PEM trophy now)" />
+            <BigShot n={25} alt="Series screen of the Bo9 Grand Final with the golden PEM trophy" width="34vw" caption="(It's the same blue PEM HUD as in the PEM Small Tournament, but the trophy in its strip is the golden PEM trophy now)" />
             <p className={css.info_text}>
                 Team Blue won the first two sets, Team Indigo took the third one 13-1, but then Team Blue won three sets in a row, the first of them 16-13 in Overtime: 5:1. Team Gray beat Team Red 4:2 in the Third Place Decider.
                 Every Tier 1 tournament has its own trophy: the PEM Small Tournament has the silver one, the PEM Big Tournament has the <b>golden PEM trophy</b>:
@@ -2255,6 +2369,34 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </p>
             <GplShot n={6} alt="Match modal of the first League Phase match with the Pots of both teams" width="35vw" />
             <p className={css.info_text}>
+                The Global Challenger Cup (and its Open Qualifier before it) has its own HUD as well: a black one with neon green, made after the broadcasts of a big Tier 2 league with an open circuit.
+                Its series opening draws a thin neon green frame over the whole screen, while dark panels slide in from both sides and the green double chevron, the tournament and both teams show up:
+            </p>
+            <GplShot n={47} alt="Series opening of the first League Phase match: Team Charcoal against Team Royal" />
+            <p className={css.info_text}>
+                The bar is black with a big grey chevron in the middle, the team circles sit in tiles of their own color at both ends, the round scores are neon green and in the middle, there are the round and the half.
+                The strip above has the tournament on the left, the green double chevron in the middle and the stage on the right. And whenever a team wins a round, its half of the bar lights up in its color from the outside, a chevron grows behind its score and a green line runs along the bottom of its half, towards the middle:
+            </p>
+            <GplShot n={48} alt="Team Charcoal wins a round: its half lights up, with the chevron behind its score" />
+            <p className={css.info_text}>
+                The Momentum Streak is made of neon green rank chevrons below the score, with the count and "STREAK" next to them: one chevron from 5 rounds in a row on and one more for every 2 rounds after that.
+                And from 10 rounds in a row on, the chevrons pulse and the big chevron behind the team&apos;s half starts to glow in neon green.
+            </p>
+            <p className={css.info_text}>
+                After the 12th round of a set, a small "HALFTIME | SIDES SWITCH" tag drops down below the middle. The red "SET POINT" and "MATCH POINT" middle with the pulsing red frame is here as well:
+            </p>
+            <GplShot n={49} alt="HALFTIME | SIDES SWITCH below the bar at 6-6" />
+            <GplShot n={50} alt="SET POINT for Team Royal at 11-12" />
+            <p className={css.info_text}>
+                The Overtimes and the set ends are announced by a black panel with a neon green frame, which opens from the middle of the bar, while green light runs across it:
+            </p>
+            <GplShot n={51} alt="The OVERTIME panel at 12-12" />
+            <GplShot n={52} alt="The panel between the sets: Set 1 to Team Charcoal 16-13, Set 2 next" />
+            <p className={css.info_text}>
+                And at the end, the middle shows a big white "GG" with the winner in green, the winner&apos;s half lights up in its color and its name gets a crown and a green frame:
+            </p>
+            <GplShot n={53} alt="GG: Team Royal wins the series 2-1" />
+            <p className={css.info_text}>
                 And the table was really tight in my Global Challenger Cup #1: five teams won 3 of their 4 matches. Team Magenta from Pot 1 finished first thanks to the best Sets and Rounds Difference,
                 and Team Amber from Pot 3 made it into the top 4 as well, while Team Coral, also with 3 wins, had the worst Rounds Difference of them and had to go through the Knockout Play-offs.
                 Team Charcoal, the best seeded team of the whole Cup, only finished 12th, and Team Periwinkle lost all four of its matches.
@@ -2300,6 +2442,24 @@ const GplSubPage = ({ scrollToAnchor }) => (
             <GplShot n={12} alt="Stage I of Global Pro League #1 before the first match" />
             <GplShot n={13} alt="Match modal of the first Stage I match" width="35vw" />
             <p className={css.info_text}>
+                The Global Pro League has a HUD of its own, built on the blue PEM HUD, but in dark grey with lime green and torn paper edges, made after the broadcasts of a big Pro League.
+                Its series opening is a crumpled sheet of paper, which shows the tournament, the match and both teams:
+            </p>
+            <GplShot n={54} alt="Series opening of the first Stage I match: Team Teal against Team Olive" />
+            <p className={css.info_text}>
+                The parts are the same as in the PEM HUD: the set history above, the strip with the tournament, the Global Pro League trophy and the stage, the bar with the circles, the set squares, the mini-round squares, the scores and the round in the middle, and the team names below.
+                The Momentum Streak is a torn paper sticker, slapped onto the torn edge below the score, with the count and "straight" in marker and a lime scribble below. From 7 rounds in a row on, a second "hot" sticker sticks next to it, and from 10 on, a lime "ON FIRE" stamp lands on top.
+                One round before the end, the middle turns red and the bar glows red along its torn edge:
+            </p>
+            <GplShot n={55} alt="The Global Pro League HUD at 5-0 with the Momentum Streak of Team Teal" />
+            <GplShot n={56} alt="SET POINT for Team Olive at 11-12" />
+            <p className={css.info_text}>
+                The Overtimes and the set ends are announced by a dark band with a lime edge, and at the end, the winner&apos;s half and the middle turn into the color of the winner, with the "GG", the crown and "WINS THE SERIES" below:
+            </p>
+            <GplShot n={57} alt="The Overtime band at 12-12" />
+            <GplShot n={58} alt="The band between the sets: Set 1 to Team Teal 16-13, Set 2 next" />
+            <GplShot n={59} alt="GG: Team Teal wins the series 2-0" />
+            <p className={css.info_text}>
                 Team Khaki and Team Mint, which came through the{" "}
                 <InfoLink onClick={scrollToAnchor("pem-qualifier", "pem-small")} href="?page=pem-small#pem-qualifier">PEM Small Tournament Qualifier</InfoLink>{" "}
                 and the{" "}
@@ -2331,7 +2491,7 @@ const GplSubPage = ({ scrollToAnchor }) => (
                 So, the Grand Final was Team Blue against Team Indigo, for the third tournament in a row. The prediction gave Team Indigo only <b>8%</b>:
             </p>
             <GplShot n={18} alt="Match modal of the Grand Final of Global Pro League #1" width="35vw" />
-            <GplShot n={19} alt="Series screen of the Bo9 Grand Final with the Global Pro League trophy" width="30vw" caption="(The trophy icon in the series screen is the Global Pro League trophy now)" />
+            <GplShot n={19} alt="Series screen of the Bo9 Grand Final with the Global Pro League HUD" width="34vw" caption="(The Global Pro League trophy sits in the middle of the strip)" />
             <p className={css.info_text}>
                 Team Indigo won the second and the fourth set (both 13-11), but Team Blue won the Grand Final 5:2. Team Yellow won the Third Place 4:2 against Team Black.
                 The Global Pro League has its own trophy: a black one with a <b>golden globe</b> on top, which Team Blue holds on the Winners&apos; screen the same way as all the other trophies:
@@ -2514,7 +2674,29 @@ const PbsSubPage = ({ scrollToAnchor }) => (
                 And the very first match was a clear one on paper: Team Gray had 100 points more than Team Orange (1,273 against 1,173) and was the favourite with 57.6%:
             </p>
             <PbsShot n={11} alt="Match modal of Round of 32 #1 with the seeds and bounties of Team Orange and Team Gray" width="35vw" />
-            <PbsShot n={12} alt="Series screen of a Round of 32 match with the Premier Bounty Series trophy" width="30vw" caption="(The trophy icon in the series screen is the Premier Bounty Series trophy)" />
+            <p className={css.info_text}>
+                The series screen has a HUD of its own here as well: a black, tiled one with emerald green, made after the broadcasts of a big tournament series with bounties.
+                Its series opening puts both teams into long tiles next to a green "VS", on a dark grid:
+            </p>
+            <PbsShot n={49} alt="Series opening of Round of 32 #1: Team Gray against Team Orange" />
+            <PbsShot n={12} alt="Series screen of a Round of 32 match with the Premier Bounty Series HUD" width="34vw" caption="(The Premier Bounty Series trophy sits in the middle of the strip)" />
+            <p className={css.info_text}>
+                Everything is made of tiles with small gaps between them. Above the bar, the set history looks like a departure board: "BEST OF 3", then a tile for every set with "LIVE", its score or a dash.
+                In the bar, the team name runs vertically along the outer edge, next to it there are the circle, the round score with two small set squares above it and, in the middle, the half, the round and "of 24". The mini-round segments are below the bar. The Momentum Streak is one more flip tile, which flips down below the score with "STREAK" and the count, and every new round flips the count over. Its gem tells how hot it is: emerald from 5 rounds in a row on, gold from 7 on and ruby from 10 on, and then a ruby glow also starts to run along the name of the team:
+            </p>
+            <PbsShot n={50} alt="The Premier Bounty Series HUD at 5-0 with the Momentum Streak of Team Gray" />
+            <p className={css.info_text}>
+                One round before the end, the middle turns red with "MATCH POINT" or "SET POINT" and a red frame pulses around the bar. The set ends and the Overtimes don&apos;t cover the bar with one band, but flip its three big tiles: the score of the set, what comes next and the set winner,
+                or "TIED 12-12", "NEXT UP OVERTIME" and "FIRST TO 16":
+            </p>
+            <PbsShot n={51} alt="The set end: Set 1 13-7, next up Set 2, set winner Team Gray" />
+            <PbsShot n={52} alt="MATCH POINT for Team Gray at 12-11 in the Decider" />
+            <PbsShot n={53} alt="The Overtime tiles: tied 12-12, next up Overtime, first to 16" />
+            <PbsShot n={54} alt="The Premier Bounty Series HUD in the Overtime of the Decider" />
+            <p className={css.info_text}>
+                And at the end, the middle turns into the "GG" in the color of the winner, with the series score above it and "WINS THE SERIES" below it, the winner&apos;s side shines and gets a crown, and the loser&apos;s side goes dark:
+            </p>
+            <PbsShot n={55} alt="GG: Team Gray wins the Decider 16-14 and the series 2-1" />
             <p className={css.info_text}>
                 The stakes in the match modal have a second line now. The winner "qualifies to Round of 16" and, if it was the High-Seed Pot team, "keeps its bounty". If it was the Low-Seed Pot team, it "takes the bounty away".
                 The loser "flies out of the tournament". Once the match is finished, the modal shows what changed: Team Gray won the Decider 16-14 in Overtime, so it kept its Seed #8 and all of its 39 Bounty Gems,
@@ -2575,7 +2757,7 @@ const PbsSubPage = ({ scrollToAnchor }) => (
                 The Grand Final was Team Salmon (Seed #1, 124 Bounty Gems) against Team Green (Seed #2, 118 Bounty Gems), two teams, which started the whole Premier Bounty Series in the Low-Seed Pot. The prediction gave Team Green <b>46.6%</b>:
             </p>
             <PbsShot n={25} alt="Match modal of the Grand Final of Premier Bounty Series Season 1" width="35vw" />
-            <PbsShot n={26} alt="Series screen of the Bo9 Grand Final" width="30vw" />
+            <PbsShot n={26} alt="Series screen of the Bo9 Grand Final with the Premier Bounty Series HUD" width="34vw" />
             <p className={css.info_text}>
                 And it went all the way to the ninth set. Team Salmon won the third set 22-20 in Triple Overtime and led 4:3 after seven sets, but Team Green won the last two (13-10 and 13-9). 5:4, Team Green is the champion,
                 and the Premier Bounty Series has its own trophy, a white one with an emerald Bounty Gem on top:
@@ -2701,6 +2883,30 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <PgxShot n={7} alt="The Play-ins of the Candidate Masters before the first match" />
             <PgxShot n={8} alt="Match modal of Play-in Round 1 #1" width="35vw" />
             <p className={css.info_text}>
+                All three PGX tournaments share their own HUD: a dark navy, rounded one, made after the broadcasts of a big Major organizer, where the city of the tournament is always written next to its name.
+                Its series opening shows the tournament with its city, the match and both teams:
+            </p>
+            <PgxShot n={38} alt="Series opening of Play-in Round 1 #1: Team Sapphire against Team Copper" />
+            <p className={css.info_text}>
+                Here, the team names are inside the bar, right next to the circles, with a small circle below the name for every set a team needs and the mini-round pills above it. In the middle, there are the round "/24" and the half.
+                The Momentum Streak is the most colorful one of all the HUDs: from 5 won rounds in a row on, a heat map of small glowing dots burns below the team&apos;s name, it gets more and more colors and moves faster the longer the streak lasts, and "IN A ROW" tells its length:
+            </p>
+            <PgxShot n={39} alt="Team Copper on a Momentum Streak of 5 with the heat map below its name" />
+            <p className={css.info_text}>
+                One round before the end, "SET POINT" or "MATCH POINT" lights up red below the round and the bar gets a red frame. The Overtimes and the set ends are a panel with three cells and an orange (Overtime) or blue (set end) header,
+                which slides over the bar, and during the Overtime, an orange tag hangs below the middle of the bar:
+            </p>
+            <PgxShot n={40} alt="SET POINT for Team Sapphire at 12-11" />
+            <PgxShot n={41} alt="The Overtime panel: tied 12-12, next up Overtime, first to 16" />
+            <PgxShot n={42} alt="The set end panel: Set 1 complete with the set score, the set winner and Set 2 next up" />
+            <p className={css.info_text}>
+                And the end is a whole show: a ring of light opens around the winner&apos;s circle, beams and embers fly over its half, which turns into its color, the "GG" slams into the middle with the series score, the winner gets a crown and the loser&apos;s half flickers out:
+            </p>
+            <PgxShot n={43} alt="GG: Team Copper wins the series 2-0" />
+            <p className={css.info_text}>
+                The trophy in the tab above the bar tells which step of the ladder it is: the Candidate Masters, a Qualifier, has none at all, the International Masters has a medal and only the Grandmasters has the PGX trophy.
+            </p>
+            <p className={css.info_text}>
                 Team Spring, the 57th team, won both of its Play-ins 2:0, the second one against Team Emerald, the best team of Round 2. Team Copper, the very last one, beat Team Sapphire and Team Wine, and Team Midnight and Team Apricot went through both rounds as well:
             </p>
             <PgxShot n={9} alt="The finished Play-ins of the Candidate Masters" />
@@ -2781,9 +2987,9 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <PgxShot n={22} alt="The Swiss Stage of PGX Grandmasters Jönköping #1 before the first match" />
             <PgxShot n={23} alt="Match modal of the first Swiss Stage match" width="35vw" />
             <p className={css.info_text}>
-                The PGX Grandmasters has its own trophy, a silver one with golden details, and the series screen shows it in its medallion:
+                The PGX Grandmasters has its own trophy, a silver one with golden details, and the HUD shows it in the tab above the bar:
             </p>
-            <PgxShot n={24} alt="Series screen of a Swiss Stage match with the PGX trophy" width="30vw" />
+            <PgxShot n={24} alt="Series screen of a Swiss Stage match with the PGX trophy in the HUD" width="34vw" />
             <p className={css.info_text}>
                 Team Blue and Team Silver went through with 3:0. And Team Honey? It lost its first two matches against Team Yellow and Team Khaki, so it stood at 0:2, one loss away from the exit.
                 And then it won three Best of 3s in a row: against Team Black, Team Cyan and, in the 2:2 net, against that same Team Khaki, 2:0:

@@ -62,6 +62,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         modalStatsPanels,
         toggleModalStatsPanel,
         breakdownPointLabel,
+        breakdownHud,
     } = modal;
     const { placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings } = teams;
     const { closeMatchModal, handleChooseLeft, handleChooseRight, handleStartMatch, handleSimulateMatch, simulateEnabled } = actions;
@@ -2453,6 +2454,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                 matchNumber={showModalMatchNumber ? modalMatchNumber : null}
                                 isPlayoffs={modalContext.type === "playoffs"}
                                 pointLabelText={breakdownPointLabel}
+                                hud={breakdownHud}
                             />
                         );
                     })()}

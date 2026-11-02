@@ -365,6 +365,10 @@ import { SettingsPanel } from "./components/SettingsPanel.jsx";
 import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKeys, useSimulateKey, isSecretUnlocked, useSpecialModeSettings, SECRET_EVENT } from "./logic/settings.js";
 import { DEFAULT_CHEAT_DRAFT, CHEAT_SCRIPTS, TIE_SCORE, buildCheatAnchor, getCheatMiniWinner, isCheatFinished, describeCheat, getMiniRoundOdds, getRoundOdds, normalizeCheatDraft, loadCheatDraft, saveCheatDraft } from "./logic/secretCheats.js";
 
+const SAVE_DEBOUNCE_MS = 1600;
+const SAVE_MAX_WAIT_MS = 4000;
+const SAVE_FLUSH_EVENT = "special-mode-save-flush";
+
 function SpecialModePage() {
     const [settings, setSettings] = useState(loadSettings);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1388,6 +1392,46 @@ function SpecialModeContent() {
     }, []);
 
     const saveFailedRef = useRef(false);
+    const pendingSaveRef = useRef(null);
+    const pendingSinceRef = useRef(0);
+
+    const flushSave = useCallback(() => {
+        const stateToSave = pendingSaveRef.current;
+        if (!stateToSave) return;
+        pendingSaveRef.current = null;
+        pendingSinceRef.current = 0;
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+            if (saveFailedRef.current) {
+                saveFailedRef.current = false;
+                toast.dismiss(SAVE_FAILED_TOAST_ID);
+            }
+        } catch (error) {
+            console.error("Couldn't save the Special Mode progress:", error);
+            saveFailedRef.current = true;
+            toast.error("The browser storage is full, so the latest progress couldn't be saved!", {
+                id: SAVE_FAILED_TOAST_ID,
+                duration: Infinity,
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        const onHidden = () => {
+            if (document.visibilityState === "hidden") flushSave();
+        };
+        window.addEventListener("pagehide", flushSave);
+        window.addEventListener("beforeunload", flushSave);
+        window.addEventListener(SAVE_FLUSH_EVENT, flushSave);
+        document.addEventListener("visibilitychange", onHidden);
+        return () => {
+            window.removeEventListener("pagehide", flushSave);
+            window.removeEventListener("beforeunload", flushSave);
+            window.removeEventListener(SAVE_FLUSH_EVENT, flushSave);
+            document.removeEventListener("visibilitychange", onHidden);
+            flushSave();
+        };
+    }, [flushSave]);
 
     useEffect(() => {
         const stateToSave = {
@@ -1441,20 +1485,18 @@ function SpecialModeContent() {
                 : null,
         };
 
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-            if (saveFailedRef.current) {
-                saveFailedRef.current = false;
-                toast.dismiss(SAVE_FAILED_TOAST_ID);
-            }
-        } catch (error) {
-            console.error("Couldn't save the Special Mode progress:", error);
-            saveFailedRef.current = true;
-            toast.error("The browser storage is full, so the latest progress couldn't be saved!", {
-                id: SAVE_FAILED_TOAST_ID,
-                duration: Infinity,
-            });
-        }
+        pendingSaveRef.current = stateToSave;
+        if (!pendingSinceRef.current) pendingSinceRef.current = Date.now();
+        const overdue = Date.now() - pendingSinceRef.current > SAVE_MAX_WAIT_MS;
+        let idle = null;
+        const timer = setTimeout(() => {
+            if (window.requestIdleCallback) idle = window.requestIdleCallback(flushSave, { timeout: 1200 });
+            else flushSave();
+        }, overdue ? 0 : SAVE_DEBOUNCE_MS);
+        return () => {
+            clearTimeout(timer);
+            if (idle != null) window.cancelIdleCallback?.(idle);
+        };
     }, [
         showIntro,
         showTournamentIntro,
@@ -1496,6 +1538,7 @@ function SpecialModeContent() {
         showProceed,
         winnersText,
         hasPlayedWinnerAnimation,
+        flushSave,
     ]);
 
     useEffect(() => {
@@ -1652,6 +1695,7 @@ function SpecialModeContent() {
     };
 
     const confirmRestart = () => {
+        pendingSaveRef.current = null;
         localStorage.removeItem(STORAGE_KEY);
         if (!tournamentResults) {
             if (pgxSeries?.event === "cm") {
@@ -1784,6 +1828,7 @@ function SpecialModeContent() {
     };
 
     const resetTournamentStateWithSeeds = (seededStage1Seeds) => {
+        pendingSaveRef.current = null;
         localStorage.removeItem(STORAGE_KEY);
         clearRoundLog();
         setLastTournamentChanges(null);
@@ -4927,10 +4972,10 @@ function SpecialModeContent() {
                                 ? `Another overtime ends in a tie! ${currentOT} is tied 3-3 again! Starting ${nextOT}...`
                                 : `That's a tough battle we got here! ${currentOT} is tied 3-3 again! Starting ${nextOT}...`;
 
-                    toast(msg, { icon: "🔄", duration: 4000, label: "Next Overtime", accent: "#ff7a1a" });
-
                     setIsLocked(true);
                     pendingAction = makePendingAction(SERIES_ACTIONS.NEXT_OT, 4000);
+
+                    toast(msg, { icon: "🔄", duration: 4000, label: "Next Overtime", accent: "#ff7a1a", holdUntil: pendingAction.executeAt });
 
                     setIsCalculating(false);
 
@@ -5137,13 +5182,14 @@ function SpecialModeContent() {
 
             if (roundWins === 12 && roundLosses === 12) {
                 toast.dismiss();
+                setIsLocked(true);
+                pendingAction = makePendingAction(SERIES_ACTIONS.NEXT_OT, 4000);
+
                 toast(`Overtime coming in for this ${toWin === 1 ? "match" : "set"}! 🔥`, {
                     icon: "⚔️",
                     duration: 4000,
+                    holdUntil: pendingAction.executeAt,
                 });
-
-                setIsLocked(true);
-                pendingAction = makePendingAction(SERIES_ACTIONS.NEXT_OT, 4000);
 
                 setIsCalculating(false);
 
@@ -5296,6 +5342,13 @@ function SpecialModeContent() {
     const seriesGambleRef = useRef(handleSeriesGamble);
     seriesGambleRef.current = handleSeriesGamble;
 
+    const [isSeriesIntroPlaying, setIsSeriesIntroPlayingState] = useState(false);
+    const seriesIntroPlayingRef = useRef(false);
+    const setIsSeriesIntroPlaying = useCallback((playing) => {
+        seriesIntroPlayingRef.current = playing;
+        setIsSeriesIntroPlayingState(playing);
+    }, []);
+
     const stopSimulation = (message = null) => {
         simulationRequestRef.current = false;
         setSimulation(null);
@@ -5347,7 +5400,7 @@ function SpecialModeContent() {
             setSimulation(null);
             return undefined;
         }
-        if (seriesState.banner || seriesState.pendingAction || isButtonLocked) return undefined;
+        if (seriesState.banner || seriesState.pendingAction || isButtonLocked || isSeriesIntroPlaying) return undefined;
 
         const regulationPoint = !seriesState.isOvertime && (seriesState.roundWins >= BASE_ROUNDS_TO_WIN - 1 || seriesState.roundLosses >= BASE_ROUNDS_TO_WIN - 1);
         const overtimePoint = seriesState.isOvertime && (seriesState.otWins >= OT_ROUNDS_TO_WIN - 1 || seriesState.otLosses >= OT_ROUNDS_TO_WIN - 1);
@@ -5355,6 +5408,7 @@ function SpecialModeContent() {
         const delay = simulation.instant ? 0 : (important ? SIMULATE_IMPORTANT_MINI_MS : SIMULATE_MINI_MS) / simulation.speed;
 
         const timer = setTimeout(() => {
+            if (seriesIntroPlayingRef.current) return;
             if (!simulation.instant) {
                 seriesGambleRef.current();
                 return;
@@ -5362,7 +5416,7 @@ function SpecialModeContent() {
             for (let i = 0; i < SIMULATE_INSTANT_BATCH; i++) seriesGambleRef.current({ batch: true });
         }, delay);
         return () => clearTimeout(timer);
-    }, [simulation, seriesState, isButtonLocked]);
+    }, [simulation, seriesState, isButtonLocked, isSeriesIntroPlaying]);
 
     const commitQualifierSeries = ({
         group,
@@ -9478,6 +9532,53 @@ function SpecialModeContent() {
     const finalRoundMinis = seriesState.banner && lastLoggedRound?.squares
         ? { squares: lastLoggedRound.squares, left: lastLoggedRound.miniLeft ?? 0, right: lastLoggedRound.miniRight ?? 0 }
         : null;
+    const isPemHudSeries = !!pemSeries && (
+        (seriesState.phase === "qualifier" && !qualifierOwner) ||
+        (isPemMainPhase && ["pemGroup", "pemStage1", "playoffs"].includes(seriesState.phase))
+    );
+    const breakdownHudFor = (context, record) => {
+        if (!context) return "official";
+        const archivedEvent = context.isArchivedHallOfFame ? record?.event ?? null : null;
+        const isPgxMatch =
+            context.type === "pgxCm" ||
+            context.type === "pgxIm" ||
+            (context.type === "swiss" && (context.format === PGX_SWISS_FORMAT || archivedEvent === "pgxGm")) ||
+            (context.type === "playoffs" && (context.kind === "pgx" || archivedEvent === "pgxGm"));
+        if (isPgxMatch) return "pgx";
+        const isCstMatch =
+            context.type === "cstGroup" ||
+            (context.type === "playoffs" && (context.kind === "cst" || archivedEvent === "cst"));
+        if (isCstMatch) return "cst";
+        if (context.type === "ecl") return "ecl";
+        const isGccMatch =
+            context.type === "gccLeague" ||
+            (context.type === "qualifier" && context.owner === "gpl") ||
+            (context.type === "playoffs" && (context.kind === "gcc" || archivedEvent === "gcc"));
+        if (isGccMatch) return "gcc";
+        const isGplMatch =
+            (context.type === "swiss" && (context.format === GPL_SWISS_FORMAT || archivedEvent === "gpl" || (!context.isArchivedHallOfFame && isGplMainPhase && context.format !== PGX_SWISS_FORMAT))) ||
+            (context.type === "playoffs" && (context.kind === "gpl" || archivedEvent === "gpl"));
+        if (isGplMatch) return "gpl";
+        const isPbsMatch =
+            (context.type === "qualifier" && context.owner === "pbs") ||
+            (context.type === "playoffs" && (context.kind === "pbs" || archivedEvent === "pbs"));
+        if (isPbsMatch) return "pbs";
+        const isPemMatch =
+            (context.type === "qualifier" && !context.owner) ||
+            context.type === "pemGroup" ||
+            context.type === "pemStage1" ||
+            (context.type === "playoffs" && (isPemPlayoffsKind(context.kind) || archivedEvent === "main"));
+        return isPemMatch ? "pem" : "official";
+    };
+
+    const isGplHudSeries = isGplMainPhase && ["stage1", "stage2", "playoffs"].includes(seriesState.phase);
+    const isPbsHudSeries = (isPbsPhase && seriesState.phase === "playoffs") || (seriesState.phase === "qualifier" && qualifierOwner === "pbs");
+    const isPgxHudSeries = seriesState.phase === "pgxCm" || seriesState.phase === "pgxIm" || (isPgxMainPhase && ["stage1", "playoffs"].includes(seriesState.phase));
+    const isCstHudSeries = isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs");
+    const isEclHudSeries = isEclPhase && seriesState.phase === "ecl";
+    const isGccHudSeries = (isGccPhase && (seriesState.phase === "gccLeague" || seriesState.phase === "playoffs")) || (seriesState.phase === "qualifier" && qualifierOwner === "gpl");
+    const seriesHud = isEclHudSeries ? "ecl" : isGccHudSeries ? "gcc" : isCstHudSeries ? "cst" : isPgxHudSeries ? "pgx" : isPemHudSeries ? "pem" : isGplHudSeries ? "gpl" : isPbsHudSeries ? "pbs" : "official";
+    const pgxHudName = seriesState.phase === "pgxCm" ? "PGX Candidate Masters" : seriesState.phase === "pgxIm" ? "PGX International Masters" : "PGX Grandmasters";
     if (showPickemSummary) {
         return (
             <PickemSummary
@@ -9626,8 +9727,15 @@ function SpecialModeContent() {
                     getPenaltyMessage,
                     getMultiplierClass,
                     renderTeamLabel,
+                    seriesHud,
+                    hudEventName: seriesHud === "ecl" ? "Elite Competition League" : seriesHud === "gcc" ? "Global Challenger Cup" : seriesHud === "cst" ? "Champions Series Tour" : seriesHud === "pgx" ? `${pgxHudName} ${pgxCity}`.trim() : seriesHud === "gpl" ? "Global Pro League" : seriesHud === "pbs" ? "Premier Bounty Series" : `PEM ${pemConfig.sizeWord}`,
+                    hudEventNumber: (
+                        <span style={getTournamentNumberStyle(getTournamentTheme(seriesHud === "ecl" ? eclNumber : seriesHud === "gcc" ? gccNumber : seriesHud === "cst" ? cstNumber : seriesHud === "pgx" ? pgxEdition : seriesHud === "gpl" ? gplEdition : seriesHud === "pbs" ? pbsEdition : pemEdition))}>
+                            {seriesHud === "pbs" ? `S${pbsEdition}` : `#${seriesHud === "ecl" ? eclNumber : seriesHud === "gcc" ? gccNumber : seriesHud === "cst" ? cstNumber : seriesHud === "pgx" ? pgxEdition : seriesHud === "gpl" ? gplEdition : pemEdition}`}
+                        </span>
+                    ),
                 }}
-                actions={{ handlePenaltyShot, handleSeriesGamble, simulation: { enabled: simulateEnabled, inSeries: simulateInSeries, running: !!simulation, start: startSimulation, stop: () => stopSimulation() } }}
+                actions={{ handlePenaltyShot, handleSeriesGamble, setIntroPlaying: setIsSeriesIntroPlaying, simulation: { enabled: simulateEnabled, inSeries: simulateInSeries, running: !!simulation, start: startSimulation, stop: () => stopSimulation() } }}
             />
         );
     }
@@ -9664,6 +9772,7 @@ function SpecialModeContent() {
                 showModalMatchNumber,
                 modalMatchNumber,
                 modalBestOf,
+                breakdownHud: breakdownHudFor(modalContext, modalContext?.isArchivedHallOfFame ? selectedHallMatch?.record : null),
                 pickemLabelText,
                 pickemPointsWon: wonPickemPoints,
                 breakdownSetIndex,

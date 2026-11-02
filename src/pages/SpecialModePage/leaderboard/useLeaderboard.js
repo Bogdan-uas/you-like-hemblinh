@@ -4,6 +4,7 @@ import { loadLeaderboardSortMode, LEADERBOARD_SORT_VALUES, saveLeaderboardSortMo
 import { STAT_TABS } from "../logic/teamStats.js";
 import { normalizeTournamentRef } from "../logic/tournamentTypes.jsx";
 import { loadLeaderboardDividerSet, saveLeaderboardDividerSet } from "../logic/leaderboardDividers.js";
+import { createLeaderboardHoverStore } from "./leaderboardHover.js";
 
 export function useLeaderboard({
     leaderboard,
@@ -17,7 +18,8 @@ export function useLeaderboard({
     pickemSummarySeen,
 }) {
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-    const [hoveredLeaderboardTeam, setHoveredLeaderboardTeam] = useState(null);
+    const [leaderboardHoverStore] = useState(createLeaderboardHoverStore);
+    const setHoveredLeaderboardTeam = leaderboardHoverStore.set;
     const [leaderboardStatsTab, setLeaderboardStatsTab] = useState(0);
 
     const cycleLeaderboardStatsTab = (direction) => {
@@ -185,7 +187,7 @@ export function useLeaderboard({
         leaderboardTitleTournament,
         leaderboardListRef,
         leaderboardDisplayOrder,
-        hoveredLeaderboardTeam,
+        leaderboardHoverStore,
         leaderboardCursorRef,
         leaderboardStatsTab,
         getLeaderboardRowRef,

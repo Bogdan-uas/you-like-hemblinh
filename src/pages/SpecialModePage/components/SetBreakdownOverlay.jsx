@@ -11,6 +11,14 @@ import { buildExtendedRoundWinnerList, buildExtendedRoundDetails } from "../logi
 import { ExtendedRoundsTrack } from "./ExtendedRounds.jsx";
 import { BREAKDOWN_HIDDEN_LS_KEY, BREAKDOWN_FULL_HEIGHT_LS_KEY } from "../logic/storageKeys.js";
 import { useSpecialModeSettings } from "../logic/settings.js";
+import { PemRoundRow, PemBoard } from "../series/hud/PemBreakdown.jsx";
+import { PbsRow, PbsBoard, PbsSets } from "../series/hud/PbsHud.jsx";
+import { PgxRow, PgxBoard, PgxSets } from "../series/hud/PgxHud.jsx";
+import { CstRow, CstBoard, CstSets } from "../series/hud/CstHud.jsx";
+import { EclRow, EclBoard, EclSets } from "../series/hud/EclHud.jsx";
+import { PemErTrack } from "../series/hud/PemExtendedRounds.jsx";
+import { PemSetChips, PemDivider } from "../series/hud/PemParts.jsx";
+import hudCss from "../series/hud/PemHud.module.css";
 
 const ROUND_BATCH = 3;
 
@@ -142,7 +150,15 @@ export const SetBreakdownOverlay = ({
     matchNumber,
     isPlayoffs = false,
     pointLabelText = "MATCH POINT!!!",
+    hud = "official",
 }) => {
+    const isBroadcast = hud === "pem" || hud === "gpl" || hud === "pbs" || hud === "pgx" || hud === "cst" || hud === "ecl" || hud === "gcc";
+    const hudTheme = hudCss[`theme_${hud}`] ?? "";
+    const ScoreRow = hud === "ecl" ? EclRow : hud === "cst" ? CstRow : hud === "pgx" ? PgxRow : hud === "pbs" ? PbsRow : isBroadcast ? PemRoundRow : BreakdownScoreRow;
+    const ModalBoard = hud === "ecl" ? EclBoard : hud === "cst" ? CstBoard : hud === "pgx" ? PgxBoard : hud === "pbs" ? PbsBoard : isBroadcast ? PemBoard : BreakdownModalScoreboard;
+    const Divider = isBroadcast ? PemDivider : BreakdownDivider;
+    const ErTrack = isBroadcast ? PemErTrack : ExtendedRoundsTrack;
+    const BroadcastSets = hud === "ecl" ? EclSets : hud === "cst" ? CstSets : hud === "pgx" ? PgxSets : hud === "pbs" ? PbsSets : PemSetChips;
     const isBo1 = bestOf === 1;
     const entry = sets?.[index] ?? null;
 
@@ -558,8 +574,8 @@ export const SetBreakdownOverlay = ({
             : { leftOpacity: 1, rightOpacity: 1 };
 
         return (
-            <div key={key} data-round-key={round.key} className={css.breakdown_round}>
-                <BreakdownScoreRow
+            <div key={key} data-round-key={round.key} className={css.breakdown_round} style={isBroadcast ? { maxWidth: hud === "pbs" ? "620px" : hud === "cst" ? "900px" : hud === "ecl" ? "740px" : "812px", padding: "14px 0" } : undefined}>
+                <ScoreRow
                     leftTeam={leftTeam}
                     rightTeam={rightTeam}
                     leftScore={round.scoreLeft}
@@ -577,6 +593,7 @@ export const SetBreakdownOverlay = ({
                     rightLabel={rightLabel}
                     roundNumber={round.roundNumber}
                     winnerSide={round.winner}
+                    extended={round.squares === 10 ? { onClick: plan.hasExtended ? () => scrollToExtendedCard(round.key) : null } : null}
                     tag={round.squares === 10 ? (
                         plan.hasExtended ? (
                             <button
@@ -591,6 +608,7 @@ export const SetBreakdownOverlay = ({
                             <span className={css.breakdown_er_tag}>Extended Round</span>
                         )
                     ) : null}
+                    streakTheme={hud}
                     leftMomentumStreak={!isLastRoundOfSet && round.momentumSide === "left" ? round.momentumValue : null}
                     rightMomentumStreak={!isLastRoundOfSet && round.momentumSide === "right" ? round.momentumValue : null}
                     ggBanner={
@@ -623,6 +641,7 @@ export const SetBreakdownOverlay = ({
             set: i + 1,
             result: { leftScore: s.wins, rightScore: s.losses, extra },
             winnerColor: s.tie ? null : s.won ? leftTeam?.color : rightTeam?.color,
+            winnerSide: s.tie ? null : s.won ? "left" : "right",
         };
     });
 
@@ -669,7 +688,7 @@ export const SetBreakdownOverlay = ({
         <>
             <motion.div
                 ref={scrollRef}
-                className={css.breakdown_scroll}
+                className={`${css.breakdown_scroll} ${hudTheme}`}
                 onScroll={updateActiveSection}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -710,14 +729,14 @@ export const SetBreakdownOverlay = ({
                         >
                             {plan.firstHalf.length > 0 && (
                                 <div ref={(node) => { sectionRefs.current.firstHalf = node; }}>
-                                    <BreakdownDivider to="First Half" first />
+                                    <Divider to="First Half" first />
                                     {plan.firstHalf.map((round, i) => renderRound(round, `s${index}-fh-${i}`, i))}
                                 </div>
                             )}
 
                             {plan.secondHalf.length > 0 && plan.firstHalf.length < renderCount && (
                                 <div ref={(node) => { sectionRefs.current.secondHalf = node; }}>
-                                    <BreakdownDivider from="First Half" to="Second Half" />
+                                    <Divider from="First Half" to="Second Half" />
                                     {plan.secondHalf.map((round, i) => renderRound(round, `s${index}-sh-${i}`, plan.firstHalf.length + i))}
                                 </div>
                             )}
@@ -739,7 +758,7 @@ export const SetBreakdownOverlay = ({
                                         key={`ot-${block}`}
                                         ref={(node) => { sectionRefs.current[`ot${block}`] = node; }}
                                     >
-                                        <BreakdownDivider from={previousLabel} to={label} section="overtime" level={block} />
+                                        <Divider from={previousLabel} to={label} section="overtime" level={block} />
                                         {rounds.map((round, j) => renderRound(round, `s${index}-ot-${block}-${j}`, offset + j))}
                                     </div>
                                 );
@@ -747,7 +766,7 @@ export const SetBreakdownOverlay = ({
 
                             {plan.hasExtended && plan.extDetails && renderCount >= totalRounds && (
                                 <div ref={(node) => { sectionRefs.current.extended = node; }}>
-                                    <BreakdownDivider
+                                    <Divider
                                         from={
                                             plan.overtimes.length
                                                 ? BREAKDOWN_OT_NAMES[
@@ -776,7 +795,7 @@ export const SetBreakdownOverlay = ({
                                                     {rounds.some((r) => r.roundKey) ? " Click a card to jump to that round." : ""}
                                                 </p>
 
-                                                <ExtendedRoundsTrack
+                                                <ErTrack
                                                     rounds={rounds}
                                                     clinchIndex={clinchIndex}
                                                     decidedWinner={extDecisive ? (left > right ? "left" : "right") : null}
@@ -814,7 +833,7 @@ export const SetBreakdownOverlay = ({
                                                     </span>
 
                                                     <div style={{ marginTop: "34px", transition: "none" }}>
-                                                    <BreakdownModalScoreboard
+                                                    <ModalBoard
                                                         leftTeam={leftTeam}
                                                         rightTeam={rightTeam}
                                                         leftScore={left}
@@ -846,7 +865,7 @@ export const SetBreakdownOverlay = ({
 
                             {plan.penalties && renderCount >= totalRounds && (
                                 <div ref={(node) => { sectionRefs.current.penalties = node; }}>
-                                    <BreakdownDivider
+                                    <Divider
                                         from="Extended Rounds"
                                         to="Penalties"
                                         section="penalties"
@@ -859,7 +878,7 @@ export const SetBreakdownOverlay = ({
 
                                         return (
                                             <div style={{ marginTop: "14px" }}>
-                                                <BreakdownScoreRow
+                                                <ScoreRow
                                                     leftTeam={leftTeam}
                                                     rightTeam={rightTeam}
                                                     leftScore={leftScore}
@@ -889,7 +908,7 @@ export const SetBreakdownOverlay = ({
             </motion.div>
             <motion.div
                 ref={modalRef}
-                className={css.breakdown_modal}
+                className={`${css.breakdown_modal} ${hudTheme}`}
                 initial={{ opacity: 0, y: -120 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -100 }}
@@ -946,7 +965,24 @@ export const SetBreakdownOverlay = ({
                     )}
                 </AnimatePresence>
 
-                {!isBo1 && (
+                {!isBo1 && isBroadcast && (
+                    <div style={{ marginTop: isModalHidden ? 0 : "12px", transition: "none" }}>
+                        <BroadcastSets
+                            chips={setChips.map((chip) => ({
+                                set: chip.set,
+                                label: chip.set === bestOf ? "DEC" : `S${chip.set}`,
+                                status: "done",
+                                result: chip.result,
+                                winnerTeam: chip.winnerSide === "left" ? leftTeam : chip.winnerSide === "right" ? rightTeam : null,
+                            }))}
+                            bestOf={bestOf}
+                            showBestOf={false}
+                            selectedIndex={index}
+                            onSelect={(i) => i !== index && onIndexChange(i)}
+                        />
+                    </div>
+                )}
+                {!isBo1 && !isBroadcast && (
                     <div style={{ marginTop: isModalHidden ? 0 : "12px", transition: "none" }}>
                         <SetPicker
                             sets={setChips}
@@ -958,7 +994,7 @@ export const SetBreakdownOverlay = ({
                 )}
 
                 <div className={css.breakdown_modal_board} style={{ marginTop: isModalHidden ? "26px" : "34px" }}>
-                    <BreakdownModalScoreboard
+                    <ModalBoard
                         leftTeam={leftTeam}
                         rightTeam={rightTeam}
                         leftScore={entry.wins}

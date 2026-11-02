@@ -580,6 +580,18 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                             </div>
 
                             <div className={css.settings_divider} />
+                            <h3 className={css.settings_section_title}>Broadcast HUD</h3>
+                            <div className={css.settings_row}>
+                                <SettingsSwitch
+                                    id="settings-broadcast-intro"
+                                    label="Series opening"
+                                    hint="Plays a series intro, which shows the teams playing, when a series starts, e.g. in an Official, PEM or Global Pro League. When it&apos;s off, the scoreboard gets a quick entrance instead."
+                                    checked={settings.broadcastIntro}
+                                    onChange={update("broadcastIntro")}
+                                />
+                            </div>
+
+                            <div className={css.settings_divider} />
                             <h3 className={css.settings_section_title}>Winners&apos; Screen</h3>
                             <div className={css.settings_row}>
                                 <SettingsSwitch

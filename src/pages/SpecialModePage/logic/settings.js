@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS = {
     smoothScroll: true,
     podiumEffects: true,
     skipPodiumReveal: false,
+    broadcastIntro: true,
     simulateEnabled: true,
     simulateMode: "set",
     simulateSpeed: 1,

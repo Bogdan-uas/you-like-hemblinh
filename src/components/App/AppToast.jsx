@@ -131,6 +131,146 @@ const SeriesToast = ({ t, message }) => {
     );
 };
 
+const LowerThird = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+
+    return (
+        <div
+            className={`${css.lower} ${t.hud === "gpl" ? css.lower_gpl : t.hud === "gcc" ? css.lower_gcc : t.hud === "pbs" ? css.lower_pbs : ""} ${t.visible ? css.lower_enter : css.lower_exit}`}
+            style={{ "--toast-accent": readableAccent(t.accent ?? event.accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.lower_swap}>
+                <span className={css.lower_wipe} aria-hidden="true" />
+                <span className={css.lower_body}>
+                    <span className={css.lower_label}>{t.label ?? event.label}</span>
+                    <span className={css.lower_message}>{message}</span>
+                </span>
+                <span className={css.lower_tile}>
+                    <span className={css.lower_emoji}>{t.icon ?? "📣"}</span>
+                </span>
+            </div>
+            <Countdown t={t} barRef={barRef} />
+        </div>
+    );
+};
+
+const labelTextOn = (color) => {
+    const hex = typeof color === "string" ? color.replace("#", "").slice(0, 6) : "";
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return "#ffffff";
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? "#0d0e10" : "#ffffff";
+};
+
+const PbsToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+    const accent = t.accent ?? event.accent;
+
+    return (
+        <div
+            className={`${css.pbs} ${t.visible ? css.pbs_enter : css.pbs_exit}`}
+            style={{ "--toast-accent": readableAccent(accent), "--label-text": labelTextOn(accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.pbs_swap}>
+                <span className={css.pbs_icon}>
+                    <span className={css.pbs_emoji}>{t.icon ?? "📣"}</span>
+                </span>
+                <span className={css.pbs_body}>
+                    <span className={css.pbs_label}>{t.label ?? event.label}</span>
+                    <span className={css.pbs_message}>{message}</span>
+                    <Countdown t={t} barRef={barRef} />
+                </span>
+            </div>
+        </div>
+    );
+};
+
+const PgxToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+    const accent = t.accent ?? event.accent;
+
+    return (
+        <div
+            className={`${css.pgx} ${t.visible ? css.pgx_enter : css.pgx_exit}`}
+            style={{ "--toast-accent": readableAccent(accent), "--label-text": labelTextOn(accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.pgx_swap}>
+                <span className={css.pgx_head}>
+                    <span className={css.pgx_label}>{t.label ?? event.label}</span>
+                    <span className={css.pgx_mark}>PGX</span>
+                </span>
+                <span className={css.pgx_body}>
+                    <span className={css.pgx_icon}>
+                        <span className={css.pgx_emoji}>{t.icon ?? "📣"}</span>
+                    </span>
+                    <span className={css.pgx_message}>{message}</span>
+                </span>
+                <Countdown t={t} barRef={barRef} />
+            </div>
+        </div>
+    );
+};
+
+const CstToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+    const accent = t.accent ?? event.accent;
+
+    return (
+        <div
+            className={`${css.cst} ${t.visible ? css.cst_enter : css.cst_exit}`}
+            style={{ "--toast-accent": readableAccent(accent), "--label-text": labelTextOn(accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.cst_swap}>
+                <span className={css.cst_tile}>
+                    <span className={css.cst_emoji}>{t.icon ?? "📣"}</span>
+                </span>
+                <span className={css.cst_body}>
+                    <span className={css.cst_label}>{t.label ?? event.label}</span>
+                    <span className={css.cst_message}>{message}</span>
+                    <Countdown t={t} barRef={barRef} />
+                </span>
+                <span className={css.cst_end} />
+            </div>
+        </div>
+    );
+};
+
+const EclToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+    const accent = t.accent ?? event.accent;
+
+    return (
+        <div
+            className={`${css.ecl} ${t.visible ? css.ecl_enter : css.ecl_exit}`}
+            style={{ "--toast-accent": readableAccent(accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.ecl_swap}>
+                <span className={css.ecl_mark} aria-hidden="true">{t.icon ?? "📣"}</span>
+                <span className={css.ecl_line} />
+                <span className={css.ecl_body}>
+                    <span className={css.ecl_label}>{t.label ?? event.label}</span>
+                    <span className={css.ecl_message}>{message}</span>
+                </span>
+                <Countdown t={t} barRef={barRef} />
+            </div>
+        </div>
+    );
+};
+
 const PlainToast = ({ t, message }) => {
     const { barRef, close } = useDrainClose(t);
 
@@ -158,6 +298,11 @@ const PlainToast = ({ t, message }) => {
 export function AppToast({ t }) {
     const message = resolveValue(t.message, t);
 
+    if (t.variant === "series" && t.hud === "ecl") return <EclToast t={t} message={message} />;
+    if (t.variant === "series" && t.hud === "cst") return <CstToast t={t} message={message} />;
+    if (t.variant === "series" && t.hud === "pgx") return <PgxToast t={t} message={message} />;
+    if (t.variant === "series" && t.hud === "pbs") return <PbsToast t={t} message={message} />;
+    if (t.variant === "series" && (t.hud === "pem" || t.hud === "gpl" || t.hud === "gcc")) return <LowerThird t={t} message={message} />;
     if (t.variant === "series") return <SeriesToast t={t} message={message} />;
     return <PlainToast t={t} message={message} />;
 }

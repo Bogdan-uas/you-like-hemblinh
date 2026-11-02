@@ -1,0 +1,285 @@
+.intro,
+.intro * {
+    transition: none;
+    box-sizing: border-box;
+}
+
+.intro {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: radial-gradient(75% 75% at 50% 45%, #ffffff 0%, #f3f3f8 100%);
+    cursor: pointer;
+}
+
+.glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1400px;
+    height: 1400px;
+    margin: -700px 0 0 -700px;
+    background: repeating-conic-gradient(from 0deg, rgba(46, 47, 66, 0.035) 0deg 6deg, transparent 6deg 18deg);
+    -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 52%);
+    mask: radial-gradient(circle, #000 0 18%, transparent 52%);
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: off-glow-in 900ms ease-out both, off-spin 40s linear infinite;
+}
+
+.ride {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background:
+        repeating-linear-gradient(180deg, #9a9a9a 0 2px, #e2e2e2 2px 6px, #c4c4c4 6px 10px, #9a9a9a 10px 12px, transparent 12px 460px),
+        repeating-linear-gradient(90deg, transparent 0 146px, rgba(0, 0, 0, 0.035) 146px 150px),
+        #f2f2f2;
+    pointer-events: none;
+    will-change: transform;
+    animation: off-ride 1500ms cubic-bezier(0.45, 0, 0.15, 1) both;
+}
+
+.ride_floor {
+    position: absolute;
+    left: 0;
+    right: 0;
+    box-shadow: inset 0 0 0 2px #ffd700, inset 0 0 26px rgba(255, 215, 0, 0.5);
+    background: linear-gradient(180deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 215, 0, 0.03) 100%);
+    pointer-events: none;
+    will-change: opacity;
+    animation: off-glow-in 420ms ease-out 1380ms both;
+}
+
+.ride_sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background:
+        repeating-linear-gradient(90deg, #9a9a9a 0 2px, transparent 2px 18px) 0 100% / 100% 16px no-repeat,
+        linear-gradient(180deg, #d9ecff 0%, #fff6d6 100%);
+    pointer-events: none;
+    will-change: opacity;
+    animation: off-glow-in 520ms ease-out 1300ms both;
+}
+
+.ride_fade {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(50% 45% at 50% 50%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+}
+
+.plate {
+    position: relative;
+    z-index: 1;
+    display: flex;
+}
+
+.stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: min(1100px, 94vw);
+    will-change: transform;
+    animation: off-drift 3600ms linear both;
+}
+
+.head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 30px;
+    width: 100%;
+}
+
+.side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.event {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ui-text);
+    white-space: nowrap;
+}
+
+.caption {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ui-text-faint);
+    white-space: nowrap;
+}
+
+.title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ui-text);
+    white-space: nowrap;
+}
+
+.number {
+    padding: 4px 12px;
+    font-size: 34px;
+}
+
+.medal_slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 84px;
+    height: 84px;
+}
+
+.medal {
+    position: relative;
+    z-index: 1;
+    width: 84px;
+    height: 84px;
+    font-size: 42px;
+}
+
+.ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+.ring_1 {
+    border: 3px solid rgba(46, 47, 66, 0.35);
+    animation: off-ring 1000ms cubic-bezier(0.2, 0.8, 0.3, 1) 280ms both;
+}
+
+.ring_2 {
+    border: 2px solid rgba(46, 47, 66, 0.2);
+    animation: off-ring 1300ms cubic-bezier(0.2, 0.8, 0.3, 1) 440ms both;
+}
+
+.best_of {
+    display: flex;
+}
+
+.divider {
+    display: block;
+    width: 70%;
+    height: 2px;
+    margin: 10px 0 6px;
+    background: linear-gradient(90deg, transparent, rgba(46, 47, 66, 0.18), transparent);
+}
+
+.teams {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 150px;
+    width: 100%;
+}
+
+.team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.disc {
+    display: block;
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 5px #fff, 0 0 0 6px rgba(46, 47, 66, 0.1), 0 12px 30px color-mix(in srgb, var(--team-color) 45%, transparent);
+}
+
+.name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 40px;
+    line-height: 1.2;
+    translate: none;
+}
+
+.vs {
+    position: absolute;
+    left: 50%;
+    top: 56px;
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+@keyframes off-glow-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes off-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes off-drift {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.035);
+    }
+}
+
+@keyframes off-ride {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(var(--ride));
+    }
+}
+
+@keyframes off-ring {
+    0% {
+        opacity: 0.9;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(3.2);
+    }
+}

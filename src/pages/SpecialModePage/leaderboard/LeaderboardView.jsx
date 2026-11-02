@@ -9,10 +9,31 @@ import { LeaderboardDividerSelect } from "../components/LeaderboardDividerSelect
 import { getLeaderboardDividers } from "../logic/leaderboardDividers.js";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import { TeamStatsHoverPopover } from "../components/TeamStatsHoverPopover.jsx";
+import { useLeaderboardHover, useIsScrolling } from "./leaderboardHover.js";
 import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
 import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "../logic/placings.jsx";
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
+
+function LeaderboardHoverPopover({ store, cursorRef, teamStats, tab }) {
+    const hovered = useLeaderboardHover(store);
+    const scrolling = useIsScrolling();
+    const team = scrolling ? null : hovered;
+
+    return (
+        <AnimatePresence>
+            {team && (
+                <TeamStatsHoverPopover
+                    key="team-stats-popover"
+                    team={team}
+                    cursorRef={cursorRef}
+                    statsNow={teamStats?.[team.id]}
+                    tab={tab}
+                />
+            )}
+        </AnimatePresence>
+    );
+}
 
 const formatRange = (from, to) => (from >= to ? formatOrdinal(from) : `${formatOrdinal(from)}–${formatOrdinal(to)}`);
 
@@ -48,7 +69,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
         leaderboardTitleTournament,
         leaderboardListRef,
         leaderboardDisplayOrder,
-        hoveredLeaderboardTeam,
+        leaderboardHoverStore,
         leaderboardCursorRef,
         leaderboardStatsTab,
         getLeaderboardRowRef,
@@ -451,17 +472,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
             </div>
         </div>
 
-        <AnimatePresence>
-            {hoveredLeaderboardTeam && (
-                <TeamStatsHoverPopover
-                    key="team-stats-popover"
-                    team={hoveredLeaderboardTeam}
-                    cursorRef={leaderboardCursorRef}
-                    statsNow={teamStats?.[hoveredLeaderboardTeam?.id]}
-                    tab={leaderboardStatsTab}
-                />
-            )}
-        </AnimatePresence>
+        <LeaderboardHoverPopover store={leaderboardHoverStore} cursorRef={leaderboardCursorRef} teamStats={teamStats} tab={leaderboardStatsTab} />
         </>
     );
 }
