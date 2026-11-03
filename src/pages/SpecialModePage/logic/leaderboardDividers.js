@@ -5,7 +5,7 @@ import { GPL_STAGE2_AUTO_COUNT, GPL_TEAM_COUNT, GPL_GCC_DIRECT_COUNT } from "./g
 import { OPEN_QUALIFIER_CONFIG } from "./qualifier.jsx";
 import { PBS_POT_SIZE } from "./pbsConfig.js";
 import { OFFICIAL_STAGE3_AUTO_COUNT, OFFICIAL_STAGE2_AUTO_COUNT, OFFICIAL_TEAM_COUNT } from "./gameConstants.js";
-import { ACTIVE_TOURNAMENT_TYPE, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID, CST_TYPE_ID, ECL_TYPE_ID, GPL_TYPE_ID, GCC_TYPE_ID, PBS_TYPE_ID, PGX_GM_TYPE_ID, getTournamentTypeConfig } from "./tournamentTypes.jsx";
+import { ACTIVE_TOURNAMENT_TYPE, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID, CST_TYPE_ID, ECL_TYPE_ID, GPL_TYPE_ID, GCC_TYPE_ID, PBS_TYPE_ID, PGX_GM_TYPE_ID, ESS_TYPE_ID, getTournamentTypeConfig } from "./tournamentTypes.jsx";
 
 const pemCutoffs = (type) => {
     const { mainEventCount, qualifierCount, label, secondEvent } = getPemSeriesConfig(type);
@@ -76,6 +76,15 @@ export const LEADERBOARD_DIVIDER_SETS = [
             { rank: 27, above: "Main Bracket", below: "Entry Round" },
             { rank: 33, above: "PGX International Masters", below: "Candidate Masters: Group Stage" },
             { rank: 41, above: "Candidate Masters: Group Stage", below: "Candidate Masters: Play-ins" },
+        ],
+    },
+    {
+        value: ESS_TYPE_ID,
+        label: getTournamentTypeConfig(ESS_TYPE_ID).label,
+        tier: "tier1",
+        dividers: [
+            { rank: 7, above: "Elite Star Series", below: "Challenger" },
+            { rank: 19, above: "Challenger", below: "Ladder Qualifier" },
         ],
     },
 ];

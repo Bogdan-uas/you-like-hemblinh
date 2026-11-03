@@ -38,7 +38,9 @@ import { PemExtendedRoundsOverlay } from "./hud/PemExtendedRounds.jsx";
 import { PbsScorebug, PbsIntro } from "./hud/PbsHud.jsx";
 import { PgxScorebug, PgxIntro } from "./hud/PgxHud.jsx";
 import { CstScorebug, CstIntro } from "./hud/CstHud.jsx";
-import { EclScorebug, EclIntro, EclExtendedRoundsOverlay } from "./hud/EclHud.jsx";
+import { EssScorebug, EssIntro, EssExtendedRoundsOverlay } from "./hud/EssHud.jsx";
+import { HudTrophy } from "./hud/HudTrophies.jsx";
+import { essRungLabel, essFinalStageLabel, isSingleEssFinalStage, ESS_CH_STAGE_LABELS, ESS_TOP_RUNG } from "../logic/ess.jsx";
 import { isFreshPemSeries, PEM_ENTRANCE_MS } from "./hud/pemHud.js";
 import { OfficialIntro } from "./hud/OfficialIntro.jsx";
 import { SkylinePlate, SkylineFloorFrame, SkylineStreak } from "./hud/SkylinesHud.jsx";
@@ -93,6 +95,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
         skylinesLabel,
         pgxCmLabel,
         pgxImLabel,
+        essLqLabel,
+        essChLabel,
+        essLabel,
         isPgxMainPhase,
         isCstPhase,
         isPemMainPhase,
@@ -109,10 +114,16 @@ export function SeriesScreen({ header, series, labels, actions }) {
         hudEventName,
         hudEventNumber,
     } = labels;
-    const isBroadcastHud = seriesHud === "pem" || seriesHud === "gpl" || seriesHud === "pbs" || seriesHud === "pgx" || seriesHud === "cst" || seriesHud === "ecl" || seriesHud === "gcc";
+    const isBroadcastHud = seriesHud === "pem" || seriesHud === "gpl" || seriesHud === "pbs" || seriesHud === "pgx" || seriesHud === "cst" || seriesHud === "ess" || seriesHud === "gcc";
     const hudTrophyType = seriesHud === "pgx"
         ? seriesState.phase === "pgxCm" ? "pgxCm" : seriesState.phase === "pgxIm" ? "pgxIm" : "pgx"
-        : seriesHud === "gpl" || seriesHud === "pbs" || seriesHud === "cst" || seriesHud === "ecl" || seriesHud === "gcc" ? seriesHud : pemType;
+        : seriesHud === "ess" ? "ecl" : seriesHud === "gpl" || seriesHud === "pbs" || seriesHud === "cst" || seriesHud === "gcc" ? seriesHud : pemType;
+    const isEssEventSeries = seriesState.phase === "essLq" || seriesState.phase === "essCh" || seriesState.phase === "essFin";
+    const essHudProps = {
+        mark: isEssEventSeries ? "ESS" : "ECL",
+        trophy: seriesState.phase === "essFin" ? <HudTrophy type="ess" size={16} /> : seriesState.phase === "essCh" ? <HudTrophy type="essCh" size={16} /> : null,
+        lite: seriesState.phase === "essLq",
+    };
     const { handlePenaltyShot, handleSeriesGamble, setIntroPlaying, simulation } = actions;
 
     const labelParts = useMemo(() => {
@@ -159,6 +170,17 @@ export function SeriesScreen({ header, series, labels, actions }) {
             event = pgxImLabel;
             stage = seriesState.pgxSection === "entry" ? null : "Main Bracket";
             big = pgxStageLabel("im", seriesState.pgxStage);
+        } else if (seriesState.phase === "essLq") {
+            event = essLqLabel;
+            stage = `Ladder ${seriesState.essGroup}`;
+            big = essRungLabel(seriesState.essStage);
+        } else if (seriesState.phase === "essCh") {
+            event = essChLabel;
+            stage = seriesState.essSection === "playoffs" ? "Playoffs" : `Group Stage · Group ${seriesState.essGroup}`;
+            big = ESS_CH_STAGE_LABELS[seriesState.essStage] ?? "";
+        } else if (seriesState.phase === "essFin") {
+            event = essLabel;
+            big = essFinalStageLabel(seriesState.essStage);
         } else if (seriesState.phase === "cstGroup") {
             event = cstLabel;
             stage = "Group Stage";
@@ -178,7 +200,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
         }
 
         const isPgxSeries = seriesState.phase === "pgxCm" || seriesState.phase === "pgxIm";
-        const isQualifierSeries = seriesState.phase === "qualifier" || seriesState.phase === "pgxCm";
+        const isEssSeries = seriesState.phase === "essLq" || seriesState.phase === "essCh" || seriesState.phase === "essFin";
+        const isQualifierSeries = seriesState.phase === "qualifier" || seriesState.phase === "pgxCm" || seriesState.phase === "essLq";
         const isPemGroupSeries = seriesState.phase === "pemGroup";
         const isPemStage1Series = seriesState.phase === "pemStage1";
         const isEclSeries = seriesState.phase === "ecl" || seriesState.phase === "skyline" || seriesState.phase === "pgxIm";
@@ -192,6 +215,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
                 ? seriesState.playoffsMatchNumber
                 : isPgxSeries
                     ? seriesState.pgxMatchNumber ?? 1
+                : isEssSeries
+                    ? seriesState.essMatchNumber ?? 1
                 : isQualifierSeries
                     ? seriesState.qualifierMatchNumber ?? 1
                     : isPemGroupSeries
@@ -206,7 +231,13 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                         ? seriesState.gccMatchNumber ?? 1
                                         : seriesState.swissMatchNumber ?? 1;
 
-        const showSeriesMatchNumber = seriesState.phase === "pgxCm"
+        const showSeriesMatchNumber = seriesState.phase === "essLq"
+            ? false
+            : seriesState.phase === "essCh"
+            ? ["uo", "qf", "sf"].includes(seriesState.essStage)
+            : seriesState.phase === "essFin"
+            ? !isSingleEssFinalStage(seriesState.essStage)
+            : seriesState.phase === "pgxCm"
             ? ["pr1", "pr2", "uo", "dq"].includes(seriesState.pgxStage)
             : seriesState.phase === "pgxIm"
             ? seriesState.pgxStage === "er" || !isSingleEclStage(seriesState.pgxStage)
@@ -221,7 +252,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         : seriesState.playoffsStage !== "gf" && seriesState.playoffsStage !== "thirdPlace";
 
         return { event, stage, big, isQualifierSeries, isCstSeries, isPemSeries, seriesMatchNumber, showSeriesMatchNumber };
-    }, [seriesState, tournamentLabel, pemLabel, qualifierLabel, cstLabel, eclLabel, skylinesLabel, pgxCmLabel, pgxImLabel, gccLabel, pbsLabel, isCstPhase, isGccPhase, isPbsPhase, isPemMainPhase, isPemBigSeries]);
+    }, [seriesState, tournamentLabel, pemLabel, qualifierLabel, cstLabel, eclLabel, skylinesLabel, pgxCmLabel, pgxImLabel, essLqLabel, essChLabel, essLabel, gccLabel, pbsLabel, isCstPhase, isGccPhase, isPbsPhase, isPemMainPhase, isPemBigSeries]);
 
     const seriesLabelNode = useMemo(() => {
         if (!labelParts) return null;
@@ -347,6 +378,20 @@ export function SeriesScreen({ header, series, labels, actions }) {
             return PEM_STAGE1_QUALIFYING_STAGES.includes(seriesState.pemStage1Stage)
                 ? "STAGE II POINT!!!"
                 : "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "essLq") return seriesState.essStage === ESS_TOP_RUNG ? "QUALIFICATION POINT!!!" : "NEXT RUNG POINT!!!";
+
+        if (seriesState.phase === "essCh") {
+            if (seriesState.essStage === "uf" || seriesState.essStage === "lr2") return "PLAYOFFS POINT!!!";
+            if (seriesState.essStage === "sf") return "QUALIFICATION POINT!!!";
+            return "MATCH POINT!!!";
+        }
+
+        if (seriesState.phase === "essFin") {
+            if (seriesState.essStage === "uf" || seriesState.essStage === "cf") return "GRAND FINAL POINT!!!";
+            if (seriesState.essStage === "gf") return "CHAMPIONSHIP POINT!!!";
+            return "MATCH POINT!!!";
         }
 
         if (seriesState.phase === "pgxCm") {
@@ -496,8 +541,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                     setsToWin={setsToWin}
                     onDone={() => setIsIntroPlaying(false)}
                 />
-            ) : openingMode === "intro" && seriesHud === "ecl" ? (
-                <EclIntro
+            ) : openingMode === "intro" && seriesHud === "ess" ? (
+                <EssIntro
+                    mark={essHudProps.mark}
                     seriesState={seriesState}
                     eventName={hudEventName}
                     eventNumber={hudEventNumber}
@@ -591,8 +637,9 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         Secret
                     </button> : null}
                     {isBroadcastHud ? (
-                        seriesHud === "ecl" ? (
-                        <EclScorebug
+                        seriesHud === "ess" ? (
+                        <EssScorebug
+                            {...essHudProps}
                             entrance={openingMode === "entrance"}
                             seriesState={seriesState}
                             setsToWin={setsToWin}
@@ -690,8 +737,8 @@ export function SeriesScreen({ header, series, labels, actions }) {
                     ) : seriesLabelNode}
                 </div>
                 {seriesState.tiebreakerPhase === "extended" && extendedRoundDetails && (
-                    seriesHud === "ecl" ? (
-                        <EclExtendedRoundsOverlay seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} eventName={hudEventName} eventNumber={hudEventNumber} />
+                    seriesHud === "ess" ? (
+                        <EssExtendedRoundsOverlay mark={essHudProps.mark} seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} eventName={hudEventName} eventNumber={hudEventNumber} />
                     ) : isBroadcastHud ? (
                         <PemExtendedRoundsOverlay seriesState={seriesState} details={extendedRoundDetails} setsToWin={setsToWin} pemType={hudTrophyType} theme={seriesHud} />
                     ) : (

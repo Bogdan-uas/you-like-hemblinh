@@ -59,7 +59,7 @@ export const buildModalStatsKey = ({ modalContext, currentModalMatch, hallRecord
                             ? `ecl:${modalContext.stage}`
                             : modalContext.type === "skyline"
                             ? `skyline:${modalContext.stage}`
-                            : modalContext.type === "pgxCm" || modalContext.type === "pgxIm"
+                            : modalContext.type === "pgxCm" || modalContext.type === "pgxIm" || modalContext.type === "essLq" || modalContext.type === "essCh" || modalContext.type === "essFin"
                             ? `${modalContext.type}:${modalContext.stage}`
                             : modalContext.type === "pemStage1"
                                 ? `pemStage1:${modalContext.group}:${modalContext.stage}`
@@ -358,7 +358,7 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = (p?.wins ?? 0) * 1000000000000 + ((p?.pemBigWins ?? 0) + (p?.gplWins ?? 0)) * 1000000000 + (p?.pbsWins ?? 0) * 1000000 + ((p?.tier1Wins ?? 0) + (p?.pgxWins ?? 0)) * 1000 + (p?.tier2Wins ?? 0); break;
+            case "trophies": primaryById[t.id] = [p?.wins ?? 0, (p?.pemBigWins ?? 0) + (p?.gplWins ?? 0), p?.pbsWins ?? 0, (p?.tier1Wins ?? 0) + (p?.pgxWins ?? 0), p?.essWins ?? 0, p?.tier15Wins ?? 0, p?.tier2Wins ?? 0]; break;
             case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
             case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;
@@ -366,8 +366,16 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
         }
     });
 
+    const compareKeys = (a, b) => {
+        if (!Array.isArray(a)) return (b ?? 0) - (a ?? 0);
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) return b[i] - a[i];
+        }
+        return 0;
+    };
+
     return [...teams].sort((a, b) => {
-        const primaryDiff = primaryById[b.id] - primaryById[a.id];
+        const primaryDiff = compareKeys(primaryById[a.id], primaryById[b.id]);
         if (primaryDiff !== 0) return primaryDiff;
 
         const pointsDiff = points(b) - points(a);

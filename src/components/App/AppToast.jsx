@@ -246,7 +246,7 @@ const CstToast = ({ t, message }) => {
     );
 };
 
-const EclToast = ({ t, message }) => {
+const EssToast = ({ t, message }) => {
     const { barRef, close } = useDrainClose(t);
     const event = eventOf(t.icon);
     const accent = t.accent ?? event.accent;
@@ -298,7 +298,7 @@ const PlainToast = ({ t, message }) => {
 export function AppToast({ t }) {
     const message = resolveValue(t.message, t);
 
-    if (t.variant === "series" && t.hud === "ecl") return <EclToast t={t} message={message} />;
+    if (t.variant === "series" && t.hud === "ess") return <EssToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "cst") return <CstToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "pgx") return <PgxToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "pbs") return <PbsToast t={t} message={message} />;

@@ -141,6 +141,63 @@ import {
     pgxStageLabel,
 } from "./logic/pgx.jsx";
 import {
+    ESS_TYPE_ID,
+    ESS_CH_TYPE_ID,
+    ESS_LQ_TYPE_ID,
+    ESS_LADDERS,
+    ESS_CH_GROUPS,
+    ESS_LQ_BIG_STAGE_GAINS,
+    ESS_LQ_PICKEM_ROUNDS,
+    ESS_CH_BIG_STAGE_GAINS,
+    ESS_CH_PICKEM_ROUNDS,
+    ESS_FINAL_STAGE_ORDER,
+    ESS_FINAL_BIG_STAGE_GAINS,
+    ESS_FINAL_PICKEM_ROUNDS,
+    buildEssSeeds,
+    buildEssLadderQualifier,
+    locateEssLadderMatch,
+    updateEssLadderMatch,
+    advanceEssLadder,
+    isEssLadderQualifierFinished,
+    getEssLadderQualifiers,
+    getEssLadderMatches,
+    getEssLadderPlaces,
+    essLadderMatchPoints,
+    essLadderPickemBand,
+    getEssLadderPickemTotals,
+    getEssLadderStakeTexts,
+    getBestOfForEssLadder,
+    buildEssChallenger,
+    buildEssChPlayoffs,
+    locateEssChallengerMatch,
+    updateEssChallengerMatch,
+    advanceEssChallenger,
+    isEssChGroupsFinished,
+    isEssChPlayoffsFinished,
+    getEssChQualifiers,
+    getEssChSemifinalLosers,
+    getEssChallengerMatches,
+    getEssChallengerPlaces,
+    essChallengerMatchPoints,
+    getEssChallengerStakeTexts,
+    getBestOfForEssChallenger,
+    buildEssFinals,
+    locateEssFinalMatch,
+    updateEssFinalMatch,
+    advanceEssFinal,
+    isEssFinalFinished,
+    getEssFinalMatches,
+    getEssFinalResults,
+    getEssFinalPlaces,
+    essFinalMatchPoints,
+    getEssFinalStakeTexts,
+    getBestOfForEssFinal,
+    isSingleEssFinalStage,
+    essStageLabel,
+    getRandomEssNeededPickemPoints,
+} from "./logic/ess.jsx";
+import { Tier15Medal } from "./components/Trophies.jsx";
+import {
     BASE_ROUNDS_TO_WIN,
     getRandomNeededPickemPoints,
     SECRET_TOAST_ID,
@@ -339,7 +396,7 @@ import {
     applyTournamentBan,
     DEFAULT_TOURNAMENT_BANS,
 } from "./logic/tournamentTypes.jsx";
-import { getAnniversaryTheme as getTournamentTheme, getTournamentNumberStyle, PICKEM_STEP_MS, PICKEM_PLAYOFF_KEYS, WINNERS_TIMELINE } from "./logic/winnersAndPickem.js";
+import { getAnniversaryTheme as getTournamentTheme, getTournamentNumberStyle, PICKEM_STEP_MS, PICKEM_PLAYOFF_KEYS, WINNERS_TIMELINE, PODIUM_QUOTES } from "./logic/winnersAndPickem.js";
 import { useHallOfFame } from "./hallOfFame/useHallOfFame.js";
 import { useLeaderboard } from "./leaderboard/useLeaderboard.js";
 import { useHallOfFameManager } from "./hallOfFame/useHallOfFameManager.js";
@@ -537,6 +594,42 @@ function SpecialModeContent() {
     const isPgxCmPhase = pgxSeries?.event === "cm" && !!pgxCm;
     const isPgxImPhase = pgxSeries?.event === "im" && !!pgxIm;
     const isPgxMainPhase = pgxSeries?.event === "gm";
+
+    const [essSeries, setEssSeries] = useState(null);
+    const [essLq, setEssLq] = useState(null);
+    const [essCh, setEssCh] = useState(null);
+    const [essFin, setEssFin] = useState(null);
+    const [essView, setEssView] = useState("L");
+    const essLqRef = useRef(essLq);
+    const essChRef = useRef(essCh);
+    const essFinRef = useRef(essFin);
+
+    useEffect(() => {
+        essLqRef.current = essLq;
+    }, [essLq]);
+
+    useEffect(() => {
+        essChRef.current = essCh;
+    }, [essCh]);
+
+    useEffect(() => {
+        essFinRef.current = essFin;
+    }, [essFin]);
+
+    const isEssLqPhase = essSeries?.event === "lq" && !!essLq;
+    const isEssChPhase = essSeries?.event === "ch" && !!essCh;
+    const isEssMainPhase = essSeries?.event === "main" && !!essFin;
+
+    const resetEssState = () => {
+        setEssSeries(null);
+        setEssLq(null);
+        essLqRef.current = null;
+        setEssCh(null);
+        essChRef.current = null;
+        setEssFin(null);
+        essFinRef.current = null;
+        setEssView("L");
+    };
     const isSkylinesView = viewPhase === "skylines" && !!skylines;
     const officialPausedStage = isSkylinesPhase ? ["stage1", "stage2", "stage3"][skylines.block] ?? "stage3" : null;
 
@@ -847,13 +940,17 @@ function SpecialModeContent() {
             return locatePgxInternationalMatch(pgxIm, modalContext.matchId)?.match ?? null;
         }
 
+        if (modalContext.type === "essLq") return locateEssLadderMatch(essLq, modalContext.matchId)?.match ?? null;
+        if (modalContext.type === "essCh") return locateEssChallengerMatch(essCh, modalContext.matchId)?.match ?? null;
+        if (modalContext.type === "essFin") return locateEssFinalMatch(essFin, modalContext.matchId)?.match ?? null;
+
         if (modalContext.type === "gccLeague") {
             return findGccLeagueMatch(gcc, modalContext.matchId)?.match || null;
         }
 
         return null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalContext, stage1, stage2, stage3, playoffs, qualifier, cst, ecl, pemStage1, pemMain, gcc, skylines, pgxCm, pgxIm, selectedHallMatch]);
+    }, [modalContext, stage1, stage2, stage3, playoffs, qualifier, cst, ecl, pemStage1, pemMain, gcc, skylines, pgxCm, pgxIm, essLq, essCh, essFin, selectedHallMatch]);
 
     const modalBestOf = useMemo(() => {
         if (!modalContext) return null;
@@ -865,6 +962,9 @@ function SpecialModeContent() {
         if (modalContext.type === "skyline") return getBestOfForSkylines(modalContext.stage, modalContext.floor);
         if (modalContext.type === "pgxCm") return getBestOfForPgxCandidate(modalContext.stage);
         if (modalContext.type === "pgxIm") return getBestOfForPgxInternational(modalContext.stage);
+        if (modalContext.type === "essLq") return getBestOfForEssLadder(modalContext.stage);
+        if (modalContext.type === "essCh") return getBestOfForEssChallenger(modalContext.stage);
+        if (modalContext.type === "essFin") return getBestOfForEssFinal(modalContext.stage);
         if (modalContext.type === "pemStage1") return getBestOfForPemStage1(modalContext.stage);
         if (modalContext.type === "cstGroup") return 1;
         return getBestOfForPlayoffs(modalContext.stage, modalContext.kind);
@@ -1095,7 +1195,7 @@ function SpecialModeContent() {
             height: rect.height,
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [viewPhase, skylinesRoundView, pgxView]);
+    }, [viewPhase, skylinesRoundView, pgxView, essView, !!essCh?.playoffs]);
 
     useEffect(() => {
         requestAnimationFrame(updateResultsIndicator);
@@ -1104,6 +1204,10 @@ function SpecialModeContent() {
         activePhase,
         skylinesRoundView,
         pgxView,
+        essView,
+        showPickemSummary,
+        showWinnersScreen,
+        seriesState.active,
         updateResultsIndicator,
     ]);
 
@@ -1358,6 +1462,14 @@ function SpecialModeContent() {
             setPgxIm(parsed.pgxIm ?? null);
             pgxImRef.current = parsed.pgxIm ?? null;
             setPgxView(parsed.pgxView ?? "P");
+            setEssSeries(parsed.essSeries ?? null);
+            setEssLq(parsed.essLq ?? null);
+            essLqRef.current = parsed.essLq ?? null;
+            setEssCh(parsed.essCh ?? null);
+            essChRef.current = parsed.essCh ?? null;
+            setEssFin(parsed.essFin ?? null);
+            essFinRef.current = parsed.essFin ?? null;
+            setEssView(parsed.essView ?? "L");
 
             setSeriesState(parsed.seriesState ? { ...defaultSeriesState, ...parsed.seriesState } : defaultSeriesState);
 
@@ -1460,6 +1572,11 @@ function SpecialModeContent() {
             pgxCm,
             pgxIm,
             pgxView,
+            essSeries,
+            essLq,
+            essCh,
+            essFin,
+            essView,
             seriesState,
             neededPickemPoints,
             finalPickemPoints,
@@ -1523,6 +1640,11 @@ function SpecialModeContent() {
         pgxCm,
         pgxIm,
         pgxView,
+        essSeries,
+        essLq,
+        essCh,
+        essFin,
+        essView,
         seriesState,
         neededPickemPoints,
         finalPickemPoints,
@@ -1574,6 +1696,21 @@ function SpecialModeContent() {
     const pgxCmLabel = useMemo(() => renderPgxLabel("PGX Candidate Masters"), [renderPgxLabel]);
     const pgxImLabel = useMemo(() => renderPgxLabel("PGX International Masters"), [renderPgxLabel]);
     const pgxGmLabel = useMemo(() => renderPgxLabel("PGX Grandmasters"), [renderPgxLabel]);
+
+    const essEdition = essSeries?.edition ?? (tournamentNumbers?.[ESS_TYPE_ID] ?? 0);
+
+    const renderEssLabel = useCallback((name, number = essEdition) => (
+        <>
+            {name}{" "}
+            <span style={getTournamentNumberStyle(getTournamentTheme(number))}>
+                #{number}
+            </span>
+        </>
+    ), [essEdition]);
+
+    const essLqLabel = useMemo(() => renderEssLabel("Elite Star Series Ladder Qualifier"), [renderEssLabel]);
+    const essChLabel = useMemo(() => renderEssLabel("Elite Star Series Challenger"), [renderEssLabel]);
+    const essLabel = useMemo(() => renderEssLabel("Elite Star Series"), [renderEssLabel]);
 
     const tournamentLabel = useMemo(() => (isGplMainPhase ? gplLabel : isPgxMainPhase ? pgxGmLabel : (
         <>
@@ -1698,7 +1835,14 @@ function SpecialModeContent() {
         pendingSaveRef.current = null;
         localStorage.removeItem(STORAGE_KEY);
         if (!tournamentResults) {
-            if (pgxSeries?.event === "cm") {
+            if (essSeries?.event === "lq") {
+                setTypeNumber(ESS_TYPE_ID, Math.max(0, getTypeNumber(ESS_TYPE_ID) - 1));
+                setTypeNumber(ESS_LQ_TYPE_ID, Math.max(0, getTypeNumber(ESS_LQ_TYPE_ID) - 1));
+            } else if (essSeries?.event === "ch") {
+                setTypeNumber(ESS_CH_TYPE_ID, Math.max(0, getTypeNumber(ESS_CH_TYPE_ID) - 1));
+            } else if (essSeries) {
+                // ignore
+            } else if (pgxSeries?.event === "cm") {
                 setTypeNumber(PGX_GM_TYPE_ID, Math.max(0, getTypeNumber(PGX_GM_TYPE_ID) - 1));
                 setTypeNumber(PGX_CM_TYPE_ID, Math.max(0, getTypeNumber(PGX_CM_TYPE_ID) - 1));
             } else if (pgxSeries?.event === "im") {
@@ -1786,6 +1930,7 @@ function SpecialModeContent() {
         pgxCmRef.current = null;
         setPgxIm(null);
         pgxImRef.current = null;
+        resetEssState();
         setSkylines(null);
         skylinesRef.current = null;
         skylinesScopeRef.current = false;
@@ -1863,6 +2008,7 @@ function SpecialModeContent() {
         pgxCmRef.current = null;
         setPgxIm(null);
         pgxImRef.current = null;
+        resetEssState();
         setSkylines(null);
         skylinesRef.current = null;
         skylinesScopeRef.current = false;
@@ -2044,19 +2190,23 @@ function SpecialModeContent() {
             ? buildPbsSeeds(allTeams, teamRatingsRef.current)
             : null;
         const isPgxStart = nextTournamentType === PGX_GM_TYPE_ID;
-        const officialSeeds = !pemSeeds && !gplSeeds && !pbsSeeds && !isPgxStart
+        const isEssStart = nextTournamentType === ESS_TYPE_ID;
+        const officialSeeds = !pemSeeds && !gplSeeds && !pbsSeeds && !isPgxStart && !isEssStart
             ? classifyTeamsForStages(allTeams, teamRatingsRef.current)
             : null;
         const openQualifierOwner = gplSeeds ? "gpl" : pbsSeeds ? "pbs" : null;
         const sortedBaseTeams = buildLeaderboard(allTeams, teamRatingsRef.current).sorted.map(toBaseTeam);
         const openQualifierEntrants = openQualifierOwner ? getOpenQualifierEntrants(openQualifierOwner, sortedBaseTeams) : null;
         const pgxSeeds = isPgxStart ? buildPgxSeeds(sortedBaseTeams) : null;
+        const essSeeds = isEssStart ? buildEssSeeds(sortedBaseTeams) : null;
         const pulledTeamIds = pemSeeds
             ? pemSeeds.qualifier.map((team) => team.id)
             : openQualifierEntrants
                 ? [...openQualifierEntrants.direct, ...openQualifierEntrants.playIn].map((team) => team.id)
                 : pgxSeeds
                     ? [...pgxSeeds.cmGroups, ...pgxSeeds.cmPlayIn].map((team) => team.id)
+                    : essSeeds
+                    ? essSeeds.ladder.map((team) => team.id)
                     : [...officialSeeds.stage3Seeds, ...officialSeeds.stage2Seeds, ...officialSeeds.stage1Seeds].map((team) => team.id);
         const skylinesTeams = officialSeeds
             ? sortedBaseTeams.filter((team) => !pulledTeamIds.includes(team.id)).slice(0, SKYLINES_TEAM_COUNT)
@@ -2088,6 +2238,7 @@ function SpecialModeContent() {
             pgxCmRef.current = null;
             setPgxIm(null);
             pgxImRef.current = null;
+            resetEssState();
             setSkylines(null);
             skylinesRef.current = null;
             skylinesScopeRef.current = false;
@@ -2139,6 +2290,7 @@ function SpecialModeContent() {
             setPlayoffs(null);
             setPgxIm(null);
             pgxImRef.current = null;
+            resetEssState();
 
             setPgxSeries({ type: PGX_GM_TYPE_ID, edition, city, seeds: pgxSeeds, event: "cm", pulledTeamIds });
             setPgxCm(builtCm);
@@ -2148,6 +2300,51 @@ function SpecialModeContent() {
             setActivePhase("pgxCm");
             setViewPhase("pgxCm");
             setNeededPickemPoints(getRandomPgxNeededPickemPoints("cm"));
+        } else if (essSeeds) {
+            const edition = getTypeNumber(ESS_TYPE_ID) + 1;
+            setTypeNumber(ESS_TYPE_ID, edition);
+            setTypeNumber(ESS_LQ_TYPE_ID, edition);
+
+            const builtLq = buildEssLadderQualifier(essSeeds.ladder, { edition });
+
+            setPemSeries(null);
+            setGplSeries(null);
+            setGcc(null);
+            gccRef.current = null;
+            setPbs(null);
+            pbsRef.current = null;
+            setQualifier(null);
+            qualifierRef.current = null;
+            setCst(null);
+            cstRef.current = null;
+            setEcl(null);
+            eclRef.current = null;
+            setPemStage1(null);
+            pemStage1Ref.current = null;
+            setPemMain(null);
+            pemMainRef.current = null;
+            setSkylines(null);
+            skylinesRef.current = null;
+            skylinesScopeRef.current = false;
+            setPlayoffs(null);
+            setPgxSeries(null);
+            setPgxCm(null);
+            pgxCmRef.current = null;
+            setPgxIm(null);
+            pgxImRef.current = null;
+            setEssCh(null);
+            essChRef.current = null;
+            setEssFin(null);
+            essFinRef.current = null;
+
+            setEssSeries({ type: ESS_TYPE_ID, edition, seeds: essSeeds, event: "lq", pulledTeamIds });
+            setEssLq(builtLq);
+            essLqRef.current = builtLq;
+            setEssView("L");
+
+            setActivePhase("essLq");
+            setViewPhase("essLq");
+            setNeededPickemPoints(getRandomEssNeededPickemPoints("lq"));
         } else if (gplSeeds) {
             const number = getTypeNumber(GCC_TYPE_ID) + 1;
             setTypeNumber(GCC_TYPE_ID, number);
@@ -2162,6 +2359,7 @@ function SpecialModeContent() {
             pgxCmRef.current = null;
             setPgxIm(null);
             pgxImRef.current = null;
+            resetEssState();
             setSkylines(null);
             skylinesRef.current = null;
             skylinesScopeRef.current = false;
@@ -2199,6 +2397,7 @@ function SpecialModeContent() {
             pgxCmRef.current = null;
             setPgxIm(null);
             pgxImRef.current = null;
+            resetEssState();
             setSkylines(null);
             skylinesRef.current = null;
             skylinesScopeRef.current = false;
@@ -2252,6 +2451,7 @@ function SpecialModeContent() {
             pgxCmRef.current = null;
             setPgxIm(null);
             pgxImRef.current = null;
+            resetEssState();
             setSkylines(null);
             skylinesRef.current = null;
             skylinesScopeRef.current = false;
@@ -2439,7 +2639,7 @@ function SpecialModeContent() {
         cstOverride = undefined,
         pemMainOverride = undefined,
         playoffsOverride = undefined,
-        { ecl: eclOverride = undefined, pemStage1: pemStage1Override = undefined, gcc: gccOverride = undefined, pgxCm: pgxCmOverride = undefined, pgxIm: pgxImOverride = undefined } = {}
+        { ecl: eclOverride = undefined, pemStage1: pemStage1Override = undefined, gcc: gccOverride = undefined, pgxCm: pgxCmOverride = undefined, pgxIm: pgxImOverride = undefined, essLq: essLqOverride = undefined, essCh: essChOverride = undefined, essFin: essFinOverride = undefined } = {}
     ) => {
         if (skylinesScopeRef.current && skylinesRef.current) {
             applySkylinesPickem(skylinesRef.current);
@@ -2477,7 +2677,7 @@ function SpecialModeContent() {
         PEM_STAGE1_PICKEM_ROUNDS.forEach(({ key }) => {
             nextCounts[key] = 0;
         });
-        [...PGX_CM_PICKEM_ROUNDS, ...PGX_IM_PICKEM_ROUNDS].forEach(({ key }) => {
+        [...PGX_CM_PICKEM_ROUNDS, ...PGX_IM_PICKEM_ROUNDS, ...ESS_LQ_PICKEM_ROUNDS, ...ESS_CH_PICKEM_ROUNDS, ...ESS_FINAL_PICKEM_ROUNDS].forEach(({ key }) => {
             nextCounts[key] = 0;
         });
 
@@ -2581,7 +2781,22 @@ function SpecialModeContent() {
 
         const currentPlayoffs = playoffsOverride ?? playoffs;
 
-        if (pgxCmOverride || (!pgxImOverride && isPgxCmPhase)) {
+        const isEssOverride = !!(essLqOverride || essChOverride || essFinOverride);
+        if (essLqOverride || (!isEssOverride && isEssLqPhase)) {
+            getEssLadderMatches(essLqOverride ?? essLq).forEach((m) => {
+                if (!m.played || !m.pickTeamId) return;
+                const points = essLadderMatchPoints(m);
+                total += points;
+                if (m.winnerTeamId === m.pickTeamId) {
+                    nextCounts[`essl_${essLadderPickemBand(m.stage)}`] += 1;
+                    nextCounts.correct += points;
+                }
+            });
+        } else if (essChOverride || (!isEssOverride && isEssChPhase)) {
+            applyBracketMatches(getEssChallengerMatches(essChOverride ?? essCh), essChallengerMatchPoints, "essc");
+        } else if (essFinOverride || (!isEssOverride && isEssMainPhase)) {
+            applyBracketMatches(getEssFinalMatches(essFinOverride ?? essFin), essFinalMatchPoints, "essf");
+        } else if (pgxCmOverride || (!pgxImOverride && isPgxCmPhase)) {
             applyBracketMatches(getPgxCandidateMatches(pgxCmOverride ?? pgxCm), pgxCandidateMatchPoints, "pgxc");
         } else if (pgxImOverride || isPgxImPhase) {
             applyBracketMatches(getPgxInternationalMatches(pgxImOverride ?? pgxIm), pgxInternationalMatchPoints, "pgxi");
@@ -2812,6 +3027,34 @@ function SpecialModeContent() {
         if (!match || !match.slotA || !match.slotB) return;
 
         setModalContext({ type, matchId, stage: spot.stage, section: spot.section, group: spot.group ?? null, readOnly: false });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const essContainerOf = (type) => (type === "essLq" ? essLqRef.current : type === "essCh" ? essChRef.current : essFinRef.current);
+
+    const locateEssMatch = (type, container, matchId) =>
+        type === "essLq" ? locateEssLadderMatch(container, matchId) : type === "essCh" ? locateEssChallengerMatch(container, matchId) : locateEssFinalMatch(container, matchId);
+
+    const openEssMatchModal = (type, matchId) => {
+        const spot = locateEssMatch(type, essContainerOf(type), matchId);
+        const match = spot?.match;
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setModalContext({ type, matchId, stage: spot.stage, section: spot.section, group: spot.group ?? null, readOnly: false });
+        setModalLeftTeam(match.slotA);
+        setModalRightTeam(match.slotB);
+        setHasChosen(false);
+        setIsMatchModalOpen(true);
+    };
+
+    const openArchivedEssMatchModal = (type, record, match, section = null) => {
+        if (!match || !match.slotA || !match.slotB) return;
+
+        setSelectedHallMatch({ record, stage: match.stage, index: 0, match });
+        setModalContext({ type, matchId: match.id, stage: match.stage, section, group: match.group ?? null, readOnly: true, isArchivedHallOfFame: true });
         setModalLeftTeam(match.slotA);
         setModalRightTeam(match.slotB);
         setHasChosen(false);
@@ -3369,6 +3612,69 @@ function SpecialModeContent() {
             return;
         }
 
+        if (modalContext.type === "essLq" || modalContext.type === "essCh" || modalContext.type === "essFin") {
+            const type = modalContext.type;
+            const { matchId } = modalContext;
+            const container = essContainerOf(type);
+            const spot = locateEssMatch(type, container, matchId);
+            if (!spot) return;
+
+            const bestOf = type === "essLq" ? getBestOfForEssLadder(spot.stage) : type === "essCh" ? getBestOfForEssChallenger(spot.stage) : getBestOfForEssFinal(spot.stage);
+            const pickUpdate = (m) => ({ ...m, pickTeamId: pickedTeamId, setHistory: [] });
+
+            if (type === "essLq") {
+                const next = updateEssLadderMatch(container, matchId, pickUpdate);
+                setEssLq(next);
+                essLqRef.current = next;
+            } else if (type === "essCh") {
+                const next = updateEssChallengerMatch(container, matchId, pickUpdate);
+                setEssCh(next);
+                essChRef.current = next;
+            } else {
+                const next = updateEssFinalMatch(container, matchId, pickUpdate);
+                setEssFin(next);
+                essFinRef.current = next;
+            }
+
+            clearRoundLog();
+
+            {
+                const seededStats = {
+                    left: { ...(teamStatsRef.current?.[modalLeftTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                    right: { ...(teamStatsRef.current?.[modalRightTeam.id] ?? DEFAULT_TEAM_STAT_VALUES), momentum: 0 },
+                };
+
+                setSeriesState({
+                    ...defaultSeriesState,
+                    active: true,
+                    phase: type,
+                    essMatchId: matchId,
+                    essStage: spot.stage,
+                    essSection: spot.section,
+                    essGroup: spot.group ?? null,
+                    essMatchNumber: Number(String(matchId).split("-").pop()) || 1,
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    setsToWin: calcSetsToWin(bestOf),
+                    initialStats: seededStats,
+                    liveStats: seededStats,
+                    matchCtx: buildMatchStatContext({
+                        kind: type,
+                        playoffsStage: spot.stage,
+                        bestOf,
+                        leftTeam: modalLeftTeam,
+                        rightTeam: modalRightTeam,
+                        seededStats,
+                        ratings: teamRatingsRef.current,
+                        teams: allTeams,
+                    }),
+                });
+            }
+
+            closeMatchModal();
+            return;
+        }
+
         if (modalContext.type === "pgxCm" || modalContext.type === "pgxIm") {
             const isCm = modalContext.type === "pgxCm";
             const { matchId } = modalContext;
@@ -3646,6 +3952,30 @@ function SpecialModeContent() {
                 eclRef.current = next;
                 return next;
             });
+            return;
+        }
+        if ((seriesState.phase === "essLq" || seriesState.phase === "essCh" || seriesState.phase === "essFin") && seriesState.essMatchId) {
+            const matchId = seriesState.essMatchId;
+            const historyUpdate = (m) => ({ ...m, setHistory: setEntry(m.setHistory) });
+            if (seriesState.phase === "essLq") {
+                setEssLq((prev) => {
+                    const next = updateEssLadderMatch(prev, matchId, historyUpdate);
+                    essLqRef.current = next;
+                    return next;
+                });
+            } else if (seriesState.phase === "essCh") {
+                setEssCh((prev) => {
+                    const next = updateEssChallengerMatch(prev, matchId, historyUpdate);
+                    essChRef.current = next;
+                    return next;
+                });
+            } else {
+                setEssFin((prev) => {
+                    const next = updateEssFinalMatch(prev, matchId, historyUpdate);
+                    essFinRef.current = next;
+                    return next;
+                });
+            }
             return;
         }
         if ((seriesState.phase === "pgxCm" || seriesState.phase === "pgxIm") && seriesState.pgxMatchId) {
@@ -6043,6 +6373,107 @@ function SpecialModeContent() {
         closeTournamentSnapshots();
     };
 
+    const commitEssSeries = (type, { matchId, leftTeam, rightTeam, winner, loser, seriesLeftSets, seriesRightSets, playedAtMs }) => {
+        const current = essContainerOf(type);
+        const spot = locateEssMatch(type, current, matchId);
+        if (!spot) return;
+
+        const m = { ...spot.match };
+        const bestOf = type === "essLq" ? getBestOfForEssLadder(spot.stage) : type === "essCh" ? getBestOfForEssChallenger(spot.stage) : getBestOfForEssFinal(spot.stage);
+        const gains = type === "essLq" ? ESS_LQ_BIG_STAGE_GAINS : type === "essCh" ? ESS_CH_BIG_STAGE_GAINS : ESS_FINAL_BIG_STAGE_GAINS;
+        commitBracketMatchResult({
+            match: m,
+            bestOf,
+            phase: type,
+            stage: spot.stage,
+            leftTeam,
+            rightTeam,
+            winner,
+            loser,
+            seriesLeftSets,
+            seriesRightSets,
+            playedAtMs,
+            bigStage: gains[spot.stage] ?? null,
+        });
+
+        if (type === "essLq") {
+            let next = updateEssLadderMatch(current, matchId, () => m);
+            next = advanceEssLadder(next, spot, winner);
+            if (isEssLadderQualifierFinished(next)) next = { ...next, phase: "done", qualified: getEssLadderQualifiers(next).map(toBaseTeam) };
+            setEssLq(next);
+            essLqRef.current = next;
+            recomputePickemTotals(undefined, undefined, undefined, undefined, { essLq: next });
+            if (next.phase === "done") finishEssLadderQualifier(next);
+            return;
+        }
+
+        if (type === "essCh") {
+            let next = updateEssChallengerMatch(current, matchId, () => m);
+            next = advanceEssChallenger(next, locateEssChallengerMatch(next, matchId), winner, loser);
+            if (next.phase === "groups" && isEssChGroupsFinished(next)) {
+                next = { ...next, phase: "playoffs", playoffs: buildEssChPlayoffs(next.groups) };
+                setEssView("PO");
+                toast("The Group Stage is done. The Playoffs start now!", { icon: "⭐", duration: 4000 });
+            } else if (next.phase === "playoffs" && isEssChPlayoffsFinished(next)) {
+                next = { ...next, phase: "done", qualified: getEssChQualifiers(next).map(toBaseTeam) };
+            }
+            setEssCh(next);
+            essChRef.current = next;
+            recomputePickemTotals(undefined, undefined, undefined, undefined, { essCh: next });
+            if (next.phase === "done") finishEssChallenger(next);
+            return;
+        }
+
+        const bracket = { ...updateEssFinalMatch(current, matchId, () => m) };
+        ESS_FINAL_STAGE_ORDER.forEach((stage) => { bracket[stage] = [...bracket[stage]]; });
+        advanceEssFinal(bracket, spot.stage, spot.idx, winner, loser);
+        setEssFin(bracket);
+        essFinRef.current = bracket;
+        recomputePickemTotals(undefined, undefined, undefined, undefined, { essFin: bracket });
+        if (isEssFinalFinished(bracket)) finishEssFinals(bracket);
+    };
+
+    const finishEssLadderQualifier = (finished) => {
+        setTournamentResults({
+            kind: "essLq",
+            qualifiers: finished.qualified,
+            tournament: { type: ESS_LQ_TYPE_ID, number: finished.edition ?? essEdition },
+        });
+        saveFinishedEssLadderToHallOfFame(finished);
+        setShowWinnersScreen(true);
+        closeTournamentSnapshots();
+    };
+
+    const finishEssChallenger = (finished) => {
+        const qualifiers = finished.qualified;
+        const bronze = getEssChSemifinalLosers(finished).map(toBaseTeam);
+        setTournamentResults({
+            kind: "essCh",
+            qualifiers,
+            bronze,
+            tournament: { type: ESS_CH_TYPE_ID, number: finished.edition ?? essEdition },
+        });
+        saveFinishedEssChallengerToHallOfFame(finished);
+        qualifiers.forEach((team) => awardPlacings({ winsKey: "tier15Wins", secondsKey: "tier15Seconds", thirdsKey: "tier15Thirds" }, { winner: team }));
+        bronze.forEach((team) => awardPlacings({ winsKey: "tier15Wins", secondsKey: "tier15Seconds", thirdsKey: "tier15Thirds" }, { thirdPlace: team }));
+        setShowWinnersScreen(true);
+        closeTournamentSnapshots();
+    };
+
+    const finishEssFinals = (finished) => {
+        const results = getEssFinalResults(finished);
+        setTournamentResults({
+            kind: "ess",
+            ...results,
+            tournament: { type: ESS_TYPE_ID, number: essEdition },
+        });
+        saveFinishedEssFinalsToHallOfFame(finished, results);
+        awardPlacings({ winsKey: "essWins", secondsKey: "tier1Seconds", thirdsKey: "tier1Thirds" }, results);
+        banFinishedTournament(essEdition);
+        setShowWinnersScreen(true);
+        closeTournamentSnapshots();
+    };
+
     const commitPgxCandidateSeries = ({ matchId, leftTeam, rightTeam, winner, loser, seriesLeftSets, seriesRightSets, playedAtMs }) => {
         const current = pgxCmRef.current;
         const spot = locatePgxCandidateMatch(current, matchId);
@@ -6680,6 +7111,21 @@ function SpecialModeContent() {
                 commitEclSeries({
                     stage: seriesState.eclStage,
                     matchId: seriesState.eclMatchId,
+                    leftTeam,
+                    rightTeam,
+                    winner,
+                    loser,
+                    seriesLeftSets,
+                    seriesRightSets,
+                    playedAtMs,
+                });
+
+                setSeriesState(defaultSeriesState);
+                return;
+            }
+            if (phase === "essLq" || phase === "essCh" || phase === "essFin") {
+                commitEssSeries(phase, {
+                    matchId: seriesState.essMatchId,
                     leftTeam,
                     rightTeam,
                     winner,
@@ -7492,6 +7938,41 @@ function SpecialModeContent() {
     useEffect(() => {
         if (!showWinnersScreen || !tournamentResults) return;
 
+        if (tournamentResults.kind === "essLq" || tournamentResults.kind === "essCh") {
+            const number = tournamentResults.tournament?.number ?? essEdition;
+            const isLadder = tournamentResults.kind === "essLq";
+            const finalText = isLadder
+                ? `The 4 qualifiers of Elite Star Series Ladder Qualifier #${number}:`
+                : `The 2 qualifiers of Elite Star Series Challenger #${number}:`;
+
+            setShowProceed(false);
+            setShowPodium(true);
+
+            if (!hasPlayedWinnerAnimation && skipPodiumReveal) {
+                setHasPlayedWinnerAnimation(true);
+                return;
+            }
+
+            if (!hasPlayedWinnerAnimation) {
+                setWinnersText(isLadder ? "Qualified via Ladders A and B:" : "Qualified via the first Semifinal:");
+
+                const timers = [
+                    setTimeout(() => setShowWinnerText(true), 500),
+                    setTimeout(() => setWinnersText(isLadder ? "Qualified via Ladders C and D:" : "Qualified via the second Semifinal:"), 5000),
+                    setTimeout(() => setWinnersText(finalText), 9500),
+                    setTimeout(() => setShowProceed(true), 11500),
+                    setTimeout(() => setHasPlayedWinnerAnimation(true), 13500),
+                ];
+
+                return () => timers.forEach(clearTimeout);
+            }
+
+            setShowWinnerText(true);
+            setShowProceed(true);
+            setWinnersText(finalText);
+            return;
+        }
+
         if (tournamentResults.kind === "pgxCm") {
             const finalText = `The 4 qualifiers of PGX Candidate Masters ${tournamentResults.tournament?.city ?? pgxCity} #${tournamentResults.tournament?.number ?? pgxEdition}:`;
 
@@ -7563,6 +8044,8 @@ function SpecialModeContent() {
                 ? `And the WINNER of Official Skylines #${tournamentResults.tournament?.number ?? skylinesNumber} is:`
                 : tournamentResults.kind === "pgxIm"
                 ? `And the WINNER of PGX International Masters ${tournamentResults.tournament?.city ?? pgxCity} #${tournamentResults.tournament?.number ?? pgxEdition} is:`
+                : tournamentResults.kind === "ess"
+                ? `And the CHAMPION of Elite Star Series #${tournamentResults.tournament?.number ?? essEdition} is:`
                 : tournamentResults.kind === "pgx"
                 ? `And the CHAMPION of PGX Grandmasters ${tournamentResults.tournament?.city ?? pgxCity} #${tournamentResults.tournament?.number ?? pgxEdition} is:`
                 : tournamentResults.kind === "pem"
@@ -7738,6 +8221,29 @@ function SpecialModeContent() {
                 </>
             );
         };
+
+        if (isEssLqPhase || isEssChPhase || isEssMainPhase) {
+            const ladderTotals = isEssLqPhase ? getEssLadderPickemTotals(essLq) : null;
+            const rounds = isEssLqPhase
+                ? ESS_LQ_PICKEM_ROUNDS.map((round) => ({ ...round, total: ladderTotals[round.band] ?? 0 })).filter((round) => round.total > 0)
+                : isEssChPhase ? ESS_CH_PICKEM_ROUNDS : ESS_FINAL_PICKEM_ROUNDS;
+            const items = rounds
+                .filter(({ key, total }) => total > 1 || (guessedCounts?.[key] ?? 0) > 0)
+                .map((round) => (round.total > 1
+                    ? countItem(round)
+                    : <span style={{ fontWeight: 900, color: green }}>{round.label}</span>));
+
+            return [
+                <>YOU guessed{" "}</>,
+                ...items.map((node, idx) => (
+                    <>
+                        {idx === items.length - 1 && items.length > 1 ? "and " : ""}
+                        {node}
+                        {idx < items.length - 2 ? ", " : " "}
+                    </>
+                )),
+            ];
+        }
 
         if (isPgxCmPhase || isPgxImPhase) {
             const items = (isPgxCmPhase ? PGX_CM_PICKEM_ROUNDS : PGX_IM_PICKEM_ROUNDS)
@@ -8185,6 +8691,49 @@ function SpecialModeContent() {
         return (team) => rank.get(String(team?.id)) ?? 99;
     };
 
+    const startEssChallenger = () => {
+        const edition = essSeries?.edition ?? getTypeNumber(ESS_TYPE_ID);
+        setTypeNumber(ESS_CH_TYPE_ID, edition);
+
+        const qualified = sortByCurrentRank(essLqRef.current?.qualified);
+        const direct = (essSeries?.seeds?.challenger || []).map(toBaseTeam);
+        const builtCh = buildEssChallenger(direct, qualified, { edition });
+
+        resetBattleExperienceForNextEvent();
+        const pulledTeamIds = pullSeriesEventTeams(essSeries?.pulledTeamIds, [...direct, ...qualified]);
+
+        setEssCh(builtCh);
+        essChRef.current = builtCh;
+        setEssLq(null);
+        essLqRef.current = null;
+        setEssView("A");
+        setEssSeries((prev) => (prev ? { ...prev, event: "ch", lqQualified: qualified, pulledTeamIds } : prev));
+        setActivePhase("essCh");
+        setViewPhase("essCh");
+
+        openNextPemEvent(getRandomEssNeededPickemPoints("ch"));
+    };
+
+    const startEssFinals = () => {
+        const qualified = sortByCurrentRank(essChRef.current?.qualified);
+        const finalsTeams = [...(essSeries?.seeds?.finals || []).map(toBaseTeam), ...qualified];
+        const builtFin = buildEssFinals(finalsTeams, { edition: essSeries?.edition ?? essEdition });
+
+        resetBattleExperienceForNextEvent();
+        const pulledTeamIds = pullSeriesEventTeams(essSeries?.pulledTeamIds, finalsTeams);
+
+        setEssFin(builtFin);
+        essFinRef.current = builtFin;
+        setEssCh(null);
+        essChRef.current = null;
+        setEssView("F");
+        setEssSeries((prev) => (prev ? { ...prev, event: "main", chQualified: qualified, pulledTeamIds } : prev));
+        setActivePhase("essFin");
+        setViewPhase("essFin");
+
+        openNextPemEvent(getRandomEssNeededPickemPoints("main"));
+    };
+
     const startPgxInternational = () => {
         const edition = pgxSeries?.edition ?? getTypeNumber(PGX_GM_TYPE_ID);
         setTypeNumber(PGX_IM_TYPE_ID, edition);
@@ -8222,6 +8771,7 @@ function SpecialModeContent() {
         setPlayoffs(null);
         setPgxIm(null);
         pgxImRef.current = null;
+        resetEssState();
         setPgxSeries((prev) => (prev ? { ...prev, event: "gm", imChampion: champion ? toBaseTeam(champion) : null, pulledTeamIds } : prev));
         setActivePhase("stage1");
         setViewPhase("stage1");
@@ -8284,6 +8834,16 @@ function SpecialModeContent() {
     const handlePemProceedToNextEvent = () => {
         setShowPickemSummary(false);
         setShowWinnersScreen(false);
+
+        if (essSeries?.event === "lq") {
+            startEssChallenger();
+            return;
+        }
+
+        if (essSeries?.event === "ch") {
+            startEssFinals();
+            return;
+        }
 
         if (pgxSeries?.event === "cm") {
             startPgxInternational();
@@ -8489,6 +9049,57 @@ function SpecialModeContent() {
         saveHallTournament(record)
             .then(() => setHallOfFame((prev) => sortHallOfFame([record, ...prev.filter((item) => item.id !== record.id)])))
             .catch((error) => console.error(`Couldn't save the ${name} to Hall of Fame:`, error));
+    };
+
+    const essRecordBase = (event, type, finished, matches, pointsOf) => {
+        const achievedPickemPoints = matches.reduce((sum, match) => sum + pointsOf(match), 0);
+        setFinalPickemPoints(achievedPickemPoints);
+        return {
+            id: `${event}-${finished.edition ?? essEdition}-${Date.now()}`,
+            type,
+            event,
+            number: finished.edition ?? essEdition,
+            finishedAt: new Date().toISOString(),
+            neededPickemPoints,
+            achievedPickemPoints,
+            pickemWon: achievedPickemPoints >= neededPickemPoints,
+        };
+    };
+
+    const saveFinishedEssLadderToHallOfFame = (finished) => {
+        const record = {
+            ...essRecordBase("essLq", ESS_LQ_TYPE_ID, finished, getEssLadderMatches(finished), essLadderMatchPoints),
+            qualifiers: (finished.qualified || []).map(toBaseTeam),
+            places: getEssLadderPlaces(finished).map((team, index) => ({ place: index + 1, team: toBaseTeam(team) })),
+            teams: (finished.teams || []).map(toBaseTeam),
+            ladder: finished,
+        };
+        saveHallRecord(record, "Elite Star Series Ladder Qualifier");
+    };
+
+    const saveFinishedEssChallengerToHallOfFame = (finished) => {
+        const record = {
+            ...essRecordBase("essCh", ESS_CH_TYPE_ID, finished, getEssChallengerMatches(finished), essChallengerMatchPoints),
+            qualifiers: (finished.qualified || []).map(toBaseTeam),
+            bronze: getEssChSemifinalLosers(finished).map(toBaseTeam),
+            places: getEssChallengerPlaces(finished).map((team, index) => ({ place: index + 1, team: toBaseTeam(team) })),
+            teams: (finished.teams || []).map(toBaseTeam),
+            ladderQualified: (finished.ladderQualified || []).map(toBaseTeam),
+            challenger: finished,
+        };
+        saveHallRecord(record, "Elite Star Series Challenger");
+    };
+
+    const saveFinishedEssFinalsToHallOfFame = (finished, finishedResults) => {
+        const record = {
+            ...essRecordBase("ess", ESS_TYPE_ID, finished, getEssFinalMatches(finished), essFinalMatchPoints),
+            results: finishedResults,
+            places: getEssFinalPlaces(finished).map((team, index) => ({ place: index + 1, team: toBaseTeam(team) })),
+            teams: (finished.teams || []).map(toBaseTeam),
+            chQualified: (essSeries?.chQualified || []).map(toBaseTeam),
+            finals: finished,
+        };
+        saveHallRecord(record, "Elite Star Series");
     };
 
     const saveFinishedPgxCandidateToHallOfFame = (finished) => {
@@ -8763,6 +9374,35 @@ function SpecialModeContent() {
         })),
     });
 
+    const renderEssQualifierWinnersBlock = (results, options = {}) => {
+        const isLadder = options.kind === "essLq";
+        const qualifiers = results?.qualifiers ?? results ?? [];
+        return renderQualifierWinnersBlock(qualifiers, {
+            ...options,
+            columns: isLadder
+                ? [0, 1].map((half) => ({
+                    key: `ladder${half}`,
+                    title: half === 0 ? "Ladders A and B" : "Ladders C and D",
+                    teams: qualifiers.slice(half * 2, half * 2 + 2),
+                    via: [`via Ladder ${ESS_LADDERS[half * 2]}`, `via Ladder ${ESS_LADDERS[half * 2 + 1]}`],
+                }))
+                : [0, 1].map((i) => ({
+                    key: `sf${i}`,
+                    title: `Semifinal #${i + 1}`,
+                    teams: qualifiers.slice(i, i + 1),
+                    via: [`via Semifinal #${i + 1}`],
+                    quotes: qualifiers.slice(i, i + 1).map((team) => pickChallengerQuote(team, options.number ?? essEdition)),
+                    medal: <Tier15Medal size={54} />,
+                })),
+        });
+    };
+
+    const pickChallengerQuote = (team, number) => {
+        const list = PODIUM_QUOTES.qualifier;
+        const seed = Number(team?.id) || String(team?.name ?? "").length;
+        return list[((seed * 7 + number * 3) % list.length + list.length) % list.length];
+    };
+
     const renderQualifierWinnersBlock = (qualifiers, { animated = false, columns = null } = {}) => (
         <div className={css.qualifier_winners}>
             {(columns ?? QUALIFIER_GROUPS.map((group) => ({
@@ -8790,10 +9430,27 @@ function SpecialModeContent() {
                                 transition={animated ? { duration: 1.2, delay: (groupIndex === 0 ? 1.2 : 5.7) + i * 1.2 } : { duration: 0 }}
                                 className={css.qualifier_winner_card}
                             >
-                                <div
-                                    className={css.winnerLogo}
-                                    style={{ backgroundColor: team.color, boxShadow: team.shadow }}
-                                />
+                                {column.medal ? (
+                                    <span className={css.qualifier_winner_logo}>
+                                        <div
+                                            className={css.winnerLogo}
+                                            style={{ backgroundColor: team.color, boxShadow: team.shadow }}
+                                        />
+                                        <motion.span
+                                            className={css.qualifier_winner_medal}
+                                            initial={animated ? { scale: 0, rotate: -160, opacity: 0 } : false}
+                                            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                            transition={animated ? { type: "spring", stiffness: 260, damping: 15, delay: (groupIndex === 0 ? 1.2 : 5.7) + i * 1.2 + 1 } : { duration: 0 }}
+                                        >
+                                            {column.medal}
+                                        </motion.span>
+                                    </span>
+                                ) : (
+                                    <div
+                                        className={css.winnerLogo}
+                                        style={{ backgroundColor: team.color, boxShadow: team.shadow }}
+                                    />
+                                )}
                                 <span
                                     className={css.qualifier_winner_name}
                                     style={{
@@ -8809,6 +9466,9 @@ function SpecialModeContent() {
                                 <span className={css.qualifier_winner_via}>
                                     {column.via[i]}
                                 </span>
+                                {column.quotes?.[i] ? (
+                                    <span className={css.qualifier_winner_quote}>&quot;{column.quotes[i]}&quot;</span>
+                                ) : null}
                             </motion.div>
                         ))}
                     </div>
@@ -8873,6 +9533,8 @@ function SpecialModeContent() {
                         ? `ecl${eclNumber}`
                         : modalContext?.type === "skyline"
                         ? `skyline${skylinesNumber}`
+                        : modalContext?.type === "essLq" || modalContext?.type === "essCh" || modalContext?.type === "essFin"
+                        ? `${modalContext.type}${essEdition}`
                         : modalContext?.type === "pgxCm"
                         ? `pgxCm${pgxEdition}`
                         : modalContext?.type === "pgxIm"
@@ -8916,6 +9578,9 @@ function SpecialModeContent() {
         modalContext?.type === "skyline" ||
         modalContext?.type === "pgxCm" ||
         modalContext?.type === "pgxIm" ||
+        modalContext?.type === "essLq" ||
+        modalContext?.type === "essCh" ||
+        modalContext?.type === "essFin" ||
         modalContext?.type === "pemStage1";
 
     const showModalMatchNumber = modalContext?.type === "qualifier"
@@ -8926,6 +9591,12 @@ function SpecialModeContent() {
                 ? !isSingleEclStage(modalContext.stage)
                 : modalContext?.type === "skyline"
                 ? modalContext.stage === "o" || modalContext.stage === "sf"
+                : modalContext?.type === "essLq"
+                ? false
+                : modalContext?.type === "essCh"
+                ? ["uo", "qf", "sf"].includes(modalContext.stage)
+                : modalContext?.type === "essFin"
+                ? !isSingleEssFinalStage(modalContext.stage)
                 : modalContext?.type === "pgxCm"
                 ? ["pr1", "pr2", "uo", "dq"].includes(modalContext.stage)
                 : modalContext?.type === "pgxIm"
@@ -8989,6 +9660,12 @@ function SpecialModeContent() {
             wonPickemPoints = eclMatchPoints(currentModalMatch);
         } else if (modalContext?.type === "skyline") {
             wonPickemPoints = skylinesMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "essLq") {
+            wonPickemPoints = essLadderMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "essCh") {
+            wonPickemPoints = essChallengerMatchPoints(currentModalMatch);
+        } else if (modalContext?.type === "essFin") {
+            wonPickemPoints = essFinalMatchPoints(currentModalMatch);
         } else if (modalContext?.type === "pgxCm") {
             wonPickemPoints = pgxCandidateMatchPoints(currentModalMatch);
         } else if (modalContext?.type === "pgxIm") {
@@ -9059,6 +9736,10 @@ function SpecialModeContent() {
         renderPgxPage,
         renderPgxCandidateSection,
         renderPgxInternationalSection,
+        renderEssPage,
+        renderEssLadders,
+        renderEssChallengerSection,
+        renderEssFinalsBracket,
     } = createTournamentRenderers({
         pemLabel,
         qualifierLabel: qualifierOwner ? qualifierLabel : null,
@@ -9145,6 +9826,16 @@ function SpecialModeContent() {
         isPgxMainPhase,
         openPgxMatchModal,
         openArchivedPgxMatchModal,
+        essLq,
+        essCh,
+        essFin,
+        essView,
+        setEssView,
+        essLqLabel,
+        essChLabel,
+        essLabel,
+        openEssMatchModal,
+        openArchivedEssMatchModal,
     });
 
 
@@ -9232,6 +9923,23 @@ function SpecialModeContent() {
                 rightText = texts.winner;
                 leftText = texts.loser;
             }
+        }
+
+        if (type === "essLq" || type === "essCh" || type === "essFin") {
+            const archivedNumber = modalContext.isArchivedHallOfFame ? selectedHallMatch?.record?.number : essEdition;
+            const texts = type === "essLq"
+                ? getEssLadderStakeTexts(playoffsStage, <>Elite Star Series Challenger #{archivedNumber}</>)
+                : type === "essCh"
+                    ? getEssChallengerStakeTexts(playoffsStage, <>Elite Star Series #{archivedNumber}</>)
+                    : getEssFinalStakeTexts(playoffsStage);
+            if (winnerIsLeft) {
+                leftText = texts.winner;
+                rightText = texts.loser;
+            } else if (winnerIsRight) {
+                rightText = texts.winner;
+                leftText = texts.loser;
+            }
+            return { leftText, rightText };
         }
 
         if (type === "pgxCm" || type === "pgxIm") {
@@ -9400,6 +10108,10 @@ function SpecialModeContent() {
             return pgxStageLabel(modalContext.type === "pgxIm" ? "im" : "cm", modalContext.stage);
         }
 
+        if (modalContext.type === "essLq" || modalContext.type === "essCh" || modalContext.type === "essFin") {
+            return essStageLabel(modalContext.type, modalContext.stage);
+        }
+
         if (modalContext.type === "pemStage1") {
             return pemStage1StageLabel(modalContext.stage);
         }
@@ -9440,7 +10152,7 @@ function SpecialModeContent() {
                                 : modalContext.type === "gccLeague"
                                     ? (gcc?.matchdays?.[modalContext.matchday - 1] ?? [])
                                     : (playoffs?.[modalContext.stage] ?? []);
-        if (modalContext.type === "skyline" || modalContext.type === "pgxCm" || modalContext.type === "pgxIm") return Number(String(modalContext.matchId).split("-").pop()) || 1;
+        if (modalContext.type === "skyline" || modalContext.type === "pgxCm" || modalContext.type === "pgxIm" || modalContext.type === "essLq" || modalContext.type === "essCh" || modalContext.type === "essFin") return Number(String(modalContext.matchId).split("-").pop()) || 1;
 
         const index = modalContext.isArchivedHallOfFame
             ? selectedHallMatch?.index ?? -1
@@ -9461,6 +10173,17 @@ function SpecialModeContent() {
         }
         if (modalContext.type === "ecl") {
             return modalContext.stage === "uf" || modalContext.stage === "cf" ? "GRAND FINAL POINT!!!" : "MATCH POINT!!!";
+        }
+        if (modalContext.type === "essLq") return modalContext.stage === "top" ? "QUALIFICATION POINT!!!" : "NEXT RUNG POINT!!!";
+        if (modalContext.type === "essCh") {
+            if (modalContext.stage === "uf" || modalContext.stage === "lr2") return "PLAYOFFS POINT!!!";
+            if (modalContext.stage === "sf") return "QUALIFICATION POINT!!!";
+            return "MATCH POINT!!!";
+        }
+        if (modalContext.type === "essFin") {
+            if (modalContext.stage === "uf" || modalContext.stage === "cf") return "GRAND FINAL POINT!!!";
+            if (modalContext.stage === "gf") return "CHAMPIONSHIP POINT!!!";
+            return "MATCH POINT!!!";
         }
         if (modalContext.type === "pgxCm") {
             if (modalContext.stage === "pr2") return "GROUP STAGE POINT!!!";
@@ -9508,6 +10231,9 @@ function SpecialModeContent() {
                     : `Group Stage | Group ${modalContext.group}`;
         }
         if (modalContext.type === "pgxIm") return modalContext.section === "entry" ? "" : "Main Bracket";
+        if (modalContext.type === "essLq") return `Ladder ${modalContext.group}`;
+        if (modalContext.type === "essCh") return modalContext.section === "playoffs" ? "Playoffs" : `Group Stage | Group ${modalContext.group}`;
+        if (modalContext.type === "essFin") return "";
         if (modalContext.stageKey === "stage1" && modalContext.format === PGX_SWISS_FORMAT) return "Swiss Stage";
         if (modalContext.type === "skyline") {
             return modalContext.round === SKYLINES_ROOF
@@ -9549,7 +10275,7 @@ function SpecialModeContent() {
             context.type === "cstGroup" ||
             (context.type === "playoffs" && (context.kind === "cst" || archivedEvent === "cst"));
         if (isCstMatch) return "cst";
-        if (context.type === "ecl") return "ecl";
+        if (context.type === "ecl" || context.type === "essLq" || context.type === "essCh" || context.type === "essFin") return "ess";
         const isGccMatch =
             context.type === "gccLeague" ||
             (context.type === "qualifier" && context.owner === "gpl") ||
@@ -9575,9 +10301,9 @@ function SpecialModeContent() {
     const isPbsHudSeries = (isPbsPhase && seriesState.phase === "playoffs") || (seriesState.phase === "qualifier" && qualifierOwner === "pbs");
     const isPgxHudSeries = seriesState.phase === "pgxCm" || seriesState.phase === "pgxIm" || (isPgxMainPhase && ["stage1", "playoffs"].includes(seriesState.phase));
     const isCstHudSeries = isCstPhase && (seriesState.phase === "cstGroup" || seriesState.phase === "playoffs");
-    const isEclHudSeries = isEclPhase && seriesState.phase === "ecl";
+    const isEclHudSeries = (isEclPhase && seriesState.phase === "ecl") || ["essLq", "essCh", "essFin"].includes(seriesState.phase);
     const isGccHudSeries = (isGccPhase && (seriesState.phase === "gccLeague" || seriesState.phase === "playoffs")) || (seriesState.phase === "qualifier" && qualifierOwner === "gpl");
-    const seriesHud = isEclHudSeries ? "ecl" : isGccHudSeries ? "gcc" : isCstHudSeries ? "cst" : isPgxHudSeries ? "pgx" : isPemHudSeries ? "pem" : isGplHudSeries ? "gpl" : isPbsHudSeries ? "pbs" : "official";
+    const seriesHud = isEclHudSeries ? "ess" : isGccHudSeries ? "gcc" : isCstHudSeries ? "cst" : isPgxHudSeries ? "pgx" : isPemHudSeries ? "pem" : isGplHudSeries ? "gpl" : isPbsHudSeries ? "pbs" : "official";
     const pgxHudName = seriesState.phase === "pgxCm" ? "PGX Candidate Masters" : seriesState.phase === "pgxIm" ? "PGX International Masters" : "PGX Grandmasters";
     if (showPickemSummary) {
         return (
@@ -9598,7 +10324,7 @@ function SpecialModeContent() {
                     isPickemWin,
                     setPickemCountSettled,
                 }}
-                phase={{ activePhase, isCstPhase, isEclPhase, isGccPhase, isSkylinesPhase, isPgxEventPhase: isPgxCmPhase || isPgxImPhase }}
+                phase={{ activePhase, isCstPhase, isEclPhase, isGccPhase, isSkylinesPhase, isPgxEventPhase: isPgxCmPhase || isPgxImPhase || isEssLqPhase || isEssChPhase }}
                 actions={{
                     handlePemProceedToNextEvent,
                     resetSpecialModeState,
@@ -9606,6 +10332,22 @@ function SpecialModeContent() {
                     setShowWinnersScreen,
                     navigate,
                 }}
+            />
+        );
+    }
+
+    if (showWinnersScreen && (tournamentResults?.kind === "essLq" || tournamentResults?.kind === "essCh")) {
+        const isLadder = tournamentResults.kind === "essLq";
+        return (
+            <QualifierWinnersScreen
+                winners={{ showWinnerText, hasPlayedWinnerAnimation, winnersText, tournamentResults, showProceed }}
+                labels={{
+                    pemLabel: isLadder ? essLqLabel : essChLabel,
+                    count: isLadder ? 4 : 2,
+                    badge: isLadder ? undefined : null,
+                    renderQualifierWinnersBlock: (qualifiers, options) => renderEssQualifierWinnersBlock(qualifiers, { ...options, kind: tournamentResults.kind, number: tournamentResults.tournament?.number }),
+                }}
+                actions={{ handleProceed }}
             />
         );
     }
@@ -9642,7 +10384,7 @@ function SpecialModeContent() {
                     showPodium,
                     showProceed,
                 }}
-                labels={{ cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxImLabel, pgxGmLabel, tournamentLabel, pemType }}
+                labels={{ cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxImLabel, pgxGmLabel, essLabel, tournamentLabel, pemType }}
                 actions={{ handleProceed }}
             />
         );
@@ -9713,6 +10455,9 @@ function SpecialModeContent() {
                     skylinesLabel,
                     pgxCmLabel,
                     pgxImLabel,
+                    essLqLabel,
+                    essChLabel,
+                    essLabel,
                     isPgxMainPhase,
                     isCstPhase,
                     isPemMainPhase,
@@ -9728,10 +10473,10 @@ function SpecialModeContent() {
                     getMultiplierClass,
                     renderTeamLabel,
                     seriesHud,
-                    hudEventName: seriesHud === "ecl" ? "Elite Competition League" : seriesHud === "gcc" ? "Global Challenger Cup" : seriesHud === "cst" ? "Champions Series Tour" : seriesHud === "pgx" ? `${pgxHudName} ${pgxCity}`.trim() : seriesHud === "gpl" ? "Global Pro League" : seriesHud === "pbs" ? "Premier Bounty Series" : `PEM ${pemConfig.sizeWord}`,
+                    hudEventName: seriesHud === "ess" ? (seriesState.phase === "essLq" ? "Elite Star Series Ladder Qualifier" : seriesState.phase === "essCh" ? "Elite Star Series Challenger" : seriesState.phase === "essFin" ? "Elite Star Series" : "Elite Competition League") : seriesHud === "gcc" ? "Global Challenger Cup" : seriesHud === "cst" ? "Champions Series Tour" : seriesHud === "pgx" ? `${pgxHudName} ${pgxCity}`.trim() : seriesHud === "gpl" ? "Global Pro League" : seriesHud === "pbs" ? "Premier Bounty Series" : `PEM ${pemConfig.sizeWord}`,
                     hudEventNumber: (
-                        <span style={getTournamentNumberStyle(getTournamentTheme(seriesHud === "ecl" ? eclNumber : seriesHud === "gcc" ? gccNumber : seriesHud === "cst" ? cstNumber : seriesHud === "pgx" ? pgxEdition : seriesHud === "gpl" ? gplEdition : seriesHud === "pbs" ? pbsEdition : pemEdition))}>
-                            {seriesHud === "pbs" ? `S${pbsEdition}` : `#${seriesHud === "ecl" ? eclNumber : seriesHud === "gcc" ? gccNumber : seriesHud === "cst" ? cstNumber : seriesHud === "pgx" ? pgxEdition : seriesHud === "gpl" ? gplEdition : pemEdition}`}
+                        <span style={getTournamentNumberStyle(getTournamentTheme(seriesHud === "ess" ? (seriesState.phase.startsWith("ess") ? essEdition : eclNumber) : seriesHud === "gcc" ? gccNumber : seriesHud === "cst" ? cstNumber : seriesHud === "pgx" ? pgxEdition : seriesHud === "gpl" ? gplEdition : seriesHud === "pbs" ? pbsEdition : pemEdition))}>
+                            {seriesHud === "pbs" ? `S${pbsEdition}` : `#${seriesHud === "ess" ? (seriesState.phase.startsWith("ess") ? essEdition : eclNumber) : seriesHud === "gcc" ? gccNumber : seriesHud === "cst" ? cstNumber : seriesHud === "pgx" ? pgxEdition : seriesHud === "gpl" ? gplEdition : pemEdition}`}
                         </span>
                     ),
                 }}
@@ -9821,6 +10566,10 @@ function SpecialModeContent() {
                         renderPgxCandidateSection,
                         renderPgxInternationalSection,
                         renderPgxQualifierWinnersBlock,
+                        renderEssLadders,
+                        renderEssChallengerSection,
+                        renderEssFinalsBracket,
+                        renderEssQualifierWinnersBlock,
                         hallManagerScrollRef,
                         getTypeNumber,
                         allTeams,
@@ -9933,6 +10682,8 @@ function SpecialModeContent() {
                     renderGccPage()
                 ) : isPbsPhase ? (
                     renderPbsPage()
+                ) : isEssLqPhase || isEssChPhase || isEssMainPhase ? (
+                    renderEssPage(isEssLqPhase ? "essLq" : isEssChPhase ? "essCh" : "essFin")
                 ) : isPgxCmPhase ? (
                     renderPgxPage("pgxCm")
                 ) : isPgxImPhase ? (
@@ -9988,9 +10739,9 @@ function SpecialModeContent() {
                     }} />
                 <TournamentIntros
                     intro={{ showTournamentIntro, handleCloseTournamentIntro }}
-                    phase={{ isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase }}
-                    labels={{ renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, tournamentLabel }}
-                    tournament={{ ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm }}
+                    phase={{ isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase, isEssLqPhase, isEssChPhase, isEssMainPhase }}
+                    labels={{ renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, essLqLabel, essChLabel, essLabel, tournamentLabel }}
+                    tournament={{ ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin }}
                 />
             </div>
             <AnimatePresence>{matchModalNode}</AnimatePresence>

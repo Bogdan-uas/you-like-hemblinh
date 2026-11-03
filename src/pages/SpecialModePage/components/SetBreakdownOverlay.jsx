@@ -15,7 +15,7 @@ import { PemRoundRow, PemBoard } from "../series/hud/PemBreakdown.jsx";
 import { PbsRow, PbsBoard, PbsSets } from "../series/hud/PbsHud.jsx";
 import { PgxRow, PgxBoard, PgxSets } from "../series/hud/PgxHud.jsx";
 import { CstRow, CstBoard, CstSets } from "../series/hud/CstHud.jsx";
-import { EclRow, EclBoard, EclSets } from "../series/hud/EclHud.jsx";
+import { EssRow, EssBoard, EssSets } from "../series/hud/EssHud.jsx";
 import { PemErTrack } from "../series/hud/PemExtendedRounds.jsx";
 import { PemSetChips, PemDivider } from "../series/hud/PemParts.jsx";
 import hudCss from "../series/hud/PemHud.module.css";
@@ -152,13 +152,13 @@ export const SetBreakdownOverlay = ({
     pointLabelText = "MATCH POINT!!!",
     hud = "official",
 }) => {
-    const isBroadcast = hud === "pem" || hud === "gpl" || hud === "pbs" || hud === "pgx" || hud === "cst" || hud === "ecl" || hud === "gcc";
+    const isBroadcast = hud === "pem" || hud === "gpl" || hud === "pbs" || hud === "pgx" || hud === "cst" || hud === "ess" || hud === "gcc";
     const hudTheme = hudCss[`theme_${hud}`] ?? "";
-    const ScoreRow = hud === "ecl" ? EclRow : hud === "cst" ? CstRow : hud === "pgx" ? PgxRow : hud === "pbs" ? PbsRow : isBroadcast ? PemRoundRow : BreakdownScoreRow;
-    const ModalBoard = hud === "ecl" ? EclBoard : hud === "cst" ? CstBoard : hud === "pgx" ? PgxBoard : hud === "pbs" ? PbsBoard : isBroadcast ? PemBoard : BreakdownModalScoreboard;
+    const ScoreRow = hud === "ess" ? EssRow : hud === "cst" ? CstRow : hud === "pgx" ? PgxRow : hud === "pbs" ? PbsRow : isBroadcast ? PemRoundRow : BreakdownScoreRow;
+    const ModalBoard = hud === "ess" ? EssBoard : hud === "cst" ? CstBoard : hud === "pgx" ? PgxBoard : hud === "pbs" ? PbsBoard : isBroadcast ? PemBoard : BreakdownModalScoreboard;
     const Divider = isBroadcast ? PemDivider : BreakdownDivider;
     const ErTrack = isBroadcast ? PemErTrack : ExtendedRoundsTrack;
-    const BroadcastSets = hud === "ecl" ? EclSets : hud === "cst" ? CstSets : hud === "pgx" ? PgxSets : hud === "pbs" ? PbsSets : PemSetChips;
+    const BroadcastSets = hud === "ess" ? EssSets : hud === "cst" ? CstSets : hud === "pgx" ? PgxSets : hud === "pbs" ? PbsSets : PemSetChips;
     const isBo1 = bestOf === 1;
     const entry = sets?.[index] ?? null;
 
@@ -574,7 +574,7 @@ export const SetBreakdownOverlay = ({
             : { leftOpacity: 1, rightOpacity: 1 };
 
         return (
-            <div key={key} data-round-key={round.key} className={css.breakdown_round} style={isBroadcast ? { maxWidth: hud === "pbs" ? "620px" : hud === "cst" ? "900px" : hud === "ecl" ? "740px" : "812px", padding: "14px 0" } : undefined}>
+            <div key={key} data-round-key={round.key} className={css.breakdown_round} style={isBroadcast ? { maxWidth: hud === "pbs" ? "620px" : hud === "cst" ? "900px" : hud === "ess" ? "740px" : "812px", padding: "14px 0" } : undefined}>
                 <ScoreRow
                     leftTeam={leftTeam}
                     rightTeam={rightTeam}

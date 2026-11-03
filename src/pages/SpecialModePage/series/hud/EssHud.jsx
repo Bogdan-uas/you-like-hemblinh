@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaClock, FaCrown, FaFire, FaStar } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
-import css from "./Ecl.module.css";
+import css from "./Ess.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
+import { readableOnDark, getBrightness } from "../../logic/colors.js";
 import { PemCircle } from "./PemParts.jsx";
 import { Fit } from "./PbsHud.jsx";
 import {
@@ -53,6 +54,8 @@ const teamVars = (team) => ({
     "--team-color": team?.color ?? "#8b909e",
     "--team-gradient": team?.gradient ?? team?.color ?? "#8b909e",
     "--team-text": pemTextOn(team?.color),
+    "--ink-text": readableOnDark(team?.color ?? "#8b909e"),
+    "--tick-edge": getBrightness(team?.color ?? "#8b909e") < 60 ? "rgba(255, 255, 255, 0.6)" : undefined,
 });
 
 const Stars = ({ total, lit }) => (
@@ -130,7 +133,9 @@ const Tile = ({ side, team, finale = null, celebrate = false, result = null, che
         </span>
         <span className={css.tile_name}>
             {finale === "won" ? <FaCrown className={css.crown} aria-hidden="true" /> : null}
-            <Fit>{team?.name}</Fit>
+            <span key={finale ?? "live"} className={css.tile_name_text}>
+                <Fit>{team?.name}</Fit>
+            </span>
         </span>
         {result ? (
             <span className={`${css.result} ${css[`result_${result}`]}`}>{result === "won" ? <FaCheck aria-hidden="true" /> : <FaXmark aria-hidden="true" />}</span>
@@ -179,7 +184,7 @@ const Mid = ({ tone, big, bigKey = null, small, onSmallClick = null }) => (
     </span>
 );
 
-export const EclBar = ({ left, right, centre, setsTotal = 0, alert = false, className = "", children = null }) => (
+export const EssBar = ({ left, right, centre, setsTotal = 0, alert = false, className = "", children = null }) => (
     <div className={`${css.bar_wrap} ${className}`}>
         <div className={`${css.bar} ${alert ? css.bar_alert : ""}`}>
             <Tile side="left" {...left} />
@@ -578,7 +583,7 @@ const liveMid = ({ s, displayedRound, point, penaltyAttempt, suddenDeath }) => {
     return { tone: extended ? "extended" : "normal", big: `Round ${displayedRound}`, bigKey: `r${displayedRound}`, small: extended ? "Extended round" : `of ${roundTotal(s)}` };
 };
 
-export const EclSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }) => (
+export const EssSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }) => (
     <div className={`${css.hud} ${css.sets_wrap}`}>
         <div className={css.sets}>
             <span className={`${css.set} ${css.set_bo}`}>Bo{bestOf}</span>
@@ -610,10 +615,11 @@ export const EclSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }
     </div>
 );
 
-const Top = ({ eventName, eventNumber, stageText }) => (
+const Top = ({ eventName, eventNumber, stageText, mark, trophy }) => (
     <div className={css.top}>
         <span className={css.top_plate}>
-            <span className={css.top_mark}>ECL</span>
+            <span className={css.top_mark}>{mark}</span>
+            {trophy ? <span className={css.top_trophy}>{trophy}</span> : null}
             <span className={css.top_event}>{eventName}</span>
             <span className={css.top_number}>{eventNumber}</span>
         </span>
@@ -625,7 +631,7 @@ const Top = ({ eventName, eventNumber, stageText }) => (
     </div>
 );
 
-export function EclScorebug({
+export function EssScorebug({
     seriesState,
     setsToWin,
     displayedRound,
@@ -641,6 +647,9 @@ export function EclScorebug({
     penaltyAttempts,
     overtimeToWin,
     entrance = false,
+    mark = "ECL",
+    trophy = null,
+    lite = false,
 }) {
     const s = seriesState;
     const preview = useOtMorphPreview(s, MORPH_MS);
@@ -687,7 +696,7 @@ export function EclScorebug({
 
     let tag = null;
     if (s.banner && !s.banner.tie) {
-        tag = { key: "gg", tone: "gg", text: `Team ${winnerTeam?.name} wins the series`, team: winnerTeam, delay: celebrate ? FINALE_BANNER_MS / 1000 : 0 };
+        if (lite) tag = { key: "gg", tone: "gg", text: `Team ${winnerTeam?.name} wins the series`, team: winnerTeam, delay: celebrate ? 0.5 : 0 };
     } else if (s.banner) {
         tag = { key: "draw", tone: "plain", text: "Series drawn" };
     } else if (isPens && !s.penaltyResolved) {
@@ -700,10 +709,10 @@ export function EclScorebug({
     }
 
     return (
-        <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            <Top eventName={eventName} eventNumber={eventNumber} stageText={stageText} />
-            {setsToWin > 1 ? <EclSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
-            <EclBar
+        <div className={`${css.hud} ${entrance ? css.entrance : ""} ${lite ? css.lite : ""}`}>
+            <Top eventName={eventName} eventNumber={eventNumber} stageText={stageText} mark={mark} trophy={trophy} />
+            {setsToWin > 1 ? <EssSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
+            <EssBar
                 left={sideProps("left")}
                 right={sideProps("right")}
                 centre={liveMid({ s: view, displayedRound: roundShown, point, penaltyAttempt, suddenDeath })}
@@ -712,15 +721,15 @@ export function EclScorebug({
                 className={css.bar_wrap_live}
             >
                 <Under left={ticksFor("left")} right={ticksFor("right")} tag={tag} morphKey={morphTagRef.current} />
-                <RoundBanners s={s} disabled={preview || !!s.banner} />
+                {lite ? null : <RoundBanners s={s} disabled={preview || !!s.banner} />}
                 <Panel seriesState={s} setsToWin={setsToWin} />
-                {s.banner ? <FinaleBanner s={s} winnerTeam={winnerTeam} winnerSide={winnerSide} celebrate={celebrate} /> : null}
-            </EclBar>
+                {s.banner && !lite ? <FinaleBanner s={s} winnerTeam={winnerTeam} winnerSide={winnerSide} celebrate={celebrate} /> : null}
+            </EssBar>
         </div>
     );
 }
 
-export const EclRow = ({
+export const EssRow = ({
     leftTeam,
     rightTeam,
     leftScore,
@@ -825,15 +834,15 @@ export const EclRow = ({
     return (
         <div ref={ref} className={css.row_wrap}>
             <div className={`${css.hud} ${css.row}`}>
-                <EclBar left={sideProps("left")} right={sideProps("right")} centre={centre} setsTotal={setLinesTotal} alert={!!label}>
+                <EssBar left={sideProps("left")} right={sideProps("right")} centre={centre} setsTotal={setLinesTotal} alert={!!label}>
                     <Under left={ticksFor("left")} right={ticksFor("right")} tag={tag} morphKey={tag?.key ?? null} />
-                </EclBar>
+                </EssBar>
             </div>
         </div>
     );
 };
 
-export const EclBoard = ({
+export const EssBoard = ({
     leftTeam,
     rightTeam,
     leftScore,
@@ -863,7 +872,7 @@ export const EclBoard = ({
 
     return (
         <div className={`${css.hud} ${css.board}`}>
-            <EclBar left={sideProps("left")} right={sideProps("right")} centre={centre} setsTotal={setLinesTotal} />
+            <EssBar left={sideProps("left")} right={sideProps("right")} centre={centre} setsTotal={setLinesTotal} />
         </div>
     );
 };
@@ -913,7 +922,7 @@ const ErCard = ({ round, index, revealed, next, faded, clinch, leftTeam, rightTe
     );
 };
 
-export const EclExtendedRoundsOverlay = ({ seriesState, details, setsToWin, eventName, eventNumber }) => {
+export const EssExtendedRoundsOverlay = ({ seriesState, details, setsToWin, eventName, eventNumber, mark = "ECL" }) => {
     const {
         leftTeam,
         rightTeam,
@@ -952,13 +961,13 @@ export const EclExtendedRoundsOverlay = ({ seriesState, details, setsToWin, even
             </span>
             <motion.div className={css.er_panel} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}>
                 <div className={css.er_head}>
-                    <span className={css.top_mark}>ECL</span>
+                    <span className={css.top_mark}>{mark}</span>
                     <span className={css.er_title}>Extended Rounds</span>
                     <span className={css.er_head_sub}>
                         {eventName} {eventNumber} · Still {roundWins}-{roundLosses} after Quadruple Overtime · First to 4
                     </span>
                 </div>
-                <EclBar
+                <EssBar
                     left={side(leftTeam, leftScore, "left")}
                     right={side(rightTeam, rightScore, "right")}
                     centre={{ tone: "tiebreak", big: `${revealedCount} / ${total}`, bigKey: `c${revealedCount}`, small: "Compared" }}
@@ -1003,7 +1012,7 @@ export const EclExtendedRoundsOverlay = ({ seriesState, details, setsToWin, even
     );
 };
 
-export function EclIntro({ seriesState, eventName, eventNumber, stageText, setsToWin, onDone }) {
+export function EssIntro({ seriesState, eventName, eventNumber, stageText, setsToWin, onDone, mark = "ECL" }) {
     const [open, setOpen] = useState(() => isFreshPemSeries(seriesState));
 
     useEffect(() => {
@@ -1025,7 +1034,7 @@ export function EclIntro({ seriesState, eventName, eventNumber, stageText, setsT
         <AnimatePresence onExitComplete={onDone}>
             {open ? (
                 <motion.div
-                    key="ecl-intro"
+                    key="ess-intro"
                     className={`${css.hud} ${css.intro}`}
                     style={{ "--left-color": left?.color ?? "#3fb6c9", "--right-color": right?.color ?? "#e2353f" }}
                     onClick={() => setOpen(false)}
@@ -1042,7 +1051,7 @@ export function EclIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     <span className={css.intro_sweep} aria-hidden="true" />
                     <div className={css.intro_stage}>
                         <motion.span className={css.intro_kicker} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-                            <span className={css.top_mark}>ECL</span>
+                            <span className={css.top_mark}>{mark}</span>
                             <span className={css.top_number}>{eventNumber}</span>
                         </motion.span>
                         <motion.span className={css.intro_title} exit={{ opacity: 0, y: -20, transition: { duration: 0.25, ease: "easeIn" } }}>

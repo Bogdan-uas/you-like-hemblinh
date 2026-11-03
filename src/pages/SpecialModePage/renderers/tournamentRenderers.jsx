@@ -3,7 +3,27 @@ import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
-import { PemPlayoffsLayout, QualifierBracketLayout, PlayInBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout, PgxPlayInLayout, PgxMatchesLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, QualifierBracketLayout, PlayInBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout, PgxPlayInLayout, PgxMatchesLayout, EssLaddersLayout, EssChallengerPlayoffsLayout, EssFinalsBracketLayout } from "../components/BracketLayouts.jsx";
+import {
+    ESS_CH_GROUPS,
+    essLadderSlotSource,
+    getBestOfForEssLadder,
+    getEssLadderWinner,
+    findCurrentEssLqMatch,
+    findNextEssLqMatch,
+    canOpenEssLqMatch,
+    essChSlotSource,
+    canOpenEssChallengerMatch,
+    findCurrentEssChallengerMatch,
+    findNextEssChallengerMatch,
+    getBestOfForEssChallenger,
+    essFinalSlotSource,
+    canOpenEssFinalMatch,
+    findCurrentEssFinalMatch,
+    findNextEssFinalMatch,
+    getBestOfForEssFinal,
+    isSingleEssFinalStage,
+} from "../logic/ess.jsx";
 import { findCurrentBracketMatch } from "../logic/brackets.js";
 import {
     PGX_CM_GROUPS,
@@ -131,6 +151,16 @@ export function createTournamentRenderers({
     isPgxMainPhase,
     openPgxMatchModal,
     openArchivedPgxMatchModal,
+    essLq,
+    essCh,
+    essFin,
+    essView,
+    setEssView,
+    essLqLabel,
+    essChLabel,
+    essLabel,
+    openEssMatchModal,
+    openArchivedEssMatchModal,
 }) {
     const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = qualifierLabel ?? pemLabel, gap = 6 } = {}) => (
         <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
@@ -2214,6 +2244,253 @@ export function createTournamentRenderers({
         );
     };
 
+    const renderEssQualified = (team, pending) => (team ? (
+        <span className={css.pgx_qualified_badge}>
+            <span className={css.ess_qualified_team} style={{ background: team.color }} />
+            Team {team.name}
+        </span>
+    ) : (
+        <span className={css.ess_qualified_pending}>{pending}</span>
+    ));
+
+    const essLadderFormat = (lq, ladder, { archived, record }) => ({
+        slotSource: essLadderSlotSource(ladder),
+        canOpen: (_bracket, stage) => !archived && canOpenEssLqMatch(lq, ladder.group, stage),
+        bestOf: getBestOfForEssLadder,
+        isSingle: () => true,
+        open: (_group, _stage, matchId) => openEssMatchModal("essLq", matchId),
+        openArchived: (_record, _group, _stage, _idx, match) => openArchivedEssMatchModal("essLq", record, match, "ladders"),
+    });
+
+    const renderEssLadders = (lq, { archived = false, record = null } = {}) => {
+        if (!lq) return null;
+        const current = archived ? null : findCurrentEssLqMatch(lq);
+        const next = archived ? null : findNextEssLqMatch(lq);
+        return (
+            <EssLaddersLayout
+                key={archived ? "hall-essl" : "essl"}
+                lq={lq}
+                renderQualified={(ladder) => renderEssQualified(getEssLadderWinner(ladder), "Challenger spot")}
+                renderMatch={(ladder, match, stage, idx) =>
+                    renderQualifierMatch(ladder, match, stage, idx, {
+                        archived,
+                        record,
+                        current: current?.group === ladder.group ? current : null,
+                        next: next?.group === ladder.group ? next : null,
+                        format: essLadderFormat(lq, ladder, { archived, record }),
+                    })
+                }
+            />
+        );
+    };
+
+    const essChallengerFormat = (ch, section, { archived, record }) => ({
+        slotSource: essChSlotSource(section),
+        canOpen: (holder, stage, idx) => !archived && canOpenEssChallengerMatch(ch, section, holder, stage, idx),
+        bestOf: getBestOfForEssChallenger,
+        isSingle: (stage) => !["uo", "qf", "sf"].includes(stage),
+        open: (_group, _stage, matchId) => openEssMatchModal("essCh", matchId),
+        openArchived: (_record, _group, _stage, _idx, match) => openArchivedEssMatchModal("essCh", record, match, section),
+    });
+
+    const renderEssChallengerSection = (ch, view, { archived = false, record = null } = {}) => {
+        if (!ch) return null;
+        const section = view === "PO" ? "playoffs" : "groups";
+        const holder = section === "playoffs" ? ch.playoffs : ch.groups?.[view];
+
+        if (!holder) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    The Playoffs start after the Group Stage.
+                </div>
+            );
+        }
+
+        const current = archived || ch.phase !== section ? null : findCurrentEssChallengerMatch(ch, section === "groups" ? view : null);
+        const next = archived ? null : findNextEssChallengerMatch(holder, section, current);
+        const format = essChallengerFormat(ch, section, { archived, record });
+        const renderMatch = (match, stage, idx) =>
+            renderQualifierMatch(holder, match, stage, idx, { archived, record, current, next, format });
+
+        if (section === "playoffs") {
+            return (
+                <EssChallengerPlayoffsLayout
+                    key={archived ? "hall-esscp" : "esscp"}
+                    bracket={holder}
+                    renderMatch={renderMatch}
+                    renderQualified={(match) => renderEssQualified(getMatchWinnerTeam(match), "Finals spot")}
+                />
+            );
+        }
+        return <PemStage1BracketLayout key={`${archived ? "hall" : "live"}-essc-${view}`} bracket={holder} renderMatch={renderMatch} />;
+    };
+
+    const essFinalFormat = ({ archived, record }) => ({
+        slotSource: essFinalSlotSource,
+        canOpen: (bracket, stage, idx) => !archived && canOpenEssFinalMatch(bracket, stage, idx),
+        bestOf: getBestOfForEssFinal,
+        isSingle: isSingleEssFinalStage,
+        open: (_group, _stage, matchId) => openEssMatchModal("essFin", matchId),
+        openArchived: (_record, _group, _stage, _idx, match) => openArchivedEssMatchModal("essFin", record, match, "finals"),
+    });
+
+    const renderEssFinalsBracket = (bracket, { archived = false, record = null } = {}) => {
+        if (!bracket) return null;
+        const current = archived ? null : findCurrentEssFinalMatch(bracket);
+        const next = archived ? null : findNextEssFinalMatch(bracket, current);
+        const format = essFinalFormat({ archived, record });
+        return (
+            <EssFinalsBracketLayout
+                key={archived ? "hall-essf" : "essf"}
+                bracket={bracket}
+                renderMatch={(match, stage, idx) => renderQualifierMatch(bracket, match, stage, idx, { archived, record, current, next, format })}
+            />
+        );
+    };
+
+    const renderEssPage = (kind) => {
+        const isLq = kind === "essLq";
+        const isCh = kind === "essCh";
+        const view = isCh
+            ? ESS_CH_GROUPS.includes(essView) || (essView === "PO" && essCh?.playoffs) ? essView : essCh?.playoffs ? "PO" : "A"
+            : null;
+        const isGroupView = isCh && ESS_CH_GROUPS.includes(view);
+        const phases = isCh
+            ? [{ id: "G", label: "Group Stage" }, ...(essCh?.playoffs ? [{ id: "PO", label: "Playoffs" }] : [])]
+            : [];
+        const sectionTitle = isLq ? "Ladders" : isGroupView ? "Group Stage" : "Playoffs";
+        const handlePhaseChange = (id) => {
+            if (id !== "G") {
+                setEssView(id);
+                return;
+            }
+            setEssView(ESS_CH_GROUPS.find((group) => findCurrentEssChallengerMatch(essCh, group)) ?? "A");
+        };
+
+        const finished = tournamentResults?.kind === (isLq ? "essLq" : isCh ? "essCh" : "ess");
+        const showEndButtons = showPickemLine2 && finished;
+        const highlightTeam = isLq || isCh ? tournamentResults?.qualifiers?.[0] : tournamentResults?.winner;
+
+        const title = isLq
+            ? renderQualifierTitle({ badgeHeight: 34, label: <>{essLqLabel} | {sectionTitle}</> })
+            : isCh
+                ? <>{essChLabel} | {sectionTitle}</>
+                : essLabel;
+
+        const isEndOfSeries = !isLq && !isCh;
+        const side = showEndButtons && isEndOfSeries ? (
+            <div className={css.pickem_buttons} style={{ top: "96px", left: "auto", right: "3%", zIndex: 19 }}>
+                <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => setShowPickemSummary(true)}>
+                    Back to the Pick'em challenge summary
+                </button>
+                <button
+                    className={`${css.gamble_button} ${css.back_back_button}`}
+                    style={highlightTeam ? { backgroundColor: hover ? highlightTeam.hoverOn : highlightTeam.color } : undefined}
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                    onClick={() => setShowWinnersScreen(true)}
+                >
+                    Back to the Winners' screen
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToHome}>
+                    To Home Page
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToSpecialStart}>
+                    Back to the start of Special Mode
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToGambling}>
+                    Back to normal Gambling
+                </button>
+            </div>
+        ) : showEndButtons ? (
+            <div
+                style={{
+                    position: "absolute",
+                    top: isGroupView ? "50%" : 12,
+                    right: "calc(50% - 670px)",
+                    transform: isGroupView ? "translateY(-50%)" : undefined,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 10,
+                }}
+            >
+                <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => setShowPickemSummary(true)}>
+                    Back to the Pick'em challenge summary
+                </button>
+                <button
+                    className={`${css.gamble_button} ${css.back_back_button}`}
+                    style={highlightTeam ? { backgroundColor: hover ? highlightTeam.hoverOn : highlightTeam.color } : undefined}
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                    onClick={() => setShowWinnersScreen(true)}
+                >
+                    Back to the Winners' screen
+                </button>
+                <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
+                    Proceed
+                </button>
+            </div>
+        ) : (
+            <div
+                style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "calc(50% - 670px)",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                }}
+            >
+                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                <span className={css.points}>
+                    <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                </span>
+            </div>
+        );
+
+        const content = isLq ? renderEssLadders(essLq) : isCh ? renderEssChallengerSection(essCh, view) : renderEssFinalsBracket(essFin);
+        const phaseNav = phases.length > 1 ? renderPhaseNav(phases, "10%", { value: isGroupView ? "G" : "PO", onChange: handlePhaseChange }) : null;
+
+        if (isGroupView) {
+            return (
+                <>
+                    <QualifierGroupNav fixed value={view} onChange={setEssView} groups={ESS_CH_GROUPS} />
+                    <div className={css.qualifier_page} style={{ position: "relative", minWidth: 1464 }}>
+                        {phaseNav}
+                        <StickyBelow
+                            anchor='[data-sticky-anchor="qualifier-groups"]'
+                            style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: showEndButtons ? "18px 0 36px" : "6px 0 16px" }}
+                        >
+                            <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                                {title}
+                            </div>
+                            {side}
+                        </StickyBelow>
+                        <div className={css.pem_stage1_area}>{content}</div>
+                    </div>
+                </>
+            );
+        }
+
+        const floatingSide = showEndButtons && isEndOfSeries;
+
+        return (
+            <div className={css.cst_page} style={{ paddingTop: 56 }}>
+                {phaseNav}
+                {floatingSide ? side : null}
+                <div className={css.ecl_header} style={showEndButtons && !floatingSide ? { minHeight: 176, padding: "18px 0 36px" } : { padding: "6px 0 16px" }}>
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {title}
+                    </div>
+                    {floatingSide ? null : side}
+                </div>
+                <div style={{ marginTop: 24 }}>{content}</div>
+            </div>
+        );
+    };
+
     const renderQualifierPage = () => {
         const group = qualifierGroupView;
         const firstQualified = tournamentResults?.kind === "pemQualifier"
@@ -2892,5 +3169,9 @@ export function createTournamentRenderers({
         renderPgxPage,
         renderPgxCandidateSection,
         renderPgxInternationalSection,
+        renderEssPage,
+        renderEssLadders,
+        renderEssChallengerSection,
+        renderEssFinalsBracket,
     };
 }

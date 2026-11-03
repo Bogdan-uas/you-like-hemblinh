@@ -173,6 +173,29 @@ export const PgxDescription = () => (
     </>
 );
 
+export const EssDescription = () => (
+    <>
+        Three tournaments, played one after another:
+        <PemSmallEventLine tier="qualifier">
+            <b>Elite Star Series Ladder Qualifier</b> — places 19-64 of the Leaderboard are spread over 4 Ladders of
+            11-12 teams. Every Ladder starts at the bottom: the two lowest seeds play, the winner climbs a rung and
+            meets the next higher seed, until someone beats the top seed. All rungs are Bo1, the Top Rung is Bo3, and
+            the 4 Ladder winners qualify to the Challenger.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier15">
+            <b>Elite Star Series Challenger</b> — places 7-18 of the Leaderboard and the 4 Ladder winners in Groups
+            A-D of 4 teams (Opening Round, Winners&apos; Match, Elimination Match and Decider Match, all Bo3). Every
+            Group&apos;s top 2 teams play the Bo3 Quarterfinals and Semifinals, and both Semifinal winners qualify to
+            the main event.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>Elite Star Series</b> — the main event: places 1-6 of the Leaderboard and the 2 teams from the
+            Challenger in a Double Elimination bracket. Opening Round, Upper Semifinals, Lower Round 1 and Lower
+            Semifinals are Bo3, the Lower Final, Upper Final and Consolidation Final Bo5, the Grand Final Bo7.
+        </PemSmallEventLine>
+    </>
+);
+
 export const PbsDescription = () => (
     <>
         Two tournaments, played one after another:

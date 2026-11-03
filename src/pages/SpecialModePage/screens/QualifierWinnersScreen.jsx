@@ -6,13 +6,13 @@ import { QualifierBadge } from "../components/QualifierBadge.jsx";
 
 export function QualifierWinnersScreen({ winners, labels, actions }) {
     const { showWinnerText, hasPlayedWinnerAnimation, winnersText, tournamentResults, showProceed } = winners;
-    const { pemLabel, renderQualifierWinnersBlock } = labels;
+    const { pemLabel, renderQualifierWinnersBlock, count = 4, badge } = labels;
     const { handleProceed } = actions;
 
 
     return (
         <div className={css.winnerScreen}>
-            <QualifierBadge height={26} />
+            {badge === undefined ? <QualifierBadge height={26} /> : badge}
             {showWinnerText && (
                 <motion.h2
                     initial={{ opacity: 0, y: -20 }}
@@ -22,7 +22,7 @@ export function QualifierWinnersScreen({ winners, labels, actions }) {
                 >
                     {hasPlayedWinnerAnimation ? (
                         <span>
-                            The 4 qualifiers of {pemLabel}
+                            The {count} qualifiers of {pemLabel}
                         </span>
                     ) : <TournamentNumberText text={winnersText} />}
                 </motion.h2>

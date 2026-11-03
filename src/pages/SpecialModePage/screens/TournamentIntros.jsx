@@ -16,10 +16,10 @@ const PBS_INTRO_STAGES = { ro16: "Stage II", qf: "Finals" };
 
 export function TournamentIntros({ intro, phase, labels, tournament }) {
     const { showTournamentIntro, handleCloseTournamentIntro } = intro;
-    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase } = phase;
-    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, tournamentLabel } = labels;
-    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm } = tournament;
-    const isPgxPhase = isPgxCmPhase || isPgxImPhase || isPgxMainPhase;
+    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase, isEssLqPhase, isEssChPhase, isEssMainPhase } = phase;
+    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, essLqLabel, essChLabel, essLabel, tournamentLabel } = labels;
+    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin } = tournament;
+    const isPgxPhase = isPgxCmPhase || isPgxImPhase || isPgxMainPhase || isEssLqPhase || isEssChPhase || isEssMainPhase;
 
     const renderTeamsIntro = (titleNode, sections) => (
         <div className={css.intro_overlay}>
@@ -49,7 +49,7 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                                     team={t}
                                     showRating
                                     ratingValue={teamRatings[t.id] ?? 0}
-                                    specialStyle={{ width: "48px", height: "48px" }}
+                                    specialStyle={{ width: "48px", height: "48px", ...(section.highlighted ? PEM_QUALIFIED_HIGHLIGHT : {}) }}
                                 />
                             ))}
                         </div>
@@ -575,6 +575,24 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                     [
                         { title: "Invited via the Leaderboard", teams: pgxSeries?.seeds?.gm, width: "50%" },
                         { title: "Winner of PGX International Masters", teams: pgxSeries?.imChampion ? [pgxSeries.imChampion] : [], width: "50%" },
+                    ]
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isEssLqPhase && renderTeamsIntro(
+                    renderQualifierTitle({ badgeHeight: 40, label: essLqLabel }),
+                    ["A", "B", "C", "D"].map((group) => ({ title: `Ladder ${group}`, teams: essLq?.ladders?.[group]?.teams, width: "70%" }))
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isEssChPhase && renderTeamsIntro(
+                    essChLabel,
+                    [
+                        { title: "Invited via the Leaderboard", teams: essCh?.directTeams, width: "60%" },
+                        { title: "Qualified via the Ladder Qualifier", teams: essCh?.ladderQualified, width: "50%", highlighted: true },
+                    ]
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isEssMainPhase && renderTeamsIntro(
+                    essLabel,
+                    [
+                        { title: "Invited via the Leaderboard", teams: essSeries?.seeds?.finals, width: "50%" },
+                        { title: "Qualified via the Challenger", teams: essFin?.teams?.slice(6), width: "50%", highlighted: true },
                     ]
                 )}</FadeOut>
                 <FadeOut variant="overlay">{showTournamentIntro && isSkylinesPhase && (

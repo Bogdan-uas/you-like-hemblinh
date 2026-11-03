@@ -856,8 +856,12 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="pbsWins">🏆 (PBS)</option>
                         <option value="pgxWins">🏆 (PGX)</option>
                         <option value="tier1Wins">🏆 (PEM Small)</option>
+                        <option value="essWins">🏆 (ESS)</option>
                         <option value="tier1Seconds">🥈 (Tier 1)</option>
                         <option value="tier1Thirds">🥉 (Tier 1)</option>
+                        <option value="tier15Wins">🏅 (Tier 1.5)</option>
+                        <option value="tier15Seconds">🥈 (Tier 1.5)</option>
+                        <option value="tier15Thirds">🥉 (Tier 1.5)</option>
                         <option value="tier2Wins">🥇 (Tier 2)</option>
                         <option value="tier2Seconds">🥈 (Tier 2)</option>
                         <option value="tier2Thirds">🥉 (Tier 2)</option>
@@ -1037,8 +1041,12 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="pbsWins">🏆 (PBS)</option>
                         <option value="pgxWins">🏆 (PGX)</option>
                         <option value="tier1Wins">🏆 (PEM Small)</option>
+                        <option value="essWins">🏆 (ESS)</option>
                         <option value="tier1Seconds">🥈 (Tier 1)</option>
                         <option value="tier1Thirds">🥉 (Tier 1)</option>
+                        <option value="tier15Wins">🏅 (Tier 1.5)</option>
+                        <option value="tier15Seconds">🥈 (Tier 1.5)</option>
+                        <option value="tier15Thirds">🥉 (Tier 1.5)</option>
                         <option value="tier2Wins">🥇 (Tier 2)</option>
                         <option value="tier2Seconds">🥈 (Tier 2)</option>
                         <option value="tier2Thirds">🥉 (Tier 2)</option>

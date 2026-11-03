@@ -122,11 +122,17 @@
     line-height: 1;
 }
 
+.tile_name_text {
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .crown {
     flex: 0 0 auto;
     font-size: 16px;
     color: #ffd84a;
-    filter: drop-shadow(0 0 4px rgba(255, 214, 64, 0.9));
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 4px rgba(255, 214, 64, 0.9));
 }
 
 .result {
@@ -402,6 +408,7 @@
     position: absolute;
     inset: 0;
     background: var(--team-color);
+    box-shadow: inset 0 0 0 1px var(--tick-edge, color-mix(in srgb, var(--team-color) 55%, #000));
     filter: brightness(1.2);
     transform: scaleX(0);
     transform-origin: left center;
@@ -607,7 +614,7 @@
 }
 
 .bn_lit {
-    color: color-mix(in srgb, var(--ink) 78%, #fff);
+    color: var(--ink-text, color-mix(in srgb, var(--ink) 78%, #fff));
     animation: ecl-fade 300ms cubic-bezier(0.3, 0.5, 0.4, 1) 130ms both;
 }
 
@@ -752,7 +759,7 @@
 
 .fn_bg {
     background:
-        radial-gradient(60% 160% at 50% 50%, color-mix(in srgb, var(--ink) 55%, transparent) 0%, transparent 70%),
+        radial-gradient(60% 160% at 50% 50%, color-mix(in srgb, var(--ink) 40%, transparent) 0%, transparent 70%),
         linear-gradient(180deg, color-mix(in srgb, var(--ink) 30%, #17181c) 0%, color-mix(in srgb, var(--ink) 14%, #0e0f12) 100%);
     box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 70%, #fff), 0 0 26px color-mix(in srgb, var(--ink) 60%, transparent);
     transform-origin: left center;
@@ -793,9 +800,8 @@
     font-size: 44px;
     font-weight: 700;
     line-height: 1;
-    color: var(--ink);
-    filter: brightness(1.45) saturate(1.1);
-    text-shadow: 0 0 16px color-mix(in srgb, var(--ink) 70%, transparent);
+    color: var(--ink-text, var(--ink));
+    text-shadow: 0 0 14px color-mix(in srgb, var(--ink-text, var(--ink)) 40%, transparent);
 }
 
 .fn_char {
@@ -869,11 +875,11 @@
 }
 
 .tile_won .tile_bg {
-    background: linear-gradient(90deg, var(--team-color) 0%, color-mix(in srgb, var(--team-color) 75%, var(--e-mid)) 70%, color-mix(in srgb, var(--team-color) 35%, var(--e-mid)) 100%);
+    background: linear-gradient(90deg, var(--team-color) 0%, color-mix(in srgb, var(--team-color) 62%, var(--e-mid)) 45%, color-mix(in srgb, var(--team-color) 26%, var(--e-mid)) 100%);
 }
 
 .tile_right.tile_won .tile_bg {
-    background: linear-gradient(270deg, var(--team-color) 0%, color-mix(in srgb, var(--team-color) 75%, var(--e-mid)) 70%, color-mix(in srgb, var(--team-color) 35%, var(--e-mid)) 100%);
+    background: linear-gradient(270deg, var(--team-color) 0%, color-mix(in srgb, var(--team-color) 62%, var(--e-mid)) 45%, color-mix(in srgb, var(--team-color) 26%, var(--e-mid)) 100%);
 }
 
 .tile_shine {
@@ -971,6 +977,16 @@
 
 .top_event {
     text-transform: none;
+}
+
+.top_trophy {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+}
+
+.lite .bar_wrap_live {
+    filter: saturate(0.85);
 }
 
 .top_number {
@@ -1711,7 +1727,7 @@ button.set:disabled:focus,
     bottom: 0;
     left: 0;
     width: 40%;
-    background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.16) 50%, transparent 100%);
     will-change: transform;
     animation: ecl-shine-t 2400ms linear infinite;
 }
@@ -1979,7 +1995,7 @@ button.set:disabled:focus,
 
 @keyframes ecl-flash {
     0% {
-        filter: brightness(2);
+        filter: brightness(1.4);
     }
 
     100% {

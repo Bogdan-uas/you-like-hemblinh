@@ -33,6 +33,22 @@ export const getBrightness = (hex) => {
     return (r * 299 + g * 587 + b * 114) / 1000;
 };
 
+export const readableOnDark = (hex) => {
+    const { r, g, b } = hexToRgb(hex);
+    const [rr, gg, bb] = [r / 255, g / 255, b / 255];
+    const max = Math.max(rr, gg, bb);
+    const min = Math.min(rr, gg, bb);
+    const d = max - min;
+    const l = (max + min) / 2;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    let h = 0;
+    if (d) {
+        h = max === rr ? ((gg - bb) / d) % 6 : max === gg ? (bb - rr) / d + 2 : (rr - gg) / d + 4;
+        h = (h * 60 + 360) % 360;
+    }
+    return `hsl(${Math.round(h)} ${Math.round(Math.min(s, 0.72) * 100)}% ${Math.round(Math.min(0.8, Math.max(0.66, l)) * 100)}%)`;
+};
+
 export const darkenHex = (hex, amount = 0.68) => {
     const { r, g, b } = hexToRgb(hex);
     const dr = clamp(Math.round(r * (1 - amount)));

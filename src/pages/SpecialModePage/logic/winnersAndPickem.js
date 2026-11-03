@@ -4,6 +4,8 @@ export const PBS_PODIUM_TROPHY_SIZE = 100;
 export const PBS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-84px" };
 export const PGX_PODIUM_TROPHY_SIZE = 100;
 export const PGX_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-74px" };
+export const ESS_PODIUM_TROPHY_SIZE = 100;
+export const ESS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-74px" };
 
 export const WINNERS_TIMELINE = {
     headline: 500,
@@ -16,6 +18,24 @@ export const WINNERS_TIMELINE = {
 };
 
 export const PODIUM_QUOTES = {
+    qualifier: [
+        "The ticket is punched, the real stage awaits",
+        "They earned their seat at the elite table",
+        "One door closed behind them, a bigger one opened",
+        "Qualified on merit, not on reputation",
+        "The climb is over, the main event begins",
+        "They came through the hard road and made it look easy",
+        "From the Challenger straight into the spotlight",
+        "Every series was a final, and they passed every one",
+        "Their name is now on the Elite Star Series lineup",
+        "Nothing was handed to them, everything was taken",
+        "They did not ask for a spot, they claimed it",
+        "Survivors of the gauntlet, contenders of the stars",
+        "The bracket tried to stop them and failed",
+        "Proof that the long way can still be the fastest",
+        "A qualification built on nerves of steel",
+        "The finals just got a new name to worry about",
+    ],
     winner: [
         "The best of the best",
         "Champions keep playing until they get it right",

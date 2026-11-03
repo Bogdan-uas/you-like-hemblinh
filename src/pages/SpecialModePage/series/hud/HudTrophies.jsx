@@ -119,6 +119,32 @@ const PgxMiniTrophy = ({ size }) => {
     );
 };
 
+const ESS_CUP = [
+    "M158 106 H354 L352 122 H160 Z",
+    "M176 122 H336 L332 134 C330 222 304 294 268 320 H244 C208 294 182 222 180 134 Z",
+    "M206.2 268 C146 244 124 162 144 112 C148 98 154 94 158 106 L160 122 C147 172 160 232 199.2 250 C201.4 256.3 203.7 262.3 206.2 268 Z",
+    "M312.8 250 C352 232 365 172 352 122 L354 106 C358 94 364 98 368 112 C388 162 366 244 305.8 268 C308.3 262.3 310.6 256.3 312.8 250 Z",
+    "M249 320 H263 L262 334 H250 Z",
+    "M236 334 H276 L284 346 L276 358 H236 L228 346 Z",
+    "M249 358 H263 L269 370 H243 Z",
+    "M220 370 H292 L306 392 H206 Z",
+    "M192 396 H320 L328 404 V430 L320 438 H192 L184 430 V404 Z",
+].join(" ");
+
+const ESS_STAR = "M256 170 L263 190 L284 191 L267 204 L273 225 L256 213 L239 225 L245 204 L228 191 L249 190 Z";
+
+const EssMiniTrophy = ({ size }) => {
+    const view = { x: 120, y: 82, w: 272, h: 358 };
+
+    return (
+        <svg viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} style={svgStyle(size, view.w / view.h)} aria-hidden="true">
+            <path d={ESS_CUP} fill={WHITE} />
+            <path d={ESS_STAR} fill="#e3263a" />
+            <path d="M180 142 H332 M206 392 H306" fill="none" stroke={LINE} strokeWidth="6" />
+        </svg>
+    );
+};
+
 const MEDAL_RIBBON = "M22 0 H44 L60 52 H38 Z M78 0 H56 L40 52 H62 Z";
 
 const MEDAL_LINES = "M50 88 m-27 0 a27 27 0 1 0 54 0 a27 27 0 1 0 -54 0 M44 80 L52 74 V104 M44 104 H60";
@@ -149,4 +175,4 @@ const GccMiniEmblem = ({ size }) => (
 );
 
 export const HudTrophy = ({ type, size = 38 }) =>
-    type === "gcc" ? <GccMiniEmblem size={size} /> : type === "pgxCm" || type === "cst" || type === "ecl" ? null : type === "pgxIm" ? <MedalMiniTrophy size={size} /> : type === "gpl" ? <GplMiniTrophy size={size} /> : type === "pbs" ? <PbsMiniTrophy size={size} /> : type === "pgx" ? <PgxMiniTrophy size={size} /> : <PemMiniTrophy big={type === PEM_BIG_TYPE_ID} size={size} />;
+    type === "ess" ? <EssMiniTrophy size={size} /> : type === "essCh" ? <MedalMiniTrophy size={size} /> : type === "gcc" ? <GccMiniEmblem size={size} /> : type === "pgxCm" || type === "cst" || type === "ecl" ? null : type === "pgxIm" ? <MedalMiniTrophy size={size} /> : type === "gpl" ? <GplMiniTrophy size={size} /> : type === "pbs" ? <PbsMiniTrophy size={size} /> : type === "pgx" ? <PgxMiniTrophy size={size} /> : <PemMiniTrophy big={type === PEM_BIG_TYPE_ID} size={size} />;

@@ -1,4 +1,4 @@
-import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription, PgxDescription } from "../components/TournamentTypeInfo.jsx";
+import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription, PgxDescription, EssDescription } from "../components/TournamentTypeInfo.jsx";
 import { SKYLINES_TYPE_ID } from "./skylines.jsx";
 import { TOURNAMENT_NUMBERS_LS_KEY, TOURNAMENT_PICKER_LS_KEY, TOURNAMENT_BANS_LS_KEY, CURRENT_TOURNAMENT_TYPE_LS_KEY } from "./storageKeys.js";
 
@@ -12,6 +12,9 @@ export const PBS_TYPE_ID = "Premier Bounty Series";
 export const PGX_GM_TYPE_ID = "PGX Grandmasters";
 export const PGX_IM_TYPE_ID = "PGX International Masters";
 export const PGX_CM_TYPE_ID = "PGX Candidate Masters";
+export const ESS_TYPE_ID = "Elite Star Series";
+export const ESS_CH_TYPE_ID = "Elite Star Series Challenger";
+export const ESS_LQ_TYPE_ID = "Elite Star Series Ladder Qualifier";
 
 export const TOURNAMENT_TYPES = [
     {
@@ -67,6 +70,12 @@ export const TOURNAMENT_TYPES = [
         tier: "tier1",
         descriptionNode: <PgxDescription />,
     },
+    {
+        id: ESS_TYPE_ID,
+        label: "Elite Star Series",
+        tier: "tier1",
+        descriptionNode: <EssDescription />,
+    },
 ];
 
 const EVENT_TOURNAMENT_TYPES = [
@@ -76,6 +85,8 @@ const EVENT_TOURNAMENT_TYPES = [
     { id: SKYLINES_TYPE_ID, label: "Official Skylines", tier: "tier2" },
     { id: PGX_IM_TYPE_ID, label: "PGX International Masters", tier: "tier2" },
     { id: PGX_CM_TYPE_ID, label: "PGX Candidate Masters", tier: "qualifier" },
+    { id: ESS_CH_TYPE_ID, label: "Elite Star Series Challenger", tier: "tier15" },
+    { id: ESS_LQ_TYPE_ID, label: "Elite Star Series Ladder Qualifier", tier: "qualifier" },
 ];
 
 export const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAMENT_TYPES];

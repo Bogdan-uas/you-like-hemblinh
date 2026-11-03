@@ -10,8 +10,9 @@ import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
 import { SkylinesHallSummary } from "../components/SkylinesView.jsx";
-import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, Tier15Medal } from "../components/Trophies.jsx";
 import { PGX_CM_GROUPS } from "../logic/pgx.jsx";
+import { ESS_LADDERS, ESS_CH_GROUPS } from "../logic/ess.jsx";
 import { CST_GROUPS } from "../logic/cst.js";
 import { hallRecordTime } from "../logic/hallOfFameDb.js";
 import { PEM_QUALIFIED_HIGHLIGHT, getPemSeriesConfig } from "../logic/pemConfig.js";
@@ -23,7 +24,7 @@ import { QUALIFIER_GROUPS, PLAY_IN_GROUP } from "../logic/qualifier.jsx";
 import { formatOrdinal } from "../logic/teamData.js";
 import { PBS_POT_SIZE } from "../logic/pbsConfig.js";
 import { getTournamentTypeConfig, formatTournamentNumber, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
-import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE, ESS_PODIUM_TROPHY_SIZE, ESS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 import { HallManagerModals } from "./HallManagerModals.jsx";
 
 export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, page }) {
@@ -111,6 +112,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         renderPgxCandidateSection,
         renderPgxInternationalSection,
         renderPgxQualifierWinnersBlock,
+        renderEssLadders,
+        renderEssChallengerSection,
+        renderEssFinalsBracket,
+        renderEssQualifierWinnersBlock,
         hallManagerScrollRef,
         getTypeNumber,
         allTeams,
@@ -189,8 +194,8 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </div>
     );
 
-    const renderHallTeamRow = (teams, size = 38, highlightedIds = null, highlightedNote = "(via the Qualifier)") => (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    const renderHallTeamRow = (teams, size = 38, highlightedIds = null, highlightedNote = "(via the Qualifier)", centered = false) => (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: centered ? "center" : undefined }}>
             {(teams || []).length === 0
                 ? <span className={css.info_text} style={{ fontSize: 14 }}>No teams saved.</span>
                 : (teams || []).map((team, index) => {
@@ -241,10 +246,19 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             {(OPEN_QUALIFIER_CARD_WORDS[item.owner] || []).map((word) => (
                 <span key={word} style={{ display: "block" }}>{word}</span>
             ))}
-            <span style={{ display: "block", fontSize: 30, fontStyle: "normal" }}>Open Qualifier</span>
-            <span style={{ display: "block", whiteSpace: "nowrap", ...getTournamentNumberStyle(getTournamentTheme(item.number)) }}>
-                {formatTournamentNumber(item.type, item.number)}
-            </span>
+            {formatTournamentNumber(item.type, item.number).startsWith("#") ? (
+                <span style={{ display: "block", whiteSpace: "nowrap", fontSize: 30, fontStyle: "normal" }}>
+                    Open Qualifier{" "}
+                    <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>{formatTournamentNumber(item.type, item.number)}</span>
+                </span>
+            ) : (
+                <>
+                    <span style={{ display: "block", fontSize: 30, fontStyle: "normal" }}>Open Qualifier</span>
+                    <span style={{ display: "block", whiteSpace: "nowrap", ...getTournamentNumberStyle(getTournamentTheme(item.number)) }}>
+                        {formatTournamentNumber(item.type, item.number)}
+                    </span>
+                </>
+            )}
         </>
     );
 
@@ -276,11 +290,35 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
 
     const renderPgxQualifierCardName = (item) => renderPgxCardName(item, ["PGX", "Candidate", "Masters"], 124);
 
+    const renderEssCardName = (item, subtitle) => (
+        <>
+            {["Elite", "Star", "Series"].map((word) => (
+                <span key={word} style={{ display: "block" }}>{word}</span>
+            ))}
+            <span style={{ display: "block", whiteSpace: "nowrap", fontSize: 30, fontStyle: "normal" }}>
+                {subtitle}{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
+            </span>
+        </>
+    );
+
+    const renderEssMainCardName = (number) => (
+        <span style={{ fontSize: 30 }}>
+            <span style={{ display: "block" }}>Elite</span>
+            <span style={{ display: "block" }}>Star</span>
+            <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                Series{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(number))}>#{number}</span>
+            </span>
+        </span>
+    );
+
     const renderPgxTier2CardName = (item) => renderPgxCardName(item, ["PGX", "International"], 87);
 
     const renderQualifierHallCard = (item) => {
         const won = item.pickemWon;
-        const qualifiedTeams = item.event === "pgxCm"
+        const isEssCh = item.event === "essCh";
+        const qualifiedTeams = item.event === "pgxCm" || item.event === "essLq" || isEssCh
             ? item.qualifiers || []
             : QUALIFIER_GROUPS.flatMap((group) => item.results?.qualifiers?.[group] || []);
 
@@ -342,7 +380,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                 zIndex: 3
                             }}
                         >
-                            <QualifierBadge height={20} />
+                            {isEssCh ? <Tier15Medal size={30} style={{ marginTop: -2 }} /> : <QualifierBadge height={20} />}
                         </div>
                         <span
                             style={{
@@ -372,9 +410,15 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         fontSize: 20,
                     }}
                 >
-                    {item.event === "pgxCm"
-                        ? renderPgxQualifierCardName(item)
-                        : item.owner ? renderOpenQualifierHallCardName(item) : renderPemHallCardName(item.number, item.type)}
+                    <span style={{ display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 124 }}>
+                        {item.event === "pgxCm"
+                            ? renderPgxQualifierCardName(item)
+                            : item.event === "essLq"
+                            ? renderEssCardName(item, "Ladder Qualifier")
+                            : isEssCh
+                            ? renderEssCardName(item, "Challenger")
+                            : item.owner ? renderOpenQualifierHallCardName(item) : renderPemHallCardName(item.number, item.type)}
+                    </span>
                 </div>
 
                 <div style={{ position: "relative", zIndex: 2, marginTop: 12 }}>
@@ -395,17 +439,44 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             width: "max-content",
                         }}
                     >
-                        Four Qualifiers
+                        {isEssCh ? "Two Qualifiers" : "Four Qualifiers"}
                     </span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", zIndex: 2 }}>
                     {qualifiedTeams.map((team) => (
                         <React.Fragment key={team.id}>
-                            {hallPlaceRow(null, team, 40)}
+                            {hallPlaceRow(null, team, isEssCh ? 46 : 40)}
                         </React.Fragment>
                     ))}
                 </div>
+
+                {isEssCh ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", zIndex: 2, marginTop: 19 }}>
+                        <span
+                            className={css.finished_modal_team_label}
+                            style={{
+                                color: "#ffffff",
+                                fontSize: "24px",
+                                textShadow: "0 0 4px #000",
+                                position: "relative",
+                                top: "auto",
+                                left: "auto",
+                                display: "inline-block",
+                                width: "max-content",
+                            }}
+                        >
+                            🥉 Bronze Medalists
+                        </span>
+                        <div style={{ display: "flex", justifyContent: "center", gap: 84 }}>
+                            {(item.bronze || []).map((team) => (
+                                <React.Fragment key={team.id}>
+                                    {hallPlaceRow(null, team, 34)}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
             </button>
         );
     };
@@ -575,6 +646,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         const isGpl = item.event === "gpl";
         const isPbs = item.event === "pbs";
         const isPgx = item.event === "pgxGm";
+        const isEss = item.event === "ess";
 
         return (
             <button
@@ -623,7 +695,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             display: "flex",
                         }}
                     >
-                        {isPgx ? <PgxTrophy size={28} /> : isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
+                        {isEss ? <EssTrophy size={28} /> : isPgx ? <PgxTrophy size={28} /> : isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
                     </span>
                     <span
                         style={{
@@ -650,10 +722,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         lineHeight: 1,
                         textTransform: "none",
                         fontSize: 20,
-                        marginTop: isPbs ? "4px" : isGpl || isPgx ? "20px" : ""
+                        marginTop: isPbs ? "4px" : isGpl || isPgx || isEss ? "20px" : ""
                     }}
                 >
-                    {isPgx ? <span style={{ fontSize: 30 }}>{renderPgxHallCardName(item, ["Grandmasters"])}</span> : isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
+                    {isEss ? renderEssMainCardName(item.number) : isPgx ? <span style={{ fontSize: 30 }}>{renderPgxHallCardName(item, ["Grandmasters"])}</span> : isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div
@@ -661,7 +733,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        marginTop: isPbs ? 38 : isGpl ? 52 : isPgx ? 76 - getPgxGmCitySize(item) : 36,
+                        marginTop: isPbs ? 38 : isGpl || isEss ? 52 : isPgx ? 76 - getPgxGmCitySize(item) : 36,
                         position: "relative"
                     }}
                 >
@@ -734,6 +806,8 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             });
         }
         if (item.event === "pgxGm") return renderPemMainHallCard(item);
+        if (item.event === "essLq" || item.event === "essCh") return renderQualifierHallCard(item);
+        if (item.event === "ess") return renderPemMainHallCard(item);
 
         const won = item.pickemWon;
         const config = getTournamentTypeConfig(item.type);
@@ -1865,6 +1939,158 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                             {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
                         </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "essLq" || record.event === "essCh" || record.event === "ess") {
+            const findEssRecord = (event) => hallOfFame.find((item) => item.event === event && item.number === record.number) ?? null;
+            const titleName = { essLq: "Elite Star Series Ladder Qualifier", essCh: "Elite Star Series Challenger", ess: "Elite Star Series" }[record.event];
+            const idsOf = (teams) => new Set((teams || []).map((team) => team?.id));
+            const divisionRow = (columns, highlightedIds = null, highlightedNote) => (
+                <div style={{ display: "flex", gap: 24, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
+                    {columns.map(([title, teams]) => (
+                        <div key={title} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                {title}
+                            </h4>
+                            {renderHallTeamRow(teams, 38, highlightedIds, highlightedNote)}
+                        </div>
+                    ))}
+                </div>
+            );
+            const hallLinkRow = (linked, label, marginTop = 40) => (linked ? (
+                <div style={{ marginTop }}>{renderHallLink(label, () => openLinkedHallRecord(linked))}</div>
+            ) : null);
+
+            let content = null;
+
+            if (record.event === "essLq") {
+                const lq = record.ladder;
+                const qualifiedIds = idsOf(record.qualifiers);
+                const toChallenger = "(qualified to the Challenger)";
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, qualifiedIds, toChallenger, true)}
+                        {divisionRow(ESS_LADDERS.map((group) => [`Ladder ${group}`, lq?.ladders?.[group]?.teams]), qualifiedIds, toChallenger)}
+
+                        <HallOfFameSectionTitle text="Ladders" marginTop="64px" />
+                        {renderEssLadders(lq, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Qualified teams" marginTop="64px" />
+                        {renderEssQualifierWinnersBlock(record.qualifiers, { kind: "essLq", number: record.number })}
+                        {hallLinkRow(findEssRecord("essCh"), `See how the qualified teams did in Elite Star Series Challenger #${record.number}`)}
+                    </>
+                );
+            } else if (record.event === "essCh") {
+                const ch = record.challenger;
+                const ladderQualified = record.ladderQualified ?? ch?.ladderQualified ?? [];
+                const ladderIds = idsOf(ladderQualified);
+                const viaLadder = "(via the Ladder Qualifier)";
+                const playoffTeams = (ch?.playoffs?.qf || []).flatMap((match) => [match.slotA, match.slotB]).filter(Boolean);
+                const group = ESS_CH_GROUPS.includes(hallStage1Group) ? hallStage1Group : "A";
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, ladderIds, viaLadder, true)}
+                        {divisionRow([["Invited via the Leaderboard", ch?.directTeams], ["Qualified via the Ladder Qualifier", ladderQualified]], ladderIds, viaLadder)}
+                        {hallLinkRow(findEssRecord("essLq"), `See where the 4 qualifiers came from in Elite Star Series Ladder Qualifier #${record.number}`, 24)}
+
+                        <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <StickyBelow
+                                anchor='[data-sticky-anchor="hall-ess"]'
+                                style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                            >
+                                <QualifierGroupNav value={group} onChange={setHallStage1Group} groups={ESS_CH_GROUPS} />
+                            </StickyBelow>
+                            {renderEssChallengerSection(ch, group, { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams to the Playoffs" marginTop="64px" />
+                        {renderHallTeamRow(playoffTeams, 38, ladderIds, viaLadder)}
+
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" />
+                        {renderEssChallengerSection(ch, "PO", { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Qualified teams" marginTop="64px" />
+                        {renderEssQualifierWinnersBlock(record.qualifiers, { kind: "essCh", number: record.number })}
+                        {hallLinkRow(findEssRecord("ess"), `See how the qualified teams did in Elite Star Series #${record.number}`)}
+
+                        <HallOfFameSectionTitle text="Bronze medalists" marginTop="64px" />
+                        {renderHallTeamRow(record.bronze, 52)}
+                    </>
+                );
+            } else {
+                const podium = record.results || {};
+                const chQualified = record.chQualified ?? (record.teams || []).slice(6);
+                const chIds = idsOf(chQualified);
+                const viaChallenger = "(via the Challenger)";
+                const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
+                const placementColors = { 5: "#40e0d0", 6: "#ba68c8", 7: "#ff5e2d", 8: "#81c784" };
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, chIds, viaChallenger, true)}
+                        {divisionRow([["Invited via the Leaderboard", (record.teams || []).filter((team) => !chIds.has(team?.id))], ["Qualified via the Challenger", chQualified]], chIds, viaChallenger)}
+                        {hallLinkRow(findEssRecord("essCh"), `See how the 2 qualifiers made it through Elite Star Series Challenger #${record.number}`, 24)}
+
+                        <HallOfFameSectionTitle text="Bracket" marginTop="64px" />
+                        {renderEssFinalsBracket(record.finals, { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="102px" />
+                        {renderHallPodium(podium, <EssTrophy size={ESS_PODIUM_TROPHY_SIZE} style={ESS_PODIUM_TROPHY_STYLE} />)}
+
+                        <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+                    </>
+                );
+            }
+
+            const titleLabel = (
+                <>
+                    {titleName}{" "}
+                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                        #{record.number}
+                    </span>
+                </>
+            );
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={() => setSelectedHallTournament(null)}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        <div className={css.second_header} data-sticky-anchor="hall-ess">
+                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                {record.event === "essLq"
+                                    ? renderQualifierTitle({ badgeHeight: 36, label: titleLabel })
+                                    : <span>{titleLabel}</span>}
+                            </h2>
+                            {renderHallChallengeInfo(record)}
+                        </div>
+
+                        {content}
 
                         {renderHallManagerModals()}
                     </div>

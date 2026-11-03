@@ -7,6 +7,7 @@ import { PEM_GROUP_COLUMN_TITLES } from "../logic/pemSeries.jsx";
 import { PEM_STAGE1_CONNECTOR_LINKS, PEM_STAGE1_STAGE_LABELS } from "../logic/pemStage1.jsx";
 import { QUALIFIER_COLUMN_TITLES, isByeOpeningBracket } from "../logic/qualifier.jsx";
 import { PGX_PLAYIN_CONNECTOR_LINKS } from "../logic/pgx.jsx";
+import { ESS_LADDERS, ESS_CH_PLAYOFFS_CONNECTOR_LINKS, ESS_FINAL_CONNECTOR_LINKS, ESS_FINAL_COLUMN_TITLES, essRungLabel } from "../logic/ess.jsx";
 
 export const PlayInBracketLayout = ({ bracket, renderMatch }) => (
     <div className={css.play_in_bracket}>
@@ -324,3 +325,79 @@ export const PgxMatchesLayout = ({ title, stage, matches, renderMatch, caption }
         </div>
     </div>
 );
+
+export const EssLaddersLayout = ({ lq, renderMatch, renderQualified }) => (
+    <div className={css.ess_ladders}>
+        {ESS_LADDERS.map((group) => {
+            const ladder = lq?.ladders?.[group];
+            return (
+                <div key={group} className={css.ess_ladder}>
+                    <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Ladder {group}</h4>
+                    <div className={css.ess_ladder_qualified}>{renderQualified(ladder, group)}</div>
+                    <div className={css.ess_ladder_rails}>
+                        {[...(ladder?.order || [])].reverse().map((stage) => (
+                            <div key={stage} className={css.ess_ladder_rung}>
+                                <span className={css.ess_ladder_rung_label}>{essRungLabel(stage)}</span>
+                                {renderMatch(ladder, ladder[stage][0], stage, 0)}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        })}
+    </div>
+);
+
+const ESS_CH_QUALIFIED_LINKS = [0, 1].map((idx) => ({ from: `sf-${idx}`, to: `q-${idx}` }));
+
+export const EssChallengerPlayoffsLayout = ({ bracket, renderMatch, renderQualified }) => (
+    <div className={css.ess_ch_playoffs}>
+        <BracketConnectors links={[...ESS_CH_PLAYOFFS_CONNECTOR_LINKS, ...ESS_CH_QUALIFIED_LINKS]} />
+        <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Quarterfinals</h4>
+        <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Semifinals</h4>
+        <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>Qualified</h4>
+        <div className={css.columnRo16} style={{ width: "100%", transition: "none" }}>
+            {(bracket?.qf || []).map((match, idx) => renderMatch(match, "qf", idx))}
+        </div>
+        <div className={css.columnQuarters} style={{ width: "100%", transition: "none" }}>
+            {(bracket?.sf || []).map((match, idx) => (
+                <div key={match.id} className={css.ess_sf_cell}>
+                    {renderMatch(match, "sf", idx)}
+                    <span className={css.ess_qualified_side}>
+                        <span data-bracket-rect={`q-${idx}`} className={css.ess_qualified_anchor}>{renderQualified(match, idx)}</span>
+                    </span>
+                </div>
+            ))}
+        </div>
+        <div />
+    </div>
+);
+
+export const EssFinalsBracketLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass, style = null) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none", ...style }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{ESS_FINAL_COLUMN_TITLES[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={css.ess_final_bracket}>
+            <BracketConnectors links={ESS_FINAL_CONNECTOR_LINKS} />
+
+            {column("gf", css.columnGrandFinal, { gridColumn: 5, gridRow: "1 / span 2" })}
+
+            {column("uo", css.columnRo16)}
+            {column("usf", css.columnQuarters)}
+            <div />
+            {column("uf", css.columnGrandFinal)}
+
+            {column("lr1", css.columnPemLower)}
+            {column("lsf", css.columnPemLower)}
+            {column("lf", css.columnGrandFinal)}
+            {column("cf", css.columnGrandFinal)}
+        </div>
+    );
+};

@@ -8,6 +8,19 @@ import { expectedScore } from "./ratings.js";
 import { SKYLINES_BATTLE_STAKES } from "./skylines.jsx";
 import { PGX_CM_BATTLE_STAKES, PGX_IM_BATTLE_STAKES, PGX_CM_UPPER_STAGES, PGX_CM_ELIMINATION_STAGES, PGX_CM_BIG_STAGE_GAINS } from "./pgx.jsx";
 import {
+    essLadderBattleStakes,
+    essLadderOrder,
+    ESS_TOP_RUNG,
+    ESS_CH_BATTLE_STAKES,
+    ESS_CH_UPPER_STAGES,
+    ESS_CH_ELIMINATION_STAGES,
+    ESS_CH_BIG_STAGE_GAINS,
+    ESS_FINAL_BATTLE_STAKES,
+    ESS_FINAL_UPPER_STAGES,
+    ESS_FINAL_ELIMINATION_STAGES,
+    ESS_FINAL_BIG_STAGE_GAINS,
+} from "./ess.jsx";
+import {
     clampShare,
     otherSide,
     bumpStat,
@@ -75,6 +88,8 @@ const statKindOfContext = (context) =>
                     ? "ecl"
                     : context?.type === "skyline"
                     ? "skyline"
+                    : context?.type === "essLq" || context?.type === "essCh" || context?.type === "essFin"
+                    ? context.type
                     : context?.type === "pgxCm"
                     ? "pgxCm"
                     : context?.type === "pgxIm"
@@ -83,7 +98,9 @@ const statKindOfContext = (context) =>
                         ? "pemStage1"
                         : "playoffs";
 
-const BRACKET_STAT_KINDS = ["qualifier", "pemGroup", "ecl", "pemStage1", "skyline", "pgxCm", "pgxIm"];
+const BRACKET_STAT_KINDS = ["qualifier", "pemGroup", "ecl", "pemStage1", "skyline", "pgxCm", "pgxIm", "essLq", "essCh", "essFin"];
+
+const ESS_LADDER_STAGES = essLadderOrder(12);
 
 const isBracketStatKind = (kind) => BRACKET_STAT_KINDS.includes(kind);
 
@@ -94,6 +111,12 @@ const bracketGroupStagesOf = (kind) =>
             ? { upper: ECL_UNBEATEN_STAGES, elimination: ECL_ELIMINATION_STAGES, qualifying: Object.keys(ECL_BIG_STAGE_GAINS) }
             : kind === "skyline"
             ? { upper: ["o", "w", "sf", "gf"], elimination: ["l", "sf", "gf"], qualifying: ["w", "sf", "gf"] }
+            : kind === "essLq"
+            ? { upper: ESS_LADDER_STAGES, elimination: ESS_LADDER_STAGES, qualifying: [ESS_TOP_RUNG] }
+            : kind === "essCh"
+            ? { upper: ESS_CH_UPPER_STAGES, elimination: ESS_CH_ELIMINATION_STAGES, qualifying: Object.keys(ESS_CH_BIG_STAGE_GAINS) }
+            : kind === "essFin"
+            ? { upper: ESS_FINAL_UPPER_STAGES, elimination: ESS_FINAL_ELIMINATION_STAGES, qualifying: Object.keys(ESS_FINAL_BIG_STAGE_GAINS) }
             : kind === "pgxCm"
             ? { upper: PGX_CM_UPPER_STAGES, elimination: PGX_CM_ELIMINATION_STAGES, qualifying: Object.keys(PGX_CM_BIG_STAGE_GAINS) }
             : kind === "pgxIm"
@@ -108,6 +131,9 @@ const battleStakesOf = ({ kind, swissStageKey, net, playoffsStage }) => {
     if (kind === "pemGroup") return PEM_GROUP_BATTLE_STAKES[playoffsStage] ?? PEM_GROUP_BATTLE_STAKES.uo;
     if (kind === "ecl") return ECL_BATTLE_STAKES[playoffsStage] ?? ECL_BATTLE_STAKES.uo;
     if (kind === "skyline") return SKYLINES_BATTLE_STAKES[playoffsStage] ?? SKYLINES_BATTLE_STAKES.o;
+    if (kind === "essLq") return essLadderBattleStakes(playoffsStage);
+    if (kind === "essCh") return ESS_CH_BATTLE_STAKES[playoffsStage] ?? ESS_CH_BATTLE_STAKES.uo;
+    if (kind === "essFin") return ESS_FINAL_BATTLE_STAKES[playoffsStage] ?? ESS_FINAL_BATTLE_STAKES.uo;
     if (kind === "pgxCm") return PGX_CM_BATTLE_STAKES[playoffsStage] ?? PGX_CM_BATTLE_STAKES.pr1;
     if (kind === "pgxIm") return PGX_IM_BATTLE_STAKES[playoffsStage] ?? PGX_IM_BATTLE_STAKES.er;
     if (kind === "pemStage1") return PEM_STAGE1_BATTLE_STAKES[playoffsStage] ?? PEM_STAGE1_BATTLE_STAKES.uo;

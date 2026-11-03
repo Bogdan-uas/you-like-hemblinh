@@ -1,13 +1,15 @@
 export const TOURNAMENT_TIERS = {
     official: { badge: "OF", label: "Official", color: "#000000" },
     tier1: { badge: "T1", label: "Tier 1", color: "#e01b24" },
+    tier15: { badge: "T1.5", label: "Tier 1.5", color: "#f07800" },
     tier2: { badge: "T2", label: "Tier 2", color: "#f5c400", textColor: "#2e2f42" },
     qualifier: { badge: "Q", label: "Qualifier", color: "#cccccc", textColor: "#2e2f42" },
 };
 
 export const TOURNAMENT_TIER_EXPLANATIONS = [
     { tier: "official", text: <>The biggest tournament. The winner gets an Official trophy, 2nd and 3rd place get 🥈 and 🥉.</> },
-    { tier: "tier1", text: <>A big tournament, like the main event of the PEM Small or PEM Big Tournament, the Global Pro League, the Premier Bounty Series or the PGX Grandmasters. The winner gets that tournament's own Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier1", text: <>A big tournament, like the main event of the PEM Small or PEM Big Tournament, the Global Pro League, the Premier Bounty Series, the PGX Grandmasters or the Elite Star Series. The winner gets that tournament's own Tier 1 trophy, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
+    { tier: "tier15", text: <>Between Tier 1 and Tier 2, like the Elite Star Series Challenger. Its best teams get a gold medal of its own, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
     { tier: "tier2", text: <>A smaller tournament, like the Champions Series Tour, the Elite Competition League, the Global Challenger Cup, the Official Skylines or the PGX International Masters. The winner gets a 🥇, 2nd and 3rd place count into the 🥈 and 🥉 totals.</> },
     { tier: "qualifier", text: <>A qualifier for a bigger tournament. It gives no medals: its best teams qualify to the event it belongs to.</> },
 ];

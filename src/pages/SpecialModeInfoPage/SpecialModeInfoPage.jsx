@@ -386,6 +386,29 @@ const PGX_SECTIONS = [
     },
 ];
 
+const ESS_SECTIONS = [
+    {
+        id: "ess-overview",
+        label: "Climbing to the stars",
+    },
+    {
+        id: "ess-lq",
+        label: "Elite Star Series Ladder Qualifier",
+    },
+    {
+        id: "ess-ch",
+        label: "Elite Star Series Challenger",
+    },
+    {
+        id: "ess-main",
+        label: "Elite Star Series",
+    },
+    {
+        id: "ess-rewards",
+        label: "The star trophy, the Tier 1.5 medals and Hall of Fame",
+    },
+];
+
 const TeamCircle = ({ team }) => {
     return (
         <div
@@ -3041,7 +3064,223 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <PgxShot n={37} alt="Hall of Fame, PGX Grandmasters Jönköping #1: the podium with the PGX trophy" />
             <p className={css.info_text}>
                 And now, there are six tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b> and <b>PGX Grandmasters</b>.
-                Which city is going to be next? Not right now via "Random", at least: the PGX Grandmasters is excluded for the next 2 tournaments and the Premier Bounty Series for the next one.
+                Which city is going to be next? Not right now via "Random", at least: the PGX Grandmasters is excluded for the next 2 tournaments and the Premier Bounty Series for the next one. (And there is one more tournament, which starts at the very bottom of a ladder, see the{" "}
+                <InfoLink onClick={scrollToAnchor("ess-overview", "ess")} href="?page=ess#ess-overview">Elite Star Series</InfoLink> tab.)
+            </p>
+        </section>
+    </>
+);
+
+const ESS_IMAGES = import.meta.glob("../../../assets/images/ess-*.png", { eager: true, import: "default" });
+const essImg = (n) => ESS_IMAGES[`../../../assets/images/ess-${String(n).padStart(2, "0")}.png`];
+
+const EssShot = ({ n, ...props }) => <PemShot src={essImg(n)} {...props} />;
+
+const EssSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="ess-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Climbing to the stars</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The seventh option in the "Choose how you want to play" modal is the <b>Elite Star Series</b>, a Tier 1 tournament, which, same as the PGX Grandmasters, includes every single team of the Leaderboard.
+                It is three tournaments, played one after another, and the third one is the main event: <br />
+                • <b>Elite Star Series Ladder Qualifier</b> (Qualifier): its 4 Ladder winners go up to the Challenger <br />
+                • <b>Elite Star Series Challenger</b> (Tier 1.5): its 2 Semifinal winners go up to the main event <br />
+                • <b>Elite Star Series</b> itself (Tier 1)
+            </p>
+            <EssShot n={1} alt="Choose how you want to play modal with the Elite Star Series picked" />
+            <p className={css.info_text}>
+                <b>Tier 1.5</b> is a new tier, made for the Challenger: its badge is orange, and it is worth less than a Tier 1 tournament and more than a Tier 2 one. All three tournaments share the same number, so my first one was the <b>Elite Star Series #1</b>,
+                with the <b>Elite Star Series Ladder Qualifier #1</b> and the <b>Elite Star Series Challenger #1</b> before it.
+            </p>
+            <p style={{ marginTop: '12px' }} className={css.info_text}>
+                The teams are seeded by the Leaderboard at the moment the Elite Star Series is started: <br />
+                • Top 1-6 → Invited straight to the <b>Elite Star Series</b> <br />
+                • Top 7-18 → Start in the <b>Challenger</b> <br />
+                • Top 19-64 → Start in the <b>Ladder Qualifier</b>
+            </p>
+            <p className={css.info_text}>
+                The "Stage dividers" select of the Leaderboard has an "Elite Star Series" option as well, with a divider before both of these places:
+            </p>
+            <EssShot n={2} alt="Leaderboard with the divider between the Elite Star Series and the Challenger" />
+            <EssShot n={3} alt="Leaderboard with the divider between the Challenger and the Ladder Qualifier" />
+            <p className={css.info_text}>
+                How a match itself is played, you can see in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. I chose the Elite Star Series explicitly and clicked "Start Game", right after{" "}
+                <InfoLink onClick={scrollToAnchor("pgx-rewards", "pgx")} href="?page=pgx#pgx-rewards">PGX Grandmasters Jönköping #1</InfoLink>.
+            </p>
+        </section>
+        <section>
+            <div id="ess-lq" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Elite Star Series Ladder Qualifier</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The first step is the <b>Ladder Qualifier</b> for the 46 lowest teams. They are spread over <b>4 Ladders</b> with a snake seeding (the 1st of them goes to Ladder A, the 2nd to Ladder B and so on, and then back from Ladder D to Ladder A),
+                so all four Ladders are equally strong: Ladders A and B got 11 teams, Ladders C and D 12. The Tournament Intro Screen shows every Ladder, from its top seed to its lowest one:
+            </p>
+            <EssShot n={4} alt="Tournament Intro Screen of Elite Star Series Ladder Qualifier #1 with its 4 Ladders" />
+            <p className={css.info_text}>
+                A Ladder starts at the very bottom: on <b>Rung 1</b>, its two lowest seeds play each other. The winner climbs one rung up and meets the next higher seed, who has been waiting there, and so on, until the <b>Top Rung</b>, where the top seed of the Ladder waits.
+                Every rung is <b>Best of 1</b>, only the Top Rung is <b>Best of 3</b>, and a single loss sends a team out. The winner of the Top Rung takes the golden <b>"Challenger spot"</b> at the top of its Ladder:
+            </p>
+            <EssShot n={5} alt="The 4 Ladders of the Ladder Qualifier with the Challenger spots and the Top Rungs" />
+            <p className={css.info_text}>
+                All four Ladders climb together, one rung at a time, and the Top Rungs are played last. The longer Ladders C and D start one rung earlier, so the first match was Rung 1 of Ladder C, and the page scrolls right down to it:
+            </p>
+            <EssShot n={6} alt="The bottom of the Ladders with the current match on Rung 1 of Ladder C" />
+            <EssShot n={7} alt="Match modal of Rung 1 of Ladder C: Team Ocean against Team Sunflower" width="35vw" />
+            <p className={css.info_text}>
+                All three tournaments of the Elite Star Series use the HUD of the{" "}
+                <InfoLink onClick={scrollToAnchor("big-ecl", "pem-big")} href="?page=pem-big#big-ecl">Elite Competition League</InfoLink>, but with "ESS" in its tab, and its series opening spreads the name of the tournament over the whole screen as well:
+            </p>
+            <EssShot n={8} alt="Series opening of Rung 1 of Ladder C: Team Ocean against Team Sunflower" />
+            <p className={css.info_text}>
+                In the Ladder Qualifier, it is a simplified version of it: no "ROUND ● WINNER" banners after the rounds and no "MATCH ● WINNER" banner at the end. Instead, right after the "GG", a tag in the color of the winner tells who wins the series.
+                Team Sunflower, the very last team of the Leaderboard, won its Rung 1 13-3 against Team Ocean (and then lost its Rung 2 9-13 against Team Slate):
+            </p>
+            <EssShot n={9} alt="The simplified HUD of the Ladder Qualifier during Rung 1 of Ladder C" />
+            <EssShot n={10} alt="GG: Team Sunflower wins the series 13-3 with the tag below the bar" />
+            <p className={css.info_text}>
+                The climbers of this Ladder Qualifier were Team Rose and Team Turquoise. Team Rose, the lowest seed of Ladder B, won 6 rungs in a row (Team Seafoam, Team Sky, Team Chocolate, Team Spring, Team Raspberry and Team Royal) and fell off on Rung 7, 10-13 against Team Charcoal.
+                Team Turquoise won 5 rungs in Ladder D and lost on Rung 9 14-16 in the Overtime against Team Gold, which then beat Team Coral, but lost the Top Rung 1:2 against Team Orange.
+                Team Ivory beat Team Frost, Team Violet and Team Lavender in Ladder A and won the first set of the Top Rung against Team Amber, but Team Amber won the next two.
+                Team Plum beat Team White 16-13 and then Team Navy 2:1, and Team Jade beat Team Magenta and then Team Brown 2:1:
+            </p>
+            <EssShot n={11} alt="The finished Ladders with the 4 Challenger spots and the end buttons" />
+            <EssShot n={12} alt="The 4 qualifiers of Elite Star Series Ladder Qualifier #1" />
+            <p className={css.info_text}>
+                And the Pick&apos;em challenge? Won by a single point this time: 31 out of 30 needed Pick&apos;em points. The Pick&apos;em summary counts the matches of all four Ladders together, split by the rungs:
+            </p>
+            <EssShot n={13} alt="Pick'em summary of the Ladder Qualifier" width="30vw" />
+        </section>
+        <section>
+            <div id="ess-ch" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Elite Star Series Challenger</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The second step is the <b>Challenger</b>, the first Tier 1.5 tournament, with 16 teams: the places 7-18 of the Leaderboard and the 4 Ladder winners, which glow golden:
+            </p>
+            <EssShot n={14} alt="Tournament Intro Screen of Elite Star Series Challenger #1" />
+            <p className={css.info_text}>
+                It starts with a <b>Group Stage</b> of <b>Groups A-D</b> with 4 teams each, drawn from 4 Pots (places 7-10, 11-14, 15-18 and the Ladder winners), so every Group gets one Ladder winner.
+                Every Group is the same small Double Elimination bracket as in Stage I of the{" "}
+                <InfoLink onClick={scrollToAnchor("big-main-event", "pem-big")} href="?page=pem-big#big-main-event">PEM Big Tournament</InfoLink>, and here, <b>all of its matches are Best of 3</b>.
+                The winner of the Winners&apos; Match is 1st of the Group, the winner of the Decider Match is 2nd, and the "Group A | Group B | Group C | Group D" navigation at the top lets you switch between them:
+            </p>
+            <EssShot n={15} alt="Group A of the Challenger before the first match" />
+            <EssShot n={16} alt="Match modal of the first Opening Round match of Group A: Team Red against Team Plum" width="35vw" />
+            <p className={css.info_text}>
+                The Challenger and the main event have the full HUD again, and the tab above the bar shows the Tier 1.5 medal of the Challenger:
+            </p>
+            <EssShot n={17} alt="Series opening of the Challenger: Team Red against Team Plum" />
+            <EssShot n={18} alt="ROUND WINNER banner in the color of Team Red, with the Tier 1.5 medal in the tab" />
+            <EssShot n={19} alt="The Set 1 Winner banner: Team Red wins Set 1 13-8" />
+            <p className={css.info_text}>
+                The very first match of the Challenger had it all. Team Red won Set 1 13-8, and Set 2 went into the Double Overtime, where the round banners came one after another, with the red frame of the MATCH POINT around the bar and the orange tag below it.
+                Team Red won it 19-17, and the "MATCH ● WINNER" banner ended the series:
+            </p>
+            <EssShot n={20} alt="A round of Team Plum in the Double Overtime, with the MATCH POINT frame and the DOUBLE OVERTIME tag" />
+            <EssShot n={21} alt="MATCH WINNER: Team Red wins 2-0" />
+            <p className={css.info_text}>
+                Team Red then beat Team Chartreuse 2:0 in the Winners&apos; Match. Team Crimson lost its Opening Round 0:2 against that same Team Chartreuse, but beat Team Plum in the Elimination Match and took its revenge 2:1 in the Decider Match.
+                In the other Groups, Team Honey and Team Pink went through Group B, Team Black and Team Lime Group C, and Team Jade, the winner of Ladder C, beat Team Silver, the best seed of the whole Challenger, 2:1 (16-14 in the last set) and Team Gray 2:0 in Group D:
+            </p>
+            <EssShot n={22} alt="The finished Group A of the Challenger with the vertical navigation on the left" />
+            <p className={css.info_text}>
+                After the Group Stage, the <b>Playoffs</b> start right away and the navigation on the left gets a <b>Playoffs</b> entry. The 1st and the 2nd team of every Group meet crosswise in the <b>Quarterfinals</b> (1st of Group A against 2nd of Group B and so on),
+                then come the <b>Semifinals</b>, both <b>Best of 3</b>, and there is no Grand Final: <b>both Semifinal winners</b> qualify for the main event and take a "Finals spot" in the "Qualified" column.
+            </p>
+            <p className={css.info_text}>
+                Team Red beat Team Pink 2:1, Team Gray beat Team Black 2:0, Team Crimson beat Team Honey 2:0, and Team Jade beat Team Lime 2:1 after two sets in the Overtime (20-22 and 19-16).
+                In the Semifinals, Team Red beat Team Gray 2:0 and Team Jade beat Team Crimson 2:0. Team Jade won 6 series in a row: 2 rungs, 2 Group matches and 2 Playoff matches:
+            </p>
+            <EssShot n={23} alt="The finished Playoffs of the Challenger with the Qualified column and the end buttons" />
+            <p className={css.info_text}>
+                The Winners&apos; Screen has no podium, because there is no 1st or 2nd place here: it shows the two qualifiers, each with the golden Tier 1.5 medal on its circle and a quote. The losers of the Semifinals, Team Gray and Team Crimson, get a Tier 1.5 bronze medal:
+            </p>
+            <EssShot n={24} alt="The 2 qualifiers of Elite Star Series Challenger #1 with their Tier 1.5 medals" />
+            <p className={css.info_text}>
+                This Pick&apos;em challenge, I lost: 53 out of 60 needed Pick&apos;em points.
+            </p>
+            <EssShot n={25} alt="Pick'em summary of the Challenger" width="30vw" />
+        </section>
+        <section>
+            <div id="ess-main" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Elite Star Series</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The last step is the <b>Elite Star Series</b> itself: the 6 teams invited via the Leaderboard and the 2 teams from the Challenger, Team Red and Team Jade, which glow golden:
+            </p>
+            <EssShot n={26} alt="Tournament Intro Screen of Elite Star Series #1" />
+            <p className={css.info_text}>
+                It is one Double Elimination bracket of 8 teams, and the 2 qualifiers are seeded 7th and 8th: the 1st seed plays the 8th one, the 4th the 5th, the 2nd the 7th and the 3rd the 6th.
+                The <b>Opening Round</b>, the <b>Upper Semifinals</b>, <b>Lower Round 1</b> and the <b>Lower Semifinals</b> are <b>Best of 3</b>, the <b>Lower Final</b>, the <b>Upper Final</b> and the <b>Consolidation Final</b> are <b>Best of 5</b> and the <b>Grand Final</b> is <b>Best of 7</b>.
+                The winner of the Lower Final meets the loser of the Upper Final in the Consolidation Final, and its winner meets the winner of the Upper Final in the Grand Final:
+            </p>
+            <EssShot n={27} alt="The bracket of Elite Star Series #1 before the first match" />
+            <EssShot n={28} alt="Match modal of Opening Round #1: Team Blue against Team Jade" width="35vw" />
+            <p className={css.info_text}>
+                The Elite Star Series has its own trophy, a silver cup with a red star, and the HUD shows it in the tab above the bar:
+            </p>
+            <EssShot n={29} alt="Series screen of Opening Round #1 with the Elite Star Series trophy in the HUD" width="34vw" />
+            <p className={css.info_text}>
+                Team Jade&apos;s run ended there: 1:2 against Team Blue in the Opening Round and 0:2 against Team Salmon in Lower Round 1. But Team Red beat Team Indigo, the 2nd seed, 2:0 in the Opening Round, lost 0:2 against Team Green in the Upper Semifinal,
+                and then beat Team Indigo once again, 2:0 in the Lower Semifinal. Team Blue beat Team Green 3:1 in the Upper Final, and Team Yellow beat Team Salmon 2:1 and Team Red 3:0 in the Lower Final, so Team Red finished 4th.
+                In the Consolidation Final, Team Yellow came back from 1:2 against Team Green and won 3:2. And in the Grand Final, Team Blue beat Team Yellow 4:0:
+            </p>
+            <EssShot n={30} alt="The finished bracket of Elite Star Series #1 with the end buttons" />
+            <EssShot n={31} alt="Winners' screen of Elite Star Series #1 with the Elite Star Series trophy" width="28vw" />
+            <p className={css.info_text}>
+                And the last Pick&apos;em challenge was won: 45 out of 38 needed Pick&apos;em points.
+            </p>
+            <EssShot n={32} alt="Pick'em summary of Elite Star Series #1" width="30vw" />
+        </section>
+        <section>
+            <div id="ess-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The star trophy, the Tier 1.5 medals and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The Elite Star Series trophy gets its own icon in the Leaderboard. It is valued as the lowest Tier 1 trophy, so it comes right after the silver PEM trophy and the PGX trophy, and its 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament.
+                The golden Tier 1.5 medal of the Challenger gets its own icon as well, while the Tier 1.5 bronze medals count into the 🥉 totals.
+                Team Blue is still the 1st one, now with its fifth trophy and an Unbeaten Streak of 10, Team Green went up to the 2nd place, Team Yellow gained 119 points and Team Red, with its Tier 1.5 medal, is now 5th:
+            </p>
+            <EssShot n={33} alt="Leaderboard after Elite Star Series #1" />
+            <p className={css.info_text}>
+                In the Hall of Fame, there are three new cards: the Elite Star Series card with the trophy on top and the top four, the Challenger card with the Tier 1.5 medal on top, its two qualifiers and its two bronze medalists, and the Ladder Qualifier card with the Qualifier badge and its 4 qualifiers:
+            </p>
+            <EssShot n={34} alt="Hall of Fame with the cards of Elite Star Series #1" />
+            <p className={css.info_text}>
+                The Ladder Qualifier&apos;s summary starts with all teams, where the 4 qualifiers glow golden (hovering onto them says "qualified to the Challenger"), and every Ladder with its teams. Then come the 4 Ladders and the qualified teams with a link to the Challenger:
+            </p>
+            <EssShot n={35} alt="Hall of Fame, Elite Star Series Ladder Qualifier #1: all teams and the 4 Ladders" />
+            <EssShot n={36} alt="Hall of Fame, Elite Star Series Ladder Qualifier #1: the Ladders" />
+            <EssShot n={37} alt="Hall of Fame, Elite Star Series Ladder Qualifier #1: the qualified teams and the link to the Challenger" />
+            <p className={css.info_text}>
+                The Challenger&apos;s summary has all teams, split into the teams invited via the Leaderboard and the Ladder winners, which glow golden ("via the Ladder Qualifier"), with a link back to the Ladder Qualifier.
+                Then come the Group Stage (one Group at a time, with the Group navigation), all teams to the Playoffs, the Playoffs, the qualified teams with their medals and a link to the main event, and the bronze medalists:
+            </p>
+            <EssShot n={38} alt="Hall of Fame, Elite Star Series Challenger #1: all teams with the glowing Ladder winners" />
+            <EssShot n={39} alt="Hall of Fame, Elite Star Series Challenger #1: the Group Stage and all teams to the Playoffs" />
+            <EssShot n={40} alt="Hall of Fame, Elite Star Series Challenger #1: the Playoffs" />
+            <EssShot n={41} alt="Hall of Fame, Elite Star Series Challenger #1: the qualified teams, the link to the main event and the bronze medalists" />
+            <p className={css.info_text}>
+                And the main event&apos;s summary has all teams, where Team Red and Team Jade glow golden ("via the Challenger") with a link to the Challenger, then the bracket, the podium with the trophy and the 5th-8th places.
+                The losers of the Lower Semifinals are 5th and 6th, the losers of Lower Round 1 are 7th and 8th:
+            </p>
+            <EssShot n={42} alt="Hall of Fame, Elite Star Series #1: all teams and the link to the Challenger" />
+            <EssShot n={43} alt="Hall of Fame, Elite Star Series #1: the bracket" />
+            <EssShot n={44} alt="Hall of Fame, Elite Star Series #1: the podium with the Elite Star Series trophy" />
+            <EssShot n={45} alt="Hall of Fame, Elite Star Series #1: the places 5-8" />
+            <p className={css.info_text}>
+                And now, there are seven tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b>, <b>PGX Grandmasters</b> and <b>Elite Star Series</b>.
+                Who is going to climb all the way up next time? Not right now via "Random", at least: the Elite Star Series is excluded for the next 2 tournaments and the PGX Grandmasters for the next one.
             </p>
         </section>
     </>
@@ -3083,6 +3322,12 @@ const INFO_SUB_PAGES = [
         label: <>PGX Candidate Masters /<br />PGX International Masters /<br />PGX Grandmasters</>,
         sections: PGX_SECTIONS,
         Content: PgxSubPage,
+    },
+    {
+        id: "ess",
+        label: <>Elite Star Series Ladder Qualifier /<br />Elite Star Series Challenger /<br />Elite Star Series</>,
+        sections: ESS_SECTIONS,
+        Content: EssSubPage,
     },
 ];
 

@@ -14,7 +14,7 @@ import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { centerOverflowX } from "../../../rubber.js";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, BountyGem } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, Tier15Medal, BountyGem } from "../components/Trophies.jsx";
 import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
@@ -455,6 +455,8 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                     ? "pgxCm"
                                                                     : modalContext?.type === "pgxIm"
                                                                     ? "pgxIm"
+                                                                    : modalContext?.type === "essLq" || modalContext?.type === "essCh" || modalContext?.type === "essFin"
+                                                                    ? modalContext.type
                                                                     : modalContext?.kind === "pbs"
                                                                         ? "pbsPlayoffs"
                                                                         : modalContext?.kind === "pemBig"
@@ -927,6 +929,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                             </span>
                                         );
                                     }
+                                    if (isWinner && modalContext?.type === "essFin") {
+                                        return (
+                                            <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <EssTrophy />+
+                                            </span>
+                                        );
+                                    }
                                     if (isWinner && modalContext?.kind === "pgx") {
                                         return (
                                             <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
@@ -957,7 +966,15 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     }
                                 }
 
-                                if ((isThirdPlace && isWinner) || (modalContext?.type === "ecl" && stage === "cf" && isLoser)) {
+                                if (modalContext?.type === "essCh" && stage === "sf" && isWinner) {
+                                    return (
+                                        <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
+                                            <Tier15Medal />+
+                                        </span>
+                                    );
+                                }
+
+                                if ((isThirdPlace && isWinner) || ((modalContext?.type === "ecl" || modalContext?.type === "essFin") && stage === "cf" && isLoser) || (modalContext?.type === "essCh" && stage === "sf" && isLoser)) {
                                     return (
                                         <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
                                             🥉+
