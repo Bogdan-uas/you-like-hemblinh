@@ -234,6 +234,7 @@ import {
     progressOpenSummaryThen,
     progressRestoreSnapshot,
     progressSeriesFinished,
+    progressSetNeeded,
     progressTakeSnapshot,
 } from "./progress/progressStore.js";
 import { schedulePristineCapture } from "./progress/resetStorage.js";
@@ -704,6 +705,10 @@ function SpecialModeContent() {
 
     const [neededPickemPoints, setNeededPickemPoints] = useState(() => progressNeededPreview(getRandomNeededPickemPoints()));
     const [finalPickemPoints, setFinalPickemPoints] = useState(0);
+
+    useEffect(() => {
+        progressSetNeeded(neededPickemPoints);
+    }, [neededPickemPoints]);
 
     const [hoveredTeamId, setHoveredTeamId] = useState(null);
 
@@ -3293,6 +3298,7 @@ function SpecialModeContent() {
             bestOf: modalBestOf,
             roundKey: `${modalContext.type}|${modalContext.group ?? ""}|${modalContext.section ?? ""}|${modalContext.stage ?? modalContext.net ?? ""}`,
             knockout: !["swiss", "gccLeague", "cstGroup"].includes(modalContext.type),
+            needed: neededPickemPoints,
         });
 
         if (modalContext.type === "swiss") {

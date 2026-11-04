@@ -8,6 +8,8 @@ import {
     STREAK_STEP,
     UPSET_CHANCE,
     applyNeededPerk,
+    bonusCapPoints,
+    bonusPointsUsed,
     levelInfo,
     perksForLevel,
 } from "./progressConfig.js";
@@ -128,10 +130,24 @@ export const progressSetInsuranceArmed = (armed) => {
     publish();
 };
 
-const PICK_PERK_KEYS = ["insured", "insurePct", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
+const PICK_PERK_KEYS = ["insured", "insurePct", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
 
-export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, roundKey = null, knockout = false }) => {
+export const progressSetNeeded = (points) => {
+    const needed = Number.isFinite(points) ? points : null;
+    if (ui.needed === needed) return;
+    setUi({ needed });
+    publish();
+};
+
+export const progressBonusCap = (state = progress, needed = ui.needed) => {
+    const pct = perksForLevel(levelInfo(state.xp).level).bonusCap;
+    const cap = bonusCapPoints(needed, pct);
+    return { pct, cap, left: Math.max(0, cap - bonusPointsUsed(state.event)) };
+};
+
+export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, roundKey = null, knockout = false, needed = ui.needed }) => {
     const perks = currentPerks();
+    const cap = progressBonusCap(progress, needed);
     const insured = ui.insuranceArmed && insuranceLeft() > 0 && bestOf >= INSURANCE_MIN_BEST_OF;
     const known = Number.isFinite(chance);
     const pick = {
@@ -153,6 +169,8 @@ export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, 
         deciderBonus: bestOf >= 3 ? perks.deciderBonus : 0,
         knockoutBonus: knockout ? perks.knockoutBonus : 0,
         longSeriesBonus: bestOf >= 5 ? perks.longSeriesBonus : 0,
+        bonusCap: cap.cap,
+        bonusLeft: cap.left,
     };
     let next = ensureEvent(progress);
     if (insured) next = { ...next, event: { ...next.event, insuranceUsed: (next.event.insuranceUsed ?? 0) + 1 } };

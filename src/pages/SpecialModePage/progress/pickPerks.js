@@ -7,10 +7,9 @@ export const resolvePickPerks = ({ correct, bestOf, base, setsWon = [], setScore
     let points = base;
     if (!perks) return { points, uses, insurance: null, payout: 0 };
     if (correct) {
+        const earned = [];
         const add = (type, value) => {
-            if (!value) return;
-            points += value;
-            uses.push({ type, points: value });
+            if (value) earned.push({ type, points: value });
         };
         BONUS_KEYS.forEach((key) => add(key, perks[key]));
         if (bestOf >= 3 && setsWon[0] === false) add("comebackBonus", perks.comebackBonus);
@@ -19,6 +18,18 @@ export const resolvePickPerks = ({ correct, bestOf, base, setsWon = [], setScore
         if (bestOf >= 3 && setsWon.length >= bestOf) add("deciderBonus", perks.deciderBonus);
         add("knockoutBonus", perks.knockoutBonus);
         if (bestOf >= 5) add("longSeriesBonus", perks.longSeriesBonus);
+        const kept = perks.bonusCap
+            ? earned.reduce((best, use) => (!best || use.points > best.points ? use : best), null)
+            : null;
+        const granted = perks.bonusCap
+            ? kept && Math.min(kept.points, perks.bonusLeft ?? 0) > 0
+                ? [{ type: kept.type, points: Math.min(kept.points, perks.bonusLeft ?? 0) }]
+                : []
+            : earned;
+        granted.forEach((use) => {
+            points += use.points;
+            uses.push(use);
+        });
         return { points, uses, insurance: perks.insured ? "used" : null, payout: 0 };
     }
     if (!perks.insured) return { points, uses, insurance: null, payout: 0 };

@@ -305,6 +305,7 @@ const PERK_SCHEDULE = {
     deciderBonus: [[13, 1], [105, 2], [260, 3], [560, 4], [880, 5]],
     knockoutBonus: [[16, 1], [120, 2], [290, 3], [610, 4], [910, 5]],
     longSeriesBonus: [[24, 1], [130, 2], [310, 3], [620, 4], [940, 5]],
+    bonusCap: [[6, 5], [20, 7], [40, 10], [75, 12], [100, 14], [175, 16], [250, 18], [350, 20], [500, 22], [750, 23], [1000, 25]],
     achievementBoost: [[4, 5], [33, 10], [66, 15], [115, 20], [170, 25], [240, 30], [400, 40], [650, 50], [1000, 75]],
 };
 
@@ -335,6 +336,7 @@ export const NO_PERKS = {
     deciderBonus: 0,
     knockoutBonus: 0,
     longSeriesBonus: 0,
+    bonusCap: 0,
     achievementBoost: 0,
 };
 
@@ -356,9 +358,16 @@ export const perkLines = (set) => [
     set.deciderBonus && `+${set.deciderBonus} Pick'em ${s(set.deciderBonus, "point")}, when your pick wins a series that goes to its last possible set`,
     set.knockoutBonus && `+${set.knockoutBonus} Pick'em ${s(set.knockoutBonus, "point")} for every correct pick in a knockout match`,
     set.longSeriesBonus && `+${set.longSeriesBonus} Pick'em ${s(set.longSeriesBonus, "point")} for a correct pick in a Best of 5 or longer`,
+    set.bonusCap && `Bonus Pick'em points: up to ${set.bonusCap}% of the needed ones per tournament (only the biggest bonus counts on a pick)`,
     set.xpBoost && `+${set.xpBoost}% XP from every series and tournament`,
     set.achievementBoost && `+${set.achievementBoost}% XP from achievements`,
 ].filter(Boolean);
+
+export const BONUS_PERK_TYPES = ["gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
+
+export const bonusCapPoints = (needed, pct) => (pct && Number.isFinite(needed) && needed > 0 ? Math.max(1, Math.round((needed * pct) / 100)) : 0);
+
+export const bonusPointsUsed = (event) => (event?.perkUses ?? []).reduce((sum, use) => sum + (BONUS_PERK_TYPES.includes(use.type) ? use.points || 0 : 0), 0);
 
 export const applyNeededPerk = (points, level) => {
     const cut = perksForLevel(level).needed;

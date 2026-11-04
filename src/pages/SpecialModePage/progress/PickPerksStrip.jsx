@@ -2,11 +2,12 @@ import { useEffect } from "react";
 import { FaHeart, FaShieldHalved } from "react-icons/fa6";
 import css from "./Progress.module.css";
 import { INSURANCE_MIN_BEST_OF, STREAK_STEP, UPSET_CHANCE, levelInfo, perksForLevel } from "./progressConfig.js";
-import { progressSetInsuranceArmed, useProgress } from "./progressStore.js";
+import { progressBonusCap, progressSetInsuranceArmed, useProgress } from "./progressStore.js";
 
 export function PickPerksStrip({ stage, bestOf = 1, knockout = false }) {
     const { progress, ui } = useProgress();
     const perks = perksForLevel(levelInfo(progress.xp).level);
+    const bonus = progressBonusCap(progress, ui.needed);
     const left = Math.max(0, perks.insurance - (progress.event?.insuranceUsed ?? 0));
     const insurable = bestOf >= INSURANCE_MIN_BEST_OF;
     const streak = progress.stats.streak ?? 0;
@@ -67,7 +68,16 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false }) {
                     {shieldText}
                 </span>
             ) : null}
-            {hints.length ? <span className={css.perk_hint}>Level bonuses: {hints.join(" · ")}</span> : null}
+            {hints.length ? (
+                <span
+                    className={css.perk_hint}
+                    title={bonus.cap ? `Only the biggest bonus counts on a pick, and all bonus Pick'em points of a tournament can't be more than ${bonus.pct}% of the needed ones (${bonus.cap}).` : undefined}
+                >
+                    {bonus.cap && !bonus.left
+                        ? `Level bonuses used up in this tournament (${bonus.cap} of ${bonus.cap} bonus points)`
+                        : <>Level bonuses (the biggest one counts{bonus.cap ? ` · ${bonus.left} of ${bonus.cap} bonus points left` : ""}): {hints.join(" · ")}</>}
+                </span>
+            ) : null}
         </div>
     );
 }

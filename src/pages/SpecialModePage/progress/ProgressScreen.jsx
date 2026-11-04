@@ -87,7 +87,8 @@ function LevelTab({ progress }) {
             <p className={css.note} style={{ marginTop: 10 }}>
                 Every benefit only changes your Pick&apos;em and your XP: the matches themselves are never touched. The Pick&apos;em Insurance is switched on in the match modal, right before you start a
                 Best of {INSURANCE_MIN_BEST_OF} or longer. If your insured pick loses, it wins back a share of the Pick&apos;em points it missed (rounded down). If that share is 0, for example after 1:2 in a
-                Best of 3 (the won set already gave 2 out of 3 points), the insurance comes back to you. If your insured pick wins, the insurance is used up.
+                Best of 3 (the won set already gave 2 out of 3 points), the insurance comes back to you. If your insured pick wins, the insurance is used up. Of the bonus Pick&apos;em points, only the biggest one counts on every
+                pick, and all of them together can&apos;t be more than your bonus cap of the tournament (a share of the needed Pick&apos;em points, which grows with your level).
             </p>
 
             <h3 className={css.section_title}>How to earn XP</h3>

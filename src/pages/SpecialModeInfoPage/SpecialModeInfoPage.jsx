@@ -1552,7 +1552,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 The level isn&apos;t only a number, though. Every few levels unlock a <b>level benefit</b>, and all of them are about the Pick&apos;em (and the XP itself), so the matches themselves are never touched.
                 The most important one is the <b>Pick&apos;em Insurance</b>, which comes at Level 5. In every match window of a Best of 3 or longer, there is a button "Pick&apos;em Insurance off · 1 left" below the "Start" button, and a click switches it on.
                 If my insured pick loses, the insurance wins back a share of the Pick&apos;em points, which I&apos;ve missed (50% at first, rounded down, and more with higher levels). If that share is 0, because my team already took enough sets, the insurance comes back to me. And if my insured pick wins, it&apos;s used up anyway.
-                Below it, the "Level bonuses" line tells, which extra Pick&apos;em points this match can still give me (for example +1 for a comeback, a sweep, an Overtime or a knockout match). Here, in the Grand Final, I insured my pick on Team Indigo:
+                Below it, the "Level bonuses" line tells, which extra Pick&apos;em points this match can still give me (for example +1 for a comeback, a sweep, an Overtime or a knockout match). But only the biggest of them counts on a pick, and all the bonus points of a tournament together can&apos;t be more than a share of the needed Pick&apos;em points (5% from Level 6 on, up to 25% at Level 1000), so the line also tells how many of them are still left.
+                That way, the bonuses help a bit, but the Pick&apos;em challenge stays a challenge. Here, in the Grand Final, I insured my pick on Team Indigo:
             </p>
             <LevelShot n={1} alt="Match modal of the Grand Final with the Pick'em Insurance switched on and the level bonuses below it" width="35vw" />
             <p className={css.info_text}>
