@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import css from "../SpecialModePage.module.css";
+import pcss from "../progress/Progress.module.css";
+import { PickBonusBadges } from "../progress/HudPerks.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCheck, FaXmark, FaCircle, FaCircleHalfStroke } from "react-icons/fa6";
@@ -151,6 +153,7 @@ export const SetBreakdownOverlay = ({
     isPlayoffs = false,
     pointLabelText = "MATCH POINT!!!",
     hud = "official",
+    pickemBonuses = [],
 }) => {
     const isBroadcast = hud === "pem" || hud === "gpl" || hud === "pbs" || hud === "pgx" || hud === "cst" || hud === "ess" || hud === "gcc";
     const hudTheme = hudCss[`theme_${hud}`] ?? "";
@@ -654,28 +657,48 @@ export const SetBreakdownOverlay = ({
         requestAnimationFrame(() => updateActiveSection());
     };
 
+    const isLastSet = index === sets.length - 1;
+    const bonusPoints = isLastSet ? pickemBonuses.reduce((sum, bonus) => sum + (bonus.points || 0), 0) : 0;
+    const shownTotal = totalPickemPoints + bonusPoints;
+    const totalTitle = [
+        !won && totalPickemPoints > 0 ? "Your pick took some sets, but not the series" : null,
+        bonusPoints > 0 ? `Includes +${bonusPoints} from your level benefits` : null,
+    ].filter(Boolean).join(". ") || undefined;
+
+    const totalPill = isClinchingSet && (!isBo1 || bonusPoints > 0) ? (
+        <span
+            className={`${css.breakdown_pickem_pill} ${won ? css.breakdown_pickem_pill_total : shownTotal > 0 ? css.breakdown_pickem_pill_partial : css.breakdown_pickem_pill_loss}`}
+            title={totalTitle}
+        >
+            {!won ? (shownTotal > 0 ? <FaCircleHalfStroke /> : <FaXmark />) : null}
+            Total +{shownTotal}
+        </span>
+    ) : null;
+
+    const bonusRow = isLastSet && pickemBonuses.length ? (
+        <span className={pcss.bonus_row}>
+            <PickBonusBadges bonuses={pickemBonuses} />
+        </span>
+    ) : null;
+
     const renderPickemPills = (full = false) => (
         <AnimatePresence mode="wait" initial={false}>
             <motion.span
                 key={`pickem-${index}`}
                 className={full ? css.breakdown_pickem_spread : css.breakdown_pickem_row}
+                style={full && bonusRow ? { alignItems: "flex-end" } : undefined}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
             >
-                {isClinchingSet && !isBo1 ? (
-                    <span
-                        className={`${css.breakdown_pickem_pill} ${won ? css.breakdown_pickem_pill_total : totalPickemPoints > 0 ? css.breakdown_pickem_pill_partial : css.breakdown_pickem_pill_loss}`}
-                        title={!won && totalPickemPoints > 0 ? "Your pick took some sets, but not the series" : undefined}
-                    >
-                        {!won ? (totalPickemPoints > 0 ? <FaCircleHalfStroke /> : <FaXmark />) : null}
-                        Total +{totalPickemPoints}
+                {totalPill ?? (full ? <span /> : null)}
+                <span className={pcss.pickem_stack}>
+                    {bonusRow}
+                    <span className={`${css.breakdown_pickem_pill} ${won ? css.breakdown_pickem_pill_win : css.breakdown_pickem_pill_loss}`}>
+                        {won ? <FaCheck /> : <FaXmark />}
+                        +{pickemPoints} Pick&apos;em point{pickemPoints !== 1 ? "s" : ""}
                     </span>
-                ) : full ? <span /> : null}
-                <span className={`${css.breakdown_pickem_pill} ${won ? css.breakdown_pickem_pill_win : css.breakdown_pickem_pill_loss}`}>
-                    {won ? <FaCheck /> : <FaXmark />}
-                    +{pickemPoints} Pick&apos;em point{pickemPoints !== 1 ? "s" : ""}
                 </span>
             </motion.span>
         </AnimatePresence>

@@ -1,3 +1,4 @@
+import { NeededPerkTag } from "../progress/HudPerks.jsx";
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
@@ -1826,6 +1827,7 @@ export function createTournamentRenderers({
                                     end={skylines?.neededPickemPoints ?? 0}
                                     key={skylines?.neededPickemPoints ?? 0}
                                 />
+                            <NeededPerkTag value={skylines?.neededPickemPoints ?? 0} />
                             </span>
                         </div>
                     )}
@@ -1857,6 +1859,7 @@ export function createTournamentRenderers({
                         end={neededPickemPoints}
                         key={neededPickemPoints}
                     />
+                <NeededPerkTag value={neededPickemPoints} />
                 </span>
             </>
         );
@@ -2016,6 +2019,7 @@ export function createTournamentRenderers({
                                     end={neededPickemPoints}
                                     key={neededPickemPoints}
                                 />
+                            <NeededPerkTag value={neededPickemPoints} />
                             </span>
                         </div>
                     )}
@@ -2202,6 +2206,7 @@ export function createTournamentRenderers({
                 <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
                 <span className={css.points}>
                     <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                <NeededPerkTag value={neededPickemPoints} />
                 </span>
             </div>
         );
@@ -2446,6 +2451,7 @@ export function createTournamentRenderers({
                 <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
                 <span className={css.points}>
                     <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                <NeededPerkTag value={neededPickemPoints} />
                 </span>
             </div>
         );
@@ -2563,6 +2569,7 @@ export function createTournamentRenderers({
                                         end={neededPickemPoints}
                                         key={neededPickemPoints}
                                     />
+                                <NeededPerkTag value={neededPickemPoints} />
                                 </span>
                             </div>
                         )}
@@ -2797,6 +2804,7 @@ export function createTournamentRenderers({
                                 end={neededPickemPoints}
                                 key={neededPickemPoints}
                             />
+                        <NeededPerkTag value={neededPickemPoints} />
                         </span>
                     </div>
                 )}
@@ -3049,6 +3057,7 @@ export function createTournamentRenderers({
                                 end={neededPickemPoints}
                                 key={neededPickemPoints}
                             />
+                        <NeededPerkTag value={neededPickemPoints} />
                         </span>
                     </div>
                 )}
@@ -3127,6 +3136,7 @@ export function createTournamentRenderers({
                                 end={neededPickemPoints}
                                 key={neededPickemPoints}
                             />
+                        <NeededPerkTag value={neededPickemPoints} />
                         </span>
                     </div>
                 )}

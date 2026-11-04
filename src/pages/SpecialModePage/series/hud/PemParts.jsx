@@ -1,3 +1,4 @@
+import { cloneElement } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCheck, FaXmark } from "react-icons/fa6";
@@ -34,7 +35,7 @@ export const PemMiniGrid = ({ team, total, lit, side }) => (
             <span
                 key={i}
                 className={`${css.slot} ${i < lit ? css.slot_lit : ""}`}
-                style={i < lit ? { background: team?.gradient, "--team-color": team?.color, "--slot-i": i } : { "--slot-i": i }}
+                style={{ "--slot-fill": team?.gradient ?? team?.color, "--team-color": team?.color, "--slot-i": i }}
             />
         ))}
     </span>
@@ -203,12 +204,14 @@ export const PemSetChip = ({ chip, selected = false, onSelect = null }) => {
     );
 };
 
-export const PemSetChips = ({ chips, bestOf, selectedIndex = null, onSelect = null, showBestOf = true }) => (
+export const PemSetChips = ({ chips, bestOf, selectedIndex = null, onSelect = null, showBestOf = true, extra = null }) => (
     <div className={`${css.hud} ${css.chips}`}>
+        {extra}
         {showBestOf ? <span className={`${css.chip} ${css.chip_bo}`}>Bo{bestOf}</span> : null}
         {chips.map((chip, i) => (
             <PemSetChip key={chip.set} chip={chip} selected={selectedIndex === i} onSelect={onSelect ? () => onSelect(i) : null} />
         ))}
+        {extra ? cloneElement(extra, { ghost: true }) : null}
     </div>
 );
 

@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, cloneElement } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaCrown } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Pbs.module.css";
+import { HudInsurance } from "../../progress/HudPerks.jsx";
 import pem from "./PemHud.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
@@ -421,8 +422,9 @@ const liveCentre = ({ s, setsToWin, displayedRound, point, penaltyAttempt, sudde
     };
 };
 
-export const PbsSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }) => (
+export const PbsSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, extra = null }) => (
     <div className={`${css.hud} ${css.sets}`}>
+        {extra}
         <span className={`${css.set} ${css.set_bo}`}>
             <span className={css.set_label}>Best of</span>
             <span className={css.set_value}>{bestOf}</span>
@@ -456,6 +458,7 @@ export const PbsSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }
                 </Tag>
             );
         })}
+        {extra ? cloneElement(extra, { ghost: true }) : null}
     </div>
 );
 
@@ -545,7 +548,7 @@ export function PbsScorebug({
 
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            {setsToWin > 1 ? <PbsSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
+            {setsToWin > 1 ? <PbsSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pbs" hud={css} seriesState={s} />} /> : null}
             <div className={css.header}>
                 <span className={`${css.tile} ${css.header_event}`}>
                     {eventName}

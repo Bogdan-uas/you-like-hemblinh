@@ -17,6 +17,9 @@ import { TeamCircle } from "../components/SwissMatch.jsx";
 import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, Tier15Medal, BountyGem } from "../components/Trophies.jsx";
 import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
+import { PickPerksStrip } from "../progress/PickPerksStrip.jsx";
+import { PickBonusBadges } from "../progress/HudPerks.jsx";
+import pcss from "../progress/Progress.module.css";
 import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
 import { isPemPlayoffsKind } from "../logic/pemSeries.jsx";
@@ -47,6 +50,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         modalBestOf,
         pickemLabelText,
         pickemPointsWon,
+        pickemBonuses = [],
         breakdownSetIndex,
         isEliminationModal,
         isPemBigModal,
@@ -269,12 +273,19 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             <BestOfBadge bestOf={modalBestOf} size={16} onColor={isPlayedModal} style={{ marginTop: -2, marginBottom: 2, zIndex: 5 }} />
 
                             {isPlayedModal && pickemLabelText && (
-                                <span
-                                    className={`${css.match_modal_pickem} ${css.breakdown_pickem_pill} ${didUserWin ? css.breakdown_pickem_pill_win : pickemPointsWon > 0 ? css.breakdown_pickem_pill_partial : css.breakdown_pickem_pill_loss}`}
-                                    title={!didUserWin && pickemPointsWon > 0 ? "Your pick took some sets, but not the series" : undefined}
-                                >
-                                    {didUserWin ? <FaCheck /> : pickemPointsWon > 0 ? <FaCircleHalfStroke /> : <FaXmark />}
-                                    {pickemLabelText}
+                                <span className={`${css.match_modal_pickem} ${pcss.pickem_stack}`} style={{ top: "auto", bottom: 3 }}>
+                                    {pickemBonuses.length ? (
+                                        <span className={pcss.bonus_row}>
+                                            <PickBonusBadges bonuses={pickemBonuses} />
+                                        </span>
+                                    ) : null}
+                                    <span
+                                        className={`${css.breakdown_pickem_pill} ${didUserWin ? css.breakdown_pickem_pill_win : pickemPointsWon > 0 ? css.breakdown_pickem_pill_partial : css.breakdown_pickem_pill_loss}`}
+                                        title={!didUserWin && pickemPointsWon > 0 ? "Your pick took some sets, but not the series" : undefined}
+                                    >
+                                        {didUserWin ? <FaCheck /> : pickemPointsWon > 0 ? <FaCircleHalfStroke /> : <FaXmark />}
+                                        {pickemLabelText}
+                                    </span>
                                 </span>
                             )}
                         </div>
@@ -866,6 +877,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     >
                                         {stageLabel}
                                     </button>
+                                    <PickPerksStrip stage={modalContext.stage} bestOf={modalBestOf} knockout={!["swiss", "gccLeague", "cstGroup"].includes(modalContext.type)} />
                                 </div>
                             </>
                         );
@@ -2472,6 +2484,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                 isPlayoffs={modalContext.type === "playoffs"}
                                 pointLabelText={breakdownPointLabel}
                                 hud={breakdownHud}
+                                pickemBonuses={pickemBonuses}
                             />
                         );
                     })()}

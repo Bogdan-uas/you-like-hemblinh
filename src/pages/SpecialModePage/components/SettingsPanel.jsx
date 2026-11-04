@@ -18,6 +18,7 @@ import {
     SIMULATE_YES_NO,
 } from "../logic/settings.js";
 import { checkResetCode, checkSecretCode, isResetCodeConfigured, isSecretCodeConfigured } from "../logic/codeHash.js";
+import { ResetEverything } from "../progress/ResetEverything.jsx";
 
 const CUSTOM_KEY = "custom";
 const SECRET_REVEAL_CLICKS = 5;
@@ -708,6 +709,7 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                             <button type="button" className={css.confirm_button} onClick={resetSettings}>
                                 Reset settings
                             </button>
+                            <ResetEverything />
                         </motion.div>
                     </motion.div>
                 )}

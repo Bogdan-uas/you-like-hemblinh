@@ -218,7 +218,25 @@ import {
     SIMULATE_IMPORTANT_MINI_MS,
     SIMULATE_INSTANT_BATCH,
 } from "./logic/gameConstants.js";
-import { saveHallTournament, sortHallOfFame } from "./logic/hallOfFameDb.js";
+import { readHallOfFame, saveHallTournament as writeHallTournament, sortHallOfFame } from "./logic/hallOfFameDb.js";
+import { ProgressLayer } from "./progress/ProgressLayer.jsx";
+import { applyPickPerks, pickBonusesOf, pickPerkBreakdown } from "./progress/pickPerks.js";
+import {
+    progressApplyNeededPerk as perkNeeded,
+    progressBuildPickPerks,
+    progressClearSnapshot,
+    progressEnsureSnapshot,
+    progressEventFinished,
+    progressWithNeededPerk,
+    progressMarkSimulated,
+    progressNeededPreview,
+    progressIsPristine,
+    progressOpenSummaryThen,
+    progressRestoreSnapshot,
+    progressSeriesFinished,
+    progressTakeSnapshot,
+} from "./progress/progressStore.js";
+import { schedulePristineCapture } from "./progress/resetStorage.js";
 import {
     buildPbsSeeds,
     buildPbsSeedsFromTeams,
@@ -311,7 +329,7 @@ import {
     OPEN_QUALIFIER_SPOTS,
 } from "./logic/qualifier.jsx";
 import { applyRatings, applyTieRatings } from "./logic/ratings.js";
-import { defaultSeriesState, buildExtendedRoundWinnerList, buildExtendedRoundDetails, round2, encodeMiniRound, buildSeriesRoundKey } from "./logic/series.js";
+import { defaultSeriesState, buildExtendedRoundWinnerList, buildExtendedRoundDetails, round2, encodeMiniRound, buildSeriesRoundKey, getLiveSetResult, getSetResultWinner } from "./logic/series.js";
 import {
     resetBattleExperience,
     pullStatsTowardStart,
@@ -320,6 +338,7 @@ import {
     resolveSeriesEndStats,
     STAT_ACTIVATION_VERSION,
     resolveSeriesTieStats,
+    getMatchWinPrediction,
 } from "./logic/statActivation.js";
 import {
     computeRollBonus,
@@ -422,6 +441,14 @@ import { SettingsPanel } from "./components/SettingsPanel.jsx";
 import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKeys, useSimulateKey, isSecretUnlocked, useSpecialModeSettings, SECRET_EVENT } from "./logic/settings.js";
 import { DEFAULT_CHEAT_DRAFT, CHEAT_SCRIPTS, TIE_SCORE, buildCheatAnchor, getCheatMiniWinner, isCheatFinished, describeCheat, getMiniRoundOdds, getRoundOdds, normalizeCheatDraft, loadCheatDraft, saveCheatDraft } from "./logic/secretCheats.js";
 
+const saveHallTournament = (record) => {
+    const withPerk = progressWithNeededPerk(record);
+    progressEventFinished(withPerk);
+    return writeHallTournament(withPerk);
+};
+
+const PRISTINE_CAPTURE_MS = 6000;
+
 const SAVE_DEBOUNCE_MS = 1600;
 const SAVE_MAX_WAIT_MS = 4000;
 const SAVE_FLUSH_EVENT = "special-mode-save-flush";
@@ -429,6 +456,18 @@ const SAVE_FLUSH_EVENT = "special-mode-save-flush";
 function SpecialModePage() {
     const [settings, setSettings] = useState(loadSettings);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [freshStart] = useState(() => {
+        try {
+            return !localStorage.getItem(STORAGE_KEY);
+        } catch {
+            return false;
+        }
+    });
+
+    useEffect(() => {
+        if (!freshStart) return undefined;
+        return schedulePristineCapture(PRISTINE_CAPTURE_MS, async () => progressIsPristine() && !(await readHallOfFame()).length);
+    }, [freshStart]);
 
     const updateSettings = useCallback((next) => {
         setSettings(next);
@@ -462,6 +501,7 @@ function SpecialModePage() {
         <SettingsContext.Provider value={settings}>
             <SpecialModeContent />
             <SettingsPanel settings={settings} onChange={updateSettings} open={isSettingsOpen} setOpen={setIsSettingsOpen} />
+            <ProgressLayer />
         </SettingsContext.Provider>
     );
 }
@@ -662,7 +702,7 @@ function SpecialModeContent() {
     const [peekedRoll, setPeekedRoll] = useState(null);
     const peekedRawRef = useRef(null);
 
-    const [neededPickemPoints, setNeededPickemPoints] = useState(() => getRandomNeededPickemPoints());
+    const [neededPickemPoints, setNeededPickemPoints] = useState(() => progressNeededPreview(getRandomNeededPickemPoints()));
     const [finalPickemPoints, setFinalPickemPoints] = useState(0);
 
     const [hoveredTeamId, setHoveredTeamId] = useState(null);
@@ -1473,7 +1513,7 @@ function SpecialModeContent() {
 
             setSeriesState(parsed.seriesState ? { ...defaultSeriesState, ...parsed.seriesState } : defaultSeriesState);
 
-            setNeededPickemPoints(parsed.neededPickemPoints ?? getRandomNeededPickemPoints());
+            setNeededPickemPoints(parsed.neededPickemPoints ?? perkNeeded(getRandomNeededPickemPoints()));
             setFinalPickemPoints(parsed.finalPickemPoints ?? 0);
             setGuessedCounts(parsed.guessedCounts ?? guessedCounts);
 
@@ -1897,6 +1937,7 @@ function SpecialModeContent() {
             statsSnapshotRef.current = null;
             clearStatsSnapshot();
         }
+        progressRestoreSnapshot();
 
         const seeds = classifyTeamsForStages(allTeams, teamRatingsRef.current);
         tournamentSeedsRef.current = seeds;
@@ -1943,7 +1984,7 @@ function SpecialModeContent() {
         setSeriesState(defaultSeriesState);
         clearRoundLog();
 
-        setNeededPickemPoints(getRandomNeededPickemPoints());
+        setNeededPickemPoints(perkNeeded(getRandomNeededPickemPoints()));
         setFinalPickemPoints(0);
         setGuessedCounts({ stage1: 0, stage2: 0, stage3: 0, ro16: 0, qf: 0, sf: 0, tpd: 0, gf: 0 });
 
@@ -2021,7 +2062,7 @@ function SpecialModeContent() {
         setSeriesState(defaultSeriesState);
         clearRoundLog();
 
-        setNeededPickemPoints(getRandomNeededPickemPoints());
+        setNeededPickemPoints(perkNeeded(getRandomNeededPickemPoints()));
         setFinalPickemPoints(0);
         setGuessedCounts({
             stage1: 0,
@@ -2057,9 +2098,11 @@ function SpecialModeContent() {
         clearRatingsSnapshot();
         statsSnapshotRef.current = null;
         clearStatsSnapshot();
+        progressClearSnapshot();
     };
 
     const ensureRatingsSnapshot = () => {
+        progressEnsureSnapshot();
         if (!ratingsSnapshotRef.current) {
             const snap = { ...teamRatingsRef.current };
             ratingsSnapshotRef.current = snap;
@@ -2216,6 +2259,7 @@ function SpecialModeContent() {
         const statsBeforeStart = normalizeTeamStats(allTeams, teamStatsRef.current);
         statsSnapshotRef.current = statsBeforeStart;
         saveStatsSnapshot(statsBeforeStart);
+        progressTakeSnapshot();
 
         const statsWithFreshExperience = resetBattleExperience(pullStatsTowardStart(teamStatsRef.current, pulledTeamIds));
         setTeamStats(statsWithFreshExperience);
@@ -2259,7 +2303,7 @@ function SpecialModeContent() {
             setQualifierGroupView("A");
             setActivePhase("qualifier");
             setViewPhase("qualifier");
-            setNeededPickemPoints(getRandomQualifierNeededPickemPoints());
+            setNeededPickemPoints(perkNeeded(getRandomQualifierNeededPickemPoints()));
         } else if (pgxSeeds) {
             const edition = getTypeNumber(PGX_GM_TYPE_ID) + 1;
             setTypeNumber(PGX_GM_TYPE_ID, edition);
@@ -2299,7 +2343,7 @@ function SpecialModeContent() {
 
             setActivePhase("pgxCm");
             setViewPhase("pgxCm");
-            setNeededPickemPoints(getRandomPgxNeededPickemPoints("cm"));
+            setNeededPickemPoints(perkNeeded(getRandomPgxNeededPickemPoints("cm")));
         } else if (essSeeds) {
             const edition = getTypeNumber(ESS_TYPE_ID) + 1;
             setTypeNumber(ESS_TYPE_ID, edition);
@@ -2344,7 +2388,7 @@ function SpecialModeContent() {
 
             setActivePhase("essLq");
             setViewPhase("essLq");
-            setNeededPickemPoints(getRandomEssNeededPickemPoints("lq"));
+            setNeededPickemPoints(perkNeeded(getRandomEssNeededPickemPoints("lq")));
         } else if (gplSeeds) {
             const number = getTypeNumber(GCC_TYPE_ID) + 1;
             setTypeNumber(GCC_TYPE_ID, number);
@@ -2382,7 +2426,7 @@ function SpecialModeContent() {
 
             setActivePhase("qualifier");
             setViewPhase("qualifier");
-            setNeededPickemPoints(getRandomOpenQualifierNeededPickemPoints("gpl"));
+            setNeededPickemPoints(perkNeeded(getRandomOpenQualifierNeededPickemPoints("gpl")));
         } else if (pbsSeeds) {
             const edition = getTypeNumber(PBS_TYPE_ID) + 1;
             setTypeNumber(PBS_TYPE_ID, edition);
@@ -2421,7 +2465,7 @@ function SpecialModeContent() {
 
             setActivePhase("qualifier");
             setViewPhase("qualifier");
-            setNeededPickemPoints(getRandomOpenQualifierNeededPickemPoints("pbs"));
+            setNeededPickemPoints(perkNeeded(getRandomOpenQualifierNeededPickemPoints("pbs")));
         } else {
             tournamentSeedsRef.current = officialSeeds;
             setStage1(buildSwissStage("stage1", officialSeeds.stage1Seeds.map(toBaseTeam), OFFICIAL_SWISS_FORMAT));
@@ -2432,7 +2476,7 @@ function SpecialModeContent() {
                 number: skylinesNumberNext,
                 officialNumber: tournamentNumber + 1,
                 firstPlace: SKYLINES_FIRST_PLACE,
-                neededPickemPoints: getRandomSkylinesNeededPickemPoints(),
+                neededPickemPoints: perkNeeded(getRandomSkylinesNeededPickemPoints()),
             });
             setSkylinesRoundView(0);
             skylinesAutoAdvanceRef.current = null;
@@ -2441,7 +2485,7 @@ function SpecialModeContent() {
             setPlayoffs(null);
             setActivePhase("stage1");
             setViewPhase("stage1");
-            setNeededPickemPoints(getRandomNeededPickemPoints());
+            setNeededPickemPoints(perkNeeded(getRandomNeededPickemPoints()));
 
             setPemSeries(null);
             setPbs(null);
@@ -2535,7 +2579,9 @@ function SpecialModeContent() {
         });
     };
 
-    const swissMatchPoints = (match) => {
+    const swissMatchPoints = (match) => applyPickPerks(match, rawSwissMatchPoints(match), getBestOfForSwissNet(match.net, match.stageKey, match.format));
+
+    const rawSwissMatchPoints = (match) => {
         if (!match.played || !match.pickTeamId) return 0;
 
         const bestOf = getBestOfForSwissNet(match.net, match.stageKey, match.format);
@@ -2578,7 +2624,24 @@ function SpecialModeContent() {
         return 0;
     };
 
-    const playoffsMatchPoints = (match) => {
+    const playoffsMatchPoints = (match) => applyPickPerks(match, rawPlayoffsMatchPoints(match), playoffsBestOf(match));
+
+    const playoffsBestOf = (match) => {
+        const baseMap = match.cst
+            ? CST_PLAYOFFS_BEST_OF
+            : match.gcc
+                ? GCC_KNOCKOUT_BEST_OF
+                : match.pbs
+                    ? PBS_BEST_OF
+                    : match.pemBig || match.gpl
+                    ? PEM_BIG_PLAYOFFS_BEST_OF
+                    : match.pem
+                        ? PEM_PLAYOFFS_BEST_OF
+                        : { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+        return baseMap[match.stage] ?? 0;
+    };
+
+    const rawPlayoffsMatchPoints = (match) => {
         if (!match.played || !match.pickTeamId) return 0;
         const baseMap = match.cst
             ? CST_PLAYOFFS_BEST_OF
@@ -3207,6 +3270,30 @@ function SpecialModeContent() {
         });
 
         const pickedTeamId = modalLeftTeam.id;
+        const pickChance = (() => {
+            try {
+                return getMatchWinPrediction({
+                    leftTeam: modalLeftTeam,
+                    rightTeam: modalRightTeam,
+                    leftStats: teamStatsRef.current?.[modalLeftTeam.id],
+                    rightStats: teamStatsRef.current?.[modalRightTeam.id],
+                    ratings: teamRatingsRef.current,
+                    teams: allTeams,
+                    matchContext: modalContext,
+                    bestOf: modalBestOf,
+                }).leftWinProbability;
+            } catch {
+                return null;
+            }
+        })();
+        const pickPerks = progressBuildPickPerks({
+            chance: pickChance,
+            stage: modalContext.stage ?? null,
+            label: [modalStageSmallLabel, modalTitle].filter(Boolean).join(" · "),
+            bestOf: modalBestOf,
+            roundKey: `${modalContext.type}|${modalContext.group ?? ""}|${modalContext.section ?? ""}|${modalContext.stage ?? modalContext.net ?? ""}`,
+            knockout: !["swiss", "gccLeague", "cstGroup"].includes(modalContext.type),
+        });
 
         if (modalContext.type === "swiss") {
             const { stageKey, net, matchId, format = null } = modalContext;
@@ -3227,6 +3314,7 @@ function SpecialModeContent() {
                 if (idx < 0) return;
                 const m = { ...arr[idx] };
                 m.pickTeamId = pickedTeamId;
+                m.perks = pickPerks;
                 m.setHistory = [];
                 arr[idx] = m;
                 copy.matchesByNet[net] = arr;
@@ -3285,7 +3373,7 @@ function SpecialModeContent() {
             setCst((prev) => {
                 if (!prev?.[group]) return prev;
                 const matches = (prev[group].matches || []).map((m) =>
-                    m.id === matchId ? { ...m, pickTeamId: pickedTeamId, setHistory: [] } : m
+                    m.id === matchId ? { ...m, pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] } : m
                 );
                 const next = { ...prev, [group]: { ...prev[group], matches } };
                 cstRef.current = next;
@@ -3346,7 +3434,7 @@ function SpecialModeContent() {
                 if (!prev?.matchdays?.[matchday - 1]) return prev;
                 const matchdays = prev.matchdays.map((day, i) =>
                     i === matchday - 1
-                        ? day.map((m) => (m.id === matchId ? { ...m, pickTeamId: pickedTeamId, setHistory: [] } : m))
+                        ? day.map((m) => (m.id === matchId ? { ...m, pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] } : m))
                         : day
                 );
                 const next = { ...prev, matchdays };
@@ -3409,7 +3497,7 @@ function SpecialModeContent() {
                 const arr = [...(prev[group][stage] || [])];
                 const idx = arr.findIndex((m) => m.id === matchId);
                 if (idx < 0) return prev;
-                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] };
                 const next = { ...prev, [group]: { ...prev[group], [stage]: arr } };
                 qualifierRef.current = next;
                 return next;
@@ -3465,7 +3553,7 @@ function SpecialModeContent() {
                 const arr = [...(prev[group][stage] || [])];
                 const idx = arr.findIndex((m) => m.id === matchId);
                 if (idx < 0) return prev;
-                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] };
                 const next = { ...prev, [group]: { ...prev[group], [stage]: arr } };
                 pemMainRef.current = next;
                 return next;
@@ -3521,7 +3609,7 @@ function SpecialModeContent() {
                 const arr = [...prev[stage]];
                 const idx = arr.findIndex((m) => m.id === matchId);
                 if (idx < 0) return prev;
-                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] };
                 const next = { ...prev, [stage]: arr };
                 eclRef.current = next;
                 return next;
@@ -3569,7 +3657,7 @@ function SpecialModeContent() {
             const bestOf = getBestOfForSkylines(stage, floor);
             const spot = locateSkylinesMatch(skylinesRef.current, matchId);
 
-            const next = updateSkylinesMatch(skylinesRef.current, matchId, (m) => ({ ...m, pickTeamId: pickedTeamId, setHistory: [] }));
+            const next = updateSkylinesMatch(skylinesRef.current, matchId, (m) => ({ ...m, pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] }));
             setSkylines(next);
             skylinesRef.current = next;
 
@@ -3620,7 +3708,7 @@ function SpecialModeContent() {
             if (!spot) return;
 
             const bestOf = type === "essLq" ? getBestOfForEssLadder(spot.stage) : type === "essCh" ? getBestOfForEssChallenger(spot.stage) : getBestOfForEssFinal(spot.stage);
-            const pickUpdate = (m) => ({ ...m, pickTeamId: pickedTeamId, setHistory: [] });
+            const pickUpdate = (m) => ({ ...m, pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] });
 
             if (type === "essLq") {
                 const next = updateEssLadderMatch(container, matchId, pickUpdate);
@@ -3683,7 +3771,7 @@ function SpecialModeContent() {
             if (!spot) return;
 
             const bestOf = isCm ? getBestOfForPgxCandidate(spot.stage) : getBestOfForPgxInternational(spot.stage);
-            const pickUpdate = (m) => ({ ...m, pickTeamId: pickedTeamId, setHistory: [] });
+            const pickUpdate = (m) => ({ ...m, pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] });
 
             if (isCm) {
                 const next = updatePgxCandidateMatch(container, matchId, pickUpdate);
@@ -3746,7 +3834,7 @@ function SpecialModeContent() {
                 const arr = [...(prev[group][stage] || [])];
                 const idx = arr.findIndex((m) => m.id === matchId);
                 if (idx < 0) return prev;
-                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, setHistory: [] };
+                arr[idx] = { ...arr[idx], pickTeamId: pickedTeamId, perks: pickPerks, setHistory: [] };
                 const next = { ...prev, [group]: { ...prev[group], [stage]: arr } };
                 pemStage1Ref.current = next;
                 return next;
@@ -3807,6 +3895,7 @@ function SpecialModeContent() {
                 if (idx < 0) return prev;
                 const m = { ...copy[stage][idx] };
                 m.pickTeamId = pickedTeamId;
+                m.perks = pickPerks;
                 m.setHistory = [];
                 copy[stage][idx] = m;
                 return copy;
@@ -5691,11 +5780,13 @@ function SpecialModeContent() {
 
     const startSimulation = () => {
         if (!simulateEnabled || !seriesState.active) return;
+        progressMarkSimulated();
         setSimulation(buildSimulation(seriesState.setNumber));
     };
 
     const handleSimulateMatch = () => {
         if (!hasChosen || !simulateEnabled) return;
+        progressMarkSimulated();
         simulationRequestRef.current = true;
         handleStartMatch();
     };
@@ -7040,6 +7131,18 @@ function SpecialModeContent() {
 
         const t = setTimeout(() => {
             seriesCommitExecuteAtRef.current = null;
+            progressSeriesFinished({
+                pickedSets: seriesLeftSets,
+                otherSets: seriesRightSets,
+                tie: !!seriesState.banner?.tie,
+                bestOf: (seriesState.setsToWin ?? 1) * 2 - 1,
+                pickedName: leftTeam.name,
+                otherName: rightTeam.name,
+                sets: [...(seriesState.finishedSets || []), getLiveSetResult(seriesState)]
+                    .filter(Boolean)
+                    .filter((s, i, list) => list.findIndex((x) => x.set === s.set) === i)
+                    .map((s) => ({ left: s.leftScore ?? 0, right: s.rightScore ?? 0, er: !!s.extendedRoundsPlayed, pens: !!s.penaltiesPlayed, winner: getSetResultWinner(s) })),
+            });
             if (phase === "gccLeague") {
                 commitGccLeagueSeries({
                     matchday: seriesState.gccMatchday,
@@ -8162,15 +8265,18 @@ function SpecialModeContent() {
     const isPickemWin = finalPickemPoints >= neededPickemPoints;
 
     const handleBackToHome = () => {
+        if (progressOpenSummaryThen(handleBackToHome)) return;
         resetSpecialModeState();
         navigate("/");
     };
 
     const handleBackToSpecialStart = () => {
+        if (progressOpenSummaryThen(handleBackToSpecialStart)) return;
         resetSpecialModeState();
     };
 
     const handleBackToGambling = () => {
+        if (progressOpenSummaryThen(handleBackToGambling)) return;
         resetSpecialModeState();
         navigate("/gambling");
     };
@@ -8604,7 +8710,7 @@ function SpecialModeContent() {
         setActivePhase("cstGroups");
         setViewPhase("cstGroups");
 
-        openNextPemEvent(getRandomCstNeededPickemPoints());
+        openNextPemEvent(perkNeeded(getRandomCstNeededPickemPoints()));
     };
 
     const startEliteCompetitionLeague = () => {
@@ -8623,7 +8729,7 @@ function SpecialModeContent() {
         setActivePhase("ecl");
         setViewPhase("ecl");
 
-        openNextPemEvent(getRandomEclNeededPickemPoints());
+        openNextPemEvent(perkNeeded(getRandomEclNeededPickemPoints()));
     };
 
     const startPemMainEvent = () => {
@@ -8654,7 +8760,7 @@ function SpecialModeContent() {
             setViewPhase("pemGroups");
         }
 
-        openNextPemEvent(getRandomPemNeededPickemPoints(pemType));
+        openNextPemEvent(perkNeeded(getRandomPemNeededPickemPoints(pemType)));
     };
 
     const startGplMainEvent = () => {
@@ -8678,7 +8784,7 @@ function SpecialModeContent() {
         setActivePhase("stage1");
         setViewPhase("stage1");
 
-        openNextPemEvent(getRandomGplNeededPickemPoints());
+        openNextPemEvent(perkNeeded(getRandomGplNeededPickemPoints()));
     };
 
     const sortByCurrentRank = (teams) => {
@@ -8711,7 +8817,7 @@ function SpecialModeContent() {
         setActivePhase("essCh");
         setViewPhase("essCh");
 
-        openNextPemEvent(getRandomEssNeededPickemPoints("ch"));
+        openNextPemEvent(perkNeeded(getRandomEssNeededPickemPoints("ch")));
     };
 
     const startEssFinals = () => {
@@ -8731,7 +8837,7 @@ function SpecialModeContent() {
         setActivePhase("essFin");
         setViewPhase("essFin");
 
-        openNextPemEvent(getRandomEssNeededPickemPoints("main"));
+        openNextPemEvent(perkNeeded(getRandomEssNeededPickemPoints("main")));
     };
 
     const startPgxInternational = () => {
@@ -8754,7 +8860,7 @@ function SpecialModeContent() {
         setActivePhase("pgxIm");
         setViewPhase("pgxIm");
 
-        openNextPemEvent(getRandomPgxNeededPickemPoints("im"));
+        openNextPemEvent(perkNeeded(getRandomPgxNeededPickemPoints("im")));
     };
 
     const startPgxGrandmasters = () => {
@@ -8776,7 +8882,7 @@ function SpecialModeContent() {
         setActivePhase("stage1");
         setViewPhase("stage1");
 
-        openNextPemEvent(getRandomPgxNeededPickemPoints("gm"));
+        openNextPemEvent(perkNeeded(getRandomPgxNeededPickemPoints("gm")));
     };
 
     const startGccAfterOpenQualifier = () => {
@@ -8796,7 +8902,7 @@ function SpecialModeContent() {
         setActivePhase("gccLeague");
         setViewPhase("gccLeague");
 
-        openNextPemEvent(getRandomGccNeededPickemPoints());
+        openNextPemEvent(perkNeeded(getRandomGccNeededPickemPoints()));
     };
 
     const startPbsAfterOpenQualifier = () => {
@@ -8828,10 +8934,11 @@ function SpecialModeContent() {
         setActivePhase("playoffs");
         setViewPhase("pbsStage1");
 
-        openNextPemEvent(getRandomPbsNeededPickemPoints());
+        openNextPemEvent(perkNeeded(getRandomPbsNeededPickemPoints()));
     };
 
     const handlePemProceedToNextEvent = () => {
+        if (progressOpenSummaryThen(handlePemProceedToNextEvent)) return;
         setShowPickemSummary(false);
         setShowWinnersScreen(false);
 
@@ -9680,9 +9787,12 @@ function SpecialModeContent() {
     }
 
     let pickemLabelText = "";
+    const pickemBreakdown = wonPickemPoints !== null ? pickPerkBreakdown(currentModalMatch) : null;
+    const basePickemPoints = pickemBreakdown ? pickemBreakdown.base : wonPickemPoints;
+    const pickemBonuses = pickBonusesOf(pickemBreakdown);
 
-    if (wonPickemPoints !== null) {
-        pickemLabelText = wonPickemPoints === 1 ? "+1 Pick'em point" : `+${wonPickemPoints} Pick'em points`;
+    if (basePickemPoints !== null) {
+        pickemLabelText = basePickemPoints === 1 ? "+1 Pick'em point" : `+${basePickemPoints} Pick'em points`;
     }
 
     const didUserWin =
@@ -10328,6 +10438,9 @@ function SpecialModeContent() {
                 actions={{
                     handlePemProceedToNextEvent,
                     resetSpecialModeState,
+                    handleBackToHome,
+                    handleBackToSpecialStart,
+                    handleBackToGambling,
                     setShowPickemSummary,
                     setShowWinnersScreen,
                     navigate,
@@ -10519,7 +10632,8 @@ function SpecialModeContent() {
                 modalBestOf,
                 breakdownHud: breakdownHudFor(modalContext, modalContext?.isArchivedHallOfFame ? selectedHallMatch?.record : null),
                 pickemLabelText,
-                pickemPointsWon: wonPickemPoints,
+                pickemPointsWon: basePickemPoints,
+                pickemBonuses,
                 breakdownSetIndex,
                 isEliminationModal,
                 isPemBigModal,

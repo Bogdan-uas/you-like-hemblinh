@@ -1,3 +1,4 @@
+import { applyPickPerks } from "../progress/pickPerks.js";
 import { toBaseTeam } from "./teams.js";
 
 export const CST_GROUPS = ["A", "B", "C", "D"];
@@ -174,4 +175,4 @@ export const buildCstPlayoffs = (stage) => {
 };
 
 export const cstGroupMatchPoints = (match) =>
-    match?.played && match.pickTeamId && !match.isTie && match.winnerTeamId === match.pickTeamId ? 1 : 0;
+    applyPickPerks(match, match?.played && match.pickTeamId && !match.isTie && match.winnerTeamId === match.pickTeamId ? 1 : 0, 1);

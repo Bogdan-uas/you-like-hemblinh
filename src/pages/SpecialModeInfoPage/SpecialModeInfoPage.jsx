@@ -262,6 +262,10 @@ const OFFICIAL_SECTIONS = [
         label: "Leaderboard format and points system",
     },
     {
+        id: "levels-explained",
+        label: "Levels, XP and Achievements",
+    },
+    {
         id: "official-skylines",
         label: "Official Skylines",
     },
@@ -852,6 +856,14 @@ const SkyShot = ({ n, alt, width = "34vw" }) => (
     </div>
 );
 
+const LEVELS_IMAGES = import.meta.glob("../../../assets/images/levels-*.png", { eager: true, import: "default" });
+
+const LevelShot = ({ n, alt, width = "34vw" }) => (
+    <div className={css.image_container}>
+        <img src={LEVELS_IMAGES[`../../../assets/images/levels-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+    </div>
+);
+
 const OfficialSubPage = ({ scrollToAnchor }) => (
     <>
         <section>
@@ -869,8 +881,10 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 When firstly clicking on the "Special" button and going onto this page, you will see the Intro Page (depicted below this text). <br />
                 Above, you see already a familiar <b>header</b> with two buttons: "Restart the game?" and "Terminate the game?".
                 First restarts the tournament and redirects you to this page again & second redirects you to Home Page but doesn't restart the tournament.
-                Near those two, you will see an orange button, named as "Leaderboard" and below those, you will see the button, called as "Hall of Fame". We will come to those in a minute, ok? <br />
-                And in the top-right corner of the header, there is a small round button with a gear on it, which opens the <b>Settings</b>. It stays there on every screen of the Special Mode, but more on it a little bit later too. <br />
+                Near those two, you will see an orange button, named as "Leaderboard" and right next to it, the button, called as "Hall of Fame". We will come to those in a minute, ok? <br />
+                And in the top-right corner of the header, there is a small round button with a gear on it, which opens the <b>Settings</b>, and right before it, a round button with "LVL 1" in it, which is my <b>level</b>. Both of them stay there on every screen of the Special Mode, but more on them a little bit later too (the level has its own section,{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP and Achievements</a>
+                ). <br />
                 Below the header, you see the encouraging text to the tournament simulator and the button leading to this Info Page nearby. <br />
                 In the center there is an endless loop of different team circles, which tries to show, what colors are featured in the tournament. <br />
                 At the bottom, you see two buttons, which speak for themselves.<br />
@@ -1005,7 +1019,9 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>
                 The greyed out options only become available once you choose a Gambling Key (or turn off "Skip the podium reveal" for the effects, or allow the playback of the simulated rounds for "What it simulates", "Speed" and "Slow down on important moments"). All the settings are saved, so they stay the same after reloading the page, and the "Reset settings" button brings them back to their defaults (with a chance to undo it, of course).
-                Gambling Key is "Off" by default, so nothing changes until you pick one.
+                Gambling Key is "Off" by default, so nothing changes until you pick one. <br />
+                Once you have played something (or changed anything), a black <b>"Reset everything!"</b> button shows up below "Reset settings". It resets really everything: the settings, the Hall of Fame, the Leaderboard, your level, your achievements and every tournament, so the Special Mode is as new as on the very first visit.
+                That&apos;s why it can&apos;t be clicked by accident: first you have to type a random password, then solve a small sum and at the end hold a button for 3 seconds. And it can&apos;t be undone!
             </p>
             <p className={css.info_text}>
                 Now, let's go back to the Intro Page and click on that addition on the "Start Game" button with an arrow:
@@ -1520,6 +1536,64 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <LeaderboardExplained />
         </section>
         <section>
+            <div id="levels-explained" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Levels, XP and Achievements</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The Pick&apos;em points and the Leaderboard are about one tournament and about the teams. But there is also something, which is only about me, the player, and which stays with me through every tournament: my <b>level</b>.
+                Remember the small round button with "LVL 1" right next to the gear in the top-right corner? That&apos;s it. Everything I do in the Special Mode gives me <b>XP</b> (experience points), and with enough XP, my level goes up, all the way to Level 1000 and even further.
+                Every level needs a bit more XP than the one before: Level 1 → 2 needs 120 XP, Level 10 → 11 already 1,700 XP and Level 100 → 101 9,140 XP. <br />
+                <i>(The pictures of this section are from a later save, where I had already played a lot more, so don&apos;t be surprised to see Level 19 during the Official #1. And if you already had tournaments in your Hall of Fame before the levels came, the Special Mode counts all of them once and gives you their XP and achievements right away.)</i>
+            </p>
+            <p className={css.info_text}>
+                The level isn&apos;t only a number, though. Every few levels unlock a <b>level benefit</b>, and all of them are about the Pick&apos;em (and the XP itself), so the matches themselves are never touched.
+                The most important one is the <b>Pick&apos;em Insurance</b>, which comes at Level 5. In every match window of a Best of 3 or longer, there is a button "Pick&apos;em Insurance off · 1 left" below the "Start" button, and a click switches it on.
+                If my insured pick loses, the insurance wins back a share of the Pick&apos;em points, which I&apos;ve missed (50% at first, rounded down, and more with higher levels). If that share is 0, because my team already took enough sets, the insurance comes back to me. And if my insured pick wins, it&apos;s used up anyway.
+                Below it, the "Level bonuses" line tells, which extra Pick&apos;em points this match can still give me (for example +1 for a comeback, a sweep, an Overtime or a knockout match). Here, in the Grand Final, I insured my pick on Team Indigo:
+            </p>
+            <LevelShot n={1} alt="Match modal of the Grand Final with the Pick'em Insurance switched on and the level bonuses below it" width="35vw" />
+            <p className={css.info_text}>
+                Every HUD shows the insurance as its own chip next to the "BEST OF" badge, here "INSURED 50%". When the series is over, the chip tells what happened: "+2" for the points it has won back, "Returned" or "Used":
+            </p>
+            <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% chip next to the BEST OF badge" />
+            <p className={css.info_text}>
+                Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another, like "Series played", "Pick&apos;em points", "Grand Final", "Overtimes" or the "Daily warm-up" for the first series of the day.
+                And when the bar is full, the circle pops with a golden wave and a rising "LEVEL UP!":
+            </p>
+            <LevelShot n={3} alt="The XP card after the Grand Final with its XP chips and the LEVEL UP! effect on the level circle" />
+            <p className={css.info_text}>
+                Right after that, the big <b>Level Up</b> screen stops everything else and stays until I click or press any key. It shows the new level and every new benefit, which this level has unlocked.
+                Some levels are <b>anniversaries</b>: up to Level 100, every 5th level gets its own colors, glows and sparkles (later on, they come rarer), and Levels 10, 25, 50, 100, 250, 500 and 1000 are big anniversaries with an even bigger celebration. All the other levels above 100 shine a bit as well. Level 20 was one of the anniversaries:
+            </p>
+            <LevelShot n={4} alt="Level Up screen of Level 20 with its two new benefits" />
+            <p className={css.info_text}>
+                After the Pick&apos;em summary, the first button I click ("To the bracket" or any other) opens the <b>XP summary</b> of the whole tournament first. Every series, the results of the tournament and every new achievement get their own row, one after another, while the bar fills up,
+                and at the end, there is the total. If I reached a new level during the tournament, its Level Up screen shows up once more at the right moment of the summary. "Continue" takes me to where I wanted to go, and the summary of the last tournament can be opened again later in the Level tab:
+            </p>
+            <LevelShot n={5} alt="XP summary of Official #1: the Grand Final, the tournament results and the first new achievements" />
+            <LevelShot n={6} alt="The end of the XP summary of Official #1 with the total XP earned" />
+            <p className={css.info_text}>
+                A click on the level button opens the <b>Level</b> and <b>Achievements</b> screen. The Level tab shows my level, the XP bar with the total XP and all my benefits at the current level. Below them, the tables of "How to earn XP" tell every way to get XP and how much it gives:
+            </p>
+            <LevelShot n={7} alt="Level tab with Level 20, the XP bar, the benefits at Level 20 and the beginning of How to earn XP" />
+            <p className={css.info_text}>
+                At the bottom, there are all the benefits up to Level 1000, the unlocked ones, the next one and how much XP the others are still away. While scrolling, the tabs and the level stay at the top, and the level with its bar gets smoothly smaller:
+            </p>
+            <LevelShot n={8} alt="Level benefits up to Level 1000 with the smaller level at the top" />
+            <p className={css.info_text}>
+                The Achievements tab has <b>109 achievements</b> in 7 categories (Tournaments, Pick&apos;em, Matches, Stories, Circuits, Milestones and Level Benefits). Every achievement has a difficulty, which tells how much XP it gives: Easy 50, Medium 120, Hard 250, Extreme 500 and Legendary 1,000 XP.
+                Most of them also have tiers, from Bronze over Silver, Gold and Diamond to Platinum, and every higher tier gives more XP (only "Completionist" has one more tier after Platinum, the Master, for getting every step of every other achievement).
+                New achievements get a red "NEW" mark, which only goes away once I have seen the card in this tab, and until then, the level button and the tab count them in a red dot:
+            </p>
+            <LevelShot n={9} alt="Achievements tab with the filters and the Tournaments category" />
+            <p className={css.info_text}>
+                The filters on the top show all, only the new, only the obtained or only the achievements in progress, and they can be sorted from the easiest to the hardest or the other way round.
+                "Show difficulties" picks one or more difficulties, and then all achievements of those are in one list, with their category on every card:
+            </p>
+            <LevelShot n={10} alt="Achievements tab with only the Legendary difficulty shown" />
+        </section>
+        <section>
             <div id="official-skylines" style={{ marginTop: '24px' }} className={css.divider_container}>
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Official Skylines</h3>
                 <div className={css.divider} />
@@ -1662,7 +1736,9 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Finale? Or not?</h3>
                 <div className={css.divider} />
             </div>
-            <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button and I'm getting indeed redirected to the playoffs results:</p>
+            <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button, and after the XP summary of the Official #1 (see{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP and Achievements</a>
+                ), I'm getting indeed redirected to the playoffs results:</p>
             <div className={css.image_container}>
                 <img src={playoffsResultsAndTournamentFinished} alt="Playoffs Results and Finished Tournament Results" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>

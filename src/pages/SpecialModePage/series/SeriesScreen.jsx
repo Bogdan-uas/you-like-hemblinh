@@ -28,6 +28,7 @@ import { RoundScore } from "../components/RoundScore.jsx";
 import { SeriesBanner } from "../components/SeriesBanner.jsx";
 import { GameControlModals } from "../screens/GameControlModals.jsx";
 import { BestOfBadge } from "../components/BestOfBadge.jsx";
+import { HudInsurance } from "../progress/HudPerks.jsx";
 import { SetBadge, OvertimeBadge, SetHistory, PenaltyBadge, RoundBadge } from "../components/SeriesBadges.jsx";
 import { useSpecialModeSettings, shortKeyCode } from "../logic/settings.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
@@ -321,6 +322,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         style={{ fontSize: "24px", marginBottom: "2px", marginTop: "10px", marginLeft: "-2px", display: "flex" }}
                     >
                         <BestOfBadge bestOf={setsToWin * 2 - 1} size={20} />
+                        <HudInsurance variant="official" seriesState={seriesState} />
                     </motion.span>
                     {setsToWin !== 1 ? (
                         <motion.span

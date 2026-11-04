@@ -4,6 +4,8 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaClock, FaCrown, FaFire, FaStar } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Ess.module.css";
+import pcss from "../../progress/Progress.module.css";
+import { HudInsurance } from "../../progress/HudPerks.jsx";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
 import { readableOnDark, getBrightness } from "../../logic/colors.js";
@@ -583,9 +585,10 @@ const liveMid = ({ s, displayedRound, point, penaltyAttempt, suddenDeath }) => {
     return { tone: extended ? "extended" : "normal", big: `Round ${displayedRound}`, bigKey: `r${displayedRound}`, small: extended ? "Extended round" : `of ${roundTotal(s)}` };
 };
 
-export const EssSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }) => (
+export const EssSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, extra = null }) => (
     <div className={`${css.hud} ${css.sets_wrap}`}>
-        <div className={css.sets}>
+        <div className={`${css.sets} ${extra ? pcss.hud_anchor : ""}`}>
+            {extra}
             <span className={`${css.set} ${css.set_bo}`}>Bo{bestOf}</span>
             {chips.map((chip, i) => {
                 const Tag = onSelect ? "button" : "span";
@@ -711,7 +714,7 @@ export function EssScorebug({
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""} ${lite ? css.lite : ""}`}>
             <Top eventName={eventName} eventNumber={eventNumber} stageText={stageText} mark={mark} trophy={trophy} />
-            {setsToWin > 1 ? <EssSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
+            {setsToWin > 1 ? <EssSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="ess" hud={css} seriesState={s} />} /> : null}
             <EssBar
                 left={sideProps("left")}
                 right={sideProps("right")}

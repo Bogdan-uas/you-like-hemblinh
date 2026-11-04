@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCaretLeft, FaCaretRight } from "react-icons/fa";
 import css from "./PemHud.module.css";
+import { HudInsurance } from "../../progress/HudPerks.jsx";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
 import { PemStreak } from "./PemStreak.jsx";
 import { ClayIntro } from "./ClayIntro.jsx";
@@ -200,7 +201,7 @@ export function PemScorebug({
     return (
         <div className={`${css.hud} ${css[`theme_${theme}`] ?? ""}`}>
             <div className={`${css.scorebug} ${entrance ? css.entrance : ""}`}>
-                {setsToWin > 1 ? <PemSetChips chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
+                {setsToWin > 1 ? <PemSetChips chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pem" hud={css} seriesState={s} />} /> : null}
                 <div className={`${css.panel} ${css.strip}`}>
                     <span className={css.strip_deco} aria-hidden="true" />
                     <span className={`${css.strip_side} ${css.strip_event}`}>

@@ -20,7 +20,7 @@ const SKIP_TEMPLATES = new Set(["paddingTop@SetBreakdownOverlay.jsx"]);
 
 const MEASURED_EXPRESSION = /\b(rect|Rect|offset[A-Z]\w*|getBoundingClientRect|client(Width|Height)|scroll[A-Z]\w*|layout|tooltipCoords|headerHeight|indicator|heightRef|pos)\b/;
 
-const MEASURED_FILES = new Set(["PbsDraftShow.jsx", "StickyBelow.jsx", "TeamStatsHoverPopover.jsx"]);
+const MEASURED_FILES = new Set(["PbsDraftShow.jsx", "StickyBelow.jsx", "TeamStatsHoverPopover.jsx", "ProgressLayer.jsx", "XpSummaryScreen.jsx"]);
 
 const RUNTIME_ID = "virtual:rubber-runtime";
 const RESOLVED_RUNTIME_ID = "\u0000" + RUNTIME_ID;

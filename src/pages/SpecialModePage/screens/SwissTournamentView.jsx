@@ -1,3 +1,4 @@
+import { NeededPerkTag } from "../progress/HudPerks.jsx";
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
 
@@ -88,6 +89,7 @@ export function SwissTournamentView({ view, renderers, actions }) {
                                                 end={neededPickemPoints}
                                                 key={neededPickemPoints}
                                             />
+                                        <NeededPerkTag value={neededPickemPoints} />
                                         </span>
                                     </div>
                                 )}

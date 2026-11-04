@@ -4,6 +4,8 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaCrown } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Cst.module.css";
+import pcss from "../../progress/Progress.module.css";
+import { HudInsurance } from "../../progress/HudPerks.jsx";
 import pem from "./PemHud.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
@@ -416,9 +418,10 @@ const liveCentre = ({ s, setsToWin, displayedRound, point, penaltyAttempt, sudde
     return { tone: point ? "alert" : isPemExtendedRoundNow(s) ? "extended" : "normal", big: `Round ${displayedRound}`, small: `of ${roundTotal(s)}` };
 };
 
-export const CstSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }) => (
+export const CstSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, extra = null }) => (
     <div className={`${css.hud} ${css.sets_wrap}`}>
-        <div className={css.sets}>
+        <div className={`${css.sets} ${extra ? pcss.hud_anchor : ""}`}>
+            {extra}
             <span className={`${css.set} ${css.set_bo}`}>
                 <span className={css.set_inner}>
                     <span className={css.set_label}>Best of</span>
@@ -587,7 +590,7 @@ export function CstScorebug({
 
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            {setsToWin > 1 ? <CstSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
+            {setsToWin > 1 ? <CstSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="cst" hud={css} seriesState={s} />} /> : null}
             <Top eventName={eventName} eventNumber={eventNumber} stageText={stageText} />
             <CstBar
                 left={sideProps("left")}

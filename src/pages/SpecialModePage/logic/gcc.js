@@ -1,3 +1,4 @@
+import { applyPickPerks } from "../progress/pickPerks.js";
 import { toBaseTeam } from "./teams.js";
 
 export const GCC_TEAM_COUNT = 16;
@@ -330,13 +331,15 @@ export const buildGccKnockout = (league) => {
     };
 };
 
-export const gccLeagueMatchPoints = (match) => {
+const rawGccLeagueMatchPoints = (match) => {
     if (!match?.played || !match.pickTeamId) return 0;
     if (match.winnerTeamId === match.pickTeamId) return GCC_LEAGUE_BEST_OF;
     const pickedIsA = match.slotA && match.pickTeamId === match.slotA.id;
     const pickedSets = pickedIsA ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
     return pickedSets >= 1 ? 2 : 0;
 };
+
+export const gccLeagueMatchPoints = (match) => applyPickPerks(match, rawGccLeagueMatchPoints(match), GCC_LEAGUE_BEST_OF);
 
 export const getGccPlaces = (league, knockout, results) => {
     const losersOf = (stage) =>

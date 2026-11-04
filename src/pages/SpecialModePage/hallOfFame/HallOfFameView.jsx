@@ -1,3 +1,4 @@
+import { NeededPerkTag } from "../progress/HudPerks.jsx";
 import React from "react";
 import css from "../SpecialModePage.module.css";
 import Header from "../../../components/Header/Header.jsx";
@@ -369,7 +370,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                 left: "1px"
                             }}
                         >
-                            <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                            <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}<NeededPerkTag value={item.neededPickemPoints} cut={item.neededPerk ?? null} fallback={false} /></strong> <br /> needed Pick&apos;em Points
                         </span>
                         <div
                             style={{
@@ -517,7 +518,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             left: "-8px"
                         }}
                     >
-                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}<NeededPerkTag value={item.neededPickemPoints} cut={item.neededPerk ?? null} fallback={false} /></strong> <br /> needed Pick&apos;em Points
                     </span>
                     <span
                         style={{
@@ -684,7 +685,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             left: "-8px"
                         }}
                     >
-                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}<NeededPerkTag value={item.neededPickemPoints} cut={item.neededPerk ?? null} fallback={false} /></strong> <br /> needed Pick&apos;em Points
                     </span>
                     <span
                         style={{
@@ -850,7 +851,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             left: "-8px"
                         }}
                     >
-                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}</strong> <br /> needed Pick&apos;em Points
+                        <strong style={{ fontSize: 14 }}>{item.neededPickemPoints}<NeededPerkTag value={item.neededPickemPoints} cut={item.neededPerk ?? null} fallback={false} /></strong> <br /> needed Pick&apos;em Points
                     </span>
                     {config.highlightCard && (
                         <span

@@ -1,5 +1,9 @@
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
+import progressCss from "../progress/Progress.module.css";
+import { progressOpenSummaryThen, useProgress } from "../progress/progressStore.js";
+import { NeededPerkTag } from "../progress/HudPerks.jsx";
+import { perkUseLabel } from "../progress/progressEngine.js";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { PickemAchievedCounter } from "../components/PickemAchievedCounter.jsx";
@@ -22,7 +26,27 @@ export function PickemSummary({ pickem, phase, actions }) {
         setPickemCountSettled,
     } = pickem;
     const { activePhase, isCstPhase, isEclPhase, isGccPhase, isSkylinesPhase, isPgxEventPhase } = phase;
-    const { handlePemProceedToNextEvent, resetSpecialModeState, setShowPickemSummary, setShowWinnersScreen, navigate } = actions;
+    const { handlePemProceedToNextEvent, handleBackToHome, handleBackToSpecialStart, handleBackToGambling, setShowPickemSummary, setShowWinnersScreen } = actions;
+    const { progress } = useProgress();
+    const perkUses = progress.lastSummary?.perks;
+    const perkParts = perkUses
+        ? [
+            perkUses.neededCut ? `${perkUses.neededCut.pct}% fewer needed Pick'em points (${perkUses.neededCut.after} instead of ${perkUses.neededCut.before})` : null,
+            ...["insurance", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"].map((type) => {
+                const uses = (perkUses.uses || []).filter((u) => u.type === type);
+                if (!uses.length) return null;
+                return `${perkUseLabel(type)} +${uses.reduce((sum, u) => sum + u.points, 0)}`;
+            }),
+            (() => {
+                const returned = (perkUses.uses || []).filter((u) => u.type === "insuranceReturned").length;
+                return returned ? `Pick'em Insurance returned ×${returned}` : null;
+            })(),
+            (() => {
+                const shields = (perkUses.uses || []).filter((u) => u.type === "streakShield").length;
+                return shields ? `Streak Shield ×${shields}` : null;
+            })(),
+        ].filter(Boolean)
+        : [];
 
     const lossBasedPoints =
         (finalPickemPoints ?? 0) - (guessedCounts?.correct ?? 0);
@@ -71,6 +95,7 @@ export function PickemSummary({ pickem, phase, actions }) {
                             {showNeeded && !seen
                                 ? <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
                                 : neededPickemPoints}
+                            <NeededPerkTag value={neededPickemPoints} cut={perkUses?.neededCut ?? null} />
                         </span>
                     </motion.div>
 
@@ -125,6 +150,7 @@ export function PickemSummary({ pickem, phase, actions }) {
                     >
                         {isPickemWin ? "You Won! 🎉" : "You Lost! 😢"}
                     </h1>
+                    {perkParts.length ? <p className={progressCss.perk_line}>Level benefits: {perkParts.join(" · ")}</p> : null}
                 </motion.div>
 
                 <motion.div
@@ -142,8 +168,11 @@ export function PickemSummary({ pickem, phase, actions }) {
                     }}
                 >
                     <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => {
-                        setShowPickemSummary(false);
-                        setShowWinnersScreen(false);
+                        const toBracket = () => {
+                            setShowPickemSummary(false);
+                            setShowWinnersScreen(false);
+                        };
+                        if (!progressOpenSummaryThen(toBracket)) toBracket();
                     }}>
                         To the bracket
                     </button>
@@ -153,13 +182,13 @@ export function PickemSummary({ pickem, phase, actions }) {
                         </button>
                     ) : (
                         <>
-                    <button className={css.gamble_button} onClick={resetSpecialModeState}>
+                    <button className={css.gamble_button} onClick={handleBackToSpecialStart}>
                         Back to the start of Special Mode
                     </button>
-                    <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/gambling"); }}>
+                    <button className={css.gamble_button} onClick={handleBackToGambling}>
                         Back to normal Gambling
                     </button>
-                    <button className={css.gamble_button} onClick={() => { resetSpecialModeState(); navigate("/"); }}>
+                    <button className={css.gamble_button} onClick={handleBackToHome}>
                         To Home Page
                     </button>
                         </>

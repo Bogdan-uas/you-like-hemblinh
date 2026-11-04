@@ -1,3 +1,4 @@
+import { applyPickPerks } from "../progress/pickPerks.js";
 import { toBaseTeam } from "./teams.js";
 
 export const buildBracketRoutes = (stageOrder, sizes, slotSource) => {
@@ -116,7 +117,7 @@ export const makeBracketMatch = (id, group, stage, extra = {}) => ({
     ...extra,
 });
 
-export const bracketMatchPoints = (match, bestOf) => {
+const rawBracketMatchPoints = (match, bestOf) => {
     if (!match?.played || !match.pickTeamId) return 0;
     if (match.winnerTeamId === match.pickTeamId) return bestOf;
     if (bestOf === 1) return 0;
@@ -125,6 +126,8 @@ export const bracketMatchPoints = (match, bestOf) => {
     const pickedSets = pickedIsLeft ? (match.scoreLeft ?? 0) : (match.scoreRight ?? 0);
     return (pickedSets || 0) * 2;
 };
+
+export const bracketMatchPoints = (match, bestOf) => applyPickPerks(match, rawBracketMatchPoints(match, bestOf), bestOf);
 
 export const getMatchWinnerTeam = (match) =>
     match?.played ? [match.slotA, match.slotB].find((team) => team?.id === match.winnerTeamId) ?? null : null;

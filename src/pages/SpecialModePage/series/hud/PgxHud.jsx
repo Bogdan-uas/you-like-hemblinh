@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, cloneElement } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaCrown, FaFire } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Pgx.module.css";
+import { HudInsurance } from "../../progress/HudPerks.jsx";
 import pem from "./PemHud.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
@@ -522,8 +523,9 @@ const liveCentre = ({ s, setsToWin, displayedRound, point, penaltyAttempt, sudde
     };
 };
 
-export const PgxSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }) => (
+export const PgxSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, extra = null }) => (
     <div className={`${css.hud} ${css.sets_wrap}`}>
+        {extra}
         <div className={css.sets}>
             <span className={`${css.set} ${css.set_bo}`}>
                 <span className={css.set_label}>Best of</span>
@@ -560,6 +562,7 @@ export const PgxSets = ({ chips, bestOf, selectedIndex = null, onSelect = null }
                 );
             })}
         </div>
+        {extra ? cloneElement(extra, { ghost: true }) : null}
     </div>
 );
 
@@ -668,7 +671,7 @@ export function PgxScorebug({
 
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            {setsToWin > 1 ? <PgxSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} /> : null}
+            {setsToWin > 1 ? <PgxSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pgx" hud={css} seriesState={s} />} /> : null}
             <TopTab eventName={eventName} eventNumber={eventNumber} stageText={stageText} pemType={pemType} />
             <PgxBar
                 left={sideProps("left")}
