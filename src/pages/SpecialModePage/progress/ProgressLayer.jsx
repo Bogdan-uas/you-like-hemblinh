@@ -220,7 +220,7 @@ function AchievementPop({ gain }) {
     );
 }
 
-function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chipRefs }) {
+function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chipRefs, allAtOnce }) {
     const { progress, ui } = useProgress();
     const runningRef = useRef(null);
     const closeTimerRef = useRef(null);
@@ -258,8 +258,15 @@ function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chi
                 const chips = aggregateGains(item.gains).slice(-6);
                 setChips(chips.map((chip) => ({ ...chip, state: "wait" })));
                 await wait(260 / speed);
+                if (allAtOnce && chips.length > 1) {
+                    setChips((list) => list.map((c) => ({ ...c, state: "fly" })));
+                    const to = barTargetOf(barRef.current, item.fromXp);
+                    await Promise.all(chips.map((chip, i) => flyToken({ from: centerOf(chipRefs.current[i]), to, text: `+${formatXp(chip.xp)} XP`, duration: 0.55 / speed })));
+                    await tweenXp(xpMV, item.fromXp, item.toXp, { speed });
+                    setChips((list) => list.map((c) => ({ ...c, state: "done" })));
+                }
                 let cursor = item.fromXp;
-                for (let i = 0; i < chips.length; i++) {
+                for (let i = 0; i < chips.length && !(allAtOnce && chips.length > 1); i++) {
                     setChips((list) => list.map((c, j) => (j === i ? { ...c, state: "fly" } : c)));
                     const from = centerOf(chipRefs.current[i]);
                     await flyToken({ from, to: barTargetOf(barRef.current, cursor), text: `+${formatXp(chips[i].xp)} XP`, duration: 0.55 / speed });
@@ -293,7 +300,7 @@ function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chi
 
 export function ProgressLayer() {
     const { progress, ui } = useProgress();
-    const { closeWithEscape } = useSpecialModeSettings();
+    const { closeWithEscape, xpAllAtOnce } = useSpecialModeSettings();
     const xpMV = useMotionValue(ui.displayXp);
     const level = useLevelOf(xpMV);
     const [widget, setWidget] = useState(false);
@@ -336,7 +343,7 @@ export function ProgressLayer() {
         return () => window.removeEventListener("keydown", onKey);
     }, [ui.screen, closeWithEscape]);
 
-    useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chipRefs });
+    useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chipRefs, allAtOnce: xpAllAtOnce });
 
     return (
         <>

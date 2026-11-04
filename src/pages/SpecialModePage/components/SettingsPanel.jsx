@@ -593,6 +593,18 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                             </div>
 
                             <div className={css.settings_divider} />
+                            <h3 className={css.settings_section_title}>Level & XP</h3>
+                            <div className={css.settings_row}>
+                                <SettingsSwitch
+                                    id="settings-xp-all-at-once"
+                                    label="All XP sources at once"
+                                    hint="After a series, every XP source flies into the bar at the same time instead of one after another."
+                                    checked={settings.xpAllAtOnce}
+                                    onChange={update("xpAllAtOnce")}
+                                />
+                            </div>
+
+                            <div className={css.settings_divider} />
                             <h3 className={css.settings_section_title}>Winners&apos; Screen</h3>
                             <div className={css.settings_row}>
                                 <SettingsSwitch

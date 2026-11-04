@@ -1014,6 +1014,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <br />• <b>Commentary notifications</b>: turn them off to hide the play-by-play notifications, like "Second Half begins" (the warnings will still be shown)
                 <br />• <b>Smooth scrolling</b>: turn it off, if you prefer the instant, normal mouse wheel scrolling
                 <br />• <b>Series opening</b>: plays a short intro with both teams, every time a series starts. When it&apos;s off, the scoreboard just makes a quick entrance instead
+                <br />• <b>All XP sources at once</b>: after a series, every XP source on the XP card flies into the level bar at the same time, instead of one after another (more on the XP card in{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP and Achievements</a>)
                 <br />• <b>Skip the podium reveal</b>: the Winners&apos; Screen shows the whole Top 4 at once instead of revealing them one by one
                 <br />• <b>Winners&apos; Screen effects</b>: the rays, sparkles and confetti around the podium
             </p>
@@ -1558,7 +1560,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% chip next to the BEST OF badge" />
             <p className={css.info_text}>
-                Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another, like "Series played", "Pick&apos;em points", "Grand Final", "Overtimes" or the "Daily warm-up" for the first series of the day.
+                Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another (or all of them at once with the "All XP sources at once" setting), like "Series played", "Pick&apos;em points", "Grand Final", "Overtimes" or the "Daily warm-up" for the first series of the day.
                 And when the bar is full, the circle pops with a golden wave and a rising "LEVEL UP!":
             </p>
             <LevelShot n={3} alt="The XP card after the Grand Final with its XP chips and the LEVEL UP! effect on the level circle" />

@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = {
     podiumEffects: true,
     skipPodiumReveal: false,
     broadcastIntro: true,
+    xpAllAtOnce: false,
     simulateEnabled: true,
     simulateMode: "set",
     simulateSpeed: 1,
