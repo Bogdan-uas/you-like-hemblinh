@@ -1551,15 +1551,27 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 The level isn&apos;t only a number, though. Every few levels unlock a <b>level benefit</b>, and all of them are about the Pick&apos;em (and the XP itself), so the matches themselves are never touched.
                 The most important one is the <b>Pick&apos;em Insurance</b>, which comes at Level 5. In every match window of a Best of 3 or longer, there is a button "Pick&apos;em Insurance off · 1 left" below the "Start" button, and a click switches it on.
-                If my insured pick loses, the insurance wins back a share of the Pick&apos;em points, which I&apos;ve missed (50% at first, rounded down, and more with higher levels). If that share is 0, because my team already took enough sets, the insurance comes back to me. And if my insured pick wins, it&apos;s used up anyway.
-                Below it, the "Level bonuses" line tells, which extra Pick&apos;em points this match can still give me (for example +1 for a comeback, a sweep, an Overtime or a knockout match). But only the biggest of them counts on a pick, and all the bonus points of a tournament together can&apos;t be more than a share of the needed Pick&apos;em points (5% from Level 6 on, up to 25% at Level 1000), so the line also tells how many of them are still left.
-                That way, the bonuses help a bit, but the Pick&apos;em challenge stays a challenge. Here, in the Grand Final, I insured my pick on Team Indigo:
+                If my insured pick loses, the insurance wins back a share of the Pick&apos;em points, which I&apos;ve missed (50% at first, rounded down, and more with higher levels). If that share is 0, because my team already took enough sets, the insurance comes back to me. And if my insured pick wins, the insurance wasn&apos;t needed, but it&apos;s used up anyway.
+                Below it, there are the <b>level bonuses</b>, which this match can give (for example +1 for a comeback, a sweep, an Overtime or a knockout match). Just like the insurance, they are toggles: for every pick, I can choose one of them (or none).
+                Only the bonuses, which can really happen in this match, are there: the Knockout bonus only in a match, whose loser is out, the Upset bonus only when my chosen team has 35% or less predicted, the Sweep, Comeback and Decider bonuses only from a Best of 3 on, and so on.
+                If my pick wins and the chosen bonus gets activated in the match (a comeback, for example, needs my team to lose the first set), it gives me its extra Pick&apos;em points. If it doesn&apos;t get activated, or my pick loses, the bonus is lost.
+                All the bonus points of a tournament together can&apos;t be more than a share of the needed Pick&apos;em points (5% from Level 6 on, up to 25% at Level 1000), and the line above the toggles tells how many of them are still left. It doesn&apos;t matter which bonuses they come from, so I could even spend all of them on the same kind of bonus.
+                That way, the bonuses are a small choice of their own, but the Pick&apos;em challenge stays a challenge. Here, in the Grand Final, I insured my pick on Team Indigo and chose the Comeback bonus:
             </p>
-            <LevelShot n={1} alt="Match modal of the Grand Final with the Pick'em Insurance switched on and the level bonuses below it" width="35vw" />
+            <LevelShot n={1} alt="Match modal of the Grand Final with the Pick'em Insurance switched on and the Comeback bonus chosen" width="35vw" />
             <p className={css.info_text}>
-                Every HUD shows the insurance as its own chip next to the "BEST OF" badge, here "INSURED 50%". When the series is over, the chip tells what happened: "+2" for the points it has won back, "Returned" or "Used":
+                Every HUD shows the insurance and the chosen bonus as their own chips next to the "BEST OF" badge (even in a Best of 1, if a bonus is chosen), here "INSURED 50%" and "COMEBACK +1":
             </p>
-            <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% chip next to the BEST OF badge" />
+            <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% and COMEBACK +1 chips next to the BEST OF badge" />
+            <p className={css.info_text}>
+                When the series is over, the chips tell what happened. The insurance shows "+2" for the points it has won back, "Returned" or, if my pick has won, a grey "Not needed". The bonus shows its points, if it got activated, or a grey "Lost".
+                Team Indigo won the Grand Final 5:4, but it won the very first set as well, so there was no comeback and the Comeback bonus was lost:
+            </p>
+            <LevelShot n={11} alt="The end of the Grand Final: Insurance Not needed and Comeback Lost" />
+            <p className={css.info_text}>
+                And it stays visible later as well: the match modal and the last set in the Detailed Match Results show the grey "Not needed" insurance and the crossed-out bonus, which wasn&apos;t activated, right above the Pick&apos;em points:
+            </p>
+            <LevelShot n={12} alt="Match modal of the finished Grand Final with the Not needed insurance and the crossed-out Comeback bonus" width="26vw" />
             <p className={css.info_text}>
                 Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another (or all of them at once with the "All XP sources at once" setting), like "Series played", "Pick&apos;em points", "Grand Final", "Overtimes" or the "Daily warm-up" for the first series of the day.
                 And when the bar is full, the circle pops with a golden wave and a rising "LEVEL UP!":

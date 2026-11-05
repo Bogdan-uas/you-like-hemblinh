@@ -18,6 +18,7 @@ import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, Tier15Meda
 import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { PickPerksStrip } from "../progress/PickPerksStrip.jsx";
+import { isKnockoutContext } from "../progress/progressConfig.js";
 import { PickBonusBadges } from "../progress/HudPerks.jsx";
 import pcss from "../progress/Progress.module.css";
 import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
@@ -273,7 +274,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             <BestOfBadge bestOf={modalBestOf} size={16} onColor={isPlayedModal} style={{ marginTop: -2, marginBottom: 2, zIndex: 5 }} />
 
                             {isPlayedModal && pickemLabelText && (
-                                <span className={`${css.match_modal_pickem} ${pcss.pickem_stack}`} style={{ top: "auto", bottom: 3 }}>
+                                <span className={`${css.match_modal_pickem} ${pcss.pickem_stack} ${pcss.pickem_stack_modal}`} style={{ top: "auto", bottom: 3 }}>
                                     {pickemBonuses.length ? (
                                         <span className={pcss.bonus_row}>
                                             <PickBonusBadges bonuses={pickemBonuses} />
@@ -877,7 +878,12 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     >
                                         {stageLabel}
                                     </button>
-                                    <PickPerksStrip stage={modalContext.stage} bestOf={modalBestOf} knockout={!["swiss", "gccLeague", "cstGroup"].includes(modalContext.type)} />
+                                    <PickPerksStrip
+                                        stage={modalContext.stage}
+                                        bestOf={modalBestOf}
+                                        knockout={isKnockoutContext(modalContext)}
+                                        pickChance={hasChosen ? prediction.leftWinProbability : null}
+                                    />
                                 </div>
                             </>
                         );

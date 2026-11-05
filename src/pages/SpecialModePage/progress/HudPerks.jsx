@@ -1,61 +1,66 @@
-import { FaShieldHalved } from "react-icons/fa6";
+import { FaShieldHalved, FaStar, FaXmark } from "react-icons/fa6";
 import css from "./Progress.module.css";
 import page from "../SpecialModePage.module.css";
-import { insurancePayout } from "./progressConfig.js";
+import { BONUS_OPTIONS, insurancePayout } from "./progressConfig.js";
 import { basePickemPoints } from "./progressEngine.js";
+import { bonusConditionMet } from "./pickPerks.js";
 import { useProgress } from "./progressStore.js";
+import { getLiveSetResult, getSetResultWinner } from "../logic/series.js";
+
+const BONUS_LABELS = Object.fromEntries(BONUS_OPTIONS.map((option) => [option.type, option.label]));
+const BONUS_WHEN = Object.fromEntries(BONUS_OPTIONS.map((option) => [option.type, option.when]));
+
+const seriesWon = (seriesState) => !seriesState.banner.tie && (seriesState.playerWonSets ?? 0) > (seriesState.playerLostSets ?? 0);
 
 const insuranceOutcome = (pick, seriesState) => {
-    const banner = seriesState?.banner;
-    if (!banner) return null;
-    const won = !banner.tie && (seriesState.playerWonSets ?? 0) > (seriesState.playerLostSets ?? 0);
-    if (won) return { kind: "used", label: "Insurance", value: "Used" };
+    if (!seriesState?.banner) return null;
+    if (seriesWon(seriesState)) return { kind: "used", label: "Insurance", value: "Not needed" };
     const base = basePickemPoints(pick.bestOf, false, seriesState.playerWonSets ?? 0);
     const payout = insurancePayout(pick.bestOf, base, pick.insurePct);
     return payout > 0 ? { kind: "paid", label: "Insured", value: `+${payout}` } : { kind: "returned", label: "Insurance", value: "Returned" };
 };
 
-export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
-    const { progress } = useProgress();
-    const pick = progress.activePick;
-    if (!pick?.insured) return null;
-    const outcome = insuranceOutcome(pick, seriesState);
-    const label = outcome?.label ?? "Insured";
-    const value = outcome?.value ?? `${pick.insurePct}%`;
-    const tone = `${outcome ? css[`hud_insured_${outcome.kind}`] : ""} ${ghost ? css.hud_ghost : ""} ${variant === "pgx" ? css.hud_insured_pgx : ""}`;
-    const title = ghost ? undefined : outcome?.kind === "paid"
-        ? `Your Pick'em Insurance wins back ${outcome.value.slice(1)} Pick'em point${outcome.value === "+1" ? "" : "s"}`
-        : outcome?.kind === "returned"
-            ? "Your won sets already gave all the points the insurance could give, so it comes back to you"
-            : outcome?.kind === "used"
-                ? "Your pick won, so the Pick'em Insurance is used up"
-                : `Pick'em Insurance: if this pick loses, it wins back ${pick.insurePct}% of the Pick'em points it missed`;
+const playedSets = (seriesState) =>
+    [...(seriesState.finishedSets || []), getLiveSetResult(seriesState)]
+        .filter(Boolean)
+        .filter((set, i, list) => list.findIndex((x) => x.set === set.set) === i)
+        .map((set) => ({ won: getSetResultWinner(set) === "left", left: set.leftScore ?? 0, right: set.rightScore ?? 0 }));
+
+const bonusOutcome = (pick, seriesState) => {
+    if (!seriesState?.banner) return null;
+    if (!seriesWon(seriesState)) return { kind: "lost", value: "Lost" };
+    const sets = playedSets(seriesState);
+    const met = bonusConditionMet(pick.bonus, {
+        bestOf: pick.bestOf,
+        setsWon: sets.map((set) => set.won),
+        setScores: sets.map((set) => ({ left: set.left, right: set.right })),
+        ready: pick.bonusReady,
+    });
+    const amount = met ? Math.min(pick.bonusValue || 0, pick.bonusLeft ?? 0) : 0;
+    return amount > 0 ? { kind: "paid", value: `+${amount}` } : { kind: "lost", value: "Lost" };
+};
+
+function HudChip({ variant, hud, ghost, label, value, icon, tone, title }) {
+    const toneClass = `${tone ? css[`hud_insured_${tone}`] ?? "" : ""} ${ghost ? css.hud_ghost : ""} ${variant === "pgx" ? css.hud_insured_pgx : ""}`;
+    const Icon = icon;
 
     if (variant === "official") {
         return (
-            <span className={`${page.best_of_badge} ${css.hud_insured_official} ${tone}`} title={title} aria-hidden={ghost || undefined}>
+            <span className={`${page.best_of_badge} ${css.hud_insured_official} ${toneClass}`} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
                 <span className={page.best_of_badge_label}>{label}</span>
                 <span key={value} className={`${page.best_of_badge_value} ${css.hud_insured_value}`}>
-                    <FaShieldHalved aria-hidden="true" />
+                    <Icon aria-hidden="true" />
                     {value}
                 </span>
             </span>
         );
     }
 
-    if (variant === "pem") {
+    if (variant === "pem" || variant === "ess") {
+        const base = variant === "pem" ? `${hud.chip} ${hud.chip_bo}` : `${hud.set} ${hud.set_bo}`;
         return (
-            <span className={`${hud.chip} ${hud.chip_bo} ${css.hud_insured} ${tone}`} title={title} aria-hidden={ghost || undefined}>
-                <FaShieldHalved aria-hidden="true" className={css.hud_insured_icon} />
-                <span key={value} className={css.hud_insured_value}>{value}</span>
-            </span>
-        );
-    }
-
-    if (variant === "ess") {
-        return (
-            <span className={`${hud.set} ${hud.set_bo} ${css.hud_insured} ${tone}`} title={title} aria-hidden={ghost || undefined}>
-                <FaShieldHalved aria-hidden="true" className={css.hud_insured_icon} />
+            <span className={`${base} ${css.hud_insured} ${toneClass}`} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
+                <Icon aria-hidden="true" className={css.hud_insured_icon} />
                 <span key={value} className={css.hud_insured_value}>{value}</span>
             </span>
         );
@@ -65,17 +70,77 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
         <>
             <span className={hud.set_label}>{label}</span>
             <span key={value} className={`${hud.set_value} ${css.hud_insured_value}`}>
-                <FaShieldHalved aria-hidden="true" className={css.hud_insured_icon} />
+                <Icon aria-hidden="true" className={css.hud_insured_icon} />
                 {value}
             </span>
         </>
     );
 
     return (
-        <span className={`${hud.set} ${hud.set_bo} ${css.hud_insured} ${tone}`} title={title} aria-hidden={ghost || undefined}>
+        <span className={`${hud.set} ${hud.set_bo} ${css.hud_insured} ${toneClass}`} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
             {variant === "cst" ? <span className={hud.set_inner}>{inner}</span> : inner}
         </span>
     );
+}
+
+export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
+    const { progress } = useProgress();
+    const pick = progress.activePick;
+    if (!pick?.insured && !pick?.bonus) return null;
+    const chips = [];
+
+    if (pick.insured) {
+        const outcome = insuranceOutcome(pick, seriesState);
+        const value = outcome?.value ?? `${pick.insurePct}%`;
+        chips.push(
+            <HudChip
+                key="insurance"
+                variant={variant}
+                hud={hud}
+                ghost={ghost}
+                label={outcome?.label ?? "Insured"}
+                value={value}
+                icon={FaShieldHalved}
+                tone={outcome?.kind}
+                title={
+                    outcome?.kind === "paid"
+                        ? `Your Pick'em Insurance wins back ${value.slice(1)} Pick'em point${value === "+1" ? "" : "s"}`
+                        : outcome?.kind === "returned"
+                            ? "Your won sets already gave all the points the insurance could give, so it comes back to you"
+                            : outcome?.kind === "used"
+                                ? "Your pick won, so the Pick'em Insurance wasn't needed and is used up"
+                                : `Pick'em Insurance: if this pick loses, it wins back ${pick.insurePct}% of the Pick'em points it missed`
+                }
+            />,
+        );
+    }
+
+    if (pick.bonus) {
+        const outcome = bonusOutcome(pick, seriesState);
+        const name = BONUS_LABELS[pick.bonus] ?? "Bonus";
+        const amount = Math.min(pick.bonusValue || 0, pick.bonusLeft ?? 0);
+        chips.push(
+            <HudChip
+                key="bonus"
+                variant={variant}
+                hud={hud}
+                ghost={ghost}
+                label={name}
+                value={outcome?.value ?? `+${amount}`}
+                icon={outcome?.kind === "lost" ? FaXmark : FaStar}
+                tone={outcome?.kind === "paid" ? "paid" : outcome?.kind === "lost" ? "returned" : null}
+                title={
+                    outcome?.kind === "paid"
+                        ? `Your ${name} bonus is activated: ${outcome.value} Pick'em point${outcome.value === "+1" ? "" : "s"}`
+                        : outcome?.kind === "lost"
+                            ? `Your ${name} bonus wasn't activated in this match, so it is lost`
+                            : `${name} bonus: +${amount}, if ${BONUS_WHEN[pick.bonus] ?? "it is activated"}`
+                }
+            />,
+        );
+    }
+
+    return variant === "ess" || variant === "cst" ? <span className={`${css.hud_insured_stack} ${ghost ? css.hud_ghost : ""}`}>{chips}</span> : chips;
 }
 
 const findCut = (progress, value) =>
@@ -95,6 +160,7 @@ export function NeededPerkTag({ value, cut = null, fallback = true }) {
 const BONUS_INFO = {
     insurance: ["Insurance", "Pick'em Insurance: your insured pick lost, so it won back a share of the points it missed"],
     insuranceReturned: ["Insurance returned", "Pick'em Insurance: your won sets already gave every point it could win back, so it came back to you"],
+    insuranceUnused: ["Not needed", "Pick'em Insurance: your insured pick won, so the insurance wasn't needed and is used up"],
     gfBonus: ["Grand Final", "Level benefit: Grand Final bonus for a correct Grand Final pick"],
     upsetBonus: ["Upset", "Level benefit: upset bonus for a correct pick with 35% or less predicted"],
     longShotBonus: ["Long shot", "Level benefit: long shot bonus for a correct pick with 15% or less predicted"],
@@ -107,14 +173,34 @@ const BONUS_INFO = {
     longSeriesBonus: ["Long series", "Level benefit: long series bonus for a correct pick in a Best of 5 or longer"],
 };
 
+const MISSED_REASONS = {
+    lost: "your pick lost",
+    condition: "it wasn't activated in this match",
+    cap: "the bonus cap of this tournament was already reached",
+};
+
 export function PickBonusBadges({ bonuses }) {
     if (!bonuses?.length) return null;
     return bonuses.map((bonus, i) => {
+        if (bonus.type === "bonusMissed") {
+            const name = BONUS_INFO[bonus.bonus]?.[0] ?? "Bonus";
+            return (
+                <span
+                    key={`${bonus.type}-${i}`}
+                    className={`${page.breakdown_pickem_pill} ${css.bonus_pill} ${css.bonus_pill_muted} ${css.bonus_pill_missed}`}
+                    title={`Your chosen ${name} bonus is lost: ${MISSED_REASONS[bonus.reason] ?? MISSED_REASONS.condition}`}
+                >
+                    <FaXmark aria-hidden="true" />
+                    {name}
+                </span>
+            );
+        }
         const [label, title] = BONUS_INFO[bonus.type] ?? [bonus.type, ""];
+        const muted = bonus.type === "insuranceReturned" || bonus.type === "insuranceUnused";
         return (
             <span
                 key={`${bonus.type}-${i}`}
-                className={`${page.breakdown_pickem_pill} ${css.bonus_pill} ${bonus.type === "insuranceReturned" ? css.bonus_pill_muted : ""}`}
+                className={`${page.breakdown_pickem_pill} ${css.bonus_pill} ${muted ? css.bonus_pill_muted : ""}`}
                 title={title}
             >
                 {bonus.type.startsWith("insurance") ? <FaShieldHalved aria-hidden="true" /> : null}

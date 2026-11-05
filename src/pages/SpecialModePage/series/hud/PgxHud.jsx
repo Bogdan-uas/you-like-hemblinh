@@ -5,6 +5,7 @@ import { FaCaretLeft, FaCaretRight, FaCrown, FaFire } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Pgx.module.css";
 import { HudInsurance } from "../../progress/HudPerks.jsx";
+import { useHudPerksShown } from "../../progress/progressStore.js";
 import pem from "./PemHud.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
@@ -606,6 +607,7 @@ export function PgxScorebug({
     overtimeToWin,
     entrance = false,
 }) {
+    const perksShown = useHudPerksShown();
     const s = seriesState;
     const preview = useOtMorphPreview(s, MORPH_MS);
     const view = preview ? otPreviewState(s) : s;
@@ -671,7 +673,7 @@ export function PgxScorebug({
 
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            {setsToWin > 1 ? <PgxSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pgx" hud={css} seriesState={s} />} /> : null}
+            {setsToWin > 1 || perksShown ? <PgxSets chips={setsToWin > 1 ? buildPemSetChips(s) : []} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pgx" hud={css} seriesState={s} />} /> : null}
             <TopTab eventName={eventName} eventNumber={eventNumber} stageText={stageText} pemType={pemType} />
             <PgxBar
                 left={sideProps("left")}

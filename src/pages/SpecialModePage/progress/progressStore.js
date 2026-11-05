@@ -9,6 +9,7 @@ import {
     UPSET_CHANCE,
     applyNeededPerk,
     bonusCapPoints,
+    bonusOptionsFor,
     bonusPointsUsed,
     levelInfo,
     perksForLevel,
@@ -33,7 +34,7 @@ const write = (key, value) => {
 };
 
 let progress = normalizeProgress(read(PROGRESS_LS_KEY));
-let ui = { displayXp: progress.xp, queue: [], screen: null, summary: null, catchUp: null, insuranceArmed: false, lastPick: null };
+let ui = { displayXp: progress.xp, queue: [], screen: null, summary: null, catchUp: null, insuranceArmed: false, bonusArmed: null, lastPick: null };
 let snapshot = { progress, ui };
 const listeners = new Set();
 let queueKey = 0;
@@ -60,6 +61,11 @@ export const subscribeProgress = (listener) => {
 export const getProgress = () => snapshot;
 
 export const useProgress = () => useSyncExternalStore(subscribeProgress, getProgress);
+
+export const useHudPerksShown = () => {
+    const { progress: state } = useProgress();
+    return !!(state.activePick?.insured || state.activePick?.bonus);
+};
 
 const enqueue = (fromXp, gains) => {
     const plain = gains.filter((g) => g.source !== "achievement");
@@ -130,7 +136,14 @@ export const progressSetInsuranceArmed = (armed) => {
     publish();
 };
 
-const PICK_PERK_KEYS = ["insured", "insurePct", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
+export const progressSetBonusArmed = (type) => {
+    setUi({ bonusArmed: type || null });
+    publish();
+};
+
+export const streakReadyNext = (state = progress) => ((state.stats.streak ?? 0) + 1) % STREAK_STEP === 0;
+
+const PICK_PERK_KEYS = ["insured", "insurePct", "bonusMode", "bonus", "bonusValue", "bonusReady", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
 
 export const progressSetNeeded = (points) => {
     const needed = Number.isFinite(points) ? points : null;
@@ -145,11 +158,13 @@ export const progressBonusCap = (state = progress, needed = ui.needed) => {
     return { pct, cap, left: Math.max(0, cap - bonusPointsUsed(state.event)) };
 };
 
-export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, roundKey = null, knockout = false, needed = ui.needed }) => {
+export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, roundKey = null, knockout = false, elimination = knockout, needed = ui.needed }) => {
     const perks = currentPerks();
-    const cap = progressBonusCap(progress, needed);
-    const insured = ui.insuranceArmed && insuranceLeft() > 0 && bestOf >= INSURANCE_MIN_BEST_OF;
     const known = Number.isFinite(chance);
+    const cap = progressBonusCap(progress, needed);
+    const options = bonusOptionsFor({ perks, stage, bestOf, knockout: elimination, streakReady: streakReadyNext(), chance: known ? chance : null });
+    const chosen = cap.left > 0 ? options.find((option) => option.type === ui.bonusArmed) ?? null : null;
+    const insured = ui.insuranceArmed && insuranceLeft() > 0 && bestOf >= INSURANCE_MIN_BEST_OF;
     const pick = {
         chance: known ? chance : null,
         stage: stage ?? null,
@@ -159,23 +174,17 @@ export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, 
         knockout,
         insured,
         insurePct: insured ? perks.insurePct || 50 : 0,
-        gfBonus: stage === "gf" ? perks.gfBonus : 0,
-        upsetBonus: known && chance <= UPSET_CHANCE ? perks.upsetBonus : 0,
-        longShotBonus: known && chance <= LONG_SHOT_CHANCE ? perks.longShotBonus : 0,
-        streakBonus: ((progress.stats.streak ?? 0) + 1) % STREAK_STEP === 0 ? perks.streakBonus : 0,
-        comebackBonus: bestOf >= 3 ? perks.comebackBonus : 0,
-        sweepBonus: bestOf >= 3 ? perks.sweepBonus : 0,
-        overtimeBonus: perks.overtimeBonus,
-        deciderBonus: bestOf >= 3 ? perks.deciderBonus : 0,
-        knockoutBonus: knockout ? perks.knockoutBonus : 0,
-        longSeriesBonus: bestOf >= 5 ? perks.longSeriesBonus : 0,
+        bonusMode: "pick",
+        bonus: chosen?.type ?? null,
+        bonusValue: chosen?.value ?? 0,
+        bonusReady: chosen ? (chosen.type === "upsetBonus" ? known && chance <= UPSET_CHANCE : chosen.type === "longShotBonus" ? known && chance <= LONG_SHOT_CHANCE : true) : false,
         bonusCap: cap.cap,
         bonusLeft: cap.left,
     };
     let next = ensureEvent(progress);
     if (insured) next = { ...next, event: { ...next.event, insuranceUsed: (next.event.insuranceUsed ?? 0) + 1 } };
     setProgress({ ...next, activePick: pick });
-    setUi({ insuranceArmed: false, lastPick: null });
+    setUi({ insuranceArmed: false, bonusArmed: null, lastPick: null });
     publish();
     return Object.fromEntries(PICK_PERK_KEYS.filter((key) => pick[key]).map((key) => [key, pick[key]]));
 };

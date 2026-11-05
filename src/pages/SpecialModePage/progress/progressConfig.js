@@ -356,14 +356,49 @@ export const perkLines = (set) => [
     set.streakShield && `Streak Shield: ${set.streakShield} wrong ${s(set.streakShield, "pick")} per tournament won't break your pick streak`,
     set.overtimeBonus && `+${set.overtimeBonus} Pick'em ${s(set.overtimeBonus, "point")}, when your pick wins a series with an Overtime`,
     set.deciderBonus && `+${set.deciderBonus} Pick'em ${s(set.deciderBonus, "point")}, when your pick wins a series that goes to its last possible set`,
-    set.knockoutBonus && `+${set.knockoutBonus} Pick'em ${s(set.knockoutBonus, "point")} for every correct pick in a knockout match`,
+    set.knockoutBonus && `+${set.knockoutBonus} Pick'em ${s(set.knockoutBonus, "point")} for every correct pick in a knockout match (its loser is out)`,
     set.longSeriesBonus && `+${set.longSeriesBonus} Pick'em ${s(set.longSeriesBonus, "point")} for a correct pick in a Best of 5 or longer`,
-    set.bonusCap && `Bonus Pick'em points: up to ${set.bonusCap}% of the needed ones per tournament (only the biggest bonus counts on a pick)`,
+    set.bonusCap && `Bonus Pick'em points: up to ${set.bonusCap}% of the needed ones per tournament (you choose one bonus for each pick)`,
     set.xpBoost && `+${set.xpBoost}% XP from every series and tournament`,
     set.achievementBoost && `+${set.achievementBoost}% XP from achievements`,
 ].filter(Boolean);
 
 export const BONUS_PERK_TYPES = ["gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
+
+export const BONUS_OPTIONS = [
+    { type: "gfBonus", label: "Grand Final", when: "your pick wins the Grand Final" },
+    { type: "upsetBonus", label: "Upset", when: `your pick has ${Math.round(UPSET_CHANCE * 100)}% or less predicted and still wins` },
+    { type: "longShotBonus", label: "Long shot", when: `your pick has ${Math.round(LONG_SHOT_CHANCE * 100)}% or less predicted and still wins` },
+    { type: "streakBonus", label: "Streak", when: `your pick wins and it is your ${STREAK_STEP}th correct pick in a row` },
+    { type: "comebackBonus", label: "Comeback", when: "your pick wins after losing the first set" },
+    { type: "sweepBonus", label: "Sweep", when: "your pick wins without losing a set" },
+    { type: "overtimeBonus", label: "Overtime", when: "your pick wins a series with an Overtime" },
+    { type: "deciderBonus", label: "Decider", when: "your pick wins in the last possible set" },
+    { type: "knockoutBonus", label: "Knockout", when: "your pick wins this knockout match" },
+    { type: "longSeriesBonus", label: "Long series", when: "your pick wins this Best of 5 or longer" },
+];
+
+const NON_KNOCKOUT_CONTEXTS = ["swiss", "gccLeague", "cstGroup"];
+const UPPER_BRACKET_STAGES = ["uo", "uqf", "usf", "uf"];
+
+export const isKnockoutContext = (context) => {
+    if (!context || NON_KNOCKOUT_CONTEXTS.includes(context.type)) return false;
+    if (context.type === "skyline") return context.round === "roof";
+    return !UPPER_BRACKET_STAGES.includes(context.stage);
+};
+
+export const bonusOptionsFor = ({ perks, stage = null, bestOf = 1, knockout = false, streakReady = false, chance = null }) =>
+    BONUS_OPTIONS.filter((option) => {
+        if (!(perks?.[option.type] > 0)) return false;
+        if (option.type === "gfBonus") return stage === "gf";
+        if (option.type === "upsetBonus") return Number.isFinite(chance) && chance <= UPSET_CHANCE;
+        if (option.type === "longShotBonus") return Number.isFinite(chance) && chance <= LONG_SHOT_CHANCE;
+        if (option.type === "streakBonus") return streakReady;
+        if (["comebackBonus", "sweepBonus", "deciderBonus"].includes(option.type)) return bestOf >= 3;
+        if (option.type === "knockoutBonus") return knockout;
+        if (option.type === "longSeriesBonus") return bestOf >= 5;
+        return true;
+    }).map((option) => ({ ...option, value: perks[option.type] }));
 
 export const bonusCapPoints = (needed, pct) => (pct && Number.isFinite(needed) && needed > 0 ? Math.max(1, Math.round((needed * pct) / 100)) : 0);
 

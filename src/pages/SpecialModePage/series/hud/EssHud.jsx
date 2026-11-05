@@ -6,6 +6,7 @@ import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Ess.module.css";
 import pcss from "../../progress/Progress.module.css";
 import { HudInsurance } from "../../progress/HudPerks.jsx";
+import { useHudPerksShown } from "../../progress/progressStore.js";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
 import { readableOnDark, getBrightness } from "../../logic/colors.js";
@@ -654,6 +655,7 @@ export function EssScorebug({
     trophy = null,
     lite = false,
 }) {
+    const perksShown = useHudPerksShown();
     const s = seriesState;
     const preview = useOtMorphPreview(s, MORPH_MS);
     const view = preview ? otPreviewState(s) : s;
@@ -714,7 +716,7 @@ export function EssScorebug({
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""} ${lite ? css.lite : ""}`}>
             <Top eventName={eventName} eventNumber={eventNumber} stageText={stageText} mark={mark} trophy={trophy} />
-            {setsToWin > 1 ? <EssSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="ess" hud={css} seriesState={s} />} /> : null}
+            {setsToWin > 1 || perksShown ? <EssSets chips={setsToWin > 1 ? buildPemSetChips(s) : []} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="ess" hud={css} seriesState={s} />} /> : null}
             <EssBar
                 left={sideProps("left")}
                 right={sideProps("right")}

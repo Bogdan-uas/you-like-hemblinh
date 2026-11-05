@@ -221,6 +221,7 @@ import {
 import { readHallOfFame, saveHallTournament as writeHallTournament, sortHallOfFame } from "./logic/hallOfFameDb.js";
 import { ProgressLayer } from "./progress/ProgressLayer.jsx";
 import { applyPickPerks, pickBonusesOf, pickPerkBreakdown } from "./progress/pickPerks.js";
+import { isKnockoutContext } from "./progress/progressConfig.js";
 import {
     progressApplyNeededPerk as perkNeeded,
     progressBuildPickPerks,
@@ -3298,6 +3299,7 @@ function SpecialModeContent() {
             bestOf: modalBestOf,
             roundKey: `${modalContext.type}|${modalContext.group ?? ""}|${modalContext.section ?? ""}|${modalContext.stage ?? modalContext.net ?? ""}`,
             knockout: !["swiss", "gccLeague", "cstGroup"].includes(modalContext.type),
+            elimination: isKnockoutContext(modalContext),
             needed: neededPickemPoints,
         });
 

@@ -5,6 +5,7 @@ import { FaCaretLeft, FaCaretRight, FaCrown } from "react-icons/fa";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Pbs.module.css";
 import { HudInsurance } from "../../progress/HudPerks.jsx";
+import { useHudPerksShown } from "../../progress/progressStore.js";
 import pem from "./PemHud.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
@@ -481,6 +482,7 @@ export function PbsScorebug({
     entrance = false,
     ready = true,
 }) {
+    const perksShown = useHudPerksShown();
     const s = seriesState;
     const preview = useOtMorphPreview(s, MORPH_MS);
     const view = preview ? otPreviewState(s) : s;
@@ -548,7 +550,7 @@ export function PbsScorebug({
 
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            {setsToWin > 1 ? <PbsSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pbs" hud={css} seriesState={s} />} /> : null}
+            {setsToWin > 1 || perksShown ? <PbsSets chips={setsToWin > 1 ? buildPemSetChips(s) : []} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="pbs" hud={css} seriesState={s} />} /> : null}
             <div className={css.header}>
                 <span className={`${css.tile} ${css.header_event}`}>
                     {eventName}

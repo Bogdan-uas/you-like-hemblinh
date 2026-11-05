@@ -240,6 +240,7 @@ const PERK_LABELS = {
     knockoutBonus: "Knockout bonus",
     longSeriesBonus: "Long series bonus",
     insurance: "Pick'em Insurance",
+    bonusMissed: "Level bonus not activated",
 };
 
 export const perkUseLabel = (type) => PERK_LABELS[type] ?? type;
@@ -369,6 +370,7 @@ export const applySeries = (input, seriesInfo) => {
     if (!info.tie && info.bestOf >= 7 && low === 0 && top > 0) flags.add("cleanSweep");
 
     resolved.uses.forEach((use) => event.perkUses.push({ ...use, detail }));
+    (resolved.missed || []).forEach((miss) => event.perkUses.push({ type: "bonusMissed", bonus: miss.type, reason: miss.reason, points: 0, detail }));
     const bonusPoints = resolved.uses.filter((use) => use.type !== "insurance").reduce((sum, use) => sum + use.points, 0);
     stats.perkPoints += resolved.uses.reduce((sum, use) => sum + use.points, 0);
     stats.overtimeBonusPoints = (stats.overtimeBonusPoints ?? 0) + resolved.uses.filter((use) => use.type === "overtimeBonus").reduce((sum, use) => sum + use.points, 0);
@@ -408,7 +410,7 @@ export const applySeries = (input, seriesInfo) => {
         state: evaluated.state,
         gains: [...allGains, ...evaluated.gains],
         unlocked: evaluated.unlocked,
-        pick: { points, base, insurance: resolved.insurance, payout: resolved.payout, uses: resolved.uses },
+        pick: { points, base, insurance: resolved.insurance, payout: resolved.payout, uses: resolved.uses, missed: resolved.missed || [] },
     };
 };
 

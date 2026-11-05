@@ -2,10 +2,43 @@ import { insurancePayout } from "./progressConfig.js";
 
 const BONUS_KEYS = ["gfBonus", "upsetBonus", "longShotBonus", "streakBonus"];
 
+export const bonusConditionMet = (type, { bestOf = 1, setsWon = [], setScores = [], ready = false }) => {
+    if (type === "comebackBonus") return bestOf >= 3 && setsWon[0] === false;
+    if (type === "sweepBonus") return bestOf >= 3 && setsWon.length > 0 && setsWon.every(Boolean);
+    if (type === "overtimeBonus") return setScores.some((score) => Math.max(score.left ?? 0, score.right ?? 0) >= 16);
+    if (type === "deciderBonus") return bestOf >= 3 && setsWon.length >= bestOf;
+    return !!ready;
+};
+
+const resolveChosenBonus = ({ correct, bestOf, base, setsWon, setScores, perks }) => {
+    const uses = [];
+    const missed = [];
+    let points = base;
+    const type = perks.bonus || null;
+    if (correct) {
+        const met = type ? bonusConditionMet(type, { bestOf, setsWon, setScores, ready: perks.bonusReady }) : false;
+        const amount = met ? Math.min(perks.bonusValue || 0, perks.bonusLeft ?? 0) : 0;
+        if (amount > 0) {
+            points += amount;
+            uses.push({ type, points: amount });
+        } else if (type) {
+            missed.push({ type, reason: met ? "cap" : "condition" });
+        }
+        return { points, uses, missed, insurance: perks.insured ? "used" : null, payout: 0 };
+    }
+    if (type) missed.push({ type, reason: "lost" });
+    if (!perks.insured) return { points, uses, missed, insurance: null, payout: 0 };
+    const payout = insurancePayout(bestOf, base, perks.insurePct);
+    if (payout <= 0) return { points, uses, missed, insurance: "returned", payout: 0 };
+    uses.push({ type: "insurance", points: payout });
+    return { points: points + payout, uses, missed, insurance: "paid", payout };
+};
+
 export const resolvePickPerks = ({ correct, bestOf, base, setsWon = [], setScores = [], perks }) => {
     const uses = [];
     let points = base;
-    if (!perks) return { points, uses, insurance: null, payout: 0 };
+    if (!perks) return { points, uses, missed: [], insurance: null, payout: 0 };
+    if (perks.bonusMode === "pick") return resolveChosenBonus({ correct, bestOf, base, setsWon, setScores, perks });
     if (correct) {
         const earned = [];
         const add = (type, value) => {
@@ -30,13 +63,13 @@ export const resolvePickPerks = ({ correct, bestOf, base, setsWon = [], setScore
             points += use.points;
             uses.push(use);
         });
-        return { points, uses, insurance: perks.insured ? "used" : null, payout: 0 };
+        return { points, uses, missed: [], insurance: perks.insured ? "used" : null, payout: 0 };
     }
-    if (!perks.insured) return { points, uses, insurance: null, payout: 0 };
+    if (!perks.insured) return { points, uses, missed: [], insurance: null, payout: 0 };
     const payout = insurancePayout(bestOf, base, perks.insurePct);
-    if (payout <= 0) return { points, uses, insurance: "returned", payout: 0 };
+    if (payout <= 0) return { points, uses, missed: [], insurance: "returned", payout: 0 };
     uses.push({ type: "insurance", points: payout });
-    return { points: points + payout, uses, insurance: "paid", payout };
+    return { points: points + payout, uses, missed: [], insurance: "paid", payout };
 };
 
 const breakdowns = new WeakMap();
@@ -49,11 +82,18 @@ export const applyPickPerks = (match, points, fullPoints) => {
     const setsWon = history.map((entry) => !!entry.won);
     const setScores = history.map((entry) => ({ left: entry.wins ?? 0, right: entry.losses ?? 0 }));
     const resolved = resolvePickPerks({ correct, bestOf: fullPoints, base: points, setsWon, setScores, perks });
-    breakdowns.set(match, { base: points, uses: resolved.uses, insurance: resolved.insurance });
+    breakdowns.set(match, { base: points, uses: resolved.uses, missed: resolved.missed, insurance: resolved.insurance });
     return resolved.points;
 };
 
 export const pickPerkBreakdown = (match) => (match && typeof match === "object" ? breakdowns.get(match) ?? null : null);
 
 export const pickBonusesOf = (breakdown) =>
-    breakdown ? [...breakdown.uses, ...(breakdown.insurance === "returned" ? [{ type: "insuranceReturned", points: 0 }] : [])] : [];
+    breakdown
+        ? [
+            ...breakdown.uses,
+            ...(breakdown.insurance === "returned" ? [{ type: "insuranceReturned", points: 0 }] : []),
+            ...(breakdown.insurance === "used" ? [{ type: "insuranceUnused", points: 0 }] : []),
+            ...(breakdown.missed || []).map((miss) => ({ type: "bonusMissed", bonus: miss.type, reason: miss.reason, points: 0 })),
+        ]
+        : [];

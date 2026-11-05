@@ -2415,3 +2415,73 @@
         transform: scale(0.62);
     }
 }
+
+.bonus_picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.bonus_options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+.bonus_option.bonus_option {
+    padding: 4px 11px;
+    font-size: 12px;
+    transition: background-color 0.2s ease, color 0.2s ease, translate 0.2s ease;
+}
+
+.bonus_option.bonus_option:hover {
+    translate: 0 -2px;
+}
+
+.bonus_pill_missed.bonus_pill_missed {
+    opacity: 0.85;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+.hud_insured_used .hud_insured_icon,
+.hud_insured_returned .hud_insured_icon {
+    color: #a9acba;
+    filter: none;
+}
+
+.hud_insured_used:not(.hud_insured_official) .hud_insured_value,
+.hud_insured_returned:not(.hud_insured_official) .hud_insured_value {
+    opacity: 0.6;
+}
+
+.hud_insured_official.hud_insured_used .hud_insured_value,
+.hud_insured_official.hud_insured_returned .hud_insured_value {
+    background: linear-gradient(180deg, #eceef5 0%, #c9ccd8 100%);
+    color: #4b4f63;
+}
+
+.hud_insured_official.hud_insured_used .hud_insured_value svg,
+.hud_insured_official.hud_insured_returned .hud_insured_value svg {
+    color: #6b6f84;
+}
+
+.hud_insured_stack {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.hud_anchor > .hud_insured_stack {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 8px);
+    bottom: 0;
+}
+
+.pickem_stack_modal.pickem_stack_modal {
+    max-width: 38%;
+}

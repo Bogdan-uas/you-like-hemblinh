@@ -6,6 +6,7 @@ import { FaCheck, FaXmark } from "react-icons/fa6";
 import css from "./Cst.module.css";
 import pcss from "../../progress/Progress.module.css";
 import { HudInsurance } from "../../progress/HudPerks.jsx";
+import { useHudPerksShown } from "../../progress/progressStore.js";
 import pem from "./PemHud.module.css";
 import base from "../../SpecialModePage.module.css";
 import { isCheatTargeting } from "../../logic/secretCheats.js";
@@ -520,6 +521,7 @@ export function CstScorebug({
     overtimeToWin,
     entrance = false,
 }) {
+    const perksShown = useHudPerksShown();
     const s = seriesState;
     const preview = useOtMorphPreview(s, MORPH_MS);
     const view = preview ? otPreviewState(s) : s;
@@ -590,7 +592,7 @@ export function CstScorebug({
 
     return (
         <div className={`${css.hud} ${entrance ? css.entrance : ""}`}>
-            {setsToWin > 1 ? <CstSets chips={buildPemSetChips(s)} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="cst" hud={css} seriesState={s} />} /> : null}
+            {setsToWin > 1 || perksShown ? <CstSets chips={setsToWin > 1 ? buildPemSetChips(s) : []} bestOf={setsToWin * 2 - 1} extra={<HudInsurance variant="cst" hud={css} seriesState={s} />} /> : null}
             <Top eventName={eventName} eventNumber={eventNumber} stageText={stageText} />
             <CstBar
                 left={sideProps("left")}
