@@ -1,5 +1,5 @@
-import { FaHeart, FaShieldHalved, FaStar, FaXmark } from "react-icons/fa6";
-import { LostStreakFire, UnbeatenStreakFire } from "../components/StreakBadges.jsx";
+import { FaShieldHalved, FaStar, FaXmark } from "react-icons/fa6";
+import { LostStreakFire, SavedStreakFire, UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import css from "./Progress.module.css";
 import page from "../SpecialModePage.module.css";
 import { BONUS_OPTIONS, insurancePayout } from "./progressConfig.js";
@@ -180,8 +180,7 @@ export function PickStreakTag({ streak }) {
     if (shielded) {
         return (
             <span className={css.streak_tag} title={`Your pick was wrong, but the Streak Shield kept your pick streak of ${before} alive`}>
-                <UnbeatenStreakFire value={after} size={18} />
-                <FaHeart aria-hidden="true" className={css.streak_tag_heart} />
+                <SavedStreakFire value={after} size={18} />
                 Streak kept
             </span>
         );

@@ -169,3 +169,95 @@ export const LostStreakFire = ({ value, size = 26, style = {} }) => {
         </span>
     );
 };
+
+export const SavedStreakFire = ({ value, size = 26, style = {} }) => {
+    const reduceMotion = useReducedMotion();
+    const n = Math.max(0, Math.floor(Number(value) || 0));
+    if (n === 0) return null;
+
+    const text = String(n);
+    const digitRatio = text.length >= 3 ? 0.34 : text.length === 2 ? 0.43 : 0.5;
+    const still = reduceMotion ? { duration: 0 } : null;
+
+    return (
+        <span
+            role="img"
+            aria-label={`Pick streak of ${n} saved by a Streak Shield`}
+            style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: `${size}px`,
+                height: `${size}px`,
+                flexShrink: 0,
+                pointerEvents: "none",
+                ...style,
+            }}
+        >
+            <motion.span
+                initial={{ opacity: reduceMotion ? 0 : 1 }}
+                animate={{ opacity: [1, 1, 0] }}
+                transition={still ?? { duration: 1.6, times: [0, 0.75, 1], ease: "easeInOut" }}
+                style={{ position: "absolute", display: "inline-flex", ...STREAK_ASH_STYLE }}
+            >
+                <FaFire style={{ fontSize: `${size}px` }} />
+            </motion.span>
+            <motion.span
+                initial={{ opacity: reduceMotion ? 1 : 0, scale: reduceMotion ? 1 : 0.92 }}
+                animate={{ opacity: [0, 0, 1], scale: [0.92, 0.92, 1] }}
+                transition={still ?? { duration: 1.6, times: [0, 0.75, 1], ease: "easeOut" }}
+                style={{ display: "inline-flex", color: STREAK_LIT_STYLE.color, filter: STREAK_LIT_STYLE.filter }}
+            >
+                <FaFire style={{ fontSize: `${size}px` }} />
+            </motion.span>
+            <motion.span
+                initial={{ scaleX: reduceMotion ? 1 : 0, opacity: reduceMotion ? 0 : 1 }}
+                animate={{ scaleX: [0, 1, 1], opacity: [1, 1, 0] }}
+                transition={still ?? { delay: 0.2, duration: 1.3, times: [0, 0.4, 1], ease: "easeInOut" }}
+                style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    width: `${Math.round(size * 1.2)}px`,
+                    height: "3px",
+                    x: "-50%",
+                    y: "-50%",
+                    rotate: -45,
+                    borderRadius: "2px",
+                    background: "#e53935",
+                    boxShadow: "0 0 0 1.5px #fff",
+                }}
+            />
+            <span
+                style={{
+                    position: "absolute",
+                    fontSize: `${Math.max(8, Math.round(size * digitRatio))}px`,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    color: "#fff",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.85)",
+                    marginTop: `${Math.max(1, Math.round(size * 0.1))}px`,
+                }}
+            >
+                {text}
+            </span>
+            <motion.span
+                initial={{ scale: reduceMotion ? 1 : 0, opacity: reduceMotion ? 1 : 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={still ?? { delay: 1.15, duration: 0.38, ease: [0.34, 1.56, 0.64, 1] }}
+                style={{
+                    position: "absolute",
+                    right: `${-Math.round(size * 0.18)}px`,
+                    bottom: `${-Math.round(size * 0.08)}px`,
+                    display: "inline-flex",
+                    color: "#e5484d",
+                    fontSize: `${Math.max(7, Math.round(size * 0.42))}px`,
+                    filter: "drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff)",
+                }}
+            >
+                ♥
+            </motion.span>
+        </span>
+    );
+};
