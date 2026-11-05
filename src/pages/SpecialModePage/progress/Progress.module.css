@@ -2485,3 +2485,69 @@
 .pickem_stack_modal.pickem_stack_modal {
     max-width: 38%;
 }
+
+.streak_line {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+}
+
+.streak_tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 8px 1px 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    color: #8a4a00;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.streak_tag_lost {
+    color: #6b6f84;
+}
+
+.streak_tag_heart {
+    margin-left: -6px;
+    font-size: 9px;
+    color: #e5484d;
+}
+
+.streak_corner {
+    position: absolute;
+    left: 6px;
+    bottom: -3px;
+    z-index: 3;
+}
+
+.level_extras {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 34px;
+}
+
+.level_streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #8a4a00;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.level_streak_best {
+    margin-left: 10px;
+    color: #8b8fa3;
+    font-size: 12px;
+    font-weight: 700;
+}

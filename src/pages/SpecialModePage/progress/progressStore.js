@@ -143,7 +143,7 @@ export const progressSetBonusArmed = (type) => {
 
 export const streakReadyNext = (state = progress) => ((state.stats.streak ?? 0) + 1) % STREAK_STEP === 0;
 
-const PICK_PERK_KEYS = ["insured", "insurePct", "bonusMode", "bonus", "bonusValue", "bonusReady", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
+const PICK_PERK_KEYS = ["insured", "insurePct", "streakBefore", "shieldReady", "bonusMode", "bonus", "bonusValue", "bonusReady", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
 
 export const progressSetNeeded = (points) => {
     const needed = Number.isFinite(points) ? points : null;
@@ -174,6 +174,8 @@ export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, 
         knockout,
         insured,
         insurePct: insured ? perks.insurePct || 50 : 0,
+        streakBefore: progress.stats.streak ?? 0,
+        shieldReady: Math.max(0, perks.streakShield - (progress.event?.shieldsUsed ?? 0)) > 0,
         bonusMode: "pick",
         bonus: chosen?.type ?? null,
         bonusValue: chosen?.value ?? 0,

@@ -82,7 +82,11 @@ export const applyPickPerks = (match, points, fullPoints) => {
     const setsWon = history.map((entry) => !!entry.won);
     const setScores = history.map((entry) => ({ left: entry.wins ?? 0, right: entry.losses ?? 0 }));
     const resolved = resolvePickPerks({ correct, bestOf: fullPoints, base: points, setsWon, setScores, perks });
-    breakdowns.set(match, { base: points, uses: resolved.uses, missed: resolved.missed, insurance: resolved.insurance });
+    const before = perks.streakBefore || 0;
+    const streak = perks.bonusMode === "pick"
+        ? { before, after: correct ? before + 1 : before > 0 && perks.shieldReady ? before : 0, shielded: !correct && before > 0 && !!perks.shieldReady }
+        : null;
+    breakdowns.set(match, { base: points, uses: resolved.uses, missed: resolved.missed, insurance: resolved.insurance, streak });
     return resolved.points;
 };
 

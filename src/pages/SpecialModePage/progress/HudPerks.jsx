@@ -1,4 +1,5 @@
-import { FaShieldHalved, FaStar, FaXmark } from "react-icons/fa6";
+import { FaHeart, FaShieldHalved, FaStar, FaXmark } from "react-icons/fa6";
+import { LostStreakFire, UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import css from "./Progress.module.css";
 import page from "../SpecialModePage.module.css";
 import { BONUS_OPTIONS, insurancePayout } from "./progressConfig.js";
@@ -172,6 +173,39 @@ const BONUS_INFO = {
     knockoutBonus: ["Knockout", "Level benefit: knockout bonus for a correct pick in a knockout match"],
     longSeriesBonus: ["Long series", "Level benefit: long series bonus for a correct pick in a Best of 5 or longer"],
 };
+
+export function PickStreakTag({ streak }) {
+    if (!streak) return null;
+    const { before, after, shielded } = streak;
+    if (shielded) {
+        return (
+            <span className={css.streak_tag} title={`Your pick was wrong, but the Streak Shield kept your pick streak of ${before} alive`}>
+                <UnbeatenStreakFire value={after} size={18} />
+                <FaHeart aria-hidden="true" className={css.streak_tag_heart} />
+                Streak kept
+            </span>
+        );
+    }
+    if (after === 0) {
+        return before > 0 ? (
+            <span className={`${css.streak_tag} ${css.streak_tag_lost}`} title={`Your pick was wrong, so your pick streak of ${before} is over`}>
+                <LostStreakFire value={before} size={18} />
+                Streak lost
+            </span>
+        ) : (
+            <span className={`${css.streak_tag} ${css.streak_tag_lost}`} title="Your pick was wrong, so there is still no pick streak">
+                <UnbeatenStreakFire value={0} size={18} showZero />
+                No streak
+            </span>
+        );
+    }
+    return (
+        <span className={css.streak_tag} title={`Your pick was correct: ${after} correct ${after === 1 ? "pick" : "picks"} in a row`}>
+            <UnbeatenStreakFire value={after} size={18} />
+            {after === 1 ? "Correct pick" : "In a row"}
+        </span>
+    );
+}
 
 const MISSED_REASONS = {
     lost: "your pick lost",

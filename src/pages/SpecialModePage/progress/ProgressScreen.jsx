@@ -28,6 +28,7 @@ import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { isSecretUnlocked, useSpecialModeSettings } from "../logic/settings.js";
 import { FaAnglesDown, FaRotateLeft } from "react-icons/fa6";
 import { AchievementReset } from "./AchievementReset.jsx";
+import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 
 const SEEN_AFTER_MS = 1100;
 const DIFFICULTY_ORDER = Object.keys(DIFFICULTIES);
@@ -45,13 +46,25 @@ function LevelHead({ progress, displayXp }) {
             <div className={css.level_side}>
                 <LevelBar xpMV={xpMV} />
                 <XpNumbers xpMV={xpMV} />
-                {progress.lastSummary ? (
-                    <div>
+                <div className={css.level_extras}>
+                    {progress.lastSummary ? (
                         <button type="button" className={page.cancel_button} onClick={progressOpenLastSummary}>
                             Show the XP of {progress.lastSummary.name}
                         </button>
-                    </div>
-                ) : null}
+                    ) : <span />}
+                    <span
+                        className={css.level_streak}
+                        title="Your correct picks in a row, over all tournaments. A wrong pick or a tie ends the streak (unless a Streak Shield saves it)."
+                    >
+                        <UnbeatenStreakFire value={progress.stats.streak ?? 0} size={22} showZero />
+                        <span>
+                            {(progress.stats.streak ?? 0) > 0
+                                ? `Pick streak: ${progress.stats.streak} in a row`
+                                : "No pick streak right now"}
+                            <span className={css.level_streak_best}>Best: {progress.stats.bestStreak ?? 0}</span>
+                        </span>
+                    </span>
+                </div>
             </div>
         </div>
     );

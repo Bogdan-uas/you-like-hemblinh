@@ -19,7 +19,7 @@ import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { PickPerksStrip } from "../progress/PickPerksStrip.jsx";
 import { isKnockoutContext } from "../progress/progressConfig.js";
-import { PickBonusBadges } from "../progress/HudPerks.jsx";
+import { PickBonusBadges, PickStreakTag } from "../progress/HudPerks.jsx";
 import pcss from "../progress/Progress.module.css";
 import { GPL_SWISS_FORMAT } from "../logic/swiss.js";
 import { PENALTY_DISPLAY_CIRCLES } from "../logic/gameConstants.js";
@@ -52,6 +52,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         pickemLabelText,
         pickemPointsWon,
         pickemBonuses = [],
+        pickemStreak = null,
         breakdownSetIndex,
         isEliminationModal,
         isPemBigModal,
@@ -273,6 +274,11 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             </h3>
                             <BestOfBadge bestOf={modalBestOf} size={16} onColor={isPlayedModal} style={{ marginTop: -2, marginBottom: 2, zIndex: 5 }} />
 
+                            {isPlayedModal && pickemStreak ? (
+                                <span className={pcss.streak_corner}>
+                                    <PickStreakTag streak={pickemStreak} />
+                                </span>
+                            ) : null}
                             {isPlayedModal && pickemLabelText && (
                                 <span className={`${css.match_modal_pickem} ${pcss.pickem_stack} ${pcss.pickem_stack_modal}`} style={{ top: "auto", bottom: 3 }}>
                                     {pickemBonuses.length ? (
@@ -2491,6 +2497,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                 pointLabelText={breakdownPointLabel}
                                 hud={breakdownHud}
                                 pickemBonuses={pickemBonuses}
+                                pickemStreak={pickemStreak}
                             />
                         );
                     })()}

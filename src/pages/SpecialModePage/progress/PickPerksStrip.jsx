@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { FaHeart, FaShieldHalved, FaStar } from "react-icons/fa6";
+import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import css from "./Progress.module.css";
 import { INSURANCE_MIN_BEST_OF, bonusOptionsFor, levelInfo, perksForLevel } from "./progressConfig.js";
 import { progressBonusCap, progressSetBonusArmed, progressSetInsuranceArmed, streakReadyNext, useProgress } from "./progressStore.js";
@@ -39,10 +40,16 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
         if (ui.bonusArmed && (capped || !armed)) progressSetBonusArmed(null);
     }, [ui.bonusArmed, armed, capped]);
 
-    if (!perks.insurance && !options.length && !shieldText) return null;
+    const streakText = streak > 0
+        ? `Your pick streak: ${streak} correct ${streak === 1 ? "pick" : "picks"} in a row${streakReadyNext(progress) ? ` · a correct pick makes it ${streak + 1}` : ""}`
+        : "No pick streak yet · a correct pick starts one";
 
     return (
         <div className={css.perk_strip}>
+            <span className={`${css.perk_hint} ${css.streak_line}`} title="Your correct picks in a row, over all tournaments. A wrong pick or a tie ends the streak (unless a Streak Shield saves it).">
+                <UnbeatenStreakFire value={streak} size={20} showZero />
+                {streakText}
+            </span>
             {perks.insurance ? (
                 <button
                     type="button"

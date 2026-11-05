@@ -1556,7 +1556,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Only the bonuses, which can really happen in this match, are there: the Knockout bonus only in a match, whose loser is out, the Upset bonus only when my chosen team has 35% or less predicted, the Sweep, Comeback and Decider bonuses only from a Best of 3 on, and so on.
                 If my pick wins and the chosen bonus gets activated in the match (a comeback, for example, needs my team to lose the first set), it gives me its extra Pick&apos;em points. If it doesn&apos;t get activated, or my pick loses, the bonus is lost.
                 All the bonus points of a tournament together can&apos;t be more than a share of the needed Pick&apos;em points (5% from Level 6 on, up to 25% at Level 1000), and the line above the toggles tells how many of them are still left. It doesn&apos;t matter which bonuses they come from, so I could even spend all of them on the same kind of bonus.
-                That way, the bonuses are a small choice of their own, but the Pick&apos;em challenge stays a challenge. Here, in the Grand Final, I insured my pick on Team Indigo and chose the Comeback bonus:
+                That way, the bonuses are a small choice of their own, but the Pick&apos;em challenge stays a challenge. Right below the "Start" button, the flame shows my <b>pick streak</b>, so how many of my picks in a row were correct (over all tournaments), and it tells, when the next correct pick would make it a 5th, 10th and so on. Here, in the Grand Final, I insured my pick on Team Indigo and chose the Comeback bonus:
             </p>
             <LevelShot n={1} alt="Match modal of the Grand Final with the Pick'em Insurance switched on and the Comeback bonus chosen" width="35vw" />
             <p className={css.info_text}>
@@ -1565,15 +1565,16 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% and COMEBACK +1 chips next to the BEST OF badge" />
             <p className={css.info_text}>
                 When the series is over, the chips tell what happened. The insurance shows "+2" for the points it has won back, "Returned" or, if my pick has won, a grey "Not needed". The bonus shows its points, if it got activated, or a grey "Lost".
-                Team Indigo won the Grand Final 5:4, but it won the very first set as well, so there was no comeback and the Comeback bonus was lost:
+                Team Indigo won the Grand Final 5:2, but it won the very first set as well, so there was no comeback and the Comeback bonus was lost:
             </p>
             <LevelShot n={11} alt="The end of the Grand Final: Insurance Not needed and Comeback Lost" />
             <p className={css.info_text}>
-                And it stays visible later as well: the match modal and the last set in the Detailed Match Results show the grey "Not needed" insurance and the crossed-out bonus, which wasn&apos;t activated, right above the Pick&apos;em points:
+                And it stays visible later as well: the match modal and the last set in the Detailed Match Results show the grey "Not needed" insurance and the crossed-out bonus, which wasn&apos;t activated, right above the Pick&apos;em points.
+                On the left, the flame shows what this pick has done to my pick streak: "Correct pick" or the new streak with "In a row", "Streak lost" (or "No streak") for a wrong pick, or "Streak kept", if a Streak Shield has saved it:
             </p>
             <LevelShot n={12} alt="Match modal of the finished Grand Final with the Not needed insurance and the crossed-out Comeback bonus" width="26vw" />
             <p className={css.info_text}>
-                Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another (or all of them at once with the "All XP sources at once" setting), like "Series played", "Pick&apos;em points", "Grand Final", "Overtimes" or the "Daily warm-up" for the first series of the day.
+                Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another (or all of them at once with the "All XP sources at once" setting), like "Series played", "Pick&apos;em points", "Grand Final", "Overtime" or the "Daily warm-up" for the first series of the day.
                 And when the bar is full, the circle pops with a golden wave and a rising "LEVEL UP!":
             </p>
             <LevelShot n={3} alt="The XP card after the Grand Final with its XP chips and the LEVEL UP! effect on the level circle" />
@@ -1589,7 +1590,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <LevelShot n={5} alt="XP summary of Official #1: the Grand Final, the tournament results and the first new achievements" />
             <LevelShot n={6} alt="The end of the XP summary of Official #1 with the total XP earned" />
             <p className={css.info_text}>
-                A click on the level button opens the <b>Level</b> and <b>Achievements</b> screen. The Level tab shows my level, the XP bar with the total XP and all my benefits at the current level. Below them, the tables of "How to earn XP" tell every way to get XP and how much it gives:
+                A click on the level button opens the <b>Level</b> and <b>Achievements</b> screen. The Level tab shows my level, the XP bar with the total XP, my current pick streak with my best one so far and all my benefits at the current level. Below them, the tables of "How to earn XP" tell every way to get XP and how much it gives:
             </p>
             <LevelShot n={7} alt="Level tab with Level 20, the XP bar, the benefits at Level 20 and the beginning of How to earn XP" />
             <p className={css.info_text}>

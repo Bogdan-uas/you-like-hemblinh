@@ -9798,6 +9798,7 @@ function SpecialModeContent() {
     const pickemBreakdown = wonPickemPoints !== null ? pickPerkBreakdown(currentModalMatch) : null;
     const basePickemPoints = pickemBreakdown ? pickemBreakdown.base : wonPickemPoints;
     const pickemBonuses = pickBonusesOf(pickemBreakdown);
+    const pickemStreak = pickemBreakdown?.streak ?? null;
 
     if (basePickemPoints !== null) {
         pickemLabelText = basePickemPoints === 1 ? "+1 Pick'em point" : `+${basePickemPoints} Pick'em points`;
@@ -10642,6 +10643,7 @@ function SpecialModeContent() {
                 pickemLabelText,
                 pickemPointsWon: basePickemPoints,
                 pickemBonuses,
+                pickemStreak,
                 breakdownSetIndex,
                 isEliminationModal,
                 isPemBigModal,
