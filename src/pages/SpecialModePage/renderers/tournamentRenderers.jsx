@@ -69,6 +69,8 @@ import { qualifierSlotSource, canOpenQualifierMatch, getBestOfForQualifier, isSi
 import { getQualifiedBy, getEliminatedBy, getBo1Tiebreak } from "../logic/series.js";
 import { isNetUnlocked, teamsInNet, getBestOfForSwissNet, getSwissLayoutFormat, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 
+const NAV_STICKY_TOP = 64;
+
 export function createTournamentRenderers({
     pemLabel,
     qualifierLabel,
@@ -241,22 +243,32 @@ export function createTournamentRenderers({
 
         return (
             <div
-                ref={navRef}
                 style={{
                     position: "absolute",
                     top: "10%",
                     right: "98%",
+                    bottom: 0,
                     zIndex: 5,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: 10,
+                    pointerEvents: "none",
                     transition: "none",
                     marginRight:
                         !isGplMainPhase && !isPgxMainPhase && (viewPhase === "playoffs" ||
                             viewPhase === "results_playoffs")
                             ? 86
                             : 0,
+                }}
+            >
+            <div
+                ref={navRef}
+                style={{
+                    position: "sticky",
+                    top: NAV_STICKY_TOP,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 10,
+                    pointerEvents: "auto",
+                    transition: "none",
                 }}
             >
                 {unlocked.map((phase) => {
@@ -306,6 +318,7 @@ export function createTournamentRenderers({
                         damping: 60,
                     }}
                 />
+            </div>
             </div>
         );
     };
@@ -2166,7 +2179,7 @@ export function createTournamentRenderers({
             <div
                 style={{
                     position: "absolute",
-                    top: isGroupView ? "50%" : 12,
+                    top: isGroupView ? "50%" : 66,
                     right: "calc(50% - 670px)",
                     transform: isGroupView ? "translateY(-50%)" : undefined,
                     display: "flex",
@@ -2212,7 +2225,7 @@ export function createTournamentRenderers({
         );
 
         const content = isCm ? renderPgxCandidateSection(pgxCm, view) : renderPgxInternationalSection(pgxIm, view);
-        const phaseNav = phases.length > 1 ? renderPhaseNav(phases, "10%", { value: phaseValue, onChange: handlePhaseChange }) : null;
+        const phaseNav = phases.length > 1 ? renderPhaseNav(phases, isGroupView ? "10%" : "72px", { value: phaseValue, onChange: handlePhaseChange }) : null;
 
         if (isGroupView) {
             return (
@@ -2238,7 +2251,7 @@ export function createTournamentRenderers({
         return (
             <div className={css.cst_page} style={{ paddingTop: 56 }}>
                 {phaseNav}
-                <div className={css.ecl_header} style={showEndButtons ? { minHeight: 176, padding: "18px 0 36px" } : { padding: "6px 0 16px" }}>
+                <div className={css.ecl_header} style={showEndButtons ? { minHeight: 236, padding: "18px 0 36px" } : { padding: "6px 0 16px" }}>
                     <div className={css.stage_title} style={{ marginBottom: 0 }}>
                         {title}
                     </div>
@@ -2709,14 +2722,15 @@ export function createTournamentRenderers({
     ]);
 
     const renderPhaseNav = (entries, top = "10%", { value = viewPhase, onChange = setViewPhase, fixedRight = null } = {}) => {
-        return (
+        const nav = (
             <div
                 ref={navRef}
                 className={css.phase_nav}
                 style={{
-                    position: fixedRight ? "fixed" : "absolute",
-                    top,
-                    ...(fixedRight ? { right: fixedRight } : { left: "2%" }),
+                    position: fixedRight ? "fixed" : "sticky",
+                    top: fixedRight ? top : NAV_STICKY_TOP,
+                    ...(fixedRight ? { right: fixedRight } : {}),
+                    pointerEvents: "auto",
                     zIndex: 19,
                     display: "flex",
                     flexDirection: "column",
@@ -2751,6 +2765,12 @@ export function createTournamentRenderers({
                         damping: 60,
                     }}
                 />
+            </div>
+        );
+        if (fixedRight) return nav;
+        return (
+            <div className={css.phase_nav_rail} style={{ position: "absolute", top, left: "2%", bottom: 0, zIndex: 19, pointerEvents: "none", transition: "none" }}>
+                {nav}
             </div>
         );
     };
@@ -3126,23 +3146,26 @@ export function createTournamentRenderers({
                             Back to normal Gambling
                         </button>
                     </div>
-                ) : (
-                    <div style={{ gap: 0, top: "96px", left: "auto", right: "5%" }} className={css.pickem_buttons}>
-                        <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
-                        <span className={css.points}>
-                            <CountUp
-                                start={0}
-                                duration={1.2}
-                                end={neededPickemPoints}
-                                key={neededPickemPoints}
-                            />
-                        <NeededPerkTag value={neededPickemPoints} />
-                        </span>
-                    </div>
-                )}
+                ) : null}
 
-                <div className={css.stage_title} style={{ marginBottom: 0 }}>
-                    {pbsLabel} | {PBS_STAGE_TITLES[view]}
+                <div className={css.ecl_header} style={{ padding: "0 0 20px", margin: "0 -24px -20px" }}>
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {pbsLabel} | {PBS_STAGE_TITLES[view]}
+                    </div>
+                    {!showEndButtons ? (
+                        <div style={{ gap: 0, top: 0, left: "auto", right: "5%" }} className={css.pickem_buttons}>
+                            <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                            <span className={css.points}>
+                                <CountUp
+                                    start={0}
+                                    duration={1.2}
+                                    end={neededPickemPoints}
+                                    key={neededPickemPoints}
+                                />
+                            <NeededPerkTag value={neededPickemPoints} />
+                            </span>
+                        </div>
+                    ) : null}
                 </div>
 
                 <div style={{ width: "100%", marginTop: view === "pbsFinals" ? "64px" : "24px" }}>{renderPlayoffsBracket(view)}</div>

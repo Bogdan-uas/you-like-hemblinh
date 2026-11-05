@@ -4968,6 +4968,13 @@
         flex-wrap: wrap;
     }
 
+    .phase_nav_rail {
+        position: static !important;
+        display: flex;
+        justify-content: center;
+        pointer-events: auto !important;
+    }
+
     .phase_nav {
         position: static !important;
         flex-direction: row !important;
