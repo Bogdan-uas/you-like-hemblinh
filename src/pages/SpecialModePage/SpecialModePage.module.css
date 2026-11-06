@@ -993,6 +993,7 @@
     isolation: isolate;
     -webkit-text-stroke: 3.5px #ffffff;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #ffffff;
 }
 
 .winnerScoreShadow::before {
@@ -1004,6 +1005,18 @@
     color: #2e7d32;
     -webkit-text-stroke: 7px #2e7d32;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #2e7d32;
+    pointer-events: none;
+}
+
+.winnerScoreShadow::after {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: inherit;
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
     pointer-events: none;
 }
 
@@ -1011,6 +1024,7 @@
     isolation: isolate;
     -webkit-text-stroke: 3.5px #ffffff;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #ffffff;
 }
 
 .loserScoreShadow::before {
@@ -1022,6 +1036,18 @@
     color: red;
     -webkit-text-stroke: 7px red;
     paint-order: stroke fill;
+    -webkit-text-fill-color: red;
+    pointer-events: none;
+}
+
+.loserScoreShadow::after {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: inherit;
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
     pointer-events: none;
 }
 
@@ -1029,6 +1055,7 @@
     isolation: isolate;
     -webkit-text-stroke: 2px #ffffff;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #ffffff;
 }
 
 .swissWinnerScoreShadow::before {
@@ -1040,6 +1067,18 @@
     color: #2e7d32;
     -webkit-text-stroke: 4px #2e7d32;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #2e7d32;
+    pointer-events: none;
+}
+
+.swissWinnerScoreShadow::after {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: inherit;
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
     pointer-events: none;
 }
 
@@ -1047,6 +1086,7 @@
     isolation: isolate;
     -webkit-text-stroke: 2px #ffffff;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #ffffff;
 }
 
 .swissLoserScoreShadow::before {
@@ -1058,6 +1098,18 @@
     color: #d32f2f;
     -webkit-text-stroke: 4px #d32f2f;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #d32f2f;
+    pointer-events: none;
+}
+
+.swissLoserScoreShadow::after {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: inherit;
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
     pointer-events: none;
 }
 
@@ -1065,6 +1117,7 @@
     isolation: isolate;
     -webkit-text-stroke: 2px #ffffff;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #ffffff;
 }
 
 .swissTieScoreShadow::before {
@@ -1076,6 +1129,18 @@
     color: #5a5a5a;
     -webkit-text-stroke: 4px #5a5a5a;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #5a5a5a;
+    pointer-events: none;
+}
+
+.swissTieScoreShadow::after {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: inherit;
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
     pointer-events: none;
 }
 
@@ -1156,6 +1221,7 @@
     isolation: isolate;
     -webkit-text-stroke: 3.5px #ffffff;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #ffffff;
 }
 
 .tieScoreShadow::before {
@@ -1167,6 +1233,18 @@
     color: #5a5a5a;
     -webkit-text-stroke: 7px #5a5a5a;
     paint-order: stroke fill;
+    -webkit-text-fill-color: #5a5a5a;
+    pointer-events: none;
+}
+
+.tieScoreShadow::after {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: inherit;
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
     pointer-events: none;
 }
 

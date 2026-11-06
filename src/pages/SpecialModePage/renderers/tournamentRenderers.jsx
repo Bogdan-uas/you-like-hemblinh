@@ -1410,8 +1410,8 @@ export function createTournamentRenderers({
         const isBo1Tie = !!bo1History && bo1History.wins === bo1History.losses;
         const isCornerScore = (score) => isBo1 && String(score ?? "").length > 1;
         const scorePositions = [
-            isCornerScore(displayScoreLeft) ? { right: -2 } : { left: "85%" },
-            isCornerScore(displayScoreRight) ? { right: -2 } : { left: "83%" },
+            isCornerScore(displayScoreLeft) ? { right: 3 } : { left: "84%" },
+            isCornerScore(displayScoreRight) ? { right: 3 } : { left: "82%" },
         ];
 
         const resultClass = isPlayed ? (isUserWin ? css.playoffs_match_win : css.playoffs_match_loss) : "";
