@@ -854,10 +854,12 @@
 .sets_wrap {
     display: flex;
     justify-content: center;
+    width: auto;
     margin-bottom: 8px;
 }
 
 .sets {
+    flex-shrink: 0;
     display: inline-flex;
     overflow: hidden;
     border-radius: 10px;
