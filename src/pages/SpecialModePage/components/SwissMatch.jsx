@@ -225,7 +225,7 @@ export const MatchRect = ({
                 ) : (
                     <div style={{ display: "flex", alignItems: "center", flexDirection: "column", gap: "4px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                            <span
+                            <span data-score={bestOf === 1 ? rawLeftScore : displayScoreLeft}
                                 style={{
                                     color: isATie
                                         ? "#5a5a5a"
@@ -265,7 +265,7 @@ export const MatchRect = ({
                                 <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
                                 <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
                             </div>
-                            <span
+                            <span data-score={bestOf === 1 ? rawRightScore : displayScoreRight}
                                 style={{
                                     color: isATie
                                         ? "#5a5a5a"

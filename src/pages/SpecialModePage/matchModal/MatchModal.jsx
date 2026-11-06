@@ -734,30 +734,12 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     <p
                                         className={css.vs_text}
                                         style={{
-                                            position: "static",
+                                            position: "relative",
+                                            top: "auto",
+                                            left: "auto",
                                             backgroundColor: "#fff",
                                             fontSize: "24px",
-                                            textShadow: `
-                                                            1px 0 #d8d8d8,
-                                                            -1px 0 #d8d8d8,
-                                                            0 1px #d8d8d8,
-                                                            0 -1px #d8d8d8,
-                                                            1px 1px #d8d8d8,
-                                                            1px -1px #d8d8d8,
-                                                            -1px 1px #d8d8d8,
-                                                            -1px -1px #d8d8d8,
-                                                            1.5px 0 #5a5a5a,
-                                                            -1.5px 0 #5a5a5a,
-                                                            0 1.5px #5a5a5a,
-                                                            0 -1.5px #5a5a5a,
-                                                            1.5px 1.5px #5a5a5a,
-                                                            1.5px -1.5px #5a5a5a,
-                                                            -1.5px 1.5px #5a5a5a,
-                                                            -1.5px -1.5px #5a5a5a,
-                                                            1.5px 0 #5a5a5a,
-                                                            -1.5px 0 #5a5a5a
-                                                        `,
-                                        }}
+                                                                                    }}
                                     >
                                         VS
                                     </p>
@@ -1190,7 +1172,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                             </div>
 
                                             <div className={css.modal_vs}>
-                                                <span
+                                                <span data-score={modalDisplayScoreLeft}
                                                     style={{
                                                         color: isTieResult || modalDisplayScoreLeft === modalDisplayScoreRight
                                                             ? "#5a5a5a"
@@ -1234,7 +1216,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                     <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
                                                     <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#2e2f42" }}></div>
                                                 </div>
-                                                <span
+                                                <span data-score={modalDisplayScoreRight}
                                                     style={{
                                                         color: isTieResult || modalDisplayScoreLeft === modalDisplayScoreRight
                                                             ? "#5a5a5a"

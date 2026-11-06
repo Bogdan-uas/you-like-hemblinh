@@ -1137,7 +1137,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </div>
 
                 <div className={css.vs_cell_ro32} style={{ textAlign: "center" }}>
-                    <span style={{ fontSize: "12px", fontWeight: 600, top: "8px", left: "39px", backgroundColor: "transparent" }} className={css.vs_text}>
+                    <span style={{ fontSize: "12px", fontWeight: 600, backgroundColor: "transparent" }} className={css.vs_text}>
                         VS
                     </span>
                 </div>
@@ -1170,7 +1170,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </div>
 
                 <div className={css.vs_cell_ro32} style={{ textAlign: "center" }}>
-                    <span style={{ fontSize: "12px", fontWeight: 600, top: "8px", left: "39px", backgroundColor: "transparent" }} className={css.vs_text}>
+                    <span style={{ fontSize: "12px", fontWeight: 600, backgroundColor: "transparent" }} className={css.vs_text}>
                         VS
                     </span>
                 </div>

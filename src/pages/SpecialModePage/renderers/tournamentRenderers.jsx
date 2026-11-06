@@ -976,27 +976,7 @@ export function createTournamentRenderers({
                                 {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
                                     <span
                                         style={{
-                                            textShadow: `
-                                                1px 0 #d8d8d8,
-                                                -1px 0 #d8d8d8,
-                                                0 1px #d8d8d8,
-                                                0 -1px #d8d8d8,
-                                                1px 1px #d8d8d8,
-                                                1px -1px #d8d8d8,
-                                                -1px 1px #d8d8d8,
-                                                -1px -1px #d8d8d8,
-                                                2px 0 #5a5a5a,
-                                                -2px 0 #5a5a5a,
-                                                0 2px #5a5a5a,
-                                                0 -2px #5a5a5a,
-                                                2px 2px #5a5a5a,
-                                                2px -2px #5a5a5a,
-                                                -2px 2px #5a5a5a,
-                                                -2px -2px #5a5a5a,
-                                                2px 0 #5a5a5a,
-                                                -2px 0 #5a5a5a
-                                            `,
-                                        }}
+                                                                                    }}
                                         className={css.vs_text}
                                     >
                                         VS
@@ -1259,26 +1239,6 @@ export function createTournamentRenderers({
         );
     };
 
-    const QUALIFIER_VS_TEXT_SHADOW = `
-        1px 0 #d8d8d8,
-        -1px 0 #d8d8d8,
-        0 1px #d8d8d8,
-        0 -1px #d8d8d8,
-        1px 1px #d8d8d8,
-        1px -1px #d8d8d8,
-        -1px 1px #d8d8d8,
-        -1px -1px #d8d8d8,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a,
-        0 2px #5a5a5a,
-        0 -2px #5a5a5a,
-        2px 2px #5a5a5a,
-        2px -2px #5a5a5a,
-        -2px 2px #5a5a5a,
-        -2px -2px #5a5a5a,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a
-    `;
 
     const qualifierMatchFormat = {
         slotSource: qualifierSlotSource,
@@ -1527,6 +1487,7 @@ export function createTournamentRenderers({
                         opacity: isLoser && !isBo1Tie ? 0.4 : 1,
                     }}
                     className={isBo1Tie ? css.tieScoreShadow : isWinner ? css.winnerScoreShadow : css.loserScoreShadow}
+                    data-score={score}
                 >
                     {score}
                 </span>
@@ -1585,7 +1546,7 @@ export function createTournamentRenderers({
                                     className={css.divider}
                                 />
                                 {!isPlayed || m.scoreLeft == null || m.scoreRight == null ? (
-                                    <span style={{ textShadow: QUALIFIER_VS_TEXT_SHADOW }} className={css.vs_text}>
+                                    <span className={css.vs_text}>
                                         VS
                                     </span>
                                 ) : null}

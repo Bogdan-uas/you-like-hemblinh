@@ -1076,24 +1076,21 @@
 }
 
 .swissTieScoreShadow {
-    text-shadow:
-        0.5px 0 #fff,
-        -0.5px 0 #fff,
-        0 0.5px #fff,
-        0 -0.5px #fff,
-        0.5px 0.5px #fff,
-        0.5px -0.5px #fff,
-        -0.5px 0.5px #fff,
-        -0.5px -0.5px #fff,
+    isolation: isolate;
+    -webkit-text-stroke: 1px #ffffff;
+    paint-order: stroke fill;
+}
 
-        1.5px 0 #5a5a5a,
-        -1.5px 0 #5a5a5a,
-        0 1.5px #5a5a5a,
-        0 -1.5px #5a5a5a,
-        1.5px 1.5px #5a5a5a,
-        1.5px -1.5px #5a5a5a,
-        -1.5px 1.5px #5a5a5a,
-        -1.5px -1.5px #5a5a5a;
+.swissTieScoreShadow::before {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    padding: inherit;
+    color: #5a5a5a;
+    -webkit-text-stroke: 3px #5a5a5a;
+    paint-order: stroke fill;
+    pointer-events: none;
 }
 
 .vs_text {
@@ -1110,25 +1107,21 @@
     left: 43%;
     z-index: 3;
 
-    text-shadow:
-        1px 0 #d8d8d8,
-        -1px 0 #d8d8d8,
-        0 1px #d8d8d8,
-        0 -1px #d8d8d8,
-        1px 1px #d8d8d8,
-        1px -1px #d8d8d8,
-        -1px 1px #d8d8d8,
-        -1px -1px #d8d8d8,
-        1.5px 0 #5a5a5a,
-        -1.5px 0 #5a5a5a,
-        0 1.5px #5a5a5a,
-        0 -1.5px #5a5a5a,
-        1.5px 1.5px #5a5a5a,
-        1.5px -1.5px #5a5a5a,
-        -1.5px 1.5px #5a5a5a,
-        -1.5px -1.5px #5a5a5a,
-        1.5px 0 #5a5a5a,
-        -1.5px 0 #5a5a5a;
+    isolation: isolate;
+    -webkit-text-stroke: 2px #ffffff;
+    paint-order: stroke fill;
+}
+
+.vs_text::before {
+    content: "VS";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    padding: inherit;
+    color: #5a5a5a;
+    -webkit-text-stroke: 4px #5a5a5a;
+    paint-order: stroke fill;
+    pointer-events: none;
 }
 
 .vs_text .match_rect:hover,
@@ -1174,23 +1167,21 @@
 }
 
 .tieScoreShadow {
-    text-shadow:
-        1px 0 #ffffff,
-        -1px 0 #ffffff,
-        0 1px #ffffff,
-        0 -1px #ffffff,
-        1px 1px #ffffff,
-        1px -1px #ffffff,
-        -1px 1px #ffffff,
-        -1px -1px #ffffff,
-        2px 0 #5a5a5a,
-        -2px 0 #5a5a5a,
-        0 2px #5a5a5a,
-        0 -2px #5a5a5a,
-        2px 2px #5a5a5a,
-        2px -2px #5a5a5a,
-        -2px 2px #5a5a5a,
-        -2px -2px #5a5a5a;
+    isolation: isolate;
+    -webkit-text-stroke: 2px #ffffff;
+    paint-order: stroke fill;
+}
+
+.tieScoreShadow::before {
+    content: attr(data-score);
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    padding: inherit;
+    color: #5a5a5a;
+    -webkit-text-stroke: 4px #5a5a5a;
+    paint-order: stroke fill;
+    pointer-events: none;
 }
 
 .tiebreak_divider_row {
