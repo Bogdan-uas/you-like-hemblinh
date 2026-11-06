@@ -5822,7 +5822,7 @@ function SpecialModeContent() {
             return undefined;
         }
         if (seriesState.tiebreakerPhase && seriesState.tiebreakerPhase !== "idle") {
-            stopSimulation("Extended Rounds are coming! The simulation stops here, so you can watch the rest yourself.");
+            stopSimulation("Extended Rounds are coming! The simulation stops here, so you can watch the rest yourself!");
             return undefined;
         }
         if (simulation.mode === "set" && seriesState.setNumber !== simulation.setNumber) {
