@@ -1155,6 +1155,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                                     opacity: won ? 1 : 0.4
                                                 }}
                                                 className={won ? css.winnerScoreShadow : css.loserScoreShadow}
+                                                data-score={score}
                                             >
                                                 {score}
                                             </span>

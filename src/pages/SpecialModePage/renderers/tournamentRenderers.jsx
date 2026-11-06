@@ -966,6 +966,7 @@ export function createTournamentRenderers({
                                         opacity: isLeftLoser ? 0.4 : 1
                                     }}
                                     className={winnerIsLeft ? css.winnerScoreShadow : css.loserScoreShadow}
+                                    data-score={displayScoreLeft}
                                 >
                                     {displayScoreLeft}
                                 </span>
@@ -1023,6 +1024,7 @@ export function createTournamentRenderers({
                                         opacity: isRightLoser ? 0.4 : 1
                                     }}
                                     className={winnerIsRight ? css.winnerScoreShadow : css.loserScoreShadow}
+                                    data-score={displayScoreRight}
                                 >
                                     {displayScoreRight}
                                 </span>
