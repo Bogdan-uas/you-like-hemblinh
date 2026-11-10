@@ -2,7 +2,7 @@ import { FaShieldHalved, FaStar, FaXmark } from "react-icons/fa6";
 import { LostStreakFire, SavedStreakFire, UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import css from "./Progress.module.css";
 import page from "../SpecialModePage.module.css";
-import { BONUS_OPTIONS, insurancePayout } from "./progressConfig.js";
+import { BONUS_OPTIONS, insurancePayout, pickedBonusesOf } from "./progressConfig.js";
 import { basePickemPoints } from "./progressEngine.js";
 import { bonusConditionMet } from "./pickPerks.js";
 import { useProgress } from "./progressStore.js";
@@ -27,18 +27,23 @@ const playedSets = (seriesState) =>
         .filter((set, i, list) => list.findIndex((x) => x.set === set.set) === i)
         .map((set) => ({ won: getSetResultWinner(set) === "left", left: set.leftScore ?? 0, right: set.rightScore ?? 0 }));
 
-const bonusOutcome = (pick, seriesState) => {
-    if (!seriesState?.banner) return null;
-    if (!seriesWon(seriesState)) return { kind: "lost", value: "Lost" };
+const bonusOutcomes = (pick, seriesState) => {
+    const chosen = pickedBonusesOf(pick);
+    if (!seriesState?.banner) return chosen.map(() => null);
+    if (!seriesWon(seriesState)) return chosen.map(() => ({ kind: "lost", value: "Lost" }));
     const sets = playedSets(seriesState);
-    const met = bonusConditionMet(pick.bonus, {
-        bestOf: pick.bestOf,
-        setsWon: sets.map((set) => set.won),
-        setScores: sets.map((set) => ({ left: set.left, right: set.right })),
-        ready: pick.bonusReady,
+    let left = pick.bonusLeft ?? 0;
+    return chosen.map((bonus) => {
+        const met = bonusConditionMet(bonus.type, {
+            bestOf: pick.bestOf,
+            setsWon: sets.map((set) => set.won),
+            setScores: sets.map((set) => ({ left: set.left, right: set.right })),
+            ready: bonus.ready,
+        });
+        const amount = met ? Math.min(bonus.value || 0, left) : 0;
+        left -= amount;
+        return amount > 0 ? { kind: "paid", value: `+${amount}` } : { kind: "lost", value: "Lost" };
     });
-    const amount = met ? Math.min(pick.bonusValue || 0, pick.bonusLeft ?? 0) : 0;
-    return amount > 0 ? { kind: "paid", value: `+${amount}` } : { kind: "lost", value: "Lost" };
 };
 
 function HudChip({ variant, hud, ghost, label, value, icon, tone, title }) {
@@ -87,7 +92,8 @@ function HudChip({ variant, hud, ghost, label, value, icon, tone, title }) {
 export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
     const { progress } = useProgress();
     const pick = progress.activePick;
-    if (!pick?.insured && !pick?.bonus) return null;
+    const chosen = pickedBonusesOf(pick);
+    if (!pick?.insured && !chosen.length) return null;
     const chips = [];
 
     if (pick.insured) {
@@ -116,13 +122,16 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
         );
     }
 
-    if (pick.bonus) {
-        const outcome = bonusOutcome(pick, seriesState);
-        const name = BONUS_LABELS[pick.bonus] ?? "Bonus";
-        const amount = Math.min(pick.bonusValue || 0, pick.bonusLeft ?? 0);
+    const outcomes = bonusOutcomes(pick, seriesState);
+    let shownLeft = pick.bonusLeft ?? 0;
+    chosen.forEach((bonus, i) => {
+        const outcome = outcomes[i];
+        const name = BONUS_LABELS[bonus.type] ?? "Bonus";
+        const amount = Math.max(0, Math.min(bonus.value || 0, shownLeft));
+        shownLeft -= amount;
         chips.push(
             <HudChip
-                key="bonus"
+                key={`bonus-${bonus.type}`}
                 variant={variant}
                 hud={hud}
                 ghost={ghost}
@@ -135,11 +144,11 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
                         ? `Your ${name} bonus is activated: ${outcome.value} Pick'em point${outcome.value === "+1" ? "" : "s"}`
                         : outcome?.kind === "lost"
                             ? `Your ${name} bonus wasn't activated in this match, so it is lost`
-                            : `${name} bonus: +${amount}, if ${BONUS_WHEN[pick.bonus] ?? "it is activated"}`
+                            : `${name} bonus: +${amount}, if ${BONUS_WHEN[bonus.type] ?? "it is activated"}`
                 }
             />,
         );
-    }
+    });
 
     return variant === "ess" || variant === "cst" ? <span className={`${css.hud_insured_stack} ${ghost ? css.hud_ghost : ""}`}>{chips}</span> : chips;
 }

@@ -10,6 +10,7 @@ import { ReactFitty } from "react-fitty";
 import { PenaltyCircles } from "../components/PenaltyCircles.jsx";
 import { SetBreakdownOverlay } from "../components/SetBreakdownOverlay.jsx";
 import { MatchStatsOverlay } from "../components/StatsPanels.jsx";
+import { MatchMultiplierStrip } from "../components/TeamHistory.jsx";
 import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { centerOverflowX } from "../../../rubber.js";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
@@ -69,6 +70,11 @@ export function MatchModal({ modal, teams, actions, labels }) {
         toggleModalStatsPanel,
         breakdownPointLabel,
         breakdownHud,
+        statsPanelTabs,
+        setStatsPanelTab,
+        getTeamForm,
+        openHistoryEntry,
+        getMatchPlacings,
     } = modal;
     const { placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings } = teams;
     const { closeMatchModal, handleChooseLeft, handleChooseRight, handleStartMatch, handleSimulateMatch, simulateEnabled } = actions;
@@ -991,8 +997,8 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                 return null;
                             };
 
-                            const displayedLeftStats = teamPlacings?.[modalPlayedLeft?.id] ?? EMPTY_TEAM_PLACINGS;
-                            const displayedRightStats = teamPlacings?.[modalPlayedRight?.id] ?? EMPTY_TEAM_PLACINGS;
+                            const displayedLeftStats = getMatchPlacings ? getMatchPlacings(currentModalMatch, modalPlayedLeft?.id) : teamPlacings?.[modalPlayedLeft?.id] ?? EMPTY_TEAM_PLACINGS;
+                            const displayedRightStats = getMatchPlacings ? getMatchPlacings(currentModalMatch, modalPlayedRight?.id) : teamPlacings?.[modalPlayedRight?.id] ?? EMPTY_TEAM_PLACINGS;
 
                             const leftStreakAfter = readUnbeatenStreak(
                                 currentModalMatch?.statsMeta?.after?.[modalPlayedLeft?.id]
@@ -1400,6 +1406,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                 {rightStakeText}
                                             </div>
                                         )}
+                                        <MatchMultiplierStrip match={currentModalMatch} leftTeam={modalPlayedLeft} rightTeam={modalPlayedRight} />
                                     </div>
 
                                     <>
@@ -2443,6 +2450,12 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             onToggleRight={() => toggleModalStatsPanel("right")}
                             leftRowNotes={buildStatRowNotes(statActivation?.left)}
                             rightRowNotes={buildStatRowNotes(statActivation?.right)}
+                            panelTabs={statsPanelTabs}
+                            onPanelTabChange={setStatsPanelTab}
+                            leftForm={getTeamForm?.(statsLeftTeam?.id, isPlayedModal ? currentModalMatch : null)}
+                            rightForm={getTeamForm?.(statsRightTeam?.id, isPlayedModal ? currentModalMatch : null)}
+                            formBefore={isPlayedModal}
+                            onOpenEntry={openHistoryEntry}
                         />
                     );
                 })()}

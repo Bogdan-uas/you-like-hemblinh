@@ -1,4 +1,4 @@
-import { insurancePayout } from "./progressConfig.js";
+import { insurancePayout, pickedBonusesOf } from "./progressConfig.js";
 
 const BONUS_KEYS = ["gfBonus", "upsetBonus", "longShotBonus", "streakBonus"];
 
@@ -14,19 +14,23 @@ const resolveChosenBonus = ({ correct, bestOf, base, setsWon, setScores, perks }
     const uses = [];
     const missed = [];
     let points = base;
-    const type = perks.bonus || null;
+    const chosen = pickedBonusesOf(perks);
     if (correct) {
-        const met = type ? bonusConditionMet(type, { bestOf, setsWon, setScores, ready: perks.bonusReady }) : false;
-        const amount = met ? Math.min(perks.bonusValue || 0, perks.bonusLeft ?? 0) : 0;
-        if (amount > 0) {
-            points += amount;
-            uses.push({ type, points: amount });
-        } else if (type) {
-            missed.push({ type, reason: met ? "cap" : "condition" });
-        }
+        let left = perks.bonusLeft ?? 0;
+        chosen.forEach((bonus) => {
+            const met = bonusConditionMet(bonus.type, { bestOf, setsWon, setScores, ready: bonus.ready });
+            const amount = met ? Math.min(bonus.value || 0, left) : 0;
+            if (amount > 0) {
+                points += amount;
+                left -= amount;
+                uses.push({ type: bonus.type, points: amount });
+            } else {
+                missed.push({ type: bonus.type, reason: met ? "cap" : "condition" });
+            }
+        });
         return { points, uses, missed, insurance: perks.insured ? "used" : null, payout: 0 };
     }
-    if (type) missed.push({ type, reason: "lost" });
+    chosen.forEach((bonus) => missed.push({ type: bonus.type, reason: "lost" }));
     if (!perks.insured) return { points, uses, missed, insurance: null, payout: 0 };
     const payout = insurancePayout(bestOf, base, perks.insurePct);
     if (payout <= 0) return { points, uses, missed, insurance: "returned", payout: 0 };

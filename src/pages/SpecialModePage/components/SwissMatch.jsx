@@ -4,6 +4,7 @@ import css from "../SpecialModePage.module.css";
 import { FaCheck, FaXmark, FaCircle } from "react-icons/fa6";
 import { buildExtendedRoundWinnerList } from "../logic/series.js";
 import { getSwissBoxSlots, GPL_SWISS_FORMAT } from "../logic/swiss.js";
+import { matchDomKey } from "../logic/matchDomKey.js";
 
 export const TeamCircle = ({ team, dim, specialStyle = {}, showRating = false, ratingValue = 0, beforeRatingValue = 0, shouldPlaceholderCirclesBeRendered = false }) => {
     if (!team) {
@@ -179,6 +180,7 @@ export const MatchRect = ({
     return (
         <div
             className={`${resultClass} ${css.ro32_rect} ${css.swiss_rect} ${className}`}
+            data-match-key={matchDomKey(match)}
             data-net={dataNet}
             data-pos={dataPos}
             data-format={dataFormat}

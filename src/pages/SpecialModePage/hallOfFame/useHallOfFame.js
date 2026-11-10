@@ -18,6 +18,7 @@ export function useHallOfFame() {
         }
     });
     const [selectedHallMatch, setSelectedHallMatch] = useState(null);
+    const [hallReturnOnLeave, setHallReturnOnLeave] = useState(false);
 
     useEffect(() => {
         readHallOfFame()
@@ -26,6 +27,7 @@ export function useHallOfFame() {
     }, []);
 
     const closeHallOfFame = () => {
+        setHallReturnOnLeave(false);
         setIsHallOfFameOpen(false);
         setSelectedHallTournament(null);
         setSelectedHallMatch(null);
@@ -39,6 +41,11 @@ export function useHallOfFame() {
         } catch {
             /* ignore */
         }
+    };
+
+    const leaveHallRecord = () => {
+        if (hallReturnOnLeave) closeHallOfFame();
+        else setSelectedHallTournament(null);
     };
 
     const openLinkedHallRecord = (record, scrollToSection = null) => {
@@ -67,5 +74,7 @@ export function useHallOfFame() {
         hallQualifierGroup,
         openLinkedHallRecord,
         setHallTeamSortMode,
+        leaveHallRecord,
+        setHallReturnOnLeave,
     };
 }

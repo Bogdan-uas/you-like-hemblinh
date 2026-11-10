@@ -67,6 +67,7 @@ import { pemStage1SlotSource, canOpenPemStage1Match, getBestOfForPemStage1, isSi
 import { canOpenPlayoffsMatch, getBestOfForPlayoffs } from "../logic/playoffs.js";
 import { qualifierSlotSource, canOpenQualifierMatch, getBestOfForQualifier, isSingleQualifierStage, findCurrentQualifierMatch, findNextQualifierMatch, PLAY_IN_GROUP, QUALIFIER_GROUPS, isByeOpeningBracket, makeByeOpeningSlotSource } from "../logic/qualifier.jsx";
 import { getQualifiedBy, getEliminatedBy, getBo1Tiebreak } from "../logic/series.js";
+import { matchDomKey } from "../logic/matchDomKey.js";
 import { isNetUnlocked, teamsInNet, getBestOfForSwissNet, getSwissLayoutFormat, GPL_SWISS_FORMAT } from "../logic/swiss.js";
 
 const NAV_STICKY_TOP = 64;
@@ -884,6 +885,7 @@ export function createTournamentRenderers({
             return (
                 <div key={m.id} className={connectorStyle}>
                     <div
+                        data-match-key={matchDomKey(m)}
                         data-bracket-rect={pemLayout ? `${stageKey}-${idx}` : undefined}
                         data-pbs-match={pbsDraft ? `${stageKey}-${idx}` : undefined}
                         className={`${baseClass} ${isMatchRectLocked || isNextStage(stageKey) ? nextRect : ""
@@ -1499,6 +1501,7 @@ export function createTournamentRenderers({
         return (
             <div key={m.id} className={css.qualifier_match_wrapper}>
                 <div
+                    data-match-key={matchDomKey(m)}
                     data-bracket-rect={`${stage}-${idx}`}
                     className={`${css.match_rect} ${resultClass} ${isCurrent ? css.match_current : ""} ${isNext ? css.match_next : ""} ${canHover ? "" : css.no_hover}`}
                     style={{

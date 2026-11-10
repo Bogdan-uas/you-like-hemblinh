@@ -1,3 +1,5 @@
+import { PROGRESS_LS_KEY } from "./progressConfig.js";
+
 export const PRISTINE_LS_KEY = "specialMode_pristine_v1";
 
 let capturePending = false;
@@ -18,7 +20,18 @@ const managedKeys = () => {
     return keys;
 };
 
-const fingerprint = () => Object.fromEntries(managedKeys().map((key) => [key, localStorage.getItem(key)]));
+const withoutTasks = (key, value) => {
+    if (key !== PROGRESS_LS_KEY || !value) return value;
+    try {
+        const parsed = JSON.parse(value);
+        delete parsed.tasks;
+        return JSON.stringify(parsed);
+    } catch {
+        return value;
+    }
+};
+
+const fingerprint = () => Object.fromEntries(managedKeys().map((key) => [key, withoutTasks(key, localStorage.getItem(key))]));
 
 export const capturePristineStorage = () => {
     try {

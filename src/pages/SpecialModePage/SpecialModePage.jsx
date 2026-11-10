@@ -66,7 +66,6 @@ import {
     getRandomEclNeededPickemPoints,
     getEclPlaces,
     getEclStakeTexts,
-    eclStageLabel,
 } from "./logic/ecl.jsx";
 import {
     SKYLINES_TYPE_ID,
@@ -92,10 +91,8 @@ import {
     getSkylinesPlaces,
     skylinesMatchPoints,
     getBestOfForSkylines,
-    skylinesStageLabel,
     getSkylinesStakeTexts,
     getSkylinesTargetFloor,
-    getSkylinesFloorName,
     getRandomSkylinesNeededPickemPoints,
 } from "./logic/skylines.jsx";
 import {
@@ -138,7 +135,6 @@ import {
     getPgxInternationalStakeTexts,
     getPgxInternationalPlaces,
     getPgxInternationalResults,
-    pgxStageLabel,
 } from "./logic/pgx.jsx";
 import {
     ESS_TYPE_ID,
@@ -193,7 +189,6 @@ import {
     getEssFinalStakeTexts,
     getBestOfForEssFinal,
     isSingleEssFinalStage,
-    essStageLabel,
     getRandomEssNeededPickemPoints,
 } from "./logic/ess.jsx";
 import { Tier15Medal } from "./components/Trophies.jsx";
@@ -218,7 +213,8 @@ import {
     SIMULATE_IMPORTANT_MINI_MS,
     SIMULATE_INSTANT_BATCH,
 } from "./logic/gameConstants.js";
-import { readHallOfFame, saveHallTournament as writeHallTournament, sortHallOfFame } from "./logic/hallOfFameDb.js";
+import { readHallOfFame, saveHallTournament as writeHallTournament, sortHallOfFame, hallRecordTime } from "./logic/hallOfFameDb.js";
+import { compactPlacings, placingsAtTime } from "./logic/placingsHistory.js";
 import { ProgressLayer } from "./progress/ProgressLayer.jsx";
 import { applyPickPerks, pickBonusesOf, pickPerkBreakdown } from "./progress/pickPerks.js";
 import { isKnockoutContext } from "./progress/progressConfig.js";
@@ -237,6 +233,9 @@ import {
     progressSeriesFinished,
     progressSetNeeded,
     progressTakeSnapshot,
+    getProgress,
+    progressSetBonusArmed,
+    progressSetInsuranceArmed,
 } from "./progress/progressStore.js";
 import { schedulePristineCapture } from "./progress/resetStorage.js";
 import {
@@ -278,7 +277,6 @@ import {
     PEM_PLAYOFFS_BIG_STAGE,
     getRandomPemNeededPickemPoints,
     getPemGroupStakeTexts,
-    pemGroupStageLabel,
 } from "./logic/pemSeries.jsx";
 import {
     isSinglePemStage1Stage,
@@ -294,10 +292,11 @@ import {
     buildPemBigStage2Teams,
     buildPemStage1,
     getPemStage1StakeTexts,
-    pemStage1StageLabel,
 } from "./logic/pemStage1.jsx";
 import { loadTeamPlacings, EMPTY_TEAM_PLACINGS, saveTeamPlacings } from "./logic/placings.jsx";
-import { getBestOfForPlayoffs, buildPlayoffsBracket, buildGplPlayoffs, buildOfficialPlayoffs, buildPgxPlayoffs, canOpenPlayoffsMatch, stageLabelPlayoffs } from "./logic/playoffs.js";
+import { PGX_PLAYOFFS_BEST_OF, getBestOfForPlayoffs, buildPlayoffsBracket, buildGplPlayoffs, buildOfficialPlayoffs, buildPgxPlayoffs, canOpenPlayoffsMatch } from "./logic/playoffs.js";
+
+const OFFICIAL_PLAYOFFS_POINTS_BEST_OF = { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
 import {
     isSingleQualifierStage,
     getBestOfForQualifier,
@@ -317,7 +316,6 @@ import {
     getQualifierGroupQualifiers,
     getQualifierStakeTexts,
     isByeOpeningBracket,
-    qualifierStageLabel,
     PLAY_IN_GROUP,
     PLAY_IN_STAGE,
     buildOpenQualifier,
@@ -361,7 +359,6 @@ import {
     calcSetsToWin,
     tryBuildUnlockedNets,
     isSwissStageFinished,
-    swissNetTitle,
     GPL_SWISS_FORMAT,
     OFFICIAL_SWISS_FORMAT,
 } from "./logic/swiss.js";
@@ -432,6 +429,11 @@ import { LeaderboardAdminModals } from "./leaderboard/LeaderboardAdminModals.jsx
 import { createTournamentRenderers } from "./renderers/tournamentRenderers.jsx";
 import { SeriesScreen } from "./series/SeriesScreen.jsx";
 import { MatchModal } from "./matchModal/MatchModal.jsx";
+import { matchTitleOf, matchSmallLabelOf } from "./logic/matchLabels.js";
+import { useGlobalTips } from "./logic/useGlobalTips.js";
+import { useMatchSpotlight } from "./logic/useMatchSpotlight.js";
+import { matchDomKey } from "./logic/matchDomKey.js";
+import { buildHallEntries, buildLiveEntries, indexByTeam, matchSignature, teamEntries, teamStatsOf, teamView } from "./logic/teamHistory.js";
 import { PickemSummary } from "./screens/PickemSummary.jsx";
 import { QualifierWinnersScreen } from "./screens/QualifierWinnersScreen.jsx";
 import { WinnersScreen } from "./screens/WinnersScreen.jsx";
@@ -456,6 +458,7 @@ const SAVE_MAX_WAIT_MS = 4000;
 const SAVE_FLUSH_EVENT = "special-mode-save-flush";
 
 function SpecialModePage() {
+    useGlobalTips();
     const [settings, setSettings] = useState(loadSettings);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [freshStart] = useState(() => {
@@ -2630,36 +2633,31 @@ function SpecialModeContent() {
         return 0;
     };
 
-    const playoffsMatchPoints = (match) => applyPickPerks(match, rawPlayoffsMatchPoints(match), playoffsBestOf(match));
-
-    const playoffsBestOf = (match) => {
-        const baseMap = match.cst
+    const playoffsBestOfMap = (match) =>
+        match.cst
             ? CST_PLAYOFFS_BEST_OF
             : match.gcc
                 ? GCC_KNOCKOUT_BEST_OF
                 : match.pbs
                     ? PBS_BEST_OF
-                    : match.pemBig || match.gpl
-                    ? PEM_BIG_PLAYOFFS_BEST_OF
-                    : match.pem
-                        ? PEM_PLAYOFFS_BEST_OF
-                        : { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+                    : match.pgx
+                        ? PGX_PLAYOFFS_BEST_OF
+                        : match.pemBig || match.gpl
+                            ? PEM_BIG_PLAYOFFS_BEST_OF
+                            : match.pem
+                                ? PEM_PLAYOFFS_BEST_OF
+                                : OFFICIAL_PLAYOFFS_POINTS_BEST_OF;
+
+    const playoffsMatchPoints = (match) => applyPickPerks(match, rawPlayoffsMatchPoints(match), playoffsBestOf(match));
+
+    const playoffsBestOf = (match) => {
+        const baseMap = playoffsBestOfMap(match);
         return baseMap[match.stage] ?? 0;
     };
 
     const rawPlayoffsMatchPoints = (match) => {
         if (!match.played || !match.pickTeamId) return 0;
-        const baseMap = match.cst
-            ? CST_PLAYOFFS_BEST_OF
-            : match.gcc
-                ? GCC_KNOCKOUT_BEST_OF
-                : match.pbs
-                    ? PBS_BEST_OF
-                    : match.pemBig || match.gpl
-                    ? PEM_BIG_PLAYOFFS_BEST_OF
-                    : match.pem
-                        ? PEM_PLAYOFFS_BEST_OF
-                        : { ro16: 5, qf: 5, sf: 7, thirdPlace: 7, gf: 9 };
+        const baseMap = playoffsBestOfMap(match);
         const base = baseMap[match.stage] ?? 0;
 
         if (match.winnerTeamId === match.pickTeamId) return base;
@@ -3219,7 +3217,208 @@ function SpecialModeContent() {
         setIsMatchModalOpen(true);
     };
 
+    const historyStackRef = useRef([]);
+    const [statsPanelTabs, setStatsPanelTabs] = useState({ left: 0, right: 0 });
+    const setStatsPanelTab = (side, tab) => setStatsPanelTabs((prev) => ({ ...prev, [side]: tab }));
+    const [teamProfile, setTeamProfile] = useState(null);
+
+    const hallHistoryIndex = useMemo(() => indexByTeam(buildHallEntries(hallOfFame)), [hallOfFame]);
+    const liveHistoryEntries = useMemo(
+        () =>
+            buildLiveEntries(
+                { stages: { stage1, stage2, stage3 }, playoffs, qualifier, qualifierOwner: qualifier?.owner ?? null, cst, gccMatchdays: gcc?.matchdays, pemMain, pemStage1, ecl, skylines, pgxCm, pgxIm, essLq, essCh, essFin },
+                { isPemBig: pemType === PEM_BIG_TYPE_ID },
+            ),
+        [stage1, stage2, stage3, playoffs, qualifier, cst, gcc, pemMain, pemStage1, ecl, skylines, pgxCm, pgxIm, essLq, essCh, essFin, pemType],
+    );
+
+    const getMatchPlacings = (match, teamId) => {
+        const current = teamPlacings?.[teamId] ?? EMPTY_TEAM_PLACINGS;
+        if (!match?.played || teamId == null) return current;
+        const saved = match.placingsMeta?.[teamId];
+        if (saved) return { ...EMPTY_TEAM_PLACINGS, ...saved };
+        const archivedTime = modalContext?.isArchivedHallOfFame && selectedHallMatch?.record ? hallRecordTime(selectedHallMatch.record) - 1 : null;
+        const time = match.ratingMeta?.debug?.playedAtMs ?? archivedTime ?? Date.now();
+        return placingsAtTime(teamPlacings, hallOfFame, teamId, time);
+    };
+
+    const getTeamForm = (teamId, beforeMatch = null) => {
+        if (teamId == null) return null;
+        const all = teamEntries(hallHistoryIndex, liveHistoryEntries, teamId);
+        let list = all;
+        let latest = true;
+        if (beforeMatch) {
+            const at = all.findIndex((entry) => entry.signature === matchSignature(beforeMatch));
+            const playedAt = beforeMatch.ratingMeta?.debug?.playedAtMs;
+            list = at >= 0 ? all.slice(at + 1) : playedAt ? all.filter((entry) => entry.time < playedAt) : all;
+            latest = at >= 0 ? at === 0 : !playedAt || !all.some((entry) => entry.time > playedAt);
+        }
+        const views = list.map((entry) => teamView(entry, teamId));
+        return { views: views.slice(0, 5), stats: teamStatsOf(views), latest };
+    };
+
+    const profileTeamId = teamProfile?.teamId ?? null;
+    const profileHistory = useMemo(() => {
+        if (profileTeamId == null) return null;
+        const views = teamEntries(hallHistoryIndex, liveHistoryEntries, profileTeamId).map((entry) => teamView(entry, profileTeamId));
+        return { views, stats: teamStatsOf(views) };
+    }, [profileTeamId, hallHistoryIndex, liveHistoryEntries]);
+
+    const selectHallTabsFor = (ctx) => {
+        if (ctx.type === "qualifier" || ctx.type === "pemGroup") hall.setHallQualifierGroup(ctx.group);
+        if (ctx.type === "pemStage1") hall.setHallStage1Group(ctx.group);
+        if ((ctx.type === "essCh" || ctx.type === "pgxCm") && ctx.section === "groups" && ctx.group) hall.setHallStage1Group(ctx.group);
+    };
+
+    const [hallSpotlight, setHallSpotlight] = useState(null);
+    const clearHallSpotlight = useCallback(() => setHallSpotlight(null), []);
+    useMatchSpotlight(hallSpotlight, isHallOfFameOpen && !isMatchModalOpen, clearHallSpotlight);
+
+    useEffect(() => {
+        if (!isHallOfFameOpen) setHallSpotlight(null);
+    }, [isHallOfFameOpen]);
+
+    const launchHistoryEntry = (entry) => {
+        const { ctx, match, idx, record } = entry;
+        setBreakdownSetIndex(null);
+        if (entry.source === "hall") {
+            if (!isHallOfFameOpen) setIsHallOfFameOpen(true);
+            if (selectedHallTournament?.id !== record.id) hall.openLinkedHallRecord(record);
+            selectHallTabsFor(ctx);
+            if (ctx.type === "swiss") openArchivedSwissMatchModal(record, ctx.stageKey, ctx.net, idx, match);
+            else if (ctx.type === "playoffs") openArchivedHallMatchModal(record, ctx.stage, idx, match);
+            else if (ctx.type === "cstGroup") openArchivedCstGroupMatchModal(record, ctx.group, idx, match);
+            else if (ctx.type === "gccLeague") openArchivedGccLeagueMatchModal(record, ctx.dayIndex, idx, match);
+            else if (ctx.type === "qualifier") openArchivedQualifierMatchModal(record, ctx.group, ctx.stage, idx, match);
+            else if (ctx.type === "pemGroup") openArchivedPemGroupMatchModal(record, ctx.group, ctx.stage, idx, match);
+            else if (ctx.type === "pemStage1") openArchivedPemStage1MatchModal(record, ctx.group, ctx.stage, idx, match);
+            else if (ctx.type === "ecl") openArchivedEclMatchModal(record, null, ctx.stage, idx, match);
+            else if (ctx.type === "skyline") openArchivedSkylinesMatchModal(record, match);
+            else if (ctx.type === "pgxCm" || ctx.type === "pgxIm") openArchivedPgxMatchModal(ctx.type, record, match, ctx.section);
+            else openArchivedEssMatchModal(ctx.type, record, match, ctx.section);
+            return;
+        }
+        if (isHallOfFameOpen) {
+            setIsHallOfFameOpen(false);
+            setSelectedHallTournament(null);
+        }
+        setSelectedHallMatch(null);
+        if (ctx.type === "swiss") openSwissMatchModal(ctx.stageKey, ctx.net, match.id, true);
+        else if (ctx.type === "playoffs") openPlayoffsMatchModal(ctx.stage, match.id, true);
+        else if (ctx.type === "cstGroup") openCstGroupMatchModal(ctx.group, match.id, true);
+        else if (ctx.type === "gccLeague") openGccLeagueMatchModal(match.id, true);
+        else if (ctx.type === "qualifier") openQualifierMatchModal(ctx.group, ctx.stage, match.id, true);
+        else if (ctx.type === "pemGroup") openPemGroupMatchModal(ctx.group, ctx.stage, match.id, true);
+        else if (ctx.type === "pemStage1") openPemStage1MatchModal(ctx.group, ctx.stage, match.id, true);
+        else if (ctx.type === "ecl") openEclMatchModal(null, ctx.stage, match.id, true);
+        else if (ctx.type === "skyline") openSkylinesMatchModal(match.id, true);
+        else if (ctx.type === "pgxCm" || ctx.type === "pgxIm") openPgxMatchModal(ctx.type, match.id);
+        else openEssMatchModal(ctx.type, match.id);
+    };
+
+    const openHistoryEntry = (entry, profileView = null) => {
+        const { ui: progressUi } = getProgress();
+        historyStackRef.current.push(
+            profileView && teamProfile
+                ? { kind: "profile", teamId: teamProfile.teamId, view: profileView }
+                : {
+                    kind: "modal",
+                    modalContext,
+                    modalLeftTeam,
+                    modalRightTeam,
+                    hasChosen,
+                    selectedHallMatch,
+                    isHallOfFameOpen,
+                    selectedHallTournament,
+                    hallQualifierGroup: hall.hallQualifierGroup,
+                    hallStage1Group: hall.hallStage1Group,
+                    scrollY: window.scrollY,
+                    insuranceArmed: progressUi.insuranceArmed,
+                    bonusArmed: progressUi.bonusArmed,
+                },
+        );
+        launchHistoryEntry(entry);
+    };
+
+    const restoreHistory = (snap) => {
+        setBreakdownSetIndex(null);
+        if (snap.kind === "profile") {
+            setIsMatchModalOpen(false);
+            setModalContext(null);
+            setModalLeftTeam(null);
+            setModalRightTeam(null);
+            setHasChosen(false);
+            setSelectedHallMatch(null);
+            if (isHallOfFameOpen) {
+                setIsHallOfFameOpen(false);
+                setSelectedHallTournament(null);
+            }
+            setIsLeaderboardOpen(true);
+            setTeamProfile({ teamId: snap.teamId, origin: null, restored: true, savedView: snap.view });
+            return;
+        }
+        setIsHallOfFameOpen(snap.isHallOfFameOpen);
+        setSelectedHallTournament(snap.selectedHallTournament);
+        hall.setHallQualifierGroup(snap.hallQualifierGroup);
+        hall.setHallStage1Group(snap.hallStage1Group);
+        setSelectedHallMatch(snap.selectedHallMatch);
+        setModalContext(snap.modalContext);
+        setModalLeftTeam(snap.modalLeftTeam);
+        setModalRightTeam(snap.modalRightTeam);
+        setHasChosen(snap.hasChosen);
+        setIsMatchModalOpen(true);
+        progressSetInsuranceArmed(snap.insuranceArmed);
+        progressSetBonusArmed(snap.bonusArmed);
+        requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+                lenisRef.current?.scrollTo(snap.scrollY, { immediate: true });
+                window.scrollTo(0, snap.scrollY);
+            }),
+        );
+    };
+
+    const openProfileTournament = (entry, profileView) => {
+        if (!entry?.record) return;
+        historyStackRef.current = [];
+        setTeamProfile((prev) => (prev ? { ...prev, origin: null, restored: true, savedView: profileView } : prev));
+        hall.setHallReturnOnLeave(true);
+        setSelectedHallMatch(null);
+        setIsHallOfFameOpen(true);
+        hall.openLinkedHallRecord(entry.record);
+        selectHallTabsFor(entry.ctx);
+        setHallSpotlight(matchDomKey(entry.match));
+    };
+
+    const leaderboardScrollRef = useRef(0);
+
+    const openTeamProfile = (team, origin) => {
+        leaderboardScrollRef.current = window.scrollY;
+        historyStackRef.current = [];
+        setTeamProfile({ teamId: team.id, origin, restored: false, savedView: null });
+    };
+
+    const closeTeamProfile = () => {
+        historyStackRef.current = [];
+        setTeamProfile(null);
+        const y = leaderboardScrollRef.current;
+        requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+                if (Math.abs(window.scrollY - y) < 2) return;
+                lenisRef.current?.scrollTo(y, { immediate: true });
+                window.scrollTo(0, y);
+            }),
+        );
+    };
+
+    useEffect(() => {
+        if (!isLeaderboardOpen) setTeamProfile(null);
+    }, [isLeaderboardOpen]);
+
     const closeMatchModal = () => {
+        if (historyStackRef.current.length) {
+            restoreHistory(historyStackRef.current.pop());
+            return;
+        }
         const isArchivedHallModal = !!modalContext?.isArchivedHallOfFame;
 
         setIsMatchModalOpen(false);
@@ -5928,6 +6127,7 @@ function SpecialModeContent() {
             loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
         });
 
+        m.placingsMeta = placingsSnapshotOf(leftTeam.id, rightTeam.id);
         m.statsMeta = {
             before: {
                 [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
@@ -6068,6 +6268,7 @@ function SpecialModeContent() {
                 loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
             });
 
+        m.placingsMeta = placingsSnapshotOf(leftTeam.id, rightTeam.id);
         m.statsMeta = {
             before: {
                 [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
@@ -6243,6 +6444,7 @@ function SpecialModeContent() {
             loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
         });
 
+        m.placingsMeta = placingsSnapshotOf(leftTeam.id, rightTeam.id);
         m.statsMeta = {
             before: {
                 [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
@@ -6362,6 +6564,7 @@ function SpecialModeContent() {
             loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
         });
 
+        m.placingsMeta = placingsSnapshotOf(leftTeam.id, rightTeam.id);
         m.statsMeta = {
             before: {
                 [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
@@ -6392,6 +6595,8 @@ function SpecialModeContent() {
         teamStatsRef.current = nextTeamStats;
         saveTeamStats(nextTeamStats);
     };
+
+    const placingsSnapshotOf = (...ids) => Object.fromEntries(ids.map((id) => [id, compactPlacings(teamPlacingsRef.current?.[id])]));
 
     const awardPlacings = ({ winsKey, secondsKey, thirdsKey }, { winner, runnerUp, thirdPlace }) => {
         setTeamPlacings((prev) => {
@@ -6678,7 +6883,7 @@ function SpecialModeContent() {
             tournament: { type: PGX_IM_TYPE_ID, number: finished.edition ?? pgxEdition, city: finished.city ?? pgxCity },
         });
         saveFinishedPgxInternationalToHallOfFame(finished, results);
-        awardPlacings({ winsKey: "tier2Wins", secondsKey: "tier2Seconds", thirdsKey: "tier2Thirds" }, results);
+        awardPlacings({ winsKey: "tier15Wins", secondsKey: "tier15Seconds", thirdsKey: "tier15Thirds" }, results);
 
         setShowWinnersScreen(true);
         closeTournamentSnapshots();
@@ -7453,6 +7658,7 @@ function SpecialModeContent() {
                         loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
                     });
 
+                    m.placingsMeta = placingsSnapshotOf(leftTeam.id, rightTeam.id);
                     m.statsMeta = {
                         before: {
                             [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
@@ -7725,6 +7931,7 @@ function SpecialModeContent() {
                     loserSets: winnerSideKey === "left" ? seriesRightSets : seriesLeftSets,
                 });
 
+                match.placingsMeta = placingsSnapshotOf(leftTeam.id, rightTeam.id);
                 match.statsMeta = {
                     before: {
                         [leftTeam.id]: seriesState.initialStats?.left ?? { ...DEFAULT_TEAM_STAT_VALUES },
@@ -10200,52 +10407,7 @@ function SpecialModeContent() {
         return () => cancelAnimationFrame(id);
     }, [tournamentResults]);
 
-    const modalTitle = useMemo(() => {
-        if (!modalContext) return "";
-
-        if (modalContext.type === "swiss") {
-            return swissNetTitle(modalContext.net);
-        }
-
-        if (modalContext.type === "qualifier") {
-            return qualifierStageLabel(modalContext.stage);
-        }
-
-        if (modalContext.type === "pemGroup") {
-            return pemGroupStageLabel(modalContext.stage);
-        }
-
-        if (modalContext.type === "ecl") {
-            return eclStageLabel(modalContext.stage);
-        }
-
-        if (modalContext.type === "skyline") {
-            return skylinesStageLabel(modalContext.stage);
-        }
-
-        if (modalContext.type === "pgxCm" || modalContext.type === "pgxIm") {
-            return pgxStageLabel(modalContext.type === "pgxIm" ? "im" : "cm", modalContext.stage);
-        }
-
-        if (modalContext.type === "essLq" || modalContext.type === "essCh" || modalContext.type === "essFin") {
-            return essStageLabel(modalContext.type, modalContext.stage);
-        }
-
-        if (modalContext.type === "pemStage1") {
-            return pemStage1StageLabel(modalContext.stage);
-        }
-
-        if (modalContext.type === "cstGroup") {
-            return `Group ${modalContext.group}`;
-        }
-
-        if (modalContext.type === "gccLeague") {
-            return `Matchday ${modalContext.matchday}`;
-        }
-
-        const stageText = stageLabelPlayoffs(modalContext.stage);
-        return stageText;
-    }, [modalContext]);
+    const modalTitle = useMemo(() => matchTitleOf(modalContext), [modalContext]);
 
     const modalMatchNumber = useMemo(() => {
         if (!modalContext) return 1;
@@ -10335,37 +10497,7 @@ function SpecialModeContent() {
         return "MATCH POINT!!!";
     }, [modalContext, qualifierOwner]);
 
-    const modalStageSmallLabel = useMemo(() => {
-        if (!modalContext) return "";
-        if (modalContext.type === "playoffs") return "";
-        if (modalContext.type === "qualifier") return modalContext.group === PLAY_IN_GROUP ? "Open Qualifier" : `Group ${modalContext.group}`;
-        if (modalContext.type === "pemGroup") return isPemBigModal ? `Stage II | Group ${modalContext.group}` : `Group ${modalContext.group}`;
-        if (modalContext.type === "pemStage1") return `Stage I | Group ${modalContext.group}`;
-        if (modalContext.type === "ecl") return "";
-        if (modalContext.type === "pgxCm") {
-            return modalContext.section === "playIn"
-                ? "Play-ins"
-                : modalContext.section === "deciders"
-                    ? "Deciders"
-                    : `Group Stage | Group ${modalContext.group}`;
-        }
-        if (modalContext.type === "pgxIm") return modalContext.section === "entry" ? "" : "Main Bracket";
-        if (modalContext.type === "essLq") return `Ladder ${modalContext.group}`;
-        if (modalContext.type === "essCh") return modalContext.section === "playoffs" ? "Playoffs" : `Group Stage | Group ${modalContext.group}`;
-        if (modalContext.type === "essFin") return "";
-        if (modalContext.stageKey === "stage1" && modalContext.format === PGX_SWISS_FORMAT) return "Swiss Stage";
-        if (modalContext.type === "skyline") {
-            return modalContext.round === SKYLINES_ROOF
-                ? "Rooftop Final"
-                : `Round ${modalContext.round + 1} | ${getSkylinesFloorName(modalContext.floor)}`;
-        }
-        if (modalContext.type === "cstGroup") return "Group Stage";
-        if (modalContext.type === "gccLeague") return "League Phase";
-        if (modalContext.stageKey === "stage1") return "Stage I";
-        if (modalContext.stageKey === "stage2") return "Stage II";
-        if (modalContext.stageKey === "stage3") return "Stage III";
-        return "";
-    }, [modalContext, isPemBigModal]);
+    const modalStageSmallLabel = useMemo(() => matchSmallLabelOf(modalContext, isPemBigModal), [modalContext, isPemBigModal]);
 
     const displayedMiniSquares =
         seriesState.roundNumber === 1 ||
@@ -10659,6 +10791,11 @@ function SpecialModeContent() {
                 modalStatsPanels,
                 toggleModalStatsPanel,
                 breakdownPointLabel,
+                statsPanelTabs,
+                setStatsPanelTab,
+                getTeamForm,
+                openHistoryEntry,
+                getMatchPlacings,
             }}
             teams={{ placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings }}
             actions={{ closeMatchModal, handleChooseLeft, handleChooseRight, handleStartMatch, handleSimulateMatch, simulateEnabled }}
@@ -10736,7 +10873,15 @@ function SpecialModeContent() {
                         teamPlacings,
                         rankById,
                         tournamentChangesById,
+                        teamProfile: teamProfile
+                            ? { ...teamProfile, team: allTeams.find((t) => String(t.id) === String(teamProfile.teamId)) ?? null, history: profileHistory }
+                            : null,
+                        openTeamProfile,
+                        closeTeamProfile,
+                        openProfileEntry: openHistoryEntry,
+                        openProfileTournament,
                     }} />
+                <AnimatePresence>{matchModalNode}</AnimatePresence>
                 <GameControlModals
                     controls={{ isRestartModalOpen, confirmRestart, isTerminateModalOpen, confirmTerminate, setIsRestartModalOpen, setIsTerminateModalOpen }}
                 />

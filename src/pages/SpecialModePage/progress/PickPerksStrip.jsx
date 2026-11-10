@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { FaHeart, FaShieldHalved, FaStar } from "react-icons/fa6";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import css from "./Progress.module.css";
-import { INSURANCE_MIN_BEST_OF, bonusOptionsFor, levelInfo, perksForLevel } from "./progressConfig.js";
+import { INSURANCE_MIN_BEST_OF, bonusOptionsFor, bonusPicksFor, levelInfo, perksForLevel } from "./progressConfig.js";
 import { progressBonusCap, progressSetBonusArmed, progressSetInsuranceArmed, streakReadyNext, useProgress } from "./progressStore.js";
 
 export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance = null }) {
@@ -21,13 +21,18 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
                 ? `Streak Shield ready · ${shieldsLeft} left · protects your streak of ${streak}`
                 : `Streak Shield ready · ${shieldsLeft} left · it protects your next pick streak`;
     const options = bonusOptionsFor({ perks, stage, bestOf, knockout, streakReady: streakReadyNext(progress), chance: pickChance });
-    const armed = options.some((option) => option.type === ui.bonusArmed) ? ui.bonusArmed : null;
+    const maxPicks = bonusPicksFor(perks);
+    const armedList = Array.isArray(ui.bonusArmed) ? ui.bonusArmed : [];
+    const armed = armedList.filter((type) => options.some((option) => option.type === type)).slice(0, maxPicks);
+    const armedKey = armed.join(",");
     const capped = bonus.cap > 0 && bonus.left <= 0;
+    const full = armed.length >= maxPicks;
+    const toggle = (type) => progressSetBonusArmed(armed.includes(type) ? armed.filter((t) => t !== type) : full ? armed : [...armed, type]);
 
     useEffect(
         () => () => {
             progressSetInsuranceArmed(false);
-            progressSetBonusArmed(null);
+            progressSetBonusArmed([]);
         },
         [],
     );
@@ -37,8 +42,10 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
     }, [insurable, ui.insuranceArmed]);
 
     useEffect(() => {
-        if (ui.bonusArmed && (capped || !armed)) progressSetBonusArmed(null);
-    }, [ui.bonusArmed, armed, capped]);
+        if (!armedList.length) return;
+        if (capped) progressSetBonusArmed([]);
+        else if (armedKey !== armedList.join(",")) progressSetBonusArmed(armed);
+    });
 
     const streakText = streak > 0
         ? `Your pick streak: ${streak} correct ${streak === 1 ? "pick" : "picks"} in a row${streakReadyNext(progress) ? ` · a correct pick makes it ${streak + 1}` : ""}`
@@ -79,26 +86,27 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
                 <div className={css.bonus_picker}>
                     <span
                         className={css.perk_hint}
-                        title={`Choose one level bonus for this pick. If it isn't activated in this match, it is lost. All bonus Pick'em points of a tournament can't be more than ${bonus.pct}% of the needed ones (${bonus.cap}).`}
+                        title={`Choose ${maxPicks === 1 ? "one level bonus" : `up to ${maxPicks} level bonuses`} for this pick. A bonus, which isn't activated in this match, is lost. All bonus Pick'em points of a tournament can't be more than ${bonus.pct}% of the needed ones (${bonus.cap}).`}
                     >
                         <FaStar aria-hidden="true" style={{ marginRight: 5, verticalAlign: "-0.1em", color: capped ? "#a9acba" : "#e0a800" }} />
                         {capped
                             ? `Level bonuses used up in this tournament (${bonus.cap} of ${bonus.cap} bonus points)`
-                            : `Level bonus: choose one${bonus.cap ? ` · ${bonus.left} of ${bonus.cap} bonus points left` : ""}`}
+                            : `${maxPicks === 1 ? "Level bonus: choose one" : `Level bonuses: choose up to ${maxPicks} (${armed.length} chosen)`}${bonus.cap ? ` · ${bonus.left} of ${bonus.cap} bonus points left` : ""}`}
                     </span>
                     {!capped ? (
                         <span className={css.bonus_options}>
                             {options.map((option) => {
-                                const on = armed === option.type;
+                                const on = armed.includes(option.type);
+                                const blocked = !on && full && maxPicks > 1;
                                 const value = Math.min(option.value, bonus.cap ? bonus.left : option.value);
                                 return (
                                     <button
                                         key={option.type}
                                         type="button"
                                         aria-pressed={on}
-                                        className={`${css.filter} ${css.bonus_option} ${on ? css.filter_active : ""}`}
-                                        title={`+${value} Pick'em point${value === 1 ? "" : "s"}, if ${option.when}. Otherwise, the bonus is lost.`}
-                                        onClick={() => progressSetBonusArmed(on ? null : option.type)}
+                                        className={`${css.filter} ${css.bonus_option} ${on ? css.filter_active : ""} ${blocked ? css.bonus_option_blocked : ""}`}
+                                        title={blocked ? `You can choose up to ${maxPicks} bonuses for one pick` : `+${value} Pick'em point${value === 1 ? "" : "s"}, if ${option.when}. Otherwise, the bonus is lost.`}
+                                        onClick={() => (maxPicks === 1 ? progressSetBonusArmed(on ? [] : [option.type]) : toggle(option.type))}
                                     >
                                         +{value} {option.label}
                                     </button>

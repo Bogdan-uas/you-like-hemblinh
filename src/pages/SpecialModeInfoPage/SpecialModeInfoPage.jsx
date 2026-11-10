@@ -78,6 +78,7 @@ import { motion } from "framer-motion";
 import Lenis from "lenis";
 import { FaFire } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { useGlobalTips } from "../SpecialModePage/logic/useGlobalTips.js";
 
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
@@ -246,6 +247,10 @@ const OFFICIAL_SECTIONS = [
         label: "Team stats and how do they work",
     },
     {
+        id: "match-history",
+        label: "Match history and team form",
+    },
+    {
         id: "breakdown-explained",
         label: "Detailed Match Results",
     },
@@ -263,7 +268,7 @@ const OFFICIAL_SECTIONS = [
     },
     {
         id: "levels-explained",
-        label: "Levels, XP and Achievements",
+        label: "Levels, XP, Tasks and Achievements",
     },
     {
         id: "official-skylines",
@@ -667,7 +672,7 @@ const StatExplanations = () => (
             <br />• All the changes a team collects during a match are added to its stats once the match is over. The finished match modal shows them as green and red numbers:
         </p>
         <div className={css.image_container}>
-            <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+            <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
         </div>
         {STAT_EXPLANATIONS.map(({ group, stats }) => (
             <React.Fragment key={group}>
@@ -732,7 +737,7 @@ const WeightBars = ({ title, rows }) => {
     );
 };
 
-const LeaderboardExplained = () => {
+const LeaderboardExplained = ({ scrollToAnchor }) => {
     const teams = Object.values(COLORS);
 
     return (
@@ -844,6 +849,63 @@ const LeaderboardExplained = () => {
                     <li>The loser loses a share of that: about 44–53% if the winner was the favourite, about 68–79% if the winner was the underdog, and 20% in the Grand Final.</li>
                 </ol>
             </details>
+
+            <h4 className={css.stat_group_title}>Sorting by trophies and places</h4>
+            <p className={css.info_text}>
+                The "Placement sorting" can also sort the teams by "Trophies and first places", "Second Places" and "Third Places". But a trophy isn&apos;t just a trophy: every kind of it has its own worth, and the teams are sorted by the worth of everything they have won together.
+                That&apos;s why a team with three trophies of different Tier 1 tournaments is higher than a team with only one Official trophy:
+            </p>
+            <div className={css.lb_rules}>
+                <div className={css.lb_rule}>
+                    <b>1st places:</b> Official <b>100</b> · PEM Big and Global Pro League <b>70</b> · Premier Bounty Series <b>60</b> · PEM Small and PGX Grandmasters <b>50</b> · Elite Star Series <b>45</b> · Tier 1.5 <b>30</b> · Tier 2 <b>15</b>
+                </div>
+                <div className={css.lb_rule}>
+                    <b>2nd places:</b> Official <b>50</b> · Tier 1 <b>30</b> · Tier 1.5 <b>15</b> · Tier 2 <b>8</b>
+                </div>
+                <div className={css.lb_rule}>
+                    <b>3rd places:</b> Official <b>30</b> · Tier 1 <b>18</b> · Tier 1.5 <b>9</b> · Tier 2 <b>5</b>
+                </div>
+            </div>
+            <p className={css.info_text}>
+                If two teams are worth exactly the same, the more important trophies decide first (an Official one before all the others and so on), and only then the points.
+            </p>
+
+            <h4 className={css.stat_group_title}>Team profiles</h4>
+            <p className={css.info_text}>
+                Hovering over a team in the Leaderboard still shows its stats in a quick look, and a click on its row still switches between the stats tabs. But a click right on the <b>team circle</b> opens the <b>profile</b> of that team:
+                everything around the circle turns white, starting from the circle itself, and then the circle flies up into the head of the profile. The pictures here are from right after Official #1, which Team Indigo has won:
+            </p>
+            <ProfileShot n={1} alt="Everything around the clicked circle of Team Indigo turns white" />
+            <p className={css.info_text}>
+                The head of the profile shows the points inside the circle, the place in the Leaderboard, the unbeaten streak, the record, the win rate, the average multiplier and every trophy and medal of the team. While scrolling, it stays at the top and gets smaller, just like the second header of every tournament.
+                Below it, "Match statistics" tells everything about the matches of the team: the win rate, the won sets, the round difference, the average multiplier (compared to the one of its opponents) and its best one, the won mini-rounds, the series and Best of 1 records, the Overtime sets, the deciders, the current run, the comebacks, sweeps and upsets, the points, which it got from its matches,
+                in how many tournaments it has played, and the team, which it beat the most often, and the one, which beat it the most often. All of those numbers are colored: a share is red, if it&apos;s 25% or less, gray at 50% and green from 60% on, wins are green and losses are red:
+            </p>
+            <ProfileShot n={2} alt="Profile of Team Indigo with its head and the Match statistics" />
+            <p className={css.info_text}>
+                "Points after each match" draws the Leaderboard points of the team after every one of its matches. The dot follows the cursor along the line, and the hint tells, which match it was. The switch on the right shows only the matches of the last year, month or week, and if the team hasn&apos;t played any match in that time, the option is locked.
+                Below it, "Team stats" shows all 14 stats of the team at once:
+            </p>
+            <ProfileShot n={3} alt="The points chart of Team Indigo with the dot on its loss against Team Cyan, and the team stats" />
+            <p className={css.info_text}>
+                At the bottom, "Match history" lists the last 20 matches of the team, starting with the newest one, and "Show 20 more matches" adds the next 20, until all of them are there.
+                Every card has the date, the tournament (as a link) and its stage, the opponent with its place in the Leaderboard before the match, the score with every set (OT for an Overtime, ER for the Extended Rounds and P for the penalties), the average multiplier of the team in that match and the Leaderboard points with the places, which this match has won or lost:
+            </p>
+            <ProfileShot n={4} alt="Match history of Team Indigo in Official #1" />
+            <p className={css.info_text}>
+                And every card can be opened. If the match is from a tournament, which is already in the Hall of Fame, the Hall of Fame opens with the summary of that tournament, and the match modal of that match shows up on top of it (a match of the tournament, which is still going on, just opens its match modal).
+                Closing the match modal brings me right back to the profile, where I&apos;ve been. Escape or "← Leaderboard" closes the profile. The panels next to this match modal are explained in{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("match-history")} href='#match-history'>Match history and team form</a>:
+            </p>
+            <ProfileShot n={5} alt="The Semifinal of Official #1 opened from the profile, on top of its Hall of Fame summary" />
+            <p className={css.info_text}>
+                The name of the tournament on a card is a link of its own (a tournament, which is still going on, isn&apos;t in the Hall of Fame yet, so its name is no link). It opens the summary of that whole tournament in the Hall of Fame, with the right group already chosen, if the match was in a group.
+                The match, which I came from, isn&apos;t marked right away: it lights up with a golden ring the first time it comes into view, while I scroll through the summary. Here, I came from the loss of Team Indigo against Team Cyan in the 0:1 net of Stage III:
+            </p>
+            <ProfileShot n={6} alt="The Stage III match of Team Indigo against Team Cyan lit up with a golden ring in the Hall of Fame" />
+            <p className={css.info_text}>
+                "Back to Hall of Fame" and "Close Hall of Fame" both bring me straight back to the profile, where I&apos;ve been, and when I close the profile, the Leaderboard is still scrolled to the same place as before.
+            </p>
         </>
     );
 };
@@ -861,6 +923,22 @@ const LEVELS_IMAGES = import.meta.glob("../../../assets/images/levels-*.png", { 
 const LevelShot = ({ n, alt, width = "34vw" }) => (
     <div className={css.image_container}>
         <img src={LEVELS_IMAGES[`../../../assets/images/levels-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+    </div>
+);
+
+const HISTORY_IMAGES = import.meta.glob("../../../assets/images/history-*.png", { eager: true, import: "default" });
+
+const HistoryShot = ({ n, alt, width = "34vw" }) => (
+    <div className={css.image_container}>
+        <img src={HISTORY_IMAGES[`../../../assets/images/history-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+    </div>
+);
+
+const PROFILE_IMAGES = import.meta.glob("../../../assets/images/profile-*.png", { eager: true, import: "default" });
+
+const ProfileShot = ({ n, alt, width = "34vw" }) => (
+    <div className={css.image_container}>
+        <img src={PROFILE_IMAGES[`../../../assets/images/profile-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
     </div>
 );
 
@@ -883,7 +961,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 First restarts the tournament and redirects you to this page again & second redirects you to Home Page but doesn't restart the tournament.
                 Near those two, you will see an orange button, named as "Leaderboard" and right next to it, the button, called as "Hall of Fame". We will come to those in a minute, ok? <br />
                 And in the top-right corner of the header, there is a small round button with a gear on it, which opens the <b>Settings</b>, and right before it, a round button with "LVL 1" in it, which is my <b>level</b>. Both of them stay there on every screen of the Special Mode, but more on them a little bit later too (the level has its own section,{" "}
-                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP and Achievements</a>
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP, Tasks and Achievements</a>
                 ). <br />
                 Below the header, you see the encouraging text to the tournament simulator and the button leading to this Info Page nearby. <br />
                 In the center there is an endless loop of different team circles, which tries to show, what colors are featured in the tournament. <br />
@@ -1015,7 +1093,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <br />• <b>Smooth scrolling</b>: turn it off, if you prefer the instant, normal mouse wheel scrolling
                 <br />• <b>Series opening</b>: plays a short intro with both teams, every time a series starts. When it&apos;s off, the scoreboard just makes a quick entrance instead
                 <br />• <b>All XP sources at once</b>: after a series, every XP source on the XP card flies into the level bar at the same time, instead of one after another (more on the XP card in{" "}
-                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP and Achievements</a>)
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP, Tasks and Achievements</a>)
                 <br />• <b>Skip the podium reveal</b>: the Winners&apos; Screen shows the whole Top 4 at once instead of revealing them one by one
                 <br />• <b>Winners&apos; Screen effects</b>: the rays, sparkles and confetti around the podium
             </p>
@@ -1314,13 +1392,14 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>Already finished match is finished, but you can click on it and see results of the match in that same modal:</p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
             </div>
             <p className={css.info_text}>
                 On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the check icon again (it can also be a cross icon but if the match would have lost). <br />
                 And there is also a pill on the right of the "BEST OF" badge, which tells how many <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("pickem-system")} href='#pickem-system'>Pick&apos;em points</a> you got: it&apos;s green with a ✓, if your team won the match, red with a ✗, if it got nothing, and orange with a half-filled circle, if your team lost the match, but still took some sets (and therefore some Pick&apos;em points). <br />
                 In the middle, there is final score of the match, where there are some changes from pre-match modal. The winner team gets 10 points from this win here and changes its placement from 26th place to 17th place. Loser team loses 5 points and moves from 23rd place to 32nd place.<br />
                 Also, the winner team got an <strong>Unbeaten Streak</strong>: consecutive wins without a loss in between will increment it. <br />
+                Right below the score, there is the <b>average multiplier</b> of both teams in this match (more about it in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("match-history")} href='#match-history'>Match history and team form</a>). <br />
                 In the footer, there is a precise series summary. Here, you can see total played rounds, which is also a clickable button (we will come back to it soon in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("breakdown-explained")} href='#breakdown-explained'>Detailed Match Results</a> section), the score after 1st Half, the score after 2nd Half and in some cases, like here as well, the score after all OTs (here, it was only 1x OT).
             </p>
             <p className={css.info_text}>
@@ -1328,7 +1407,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 If OT goes onto multiple OTs and a team won in those multiple OTs at least 2 Extended Rounds, the check mark is being replaced by a "i" mark like here:
             </p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+                <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (This 4x OT was like the full match regulation, LOL)
                 </span>
@@ -1337,7 +1416,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 By hovering onto this "i" mark, you can see in which Overtimes a team won the Extended Rounds:
             </p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+                <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
             </div>
         </section>
         <section>
@@ -1351,6 +1430,35 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Throughout this whole tab, you've been noticing team stats in match modals and Leaderboard. I have already explained as well beforehand that these stats influence the number generation based on how they are. But all these stats have different names, different premises, different effects and different values. That's why, I will explain each here:
             </p>
             <StatExplanations />
+        </section>
+        <section>
+            <div id="match-history" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content", textAlign: "start" }} className={css.title}>
+                    Match history and team form
+                </h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The panels with the team stats on both sides of the match modal have a third page as well: <b>Recent form</b>. The arrow in the top corner of a panel switches between its pages, and the panel stays on the page, which I chose last, in the next match modals as well.
+                Here, in the Grand Final of Official #1 (a lot later than the first match above), Team Indigo and Team Blue already have many matches behind them:
+            </p>
+            <HistoryShot n={1} alt="Recent form of Team Indigo and Team Blue next to the match modal of the Grand Final" />
+            <p className={css.info_text}>
+                The six tiles on the top are about all the matches of the team so far: the win rate with the wins and losses, the average multiplier of every mini-round, which the team has played (and its best one), the current streak of wins or losses (and its best winning run), the share of the won sets, the round difference, and the Overtime sets and the deciders, which it has won.
+                They are colored as well: green is good, red is bad and gray is somewhere in between. Below them, there are the last 5 matches of the team: the result, the opponent with its place in the Leaderboard before the match, the score, the stage and the tournament ("LIVE" for a match of the current tournament), the average multiplier of the team in that match, the Leaderboard points with the places, which it has won or lost, and the score of every set.
+            </p>
+            <p className={css.info_text}>
+                A click on such a card opens that match. A match of the current tournament just opens in the match modal, and a match of an older tournament opens the Hall of Fame with the summary of that tournament first, and its match modal on top of it.
+                The match modal of the Grand Final doesn&apos;t get lost, though: closing the opened match brings me back to it, with my chosen team, the Pick&apos;em Insurance and the chosen bonus still there. Matches can also be opened inside of opened matches, and the way back goes step by step.
+                In a finished match, the "Recent form" shows only the matches before it, and if that match isn&apos;t the newest one of the team anymore, the panel says "Form before this match" instead. Every finished match modal also shows the <b>average multiplier</b> of both teams in that match, right above the sets.
+                Here, I opened the Semifinal of Team Indigo: it was still its newest match before the Grand Final, but not the one of Team Navy, which played the Third Place Decider after it:
+            </p>
+            <HistoryShot n={2} alt="The Semifinal of Team Indigo and Team Navy opened from the Recent form, with the average multipliers of both teams" />
+            <p className={css.info_text}>
+                The same match cards, only bigger, are also in the team profiles in the Leaderboard (see{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("leaderboard-explained")} href='#leaderboard-explained'>Leaderboard format and points system</a>
+                ).
+            </p>
         </section>
         <section>
             <div id="breakdown-explained" style={{ marginTop: '24px' }} className={css.divider_container}>
@@ -1527,7 +1635,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>That's why also I get here only <b>+1 Pick&apos;em point</b>:</p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '37vw', height: '27vh' }} />
+                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '37vw', height: 'auto' }} />
             </div>
         </section>
         <section>
@@ -1535,11 +1643,11 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Leaderboard format and points system</h3>
                 <div className={css.divider} />
             </div>
-            <LeaderboardExplained />
+            <LeaderboardExplained scrollToAnchor={scrollToAnchor} />
         </section>
         <section>
             <div id="levels-explained" style={{ marginTop: '24px' }} className={css.divider_container}>
-                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Levels, XP and Achievements</h3>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Levels, XP, Tasks and Achievements</h3>
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
@@ -1572,7 +1680,12 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 And it stays visible later as well: the match modal and the last set in the Detailed Match Results show the grey "Not needed" insurance and the crossed-out bonus, which wasn&apos;t activated, right above the Pick&apos;em points.
                 On the left, the flame shows what this pick has done to my pick streak: "Correct pick" or the new streak with "In a row", "Streak lost" (or "No streak") for a wrong pick, or "Streak kept", if a Streak Shield has saved it:
             </p>
-            <LevelShot n={12} alt="Match modal of the finished Grand Final with the Not needed insurance and the crossed-out Comeback bonus" width="26vw" />
+            <LevelShot n={12} alt="Match modal of the finished Grand Final with the Not needed insurance, the crossed-out Comeback bonus and the average multipliers" width="26vw" />
+            <p className={css.info_text}>
+                The trophies and medals next to the teams in a finished match modal are always the ones, which the teams had back then, so Team Indigo doesn&apos;t have the trophy of this Grand Final in its own match modal yet. Below them, there is the average multiplier of both teams in this match (more about it in{" "}
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("match-history")} href='#match-history'>Match history and team form</a>
+                ).
+            </p>
             <p className={css.info_text}>
                 Right after every series, a small card slides in below the level button: the level circle, the XP bar and every source of the XP as its own chip, one after another (or all of them at once with the "All XP sources at once" setting), like "Series played", "Pick&apos;em points", "Grand Final", "Overtime" or the "Daily warm-up" for the first series of the day.
                 And when the bar is full, the circle pops with a golden wave and a rising "LEVEL UP!":
@@ -1584,19 +1697,42 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <LevelShot n={4} alt="Level Up screen of Level 20 with its two new benefits" />
             <p className={css.info_text}>
-                After the Pick&apos;em summary, the first button I click ("To the bracket" or any other) opens the <b>XP summary</b> of the whole tournament first. Every series, the results of the tournament and every new achievement get their own row, one after another, while the bar fills up,
+                After the Pick&apos;em summary, the first button I click ("To the bracket" or any other) opens the <b>XP summary</b> of the whole tournament first. Every series, every completed task, the results of the tournament and every new achievement get their own row, one after another, while the bar fills up,
                 and at the end, there is the total. If I reached a new level during the tournament, its Level Up screen shows up once more at the right moment of the summary. "Continue" takes me to where I wanted to go, and the summary of the last tournament can be opened again later in the Level tab:
             </p>
             <LevelShot n={5} alt="XP summary of Official #1: the Grand Final, the tournament results and the first new achievements" />
             <LevelShot n={6} alt="The end of the XP summary of Official #1 with the total XP earned" />
             <p className={css.info_text}>
-                A click on the level button opens the <b>Level</b> and <b>Achievements</b> screen. The Level tab shows my level, the XP bar with the total XP, my current pick streak with my best one so far and all my benefits at the current level. Below them, the tables of "How to earn XP" tell every way to get XP and how much it gives:
+                A click on the level button opens the <b>Level</b>, <b>Achievements</b> and <b>Tasks</b> screen. The Level tab shows my level, the XP bar with the total XP, my current pick streak with my best one so far and all my benefits at the current level. Below them, the tables of "How to earn XP" tell every way to get XP and how much it gives:
             </p>
             <LevelShot n={7} alt="Level tab with Level 20, the XP bar, the benefits at Level 20 and the beginning of How to earn XP" />
             <p className={css.info_text}>
                 At the bottom, there are all the benefits up to Level 1000, the unlocked ones, the next one and how much XP the others are still away. While scrolling, the tabs and the level stay at the top, and the level with its bar gets smoothly smaller:
             </p>
             <LevelShot n={8} alt="Level benefits up to Level 1000 with the smaller level at the top" />
+            <p className={css.info_text}>
+                The third tab is <b>Tasks</b>. Tasks are goals, which change over time and give XP once they are done. There are four kinds of them, one below the other on a timeline: <br />
+                • <b>Daily tasks</b>: 3 new ones every day, 60–150 XP each, and one of them can be re-rolled every day. <br />
+                • <b>Weekly tasks</b>: 6 to 9 new ones every week, 250–600 XP each, with 3 re-rolls every week. <br />
+                • <b>Monthly tasks</b>: 6 to 12 new ones every month, 800–1,800 XP each, with 3 re-rolls every week. <br />
+                • <b>Crazy tasks</b>: 1 to 3 new ones every month, 3,000–6,500 XP each, without any re-rolls, and with a neon look of their own. <br />
+                A re-roll replaces a task by a random new one, and every weekly and monthly task can be re-rolled only once. Every kind has more than 100 different tasks, and the difficulty of a task (Easy, Medium or Hard, and Wild, Insane or Unhinged for the crazy ones) decides how much XP it gives.
+                The timers tell, when the tasks of a kind are replaced by new ones and when the re-rolls come back. Every series and every finished tournament counts for all the tasks at once, and from Level 8 on, the <b>Task boost</b> adds +5% to the XP of every task (up to +80% at Level 1000):
+            </p>
+            <LevelShot n={13} alt="Tasks tab with the Daily and Weekly tasks, one of them done in each" />
+            <p className={css.info_text}>
+                When a task is done, it gets its own animation right after the XP chips of the series and before any new achievement: the task card slides in, its bar fills up, the check pops in and a seal stamps onto its corner with shockwaves and sparks. Then its XP flies into the level bar.
+                The bigger the kind and the harder the task, the more epic it gets: daily and weekly tasks show up at the side, and a monthly one in the middle of the screen, with light rays behind the seal and a stronger shake:
+            </p>
+            <LevelShot n={14} alt="A weekly task completed at the side of the Stage II bracket" />
+            <p className={css.info_text}>
+                And a crazy task takes over the whole screen: everything goes dark, the screen flashes, rainbow sparks and confetti fly all around and "CRAZY TASK CRUSHED!" glitches in:
+            </p>
+            <LevelShot n={15} alt="A crazy task completed in the middle of the screen with rainbow confetti" />
+            <p className={css.info_text}>
+                In the Tasks tab, done tasks look exactly like at the end of their animation: with the seal on the corner, the date, when they were completed, and the XP, which they gave. Just like the achievements, a newly done task has a red "NEW" mark, until I&apos;ve seen it:
+            </p>
+            <LevelShot n={16} alt="The Crazy tasks with one of them done" />
             <p className={css.info_text}>
                 The Achievements tab has <b>109 achievements</b> in 7 categories (Tournaments, Pick&apos;em, Matches, Stories, Circuits, Milestones and Level Benefits). Every achievement has a difficulty, which tells how much XP it gives: Easy 50, Medium 120, Hard 250, Extreme 500 and Legendary 1,000 XP.
                 Most of them also have tiers, from Bronze over Silver, Gold and Diamond to Platinum, and every higher tier gives more XP (only "Completionist" has one more tier after Platinum, the Master, for getting every step of every other achievement).
@@ -1753,7 +1889,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button, and after the XP summary of the Official #1 (see{" "}
-                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP and Achievements</a>
+                <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP, Tasks and Achievements</a>
                 ), I'm getting indeed redirected to the playoffs results:</p>
             <div className={css.image_container}>
                 <img src={playoffsResultsAndTournamentFinished} alt="Playoffs Results and Finished Tournament Results" className={css.image} style={{ width: '39vw', height: '40vh' }} />
@@ -2951,7 +3087,7 @@ const PgxSubPage = ({ scrollToAnchor }) => (
                 The sixth option in the "Choose how you want to play" modal is the <b>PGX Grandmasters</b>, a Tier 1 tournament, which, for the first time, includes nearly every team of the Leaderboard.
                 Same as the PEM Tournaments, it is three tournaments, played one after another, but here, every one of them is a step on the same ladder: <br />
                 • <b>PGX Candidate Masters</b> (Qualifier): its 4 best teams go up to the International Masters <br />
-                • <b>PGX International Masters</b> (Tier 2): only its winner goes up to the Grandmasters <br />
+                • <b>PGX International Masters</b> (Tier 1.5): only its winner goes up to the Grandmasters <br />
                 • <b>PGX Grandmasters</b> itself (Tier 1)
             </p>
             <PgxShot n={1} alt="Choose how you want to play modal with the PGX Grandmasters picked" />
@@ -3056,7 +3192,7 @@ const PgxSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
-                The second step is the <b>PGX International Masters</b>, a Tier 2 tournament with 21 teams: places 16-26 start right in the Main Bracket, while places 27-32 and the 4 teams from the Candidate Masters (which glow golden) have to go through the Entry Round first:
+                The second step is the <b>PGX International Masters</b>, a Tier 1.5 tournament with 21 teams: places 16-26 start right in the Main Bracket, while places 27-32 and the 4 teams from the Candidate Masters (which glow golden) have to go through the Entry Round first:
             </p>
             <PgxShot n={14} alt="Tournament Intro Screen of PGX International Masters Jönköping #1" />
             <p className={css.info_text}>
@@ -3078,7 +3214,7 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <PgxShot n={17} alt="The finished Upper Bracket of the International Masters with the Grand Final" />
             <PgxShot n={18} alt="The finished Lower Bracket of the International Masters" />
             <p className={css.info_text}>
-                The Winners&apos; Screen is a Tier 2 one, so there are no quotes and the winner gets a 🥇. But the winner also gets a golden <b>"Qualified to PGX Grandmasters"</b> badge with the PGX trophy on its podium:
+                The Winners&apos; Screen has no quotes, and as a Tier 1.5 tournament, its winner gets the Tier 1.5 medal in the Leaderboard, while 2nd and 3rd place count into the 🥈 and 🥉 totals. But the winner also gets a golden <b>"Qualified to PGX Grandmasters"</b> badge with the PGX trophy on its podium:
             </p>
             <PgxShot n={19} alt="Winners' screen of PGX International Masters Jönköping #1 with the Qualified to PGX Grandmasters badge" />
             <p className={css.info_text}>
@@ -3184,7 +3320,7 @@ const EssSubPage = ({ scrollToAnchor }) => (
             </p>
             <EssShot n={1} alt="Choose how you want to play modal with the Elite Star Series picked" />
             <p className={css.info_text}>
-                <b>Tier 1.5</b> is a new tier, made for the Challenger: its badge is orange, and it is worth less than a Tier 1 tournament and more than a Tier 2 one. All three tournaments share the same number, so my first one was the <b>Elite Star Series #1</b>,
+                <b>Tier 1.5</b> is the same tier as the one of the PGX International Masters: its badge is orange, and it is worth less than a Tier 1 tournament and more than a Tier 2 one. All three tournaments share the same number, so my first one was the <b>Elite Star Series #1</b>,
                 with the <b>Elite Star Series Ladder Qualifier #1</b> and the <b>Elite Star Series Challenger #1</b> before it.
             </p>
             <p style={{ marginTop: '12px' }} className={css.info_text}>
@@ -3255,7 +3391,7 @@ const EssSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
-                The second step is the <b>Challenger</b>, the first Tier 1.5 tournament, with 16 teams: the places 7-18 of the Leaderboard and the 4 Ladder winners, which glow golden:
+                The second step is the <b>Challenger</b>, a Tier 1.5 tournament just like the PGX International Masters, with 16 teams: the places 7-18 of the Leaderboard and the 4 Ladder winners, which glow golden:
             </p>
             <EssShot n={14} alt="Tournament Intro Screen of Elite Star Series Challenger #1" />
             <p className={css.info_text}>
@@ -3440,6 +3576,7 @@ const SCROLL_EASING = (t) =>
         : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 const SpecialModeInfoPage = () => {
+    useGlobalTips();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeSubPage =
         INFO_SUB_PAGES.find((page) => page.id === searchParams.get(SUB_PAGE_SEARCH_PARAM)) ?? INFO_SUB_PAGES[0];

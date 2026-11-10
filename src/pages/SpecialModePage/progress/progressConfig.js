@@ -112,6 +112,7 @@ export const XP_SOURCE_GROUPS = [
         rows: [
             { source: "XP boost", criteria: "From Level 3 on, your level adds a share on top of all the XP of every series and tournament (not of achievements)", xp: "+2% up to +100%" },
             { source: "Achievement boost", criteria: "From Level 4 on, your level adds a share on top of the XP of every achievement step", xp: "+5% up to +75%" },
+            { source: "Task boost", criteria: "From Level 8 on, your level adds a share on top of the XP of every completed task", xp: "+5% up to +80%" },
         ],
     },
 ];
@@ -306,6 +307,8 @@ const PERK_SCHEDULE = {
     knockoutBonus: [[16, 1], [120, 2], [290, 3], [610, 4], [910, 5]],
     longSeriesBonus: [[24, 1], [130, 2], [310, 3], [620, 4], [940, 5]],
     bonusCap: [[6, 5], [20, 7], [40, 10], [75, 12], [100, 14], [175, 16], [250, 18], [350, 20], [500, 22], [750, 23], [1000, 25]],
+    bonusPicks: [[50, 2], [100, 3], [250, 4], [500, 5]],
+    taskBoost: [[8, 5], [25, 10], [45, 15], [70, 20], [100, 25], [150, 30], [250, 40], [400, 50], [600, 60], [800, 70], [1000, 80]],
     achievementBoost: [[4, 5], [33, 10], [66, 15], [115, 20], [170, 25], [240, 30], [400, 40], [650, 50], [1000, 75]],
 };
 
@@ -338,7 +341,14 @@ export const NO_PERKS = {
     longSeriesBonus: 0,
     bonusCap: 0,
     achievementBoost: 0,
+    taskBoost: 0,
+    bonusPicks: 0,
 };
+
+export const bonusPicksFor = (perks) => Math.max(1, Math.min(5, perks?.bonusPicks || 1));
+
+export const pickedBonusesOf = (pick) =>
+    pick?.bonuses?.length ? pick.bonuses : pick?.bonus ? [{ type: pick.bonus, value: pick.bonusValue || 0, ready: !!pick.bonusReady }] : [];
 
 export const perksForLevel = (level) =>
     PERK_MILESTONES.filter((m) => m.level <= level).reduce((acc, m) => ({ ...acc, ...m.set }), { ...NO_PERKS });
@@ -358,9 +368,11 @@ export const perkLines = (set) => [
     set.deciderBonus && `+${set.deciderBonus} Pick'em ${s(set.deciderBonus, "point")}, when your pick wins a series that goes to its last possible set`,
     set.knockoutBonus && `+${set.knockoutBonus} Pick'em ${s(set.knockoutBonus, "point")} for every correct pick in a knockout match (its loser is out)`,
     set.longSeriesBonus && `+${set.longSeriesBonus} Pick'em ${s(set.longSeriesBonus, "point")} for a correct pick in a Best of 5 or longer`,
-    set.bonusCap && `Bonus Pick'em points: up to ${set.bonusCap}% of the needed ones per tournament (you choose one bonus for each pick)`,
+    set.bonusCap && `Bonus Pick'em points: up to ${set.bonusCap}% of the needed ones per tournament (you choose the bonuses for each pick)`,
+    set.bonusPicks && `Choose up to ${set.bonusPicks} level bonuses for a single pick`,
     set.xpBoost && `+${set.xpBoost}% XP from every series and tournament`,
     set.achievementBoost && `+${set.achievementBoost}% XP from achievements`,
+    set.taskBoost && `+${set.taskBoost}% XP from tasks`,
 ].filter(Boolean);
 
 export const BONUS_PERK_TYPES = ["gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];

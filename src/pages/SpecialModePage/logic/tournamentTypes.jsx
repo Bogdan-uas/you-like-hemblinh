@@ -83,7 +83,7 @@ const EVENT_TOURNAMENT_TYPES = [
     { id: ECL_TYPE_ID, label: "Elite Competition League", tier: "tier2" },
     { id: GCC_TYPE_ID, label: "Global Challenger Cup", tier: "tier2" },
     { id: SKYLINES_TYPE_ID, label: "Official Skylines", tier: "tier2" },
-    { id: PGX_IM_TYPE_ID, label: "PGX International Masters", tier: "tier2" },
+    { id: PGX_IM_TYPE_ID, label: "PGX International Masters", tier: "tier15" },
     { id: PGX_CM_TYPE_ID, label: "PGX Candidate Masters", tier: "qualifier" },
     { id: ESS_CH_TYPE_ID, label: "Elite Star Series Challenger", tier: "tier15" },
     { id: ESS_LQ_TYPE_ID, label: "Elite Star Series Ladder Qualifier", tier: "qualifier" },

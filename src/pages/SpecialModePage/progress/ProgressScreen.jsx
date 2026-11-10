@@ -21,13 +21,14 @@ import {
     xpToNext,
 } from "./progressConfig.js";
 import { achievementValue } from "./progressEngine.js";
-import { openProgressScreen, progressMarkSeen, progressOpenLastSummary, unseenAchievementIds, useProgress } from "./progressStore.js";
+import { openProgressScreen, progressMarkSeen, progressOpenLastSummary, unseenAchievementIds, unseenTaskIds, useProgress } from "./progressStore.js";
 import { AchievementMedal, DifficultyChip, LevelBar, LevelCircle, LevelNumber, XpNumbers } from "./ProgressParts.jsx";
 import { formatXp, useScreenLenis } from "./progressUi.js";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { isSecretUnlocked, useSpecialModeSettings } from "../logic/settings.js";
 import { FaAnglesDown, FaRotateLeft } from "react-icons/fa6";
 import { AchievementReset } from "./AchievementReset.jsx";
+import { TasksTab } from "./TasksTab.jsx";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 
 const SEEN_AFTER_MS = 1100;
@@ -424,6 +425,7 @@ export function ProgressScreen({ tab }) {
     const { smoothScroll } = useSpecialModeSettings();
     const { wrapperRef, contentRef, lenisRef } = useScreenLenis(smoothScroll);
     const unseen = unseenAchievementIds(progress).length;
+    const unseenTasks = unseenTaskIds(progress).length;
 
     useEffect(() => {
         lenisRef.current?.scrollTo(0, { immediate: true });
@@ -439,18 +441,18 @@ export function ProgressScreen({ tab }) {
                 <QualifierGroupNav
                     value={tab}
                     onChange={openProgressScreen}
-                    groups={["level", "achievements"]}
+                    groups={["level", "achievements", "tasks"]}
                     anchorId="progress-tabs"
-                    labelOf={(key) =>
-                        key === "level" ? (
-                            "Level"
-                        ) : (
+                    labelOf={(key) => {
+                        if (key === "level") return "Level";
+                        const count = key === "tasks" ? unseenTasks : unseen;
+                        return (
                             <span className={css.tab_label}>
-                                Achievements
-                                {unseen ? <span className={css.tab_new}>{unseen > 99 ? "99+" : unseen}</span> : null}
+                                {key === "tasks" ? "Tasks" : "Achievements"}
+                                {count ? <span className={css.tab_new}>{count > 99 ? "99+" : count}</span> : null}
                             </span>
-                        )
-                    }
+                        );
+                    }}
                 />
                 </div>
                 {tab === "level" ? (
@@ -462,7 +464,13 @@ export function ProgressScreen({ tab }) {
                     </div>
                 ) : null}
                 </div>
-                {tab === "level" ? <LevelTab progress={progress} /> : <AchievementsTab key="achievements" progress={progress} rootRef={wrapperRef} />}
+                {tab === "level" ? (
+                    <LevelTab progress={progress} />
+                ) : tab === "tasks" ? (
+                    <TasksTab key="tasks" progress={progress} rootRef={wrapperRef} />
+                ) : (
+                    <AchievementsTab key="achievements" progress={progress} rootRef={wrapperRef} />
+                )}
             </div>
         </motion.div>
     );

@@ -20,6 +20,7 @@ import {
     clampStat,
     statToInputString,
 } from "../logic/teamStats.js";
+import { FormPanelBody } from "./TeamHistory.jsx";
 
 const StatScaleBar = ({ value, max = 100, height = 9, animated = true }) => {
     const pct = Math.max(0, Math.min(100, (Number(value) || 0) / max * 100));
@@ -66,7 +67,7 @@ const StatScaleBar = ({ value, max = 100, height = 9, animated = true }) => {
     );
 };
 
-const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "8px", note = null }) => {
+export const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "8px", note = null }) => {
     const rounded = Math.round((Number(value) || 0) * 10) / 10;
     const roundedDiff = diff == null ? null : Math.round(diff * 10) / 10;
     const rowRef = useRef(null);
@@ -175,7 +176,7 @@ const StatFactorRow = ({ label, value, max = 100, diff, marginBottom = "8px", no
     );
 };
 
-const StatAverageLine = ({ statsNow, statsBefore }) => {
+export const StatAverageLine = ({ statsNow, statsBefore }) => {
     const average = getTeamStatAverage(statsNow);
     const diff = statsBefore ? Math.round((average - getTeamStatAverage(statsBefore)) * 100) / 100 : null;
 
@@ -326,9 +327,13 @@ export const StatsFactorPanelBody = ({ team, statsNow, statsBefore, tab = 0 }) =
     );
 };
 
-const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes = null }) => {
+const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes = null, tab: tabProp = null, onTabChange = null, form = null, formBefore = false, onOpenEntry = null }) => {
     const anchorProp = side === "left" ? "right" : "left";
-    const [tab, setTab] = useState(0);
+    const [ownTab, setOwnTab] = useState(0);
+    const total = STAT_TABS.length + (form ? 1 : 0);
+    const tab = Math.min(tabProp ?? ownTab, total - 1);
+    const setTab = (next) => (onTabChange ? onTabChange(next) : setOwnTab(next));
+    const isFormTab = !!form && tab === STAT_TABS.length;
     const defs = STAT_TABS[Math.max(0, Math.min(tab, STAT_TABS.length - 1))] ?? [];
 
     return (
@@ -345,8 +350,8 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
             style={{
                 position: "absolute",
                 top: 0,
-                bottom: 0,
-                minHeight: "307.2px",
+                bottom: isFormTab ? "auto" : 0,
+                minHeight: isFormTab ? "max(307.2px, 100%)" : "307.2px",
                 width: "230px",
                 [anchorProp]: "50%",
                 zIndex: -1,
@@ -367,8 +372,8 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
             <StatsTabLink
                 side={side}
                 tab={tab}
-                total={STAT_TABS.length}
-                onClick={() => setTab((t) => (t + 1) % STAT_TABS.length)}
+                total={total}
+                onClick={() => setTab((tab + 1) % total)}
             />
 
             <div
@@ -382,6 +387,12 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
             >
                 Team {team?.name}
             </div>
+            {isFormTab ? (
+                <div style={{ marginTop: "4px", paddingBottom: "4px" }}>
+                    <FormPanelBody form={form} before={formBefore} onOpen={onOpenEntry} />
+                </div>
+            ) : (
+            <>
             <div
                 style={{
                     fontWeight: 700,
@@ -423,6 +434,8 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
                     );
                 })}
             </div>
+            </>
+            )}
         </motion.div>
     );
 };
@@ -669,6 +682,12 @@ export const MatchStatsOverlay = ({
     onToggleRight,
     leftRowNotes = null,
     rightRowNotes = null,
+    panelTabs = null,
+    onPanelTabChange = null,
+    leftForm = null,
+    rightForm = null,
+    formBefore = false,
+    onOpenEntry = null,
 }) => {
     if (!leftTeam || !rightTeam) return null;
 
@@ -713,6 +732,11 @@ export const MatchStatsOverlay = ({
                 statsNow={leftNow}
                 statsBefore={showDiff ? leftBefore : null}
                 rowNotes={leftRowNotes}
+                tab={panelTabs?.left ?? null}
+                onTabChange={onPanelTabChange ? (next) => onPanelTabChange("left", next) : null}
+                form={leftForm}
+                formBefore={formBefore}
+                onOpenEntry={onOpenEntry}
             />
             <MatchStatsSidePanel
                 side="right"
@@ -721,6 +745,11 @@ export const MatchStatsOverlay = ({
                 statsNow={rightNow}
                 statsBefore={showDiff ? rightBefore : null}
                 rowNotes={rightRowNotes}
+                tab={panelTabs?.right ?? null}
+                onTabChange={onPanelTabChange ? (next) => onPanelTabChange("right", next) : null}
+                form={rightForm}
+                formBefore={formBefore}
+                onOpenEntry={onOpenEntry}
             />
         </>
     );

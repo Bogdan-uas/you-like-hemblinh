@@ -14,6 +14,7 @@ import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTro
 import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "../logic/placings.jsx";
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
+import { TeamProfile } from "../components/TeamHistory.jsx";
 
 function LeaderboardHoverPopover({ store, cursorRef, teamStats, tab }) {
     const hovered = useLeaderboardHover(store);
@@ -86,6 +87,11 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
         teamPlacings,
         rankById,
         tournamentChangesById,
+        teamProfile,
+        openTeamProfile,
+        closeTeamProfile,
+        openProfileEntry,
+        openProfileTournament,
     } = page;
 
     React.useLayoutEffect(() => {
@@ -409,8 +415,17 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                             >
                                 <div
                                     className={`${circleClass} ${isTop10 ? "" : css.leaderboard_tail_circle}`}
+                                    title={`Open the profile of Team ${t.name}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!openTeamProfile) return;
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setHoveredLeaderboardTeam(null);
+                                        openTeamProfile(t, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, size: rect.width });
+                                    }}
                                     style={{
                                         ...circleSizeStyle,
+                                        cursor: "pointer",
                                         background: t.color,
                                         display: "flex",
                                         alignItems: "center",
@@ -484,6 +499,27 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
         </div>
 
         <LeaderboardHoverPopover store={leaderboardHoverStore} cursorRef={leaderboardCursorRef} teamStats={teamStats} tab={leaderboardStatsTab} />
+        <AnimatePresence>
+            {teamProfile?.team && teamProfile.history ? (
+                <TeamProfile
+                    key={`profile-${teamProfile.teamId}`}
+                    team={teamProfile.team}
+                    history={teamProfile.history}
+                    origin={teamProfile.origin}
+                    restored={teamProfile.restored}
+                    savedView={teamProfile.savedView}
+                    rating={teamRatings[teamProfile.team.id] ?? 0}
+                    rank={rankById[teamProfile.team.id] ?? 0}
+                    rankColor={placementColors[rankById[teamProfile.team.id]]}
+                    placings={teamPlacings?.[teamProfile.team.id]}
+                    stats={teamStats?.[teamProfile.team.id]}
+                    streak={readUnbeatenStreak(teamStats?.[teamProfile.team.id])}
+                    onOpenEntry={openProfileEntry}
+                    onOpenEvent={openProfileTournament}
+                    onClose={closeTeamProfile}
+                />
+            ) : null}
+        </AnimatePresence>
         </>
     );
 }

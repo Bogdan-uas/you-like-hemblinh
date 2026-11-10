@@ -159,7 +159,7 @@ export const PgxDescription = () => (
             Match and Decider Match Bo3). Every Group&apos;s top 2 teams play the <b>Deciders</b> (4 Bo3 matches)
             and their 4 winners qualify to the International Masters.
         </PemSmallEventLine>
-        <PemSmallEventLine tier="tier2">
+        <PemSmallEventLine tier="tier15">
             <b>PGX International Masters</b> — places 16-32 of the Leaderboard and the 4 teams from the Candidate
             Masters. The 10 lowest seeds play the Bo3 <b>Entry Round</b>, its 5 winners join the other 11 teams in a
             Double Elimination bracket (Opening Round, Upper Quarterfinals and Upper Semifinals Bo1, Grand Final Bo5,

@@ -27,6 +27,7 @@ import { PBS_POT_SIZE } from "../logic/pbsConfig.js";
 import { getTournamentTypeConfig, formatTournamentNumber, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
 import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE, ESS_PODIUM_TROPHY_SIZE, ESS_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 import { HallManagerModals } from "./HallManagerModals.jsx";
+import { matchDomKey } from "../logic/matchDomKey.js";
 
 export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, page }) {
     const {
@@ -36,6 +37,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         hallOfFame,
         selectedHallTournament,
         closeHallOfFame,
+        leaveHallRecord,
         hallStage1Group,
         hallQualifierGroup,
         openLinkedHallRecord,
@@ -1066,6 +1068,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 >
                     <button
                         type="button"
+                        data-match-key={matchDomKey(displayMatch)}
                         data-bracket-rect={pemLayout ? `${stage}-${index}` : undefined}
                         data-no-press=""
                         className={`${rectClass} ${winnerIsLeft ? css.playoffs_match_win : css.playoffs_match_loss}`}
@@ -1577,7 +1580,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -1699,7 +1702,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -1777,7 +1780,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -1882,7 +1885,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2077,7 +2080,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2263,7 +2266,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2324,7 +2327,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2397,7 +2400,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2474,7 +2477,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2583,7 +2586,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2674,7 +2677,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={() => setSelectedHallTournament(null)}
+                            onClick={leaveHallRecord}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
@@ -2826,7 +2829,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     <button
                         type="button"
                         className={css.gamble_button}
-                        onClick={() => setSelectedHallTournament(null)}
+                        onClick={leaveHallRecord}
                         style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                     >
                         Back to Hall of Fame

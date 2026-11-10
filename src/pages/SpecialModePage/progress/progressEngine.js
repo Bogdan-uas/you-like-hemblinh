@@ -1,3 +1,4 @@
+import { applyTaskRun } from "./tasks.js";
 import {
     ACHIEVEMENTS,
     FAVORITE_CHANCE,
@@ -177,6 +178,23 @@ export const achievementValue = statValue;
 const unlockGain = (a, tierIndex) => {
     const tier = isTiered(a) ? TIERS[tierIndex] : null;
     return { ...makeGain("achievement", `${a.name}${tier ? ` · ${tier.label}` : ""}`, achievementXp(a, tierIndex), "Achievement"), unlock: { id: a.id, tier: tier ? tierIndex : -1 } };
+};
+
+const gainXp = (list) => list.reduce((sum, g) => sum + g.xp, 0);
+
+const finishWithTasks = (evaluated, levelBefore, baseGains, facts) => {
+    const run = applyTaskRun(evaluated.state, {
+        ...facts,
+        taskBoost: perksForLevel(levelInfo(evaluated.state.xp).level).taskBoost,
+        xp: gainXp(baseGains) + gainXp(evaluated.gains),
+        achSteps: evaluated.unlocked.length,
+        levelUps: Math.max(0, levelInfo(evaluated.state.xp).level - levelBefore),
+    });
+    if (!run.gains.length) return { state: run.state, gains: evaluated.gains, unlocked: evaluated.unlocked };
+    const boostXp = run.gains.reduce((sum, g) => sum + (g.task?.boostXp ?? 0), 0);
+    const boosted = boostXp ? { ...run.state, stats: { ...run.state.stats, boostXp: (run.state.stats.boostXp ?? 0) + boostXp } } : run.state;
+    const again = evaluateAchievements(pushGains(boosted, run.gains), new Set());
+    return { state: again.state, gains: [...run.gains, ...evaluated.gains, ...again.gains], unlocked: [...evaluated.unlocked, ...again.unlocked] };
 };
 
 const evaluateAchievements = (input, flags) => {
@@ -404,8 +422,37 @@ export const applySeries = (input, seriesInfo) => {
 
     const allGains = withBoost(gains, state, detail);
     stats.boostXp = (stats.boostXp ?? 0) + boostXpOf(allGains);
+    const levelBefore = levelInfo(state.xp).level;
     state = pushGains({ ...state, stats, event, activePick: null }, allGains);
-    const evaluated = evaluateAchievements(state, flags);
+    const isBagel = (set) => Math.max(set.left ?? 0, set.right ?? 0) === 13 && Math.min(set.left ?? 0, set.right ?? 0) === 0;
+    const evaluated = finishWithTasks(evaluateAchievements(state, flags), levelBefore, allGains, {
+        kind: "series",
+        bestOf: info.bestOf,
+        knockout: !!info.knockout,
+        gf: info.stage === "gf",
+        correct,
+        chance,
+        upset,
+        longShot,
+        points,
+        sets: sets.length,
+        setsWon: setsWon.filter(Boolean).length,
+        sweep,
+        comeback,
+        decider,
+        overtimes: blocks,
+        otSets: overtimeSets,
+        maxOtSet: sets.reduce((max, set) => Math.max(max, overtimeBlocks(set.left, set.right)), 0),
+        er: sets.filter((set) => set.er).length,
+        pens: sets.filter((set) => set.pens).length,
+        bagels: sets.filter(isBagel).length,
+        closeSets: sets.filter((set) => !set.er && Math.max(set.left ?? 0, set.right ?? 0) === 13 && Math.min(set.left ?? 0, set.right ?? 0) === 11).length,
+        blowoutSets: sets.filter((set) => !set.er && Math.abs((set.left ?? 0) - (set.right ?? 0)) >= 8).length,
+        insured: !!pick?.insured,
+        insurancePaid: resolved.insurance === "paid",
+        bonusPoints,
+        streak: stats.streak,
+    });
     return {
         state: evaluated.state,
         gains: [...allGains, ...evaluated.gains],
@@ -418,8 +465,8 @@ export const recordTier = (record) => {
     const event = record?.event;
     if (!event) return "official";
     if (event === "qualifier" || event === "pgxCm" || event === "essLq") return "qualifier";
-    if (["cst", "ecl", "gcc", "skylines", "pgxIm"].includes(event)) return "tier2";
-    if (event === "essCh") return "tier15";
+    if (["cst", "ecl", "gcc", "skylines"].includes(event)) return "tier2";
+    if (event === "essCh" || event === "pgxIm") return "tier15";
     return "tier1";
 };
 
@@ -591,8 +638,20 @@ export const applyEventFinish = (input, record) => {
     if ((event.upsets ?? 0) >= 3) flags.add("upsetNight");
 
     const allGains = withBoost(gains, state, recordName(record));
+    const levelBefore = levelInfo(state.xp).level;
     state = pushGains({ ...state, stats: { ...stats, perfectRounds: stats.perfectRounds + perfect, boostXp: (stats.boostXp ?? 0) + boostXpOf(allGains) } }, allGains);
-    const evaluated = evaluateAchievements(state, flags);
+    const evaluated = finishWithTasks(evaluateAchievements(state, flags), levelBefore, allGains, {
+        kind: "event",
+        tier: recordTier(record),
+        pickemWon: !!record.pickemWon,
+        champion: !!event?.lastCorrect,
+        perfect,
+        flawless: !!flawless && (event?.series ?? 0) >= 8,
+        margin: achieved - needed,
+        eventPoints: achieved,
+        eventSeries: event?.series ?? 0,
+        eventCorrect: event?.correctCount ?? 0,
+    });
     state = evaluated.state;
     const summary = {
         id: record.id ?? `${Date.now()}`,

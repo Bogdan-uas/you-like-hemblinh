@@ -6,7 +6,8 @@ import page from "../SpecialModePage.module.css";
 import { TIERS, achievementById, levelInfo } from "./progressConfig.js";
 import { progressCloseCatchUp, progressCloseSummary } from "./progressStore.js";
 import { AchievementMedal, LevelBar, LevelCircle, XpNumbers } from "./ProgressParts.jsx";
-import { formatXp, useScreenLenis } from "./progressUi.js";
+import { TASK_LOOKS, formatXp, useScreenLenis } from "./progressUi.js";
+import { FaCheck } from "react-icons/fa6";
 import { useSpecialModeSettings } from "../logic/settings.js";
 import { barTargetOf, centerOf, flyToken, playLevelUp, tweenXp } from "./progressMotion.js";
 
@@ -15,19 +16,20 @@ const EVENT_SOURCES = new Set(["finish", "pickemWon", "margin", "champion", "per
 const momentsOf = (gains) => {
     const moments = [];
     gains.forEach((gain) => {
-        const key = gain.source === "achievement" ? `a-${gain.id}` : gain.source === "achievementBoost" ? "boost" : EVENT_SOURCES.has(gain.source) ? "event" : `s-${gain.detail}`;
+        const key = gain.source === "achievement" ? `a-${gain.id}` : gain.source === "task" ? `t-${gain.id}` : gain.source === "achievementBoost" ? "boost" : EVENT_SOURCES.has(gain.source) ? "event" : `s-${gain.detail}`;
         const last = moments[moments.length - 1];
-        if (last && last.key === key && gain.source !== "achievement") {
+        if (last && last.key === key && gain.source !== "achievement" && gain.source !== "task") {
             last.gains.push(gain);
             last.xp += gain.xp;
             return;
         }
         moments.push({
             key,
-            title: gain.source === "achievement" ? gain.label : key === "event" ? "Tournament results" : key === "boost" ? "Achievement boost" : gain.detail || gain.label,
+            title: gain.source === "achievement" ? gain.label : gain.source === "task" ? `${TASK_LOOKS[gain.task?.cat]?.title.replace(" tasks", "") ?? ""} task · ${gain.label}` : key === "event" ? "Tournament results" : key === "boost" ? "Achievement boost" : gain.detail || gain.label,
             gains: [gain],
             xp: gain.xp,
             unlock: gain.unlock ?? null,
+            task: gain.task ?? null,
         });
     });
     return moments;
@@ -140,9 +142,14 @@ export function XpSummaryScreen({ mode, data, replay = false }) {
                             className={`${css.row} ${i === active ? css.row_active : i < active ? css.row_done : ""}`}
                         >
                             {row.unlock ? <AchievementMedal id={row.unlock.id} tierIndex={row.unlock.tier} size={40} /> : null}
+                            {row.task ? (
+                                <span className={css.row_task} style={{ "--task-color": TASK_LOOKS[row.task.cat]?.color }} aria-hidden="true">
+                                    <FaCheck />
+                                </span>
+                            ) : null}
                             <span className={css.row_main}>
                                 <span className={css.row_title}>{row.title}</span>
-                                {row.gains.length && !row.key.startsWith("a-") ? (
+                                {row.gains.length && !row.key.startsWith("a-") && !row.key.startsWith("t-") ? (
                                     <span className={css.row_sources}>
                                         {row.gains.map((gain) => (
                                             <span key={gain.id} className={css.row_source}>

@@ -1,0 +1,42 @@
+.tip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 2147483000;
+    max-width: 340px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #2e2f42;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+    white-space: pre-line;
+    overflow-wrap: break-word;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(3px);
+    transition: none;
+}
+
+.below {
+    transform: translateY(-3px);
+}
+
+.shown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.small {
+    max-width: 260px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 10.5px;
+}

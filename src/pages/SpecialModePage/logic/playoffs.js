@@ -3,7 +3,7 @@ import { GCC_KNOCKOUT_BEST_OF } from "./gcc.js";
 import { PEM_PLAYOFFS_BEST_OF, PEM_BIG_PLAYOFFS_BEST_OF } from "./pemConfig.js";
 import { PBS_BEST_OF } from "./pbsConfig.js";
 
-const PGX_PLAYOFFS_BEST_OF = { qf: 3, sf: 5, thirdPlace: 5, gf: 7 };
+export const PGX_PLAYOFFS_BEST_OF = { qf: 3, sf: 5, thirdPlace: 5, gf: 7 };
 
 export const stageLabelPlayoffs = (stage) => {
     switch (stage) {

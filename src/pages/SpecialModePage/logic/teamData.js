@@ -347,6 +347,12 @@ export const saveRatingBasedStatsTeamIds = (ids) => {
     }
 };
 
+export const TROPHY_WEIGHTS = { wins: 100, pemBigWins: 70, gplWins: 70, pbsWins: 60, tier1Wins: 50, pgxWins: 50, essWins: 45, tier15Wins: 30, tier2Wins: 15 };
+export const SECOND_PLACE_WEIGHTS = { seconds: 50, tier1Seconds: 30, tier15Seconds: 15, tier2Seconds: 8 };
+export const THIRD_PLACE_WEIGHTS = { thirds: 30, tier1Thirds: 18, tier15Thirds: 9, tier2Thirds: 5 };
+
+export const weightedPlacings = (p, weights) => Object.entries(weights).reduce((sum, [key, weight]) => sum + (Number(p?.[key]) || 0) * weight, 0);
+
 export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) => {
     const fallbackIndexById = {};
     teams.forEach((t, i) => (fallbackIndexById[t.id] = i));
@@ -358,9 +364,9 @@ export const sortLeaderboardTeams = (teams, { mode, ratings, placings, stats }) 
     teams.forEach((t) => {
         const p = placings?.[t.id];
         switch (mode) {
-            case "trophies": primaryById[t.id] = [p?.wins ?? 0, (p?.pemBigWins ?? 0) + (p?.gplWins ?? 0), p?.pbsWins ?? 0, (p?.tier1Wins ?? 0) + (p?.pgxWins ?? 0), p?.essWins ?? 0, p?.tier15Wins ?? 0, p?.tier2Wins ?? 0]; break;
-            case "seconds": primaryById[t.id] = totalSecondPlaces(p); break;
-            case "thirds": primaryById[t.id] = totalThirdPlaces(p); break;
+            case "trophies": primaryById[t.id] = [weightedPlacings(p, TROPHY_WEIGHTS), p?.wins ?? 0, (p?.pemBigWins ?? 0) + (p?.gplWins ?? 0), p?.pbsWins ?? 0, (p?.tier1Wins ?? 0) + (p?.pgxWins ?? 0), p?.essWins ?? 0, p?.tier15Wins ?? 0, p?.tier2Wins ?? 0]; break;
+            case "seconds": primaryById[t.id] = [weightedPlacings(p, SECOND_PLACE_WEIGHTS), p?.seconds ?? 0, p?.tier1Seconds ?? 0, p?.tier15Seconds ?? 0, p?.tier2Seconds ?? 0, totalSecondPlaces(p)]; break;
+            case "thirds": primaryById[t.id] = [weightedPlacings(p, THIRD_PLACE_WEIGHTS), p?.thirds ?? 0, p?.tier1Thirds ?? 0, p?.tier15Thirds ?? 0, p?.tier2Thirds ?? 0, totalThirdPlaces(p)]; break;
             case "stats": primaryById[t.id] = getTeamStatPoints(stats?.[t.id]); break;
             default: primaryById[t.id] = 0;
         }

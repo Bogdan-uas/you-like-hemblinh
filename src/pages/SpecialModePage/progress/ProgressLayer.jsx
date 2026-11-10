@@ -9,13 +9,16 @@ import {
     progressCompleteQueueItem,
     progressRecheck,
     progressRunBackfill,
+    progressRefreshTasks,
     progressRunCatchUp,
     unseenAchievementIds,
+    unseenTaskIds,
     useProgress,
 } from "./progressStore.js";
 import { AchievementMedal, DifficultyChip, LevelBar, LevelCircle, LevelNumber, LevelRing, WaapiParticles } from "./ProgressParts.jsx";
-import { formatXp, tierLook, useLevelOf } from "./progressUi.js";
+import { formatXp, taskPopHoldMs, tierLook, useLevelOf } from "./progressUi.js";
 import { LevelUpOverlay } from "./LevelUpOverlay.jsx";
+import { TaskPop } from "./TaskPop.jsx";
 import { ProgressScreen } from "./ProgressScreen.jsx";
 import { XpSummaryScreen } from "./XpSummaryScreen.jsx";
 import { readHallOfFame } from "../logic/hallOfFameDb.js";
@@ -220,7 +223,7 @@ function AchievementPop({ gain }) {
     );
 }
 
-function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chipRefs, allAtOnce }) {
+function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, setTask, chipRefs, allAtOnce }) {
     const { progress, ui } = useProgress();
     const runningRef = useRef(null);
     const closeTimerRef = useRef(null);
@@ -277,6 +280,17 @@ function useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chi
                 }
                 await wait(380 / speed);
                 setChips([]);
+            } else if (item.type === "task") {
+                setTask(item.gain);
+                await wait(taskPopHoldMs(item.gain.task) / speed);
+                await openWidget();
+                const from = centerOf(document.querySelector("[data-task-xp]"));
+                const to = barTargetOf(barRef.current, item.fromXp);
+                await flyToken({ from, to, text: `+${formatXp(item.gain.xp)} XP`, duration: 1.3, count: 5 });
+                await tweenXp(xpMV, item.fromXp, item.toXp, { speed });
+                await wait(520 / speed);
+                setTask(null);
+                await wait(380);
             } else {
                 setAchievement(item.gain);
                 await wait((item.gain.unlock?.tier > 0 ? 2250 : 1850) / speed);
@@ -306,10 +320,13 @@ export function ProgressLayer() {
     const [widget, setWidget] = useState(false);
     const [chips, setChips] = useState([]);
     const [achievement, setAchievement] = useState(null);
+    const [taskPop, setTaskPop] = useState(null);
     const [levelUp, setLevelUp] = useState(null);
     const barRef = useRef(null);
     const chipRefs = useRef([]);
-    const unseen = unseenAchievementIds(progress).length;
+    const unseenAch = unseenAchievementIds(progress).length;
+    const unseenTasks = unseenTaskIds(progress).length;
+    const unseen = unseenAch + unseenTasks;
 
     useEffect(() => {
         bridge.levelUp = (next) =>
@@ -343,16 +360,25 @@ export function ProgressLayer() {
         return () => window.removeEventListener("keydown", onKey);
     }, [ui.screen, closeWithEscape]);
 
-    useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, chipRefs, allAtOnce: xpAllAtOnce });
+    useQueueRunner({ xpMV, barRef, setWidget, setChips, setAchievement, setTask: setTaskPop, chipRefs, allAtOnce: xpAllAtOnce });
+
+    useEffect(() => {
+        const timer = setInterval(progressRefreshTasks, 30000);
+        return () => clearInterval(timer);
+    }, []);
 
     return (
         <>
             <button
                 type="button"
                 className={`${css.level_button} ${ui.screen ? css.level_button_open : ""}`}
-                aria-label={`Level ${level}${unseen ? `, ${unseen} new achievements` : ""}. Open the Level and Achievements`}
-                title={unseen ? `Level ${level} · ${unseen} new achievement${unseen === 1 ? "" : "s"}` : `Level ${level}`}
-                onClick={() => (ui.screen ? closeProgressScreen() : openProgressScreen(unseen ? "achievements" : "level"))}
+                aria-label={`Level ${level}${unseen ? `, ${unseen} new` : ""}. Open the Level, Achievements and Tasks`}
+                title={
+                    unseen
+                        ? `Level ${level}${unseenAch ? ` · ${unseenAch} new achievement${unseenAch === 1 ? "" : "s"}` : ""}${unseenTasks ? ` · ${unseenTasks} completed task${unseenTasks === 1 ? "" : "s"}` : ""}`
+                        : `Level ${level}`
+                }
+                onClick={() => (ui.screen ? closeProgressScreen() : openProgressScreen(unseenAch ? "achievements" : unseenTasks ? "tasks" : "level"))}
             >
                 <LevelRing xpMV={xpMV} size={40}>
                     <span className={css.button_lv}>LVL</span>
@@ -404,6 +430,7 @@ export function ProgressLayer() {
                 </AnimatePresence>
             </div>
 
+            <AnimatePresence>{taskPop ? <TaskPop key={taskPop.id} gain={taskPop} /> : null}</AnimatePresence>
             <AnimatePresence>{achievement ? <AchievementPop key={achievement.id} gain={achievement} /> : null}</AnimatePresence>
 
             {ui.screen ? <ProgressScreen tab={ui.screen} /> : null}

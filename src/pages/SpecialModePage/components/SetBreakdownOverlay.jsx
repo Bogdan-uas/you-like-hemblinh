@@ -657,7 +657,18 @@ export const SetBreakdownOverlay = ({
         requestAnimationFrame(() => updateActiveSection());
     };
 
-    const isLastSet = index === sets.length - 1;
+    const clinchIndex = (() => {
+        let left = 0;
+        let right = 0;
+        for (let i = 0; i < sets.length; i++) {
+            if (!sets[i]?.won && sets[i]?.tie) continue;
+            if (sets[i]?.won) left++;
+            else right++;
+            if (left === setsToWin || right === setsToWin) return i;
+        }
+        return -1;
+    })();
+    const isLastSet = clinchIndex >= 0 ? index === clinchIndex : index === sets.length - 1;
     const bonusPoints = isLastSet ? pickemBonuses.reduce((sum, bonus) => sum + (bonus.points || 0), 0) : 0;
     const shownTotal = totalPickemPoints + bonusPoints;
     const totalTitle = [

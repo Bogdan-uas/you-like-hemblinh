@@ -10,10 +10,12 @@ import {
     applyNeededPerk,
     bonusCapPoints,
     bonusOptionsFor,
+    bonusPicksFor,
     bonusPointsUsed,
     levelInfo,
     perksForLevel,
 } from "./progressConfig.js";
+import { ensureTasks, markTasksSeen, mergeTasksOnRestore, rerollTask, unseenTaskIds as unseenTaskIdsOf } from "./tasks.js";
 import { applyEventFinish, applySeries, computeBackfill, computeCatchUp, emptyProgress, lowerAchievementTier, normalizeProgress, recheckAchievements, resetAchievements } from "./progressEngine.js";
 
 const read = (key) => {
@@ -33,8 +35,9 @@ const write = (key, value) => {
     }
 };
 
-let progress = normalizeProgress(read(PROGRESS_LS_KEY));
-let ui = { displayXp: progress.xp, queue: [], screen: null, summary: null, catchUp: null, insuranceArmed: false, bonusArmed: null, lastPick: null };
+let progress = ensureTasks(normalizeProgress(read(PROGRESS_LS_KEY)));
+write(PROGRESS_LS_KEY, progress);
+let ui = { displayXp: progress.xp, queue: [], screen: null, summary: null, catchUp: null, insuranceArmed: false, bonusArmed: [], lastPick: null };
 let snapshot = { progress, ui };
 const listeners = new Set();
 let queueKey = 0;
@@ -45,7 +48,7 @@ const publish = () => {
 };
 
 const setProgress = (next) => {
-    progress = next;
+    progress = ensureTasks(next);
     write(PROGRESS_LS_KEY, progress);
 };
 
@@ -64,11 +67,12 @@ export const useProgress = () => useSyncExternalStore(subscribeProgress, getProg
 
 export const useHudPerksShown = () => {
     const { progress: state } = useProgress();
-    return !!(state.activePick?.insured || state.activePick?.bonus);
+    return !!(state.activePick?.insured || state.activePick?.bonus || state.activePick?.bonuses?.length);
 };
 
 const enqueue = (fromXp, gains) => {
-    const plain = gains.filter((g) => g.source !== "achievement");
+    const plain = gains.filter((g) => g.source !== "achievement" && g.source !== "task");
+    const tasks = gains.filter((g) => g.source === "task");
     const achievements = gains.filter((g) => g.source === "achievement");
     const items = [];
     let cursor = fromXp;
@@ -77,6 +81,10 @@ const enqueue = (fromXp, gains) => {
         items.push({ key: ++queueKey, type: "xp", gains: plain, fromXp: cursor, toXp: cursor + sum });
         cursor += sum;
     }
+    tasks.forEach((gain) => {
+        items.push({ key: ++queueKey, type: "task", gain, fromXp: cursor, toXp: cursor + gain.xp });
+        cursor += gain.xp;
+    });
     achievements.forEach((gain) => {
         items.push({ key: ++queueKey, type: "achievement", gain, fromXp: cursor, toXp: cursor + gain.xp });
         cursor += gain.xp;
@@ -136,14 +144,14 @@ export const progressSetInsuranceArmed = (armed) => {
     publish();
 };
 
-export const progressSetBonusArmed = (type) => {
-    setUi({ bonusArmed: type || null });
+export const progressSetBonusArmed = (types) => {
+    setUi({ bonusArmed: Array.isArray(types) ? types : types ? [types] : [] });
     publish();
 };
 
 export const streakReadyNext = (state = progress) => ((state.stats.streak ?? 0) + 1) % STREAK_STEP === 0;
 
-const PICK_PERK_KEYS = ["insured", "insurePct", "streakBefore", "shieldReady", "bonusMode", "bonus", "bonusValue", "bonusReady", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
+const PICK_PERK_KEYS = ["insured", "insurePct", "streakBefore", "shieldReady", "bonusMode", "bonuses", "bonusCap", "bonusLeft", "gfBonus", "upsetBonus", "longShotBonus", "streakBonus", "comebackBonus", "sweepBonus", "overtimeBonus", "deciderBonus", "knockoutBonus", "longSeriesBonus"];
 
 export const progressSetNeeded = (points) => {
     const needed = Number.isFinite(points) ? points : null;
@@ -163,7 +171,9 @@ export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, 
     const known = Number.isFinite(chance);
     const cap = progressBonusCap(progress, needed);
     const options = bonusOptionsFor({ perks, stage, bestOf, knockout: elimination, streakReady: streakReadyNext(), chance: known ? chance : null });
-    const chosen = cap.left > 0 ? options.find((option) => option.type === ui.bonusArmed) ?? null : null;
+    const armed = Array.isArray(ui.bonusArmed) ? ui.bonusArmed : [];
+    const chosen = cap.left > 0 ? options.filter((option) => armed.includes(option.type)).slice(0, bonusPicksFor(perks)) : [];
+    const readyOf = (type) => (type === "upsetBonus" ? known && chance <= UPSET_CHANCE : type === "longShotBonus" ? known && chance <= LONG_SHOT_CHANCE : true);
     const insured = ui.insuranceArmed && insuranceLeft() > 0 && bestOf >= INSURANCE_MIN_BEST_OF;
     const pick = {
         chance: known ? chance : null,
@@ -177,16 +187,14 @@ export const progressBuildPickPerks = ({ chance, stage, label = "", bestOf = 1, 
         streakBefore: progress.stats.streak ?? 0,
         shieldReady: Math.max(0, perks.streakShield - (progress.event?.shieldsUsed ?? 0)) > 0,
         bonusMode: "pick",
-        bonus: chosen?.type ?? null,
-        bonusValue: chosen?.value ?? 0,
-        bonusReady: chosen ? (chosen.type === "upsetBonus" ? known && chance <= UPSET_CHANCE : chosen.type === "longShotBonus" ? known && chance <= LONG_SHOT_CHANCE : true) : false,
+        bonuses: chosen.length ? chosen.map((option) => ({ type: option.type, value: option.value, ready: readyOf(option.type) })) : null,
         bonusCap: cap.cap,
         bonusLeft: cap.left,
     };
     let next = ensureEvent(progress);
     if (insured) next = { ...next, event: { ...next.event, insuranceUsed: (next.event.insuranceUsed ?? 0) + 1 } };
     setProgress({ ...next, activePick: pick });
-    setUi({ insuranceArmed: false, bonusArmed: null, lastPick: null });
+    setUi({ insuranceArmed: false, bonusArmed: [], lastPick: null });
     publish();
     return Object.fromEntries(PICK_PERK_KEYS.filter((key) => pick[key]).map((key) => [key, pick[key]]));
 };
@@ -224,7 +232,7 @@ export const progressRestoreSnapshot = () => {
     const saved = read(PROGRESS_SNAPSHOT_LS_KEY);
     write(PROGRESS_SNAPSHOT_LS_KEY, null);
     if (!saved) return;
-    setProgress({ ...normalizeProgress(saved), lastSummary: progress.lastSummary, pendingSummary: progress.pendingSummary, event: null, activePick: null, catchUpDone: true });
+    setProgress({ ...normalizeProgress(saved), tasks: mergeTasksOnRestore(saved.tasks, progress.tasks), lastSummary: progress.lastSummary, pendingSummary: progress.pendingSummary, event: null, activePick: null, catchUpDone: true });
     setUi({ queue: [], displayXp: progress.xp, insuranceArmed: false });
     publish();
 };
@@ -333,6 +341,29 @@ export const progressRunBackfill = (records) => {
             },
         });
     }
+    publish();
+};
+
+export const unseenTaskIds = (state = progress) => unseenTaskIdsOf(state);
+
+export const progressRefreshTasks = () => {
+    const next = ensureTasks(progress);
+    if (next === progress) return;
+    setProgress(next);
+    publish();
+};
+
+export const progressRerollTask = (cat, uid) => {
+    const next = rerollTask(ensureTasks(progress), cat, uid);
+    if (next === progress) return;
+    setProgress(next);
+    publish();
+};
+
+export const progressMarkTasksSeen = (uids) => {
+    const next = markTasksSeen(progress, uids);
+    if (next === progress) return;
+    setProgress(next);
     publish();
 };
 
