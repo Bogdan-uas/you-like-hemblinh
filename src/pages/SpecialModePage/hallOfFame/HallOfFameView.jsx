@@ -2790,6 +2790,12 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         const podium = record.results || {};
         const restPlaces = (record.places || []).filter((entry) => entry.place >= 5);
         const isThirtyTwoTeamOfficial = record.format === OFFICIAL_SWISS_FORMAT;
+        const hasPlayedSwiss = (stage) => Object.values(stage?.matchesByNet || {}).some((list) => (list || []).some((m) => m?.played));
+        const savedSwiss = {
+            stage1: hasPlayedSwiss(record.stages?.stage1),
+            stage2: hasPlayedSwiss(record.stages?.stage2),
+            stage3: hasPlayedSwiss(record.stages?.stage3),
+        };
         const skylinesRecord = record.skylinesNumber
             ? hallOfFame.find((item) => item.event === "skylines" && item.number === record.skylinesNumber) ?? null
             : null;
@@ -2952,20 +2958,41 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         </>
                     ) : (
                         <>
-                            <HallOfFameSectionTitle text="All teams to Stage II" />
+                            {savedSwiss.stage1 ? (
+                                <>
+                                    <HallOfFameSectionTitle text="Stage I" marginTop="64px" />
+                                    {renderSwissBracket(record.stages.stage1, { archived: true, record })}
+                                </>
+                            ) : null}
+
+                            <HallOfFameSectionTitle text="All teams to Stage II" marginTop={savedSwiss.stage1 ? "64px" : undefined} />
                             {renderHallTeamRow(stage2Lineup)}
 
-                            <HallOfFameSectionTitle text="All teams to Stage III" />
+                            {savedSwiss.stage2 ? (
+                                <>
+                                    <HallOfFameSectionTitle text="Stage II" marginTop="64px" />
+                                    {renderSwissBracket(record.stages.stage2, { archived: true, record })}
+                                </>
+                            ) : null}
+
+                            <HallOfFameSectionTitle text="All teams to Stage III" marginTop={savedSwiss.stage2 ? "64px" : undefined} />
                             {renderHallTeamRow(stage3Lineup)}
 
-                            <HallOfFameSectionTitle text="All 16 playoffs qualifiers" />
+                            {savedSwiss.stage3 ? (
+                                <>
+                                    <HallOfFameSectionTitle text="Stage III" marginTop="64px" />
+                                    {renderSwissBracket(record.stages.stage3, { archived: true, record })}
+                                </>
+                            ) : null}
+
+                            <HallOfFameSectionTitle text="All 16 playoffs qualifiers" marginTop={savedSwiss.stage3 ? "64px" : undefined} />
                             {renderHallTeamRow(playoffsByQualificationOrder)}
                         </>
                     )}
 
                     {Object.keys(record.playoffs || {}).length > 0 && (
                         <>
-                            <HallOfFameSectionTitle text="Playoffs" marginTop={isThirtyTwoTeamOfficial ? "64px" : undefined} marginBottom="88px" />
+                            <HallOfFameSectionTitle text="Playoffs" marginTop={isThirtyTwoTeamOfficial || savedSwiss.stage3 ? "64px" : undefined} marginBottom="88px" />
                             <div>
                                 {renderArchivedPlayoffsBracket(record)}
                             </div>
