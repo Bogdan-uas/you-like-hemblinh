@@ -982,6 +982,17 @@
     transition: none;
 }
 
+.chart_box .chart_marker {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 140ms ease-out;
+    pointer-events: none;
+}
+
+.chart_box .chart_marker_on {
+    transform: scale(1.7);
+}
+
 .range_on.range_on {
     pointer-events: none;
     cursor: default;

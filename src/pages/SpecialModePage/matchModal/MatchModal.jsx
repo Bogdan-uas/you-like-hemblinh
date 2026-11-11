@@ -15,7 +15,7 @@ import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { centerOverflowX } from "../../../rubber.js";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, Tier15Medal, BountyGem } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, Tier15Medal, BountyGem } from "../components/Trophies.jsx";
 import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { PickPerksStrip } from "../progress/PickPerksStrip.jsx";
@@ -479,7 +479,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                     ? "pgxCm"
                                                                     : modalContext?.type === "pgxIm"
                                                                     ? "pgxIm"
-                                                                    : modalContext?.type === "essLq" || modalContext?.type === "essCh" || modalContext?.type === "essFin"
+                                                                    : modalContext?.type === "essLq" || modalContext?.type === "essCh" || modalContext?.type === "essFin" || modalContext?.type === "swcSc" || modalContext?.type === "swcMain"
                                                                     ? modalContext.type
                                                                     : modalContext?.kind === "pbs"
                                                                         ? "pbsPlayoffs"
@@ -916,7 +916,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
 
                             const stage = modalContext?.stage;
                             const isGrandFinal = stage === "gf";
-                            const isThirdPlace = stage === "thirdPlace";
+                            const isThirdPlace = stage === "thirdPlace" || (modalContext?.type === "swcMain" && stage === "tp");
 
                             const getPlacementBadge = (isWinner, isLoser) => {
                                 if (isGrandFinal) {
@@ -938,6 +938,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                         return (
                                             <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
                                                 <PbsTrophy />+
+                                            </span>
+                                        );
+                                    }
+                                    if (isWinner && modalContext?.type === "swcMain") {
+                                        return (
+                                            <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <SwcTrophy />+
                                             </span>
                                         );
                                     }

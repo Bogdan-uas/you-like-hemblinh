@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import css from './SpecialModeInfoPage.module.css'
 import { Link, useSearchParams } from "react-router-dom";
+import { useHallDragScroll } from "../SpecialModePage/hallOfFame/useHallDragScroll.js";
 import introImg from "../../../assets/images/image.png";
 import scoreBoardImg from "../../../assets/images/image-2.png";
 import dashedDividerImg from "../../../assets/images/image-3.png";
@@ -415,6 +416,29 @@ const ESS_SECTIONS = [
     {
         id: "ess-rewards",
         label: "The star trophy, the Tier 1.5 medals and Hall of Fame",
+    },
+];
+
+const SWC_SECTIONS = [
+    {
+        id: "swc-overview",
+        label: "Into the storm",
+    },
+    {
+        id: "swc-sc",
+        label: "Stormdraft World Championship Storm Chase",
+    },
+    {
+        id: "swc-hud",
+        label: "The Stormdraft HUD",
+    },
+    {
+        id: "swc-main",
+        label: "Stormdraft World Championship",
+    },
+    {
+        id: "swc-rewards",
+        label: "The tornado trophy and Hall of Fame",
     },
 ];
 
@@ -883,7 +907,7 @@ const LeaderboardExplained = ({ scrollToAnchor }) => {
             </p>
             <ProfileShot n={2} alt="Profile of Team Indigo with its head and the Match statistics" />
             <p className={css.info_text}>
-                "Points after each match" draws the Leaderboard points of the team after every one of its matches. The dot follows the cursor along the line, and the hint tells, which match it was. The switch on the right shows only the matches of the last year, month or week, and if the team hasn&apos;t played any match in that time, the option is locked.
+                "Points after each match" draws the Leaderboard points of the team after every one of its matches, and every match has its own dot on the line: green for a win, red for a loss and a gray ring for a tie. The dot follows the cursor along the line, the dot of the match below the cursor grows, and the hint tells, which match it was. The switch on the right shows only the matches of the last year, month or week, and if the team hasn&apos;t played any match in that time, the option is locked.
                 Below it, "Team stats" shows all 14 stats of the team at once:
             </p>
             <ProfileShot n={3} alt="The points chart of Team Indigo with the dot on its loss against Team Cyan, and the team stats" />
@@ -1697,7 +1721,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <LevelShot n={4} alt="Level Up screen of Level 20 with its two new benefits" />
             <p className={css.info_text}>
-                After the Pick&apos;em summary, the first button I click ("To the bracket" or any other) opens the <b>XP summary</b> of the whole tournament first. Every series, every completed task, the results of the tournament and every new achievement get their own row, one after another, while the bar fills up,
+                After the Pick&apos;em summary, the first button I click, which leaves the tournament (any of them, except "To the bracket", which only shows the bracket and keeps the XP summary waiting), opens the <b>XP summary</b> of the whole tournament first. Every series, every completed task, the results of the tournament and every new achievement get their own row, one after another, while the bar fills up,
                 and at the end, there is the total. If I reached a new level during the tournament, its Level Up screen shows up once more at the right moment of the summary. "Continue" takes me to where I wanted to go, and the summary of the last tournament can be opened again later in the Level tab:
             </p>
             <LevelShot n={5} alt="XP summary of Official #1: the Grand Final, the tournament results and the first new achievements" />
@@ -1888,9 +1912,9 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Finale? Or not?</h3>
                 <div className={css.divider} />
             </div>
-            <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button, and after the XP summary of the Official #1 (see{" "}
+            <p className={css.info_text}>Afterwards you can click on "To the bracket" button to see the full results of the tournament or just go to somewhere (yellow button redirects, all three buttons clear the tournament results, except the points and placing and redirect to somewhere else in the website). I click "To the bracket" button and I'm getting indeed redirected to the playoffs results (the XP summary of the Official #1 waits for the next button, which leaves the tournament, see{" "}
                 <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP, Tasks and Achievements</a>
-                ), I'm getting indeed redirected to the playoffs results:</p>
+                ):</p>
             <div className={css.image_container}>
                 <img src={playoffsResultsAndTournamentFinished} alt="Playoffs Results and Finished Tournament Results" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>
@@ -3508,7 +3532,207 @@ const EssSubPage = ({ scrollToAnchor }) => (
             <EssShot n={45} alt="Hall of Fame, Elite Star Series #1: the places 5-8" />
             <p className={css.info_text}>
                 And now, there are seven tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b>, <b>PGX Grandmasters</b> and <b>Elite Star Series</b>.
-                Who is going to climb all the way up next time? Not right now via "Random", at least: the Elite Star Series is excluded for the next 2 tournaments and the PGX Grandmasters for the next one.
+                Who is going to climb all the way up next time? Not right now via "Random", at least: the Elite Star Series is excluded for the next 2 tournaments and the PGX Grandmasters for the next one. (And there is one more tournament, where the best teams take a break, see the{" "}
+                <InfoLink onClick={scrollToAnchor("swc-overview", "swc")} href="?page=swc#swc-overview">Stormdraft World Championship</InfoLink> tab.)
+            </p>
+        </section>
+    </>
+);
+
+const SWC_IMAGES = import.meta.glob("../../../assets/images/swc-*.png", { eager: true, import: "default" });
+const swcImg = (n) => SWC_IMAGES[`../../../assets/images/swc-${String(n).padStart(2, "0")}.png`];
+
+const SwcShot = ({ n, ...props }) => <PemShot src={swcImg(n)} {...props} />;
+
+const SwcSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="swc-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Into the storm</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The eighth option in the "Choose how you want to play" modal is the <b>Stormdraft World Championship</b>, a Tier 1 tournament.
+                It is two tournaments, played one after another, and the second one is the main event: <br />
+                • <b>Stormdraft World Championship Storm Chase</b> (Qualifier): its 2 Bracket winners go up to the main event <br />
+                • <b>Stormdraft World Championship</b> itself (Tier 1)
+            </p>
+            <SwcShot n={1} alt="Choose how you want to play modal with the Stormdraft World Championship picked" />
+            <p className={css.info_text}>
+                Both tournaments share the same number, so my first one was the <b>Stormdraft World Championship #1</b> with the <b>Stormdraft World Championship Storm Chase #1</b> before it.
+                The teams are seeded by the Leaderboard at the moment the Stormdraft World Championship is started, and this time, the very best teams don&apos;t play at all: <br />
+                • Top 1-4 → <b>Take a break</b> <br />
+                • Top 5-10 → Invited straight to the <b>Stormdraft World Championship</b> <br />
+                • Top 11-42 → Start in the <b>Storm Chase</b> <br />
+                • Top 43-64 → Don&apos;t play
+            </p>
+            <p className={css.info_text}>
+                The "Stage dividers" select of the Leaderboard has a "Stormdraft World Championship" option as well, with a divider before every one of those groups:
+            </p>
+            <SwcShot n={2} alt="Leaderboard with the divider between the teams taking a break and the invited teams" />
+            <SwcShot n={3} alt="Leaderboard with the divider between the invited teams and the Storm Chase" />
+            <SwcShot n={4} alt="Leaderboard with the divider between the Storm Chase and the teams not playing" />
+            <p className={css.info_text}>
+                How a match itself is played, you can see in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. I chose the Stormdraft World Championship explicitly and clicked "Start Game", right after{" "}
+                <InfoLink onClick={scrollToAnchor("ess-rewards", "ess")} href="?page=ess#ess-rewards">Elite Star Series #1</InfoLink>,
+                so Team Blue, Team Green, Team Indigo and Team Yellow took a break.
+            </p>
+        </section>
+        <section>
+            <div id="swc-sc" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Stormdraft World Championship Storm Chase</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The first step is the <b>Storm Chase</b> for the 32 teams from the places 11-42. They are spread over <b>Bracket A</b> and <b>Bracket B</b> with a snake seeding (the 1st of them goes to Bracket A, the 2nd and the 3rd to Bracket B and so on), so both Brackets are equally strong.
+                The Tournament Intro Screen shows both Brackets with their 16 teams:
+            </p>
+            <SwcShot n={5} alt="Tournament Intro Screen of Stormdraft World Championship Storm Chase #1 with its 2 Brackets" />
+            <p className={css.info_text}>
+                Every Bracket is one <b>Single Elimination</b> bracket, drawn from both sides towards the middle: the <b>Round of 16</b>, the <b>Quarterfinals</b> and the <b>Semifinals</b> are <b>Best of 3</b>, the <b>Final</b> is <b>Best of 5</b>,
+                and its winner takes the <b>"Main event spot"</b> below it. A single loss sends a team out. The "Bracket A | Bracket B" navigation at the top switches between them, and the whole Bracket fits on the screen, so there is no scrolling at all:
+            </p>
+            <SwcShot n={6} alt="Bracket A of the Storm Chase before the first match" />
+            <SwcShot n={7} alt="Match modal of Round of 16 #1 of Bracket A: Team Lime against Team Rose" width="35vw" />
+            <p className={css.info_text}>
+                Both tournaments of the Stormdraft World Championship have their own HUD, more about it in{" "}
+                <InfoLink onClick={scrollToAnchor("swc-hud", "swc")} href="?page=swc#swc-hud">The Stormdraft HUD</InfoLink>.
+                The first match was Team Lime, the 11th team of the Leaderboard, against Team Rose, the 42nd one. Team Lime won Set 1 13-3, Team Rose took Set 2 13-9, and Team Lime won the Decider 13-5.
+            </p>
+            <p className={css.info_text}>
+                Team Lime then beat Team White 2:1 and Team Teal 2:1 and came back in the Final of Bracket A from 0:2 to 2:2, but Team Khaki, which had beaten Team Azure, Team Navy and Team Turquoise, all 2:1, won the last set 13-5 and took the Main event spot.
+                In Bracket B, Team Plum beat Team Ruby 2:1 in the Quarterfinals after a 25-23 set (Quadruple Overtime!), and Team Royal, the 36th team of the Leaderboard, beat Team Crimson 2:1, Team Amber 2:0, Team Black 2:1 and, in the Final, Team Chartreuse 3:1:
+            </p>
+            <SwcShot n={19} alt="The finished Bracket A of the Storm Chase with Team Khaki in the Main event spot" />
+            <SwcShot n={20} alt="The finished Bracket B of the Storm Chase with Team Royal in the Main event spot" />
+            <p className={css.info_text}>
+                The Winners&apos; Screen has no podium, because there is no 1st or 2nd place here: it shows the two qualifiers and the Final, in which they qualified:
+            </p>
+            <SwcShot n={21} alt="The 2 qualifiers of Stormdraft World Championship Storm Chase #1" />
+            <p className={css.info_text}>
+                And the Pick&apos;em challenge was won: 70 out of 43 needed Pick&apos;em points (46 without my Level benefit). The Pick&apos;em summary counts the matches of both Brackets together, split by the rounds:
+            </p>
+            <SwcShot n={22} alt="Pick'em summary of the Storm Chase" width="30vw" />
+        </section>
+        <section>
+            <div id="swc-hud" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The Stormdraft HUD</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The series opening starts with a lightning flash: a bolt strikes the middle of the screen, the name of the tournament with its trophy and the stage show up, and both team panels slam in with a "VS" between them:
+            </p>
+            <SwcShot n={8} alt="Series opening of Round of 16 #1: Team Lime against Team Rose" />
+            <p className={css.info_text}>
+                The scorebug itself is one row: both teams in their dark panels with the name and the logo, and the black box in the middle with the score of the set, the dashes of the won sets below it and the current round ("ROUND 9 / 24", "OT 1 (3/6)").
+                The middle of the box doesn&apos;t show a timer, but the <b>mini-round score</b> of the current round. On the left, there are the Best of, the current set, my pick and the tournament, on the right, the stage and the trophy.
+            </p>
+            <p className={css.info_text}>
+                Below the box is the <b>Round prediction</b> bar. It shows, how likely each team is to win the current round, and it updates after every mini-round. Next to it, the <b>mini-round indicators</b> of both teams fill up towards the middle, so I can see at once, who leads the round:
+            </p>
+            <SwcShot n={9} alt="The Stormdraft HUD during Round 1 with the Round prediction bar and the mini-round indicators" />
+            <p className={css.info_text}>
+                Every won round has its own little show: lightning crackles out from the side of the winner, the scorebug fades away, the logo of the winner flashes in, a bright glass panel sweeps over it and turns into the dark "WINS THE ROUND" banner, which stays for a moment, until the scorebug comes back:
+            </p>
+            <SwcShot n={10} alt="The round banner: the logo of Team Lime flashes in" />
+            <SwcShot n={11} alt="The round banner: WINS THE ROUND" />
+            <p className={css.info_text}>
+                The <b>Momentum Streak</b> is a storm in the panel of the team. From 2 rounds in a row on, gray clouds drift through the bottom of its panel and a "⚡" tag with the count shows up in its corner. The longer the streak, the higher the clouds and the more blue the sky behind them,
+                and from 7 rounds in a row on, lightning flickers inside the clouds. A small bolt in the color of the team also shows up next to "Round prediction", on the side of its opponent. Team Lime won 6 rounds in a row here:
+            </p>
+            <SwcShot n={12} alt="Team Lime with a Momentum Streak of 6: the storm clouds in its panel and the ⚡6 tag" />
+            <p className={css.info_text}>
+                One round before the end of the set, a crackling yellow lightning outline runs around the panel of the team and a "SET POINT" tag (or "MATCH POINT", if it&apos;s the last set a team needs) shows up below it.
+                Neither of them (nor a new Momentum Streak) shows up before the round banner has ended, so the banner always comes first:
+            </p>
+            <SwcShot n={13} alt="SET POINT for Team Lime at 12-3 with the lightning outline" />
+            <p className={css.info_text}>
+                The end of a set gets the same banner, but it says "WINS SET 1" (or "WINS THE DECIDER"). Then, until the next set starts, the <b>Live odds</b> show up: the decimal odds of both teams to win the whole series from that point on, the lower, the more likely.
+                After Set 1, Team Lime had 1.10 and Team Rose 6.59. Overtimes and Extended Rounds get their own announcement in the same panel:
+            </p>
+            <SwcShot n={14} alt="WINS SET 1 banner of Team Lime" />
+            <SwcShot n={15} alt="Live odds between the sets: Team Lime 1.10, Team Rose 6.59" />
+            <p className={css.info_text}>
+                And when the series is over, lightning strikes across the whole scorebug, the panel of the winner fills up with its color, the outline crackles around it and bolts fly out of its logo, while the panel of the loser shakes and goes dark.
+                The middle of the box says "GG" in the color of the winner and the bar says, who wins the series:
+            </p>
+            <SwcShot n={16} alt="MATCH POINT for Team Lime at 12-5 in the Decider" />
+            <SwcShot n={17} alt="GG: Team Lime wins the series 2:1" />
+            <p className={css.info_text}>
+                The commentary toasts, the Extended Rounds and the set breakdown of the match modal use the same style. The board of the set, which decided the series, gets the "GG" with the lightning outline, and the winners of the other sets get a lighter glow:
+            </p>
+            <SwcShot n={18} alt="Set breakdown of the Decider of Lime against Rose with the GG board" />
+        </section>
+        <section>
+            <div id="swc-main" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Stormdraft World Championship</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The second step is the <b>Stormdraft World Championship</b> itself: the 6 teams invited via the Leaderboard and the 2 teams from the Storm Chase, Team Khaki and Team Royal:
+            </p>
+            <SwcShot n={23} alt="Tournament Intro Screen of Stormdraft World Championship #1" />
+            <p className={css.info_text}>
+                It starts with a <b>Group Stage</b> of <b>Group A</b> and <b>Group B</b> with 4 teams each, drawn from 4 Pots (places 5-6, 7-8, 9-10 and the qualifiers), so every Group gets one qualifier. Every Group is the same small Double Elimination bracket as in Stage I of the{" "}
+                <InfoLink onClick={scrollToAnchor("big-main-event", "pem-big")} href="?page=pem-big#big-main-event">PEM Big Tournament</InfoLink>, and here, <b>all of its matches are Best of 3</b>.
+                The winner of the Winners&apos; Match is 1st of the Group, the winner of the Decider Match is 2nd:
+            </p>
+            <SwcShot n={24} alt="Group A of the Stormdraft World Championship before the first match" />
+            <SwcShot n={25} alt="Match modal of the first Opening Round of Group A: Team Red against Team Khaki" width="35vw" />
+            <SwcShot n={26} alt="Series opening of the Stormdraft World Championship: Team Red against Team Khaki" />
+            <SwcShot n={27} alt="The Stormdraft HUD in the Group Stage" />
+            <p className={css.info_text}>
+                Both qualifiers were out after two matches: Team Khaki lost 1:2 against Team Red and 0:2 against Team Mint, Team Royal 0:2 against Team Salmon and 0:2 against Team Silver.
+                Team Gray beat Team Mint and Team Red, both 2:1, and Team Mint took the Decider Match 2:0 against Team Red. In Group B, Team Honey beat Team Silver 2:1 and Team Salmon 2:0, and Team Salmon beat Team Silver 2:1 in the Decider Match (14-16 in the Overtime of Set 2):
+            </p>
+            <SwcShot n={28} alt="The finished Group A of the Stormdraft World Championship" />
+            <SwcShot n={29} alt="The finished Group B of the Stormdraft World Championship" />
+            <p className={css.info_text}>
+                After the Group Stage, the <b>Playoffs</b> start right away. The 1st and the 2nd team of every Group meet crosswise in the <b>Semifinals</b>, both <b>Best of 5</b>, their losers play the <b>Third Place Decider</b> (<b>Best of 5</b>) and their winners the <b>Grand Final</b> (<b>Best of 7</b>).
+                Team Salmon beat Team Gray 3:1, Team Honey beat Team Mint 3:2, and Team Mint beat Team Gray 3:0 in the Third Place Decider. And in the Grand Final, Team Honey was 1:3 behind against Team Salmon, won Set 5 16-13 in the Overtime and then the last two sets 13-9 and 13-7:
+            </p>
+            <SwcShot n={30} alt="The finished Playoffs of the Stormdraft World Championship" />
+            <SwcShot n={31} alt="Winners' screen of Stormdraft World Championship #1 with the Stormdraft trophy" width="28vw" />
+            <p className={css.info_text}>
+                And the last Pick&apos;em challenge was won as well: 47 out of 33 needed Pick&apos;em points.
+            </p>
+            <SwcShot n={32} alt="Pick'em summary of Stormdraft World Championship #1" width="30vw" />
+        </section>
+        <section>
+            <div id="swc-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The tornado trophy and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The Stormdraft World Championship trophy, a silver tornado with a lightning bolt inside it, gets its own icon in the Leaderboard. It is valued right after the Elite Star Series trophy, and its 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament.
+                Team Blue is still the 1st one, as it took a break, and Team Honey jumped from the 10th to the 5th place with 158 more points. Team Royal, the winner of Bracket B, climbed from the 36th to the 24th place:
+            </p>
+            <SwcShot n={33} alt="Leaderboard after Stormdraft World Championship #1" />
+            <SwcShot n={34} alt="Leaderboard after Stormdraft World Championship #1: Team Honey on the 5th place with the Stormdraft trophy" />
+            <p className={css.info_text}>
+                In the Hall of Fame, there are two new cards: the Stormdraft World Championship card with the trophy on top and the top four, and the Storm Chase card with the Qualifier badge, its two qualifiers and the two other finalists:
+            </p>
+            <SwcShot n={35} alt="Hall of Fame with the cards of Stormdraft World Championship #1" />
+            <p className={css.info_text}>
+                The Storm Chase&apos;s summary starts with all teams, split into Bracket A and Bracket B. Then come both Brackets and the qualified teams with a link to the main event:
+            </p>
+            <SwcShot n={36} alt="Hall of Fame, Stormdraft World Championship Storm Chase #1: all teams and the Brackets" />
+            <SwcShot n={37} alt="Hall of Fame, Stormdraft World Championship Storm Chase #1: Bracket A" />
+            <SwcShot n={38} alt="Hall of Fame, Stormdraft World Championship Storm Chase #1: the qualified teams and the link to the main event" />
+            <p className={css.info_text}>
+                The main event&apos;s summary has all teams, split into the teams invited via the Leaderboard and the qualifiers from the Storm Chase with a link back to it, and the four teams, which took a break. Then come the Group Stage (one Group at a time, with the Group navigation), all teams to the Playoffs,
+                the Playoffs, the podium with the trophy and the 5th-8th places:
+            </p>
+            <SwcShot n={39} alt="Hall of Fame, Stormdraft World Championship #1: all teams, the link to the Storm Chase and the teams taking a break" />
+            <SwcShot n={40} alt="Hall of Fame, Stormdraft World Championship #1: the Group Stage and all teams to the Playoffs" />
+            <SwcShot n={41} alt="Hall of Fame, Stormdraft World Championship #1: the Playoffs" />
+            <SwcShot n={42} alt="Hall of Fame, Stormdraft World Championship #1: the podium with the Stormdraft trophy" />
+            <SwcShot n={43} alt="Hall of Fame, Stormdraft World Championship #1: the places 5-8" />
+            <p className={css.info_text}>
+                And now, there are eight tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b>, <b>PGX Grandmasters</b>, <b>Elite Star Series</b> and <b>Stormdraft World Championship</b>.
+                Who rides the next storm? Not right now via "Random", at least: the Stormdraft World Championship is excluded for the next 3 tournaments and the Elite Star Series for the next one.
             </p>
         </section>
     </>
@@ -3557,18 +3781,27 @@ const INFO_SUB_PAGES = [
         sections: ESS_SECTIONS,
         Content: EssSubPage,
     },
+    {
+        id: "swc",
+        label: <>Stormdraft World Championship Storm Chase /<br />Stormdraft World Championship</>,
+        sections: SWC_SECTIONS,
+        Content: SwcSubPage,
+    },
 ];
 
 const SUB_PAGE_SEARCH_PARAM = "page";
 
-const VISIBLE_SUB_PAGES = 4;
+const TAB_GLIDE_MS = 420;
 
-const MAX_TAB_START = Math.max(0, INFO_SUB_PAGES.length - VISIBLE_SUB_PAGES);
+const TAB_EDGE = 2;
 
-const clampTabStart = (start) => Math.max(0, Math.min(MAX_TAB_START, start));
+const TAB_HOLD_MIN_SPEED = 0.35;
 
-const tabStartShowing = (start, index) =>
-    index < start ? clampTabStart(index) : index >= start + VISIBLE_SUB_PAGES ? clampTabStart(index - VISIBLE_SUB_PAGES + 1) : start;
+const TAB_HOLD_MAX_SPEED = 2.8;
+
+const TAB_HOLD_RAMP_S = 1.6;
+
+const TAB_EASING = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 const SCROLL_EASING = (t) =>
     t < 0.5
@@ -3592,11 +3825,17 @@ const SpecialModeInfoPage = () => {
     const hasMeasuredTabsRef = useRef(false);
     const [headerHeight, setHeaderHeight] = useState(0);
     const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0, animate: false });
-    const [tabStart, setTabStart] = useState(() =>
-        tabStartShowing(0, INFO_SUB_PAGES.findIndex((page) => page.id === activeSubPage.id))
-    );
-    const [tabWindow, setTabWindow] = useState({ x: 0, width: null, animate: false });
-    const hasMeasuredWindowRef = useRef(false);
+    const {
+        hallScrollRef: tabWindowRef,
+        handleHallWheel: handleTabsWheel,
+        handleHallPointerDown: handleTabsDragDown,
+        handleHallPointerMove: handleTabsPointerMove,
+        handleHallPointerUp: handleTabsPointerUp,
+        handleHallClickCapture: handleTabsClickCapture,
+    } = useHallDragScroll();
+    const tabGlideRef = useRef(null);
+    const hasPlacedTabsRef = useRef(false);
+    const [tabEdges, setTabEdges] = useState({ start: true, end: true });
 
     useEffect(() => {
         const lenis = new Lenis({
@@ -3649,29 +3888,77 @@ const SpecialModeInfoPage = () => {
         return () => window.removeEventListener("resize", handleResize);
     }, [activeSubPage.id]);
 
-    useLayoutEffect(() => {
-        const measure = (animate) => {
-            const tabs = tabsRef.current?.querySelectorAll("[data-sub-page-tab]");
-            const first = tabs?.[tabStart];
-            const last = tabs?.[Math.min(tabs.length, tabStart + VISIBLE_SUB_PAGES) - 1];
-            if (!first || !last) return;
-            setTabWindow({ x: first.offsetLeft, width: last.offsetLeft + last.offsetWidth - first.offsetLeft, animate });
+    const readTabEdges = useCallback(() => {
+        const box = tabWindowRef.current;
+        if (!box) return;
+        const max = box.scrollWidth - box.clientWidth;
+        setTabEdges((prev) => {
+            const next = { start: box.scrollLeft <= TAB_EDGE, end: box.scrollLeft >= max - TAB_EDGE };
+            return prev.start === next.start && prev.end === next.end ? prev : next;
+        });
+    }, [tabWindowRef]);
+
+    const tabHoldRef = useRef({ frame: null, direction: 0, startedAt: 0, last: 0 });
+
+    const stopTabHold = useCallback(() => {
+        const hold = tabHoldRef.current;
+        if (hold.frame) cancelAnimationFrame(hold.frame);
+        hold.frame = null;
+        hold.direction = 0;
+    }, []);
+
+    const stopTabGlide = () => {
+        if (tabGlideRef.current) cancelAnimationFrame(tabGlideRef.current);
+        tabGlideRef.current = null;
+    };
+
+    const glideTabsTo = useCallback((target, immediate = false) => {
+        const box = tabWindowRef.current;
+        if (!box) return;
+        const max = box.scrollWidth - box.clientWidth;
+        const to = Math.max(0, Math.min(max, target));
+        if (tabGlideRef.current) cancelAnimationFrame(tabGlideRef.current);
+        tabGlideRef.current = null;
+        if (immediate) {
+            box.scrollLeft = to;
+            readTabEdges();
+            return;
+        }
+        const from = box.scrollLeft;
+        if (Math.abs(to - from) < 1) return;
+        const t0 = performance.now();
+        const step = (now) => {
+            const k = Math.min(1, (now - t0) / TAB_GLIDE_MS);
+            box.scrollLeft = from + (to - from) * TAB_EASING(k);
+            tabGlideRef.current = k < 1 ? requestAnimationFrame(step) : null;
         };
+        tabGlideRef.current = requestAnimationFrame(step);
+    }, [tabWindowRef, readTabEdges]);
 
-        measure(hasMeasuredWindowRef.current);
-        hasMeasuredWindowRef.current = true;
-
-        const handleResize = () => measure(false);
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [tabStart]);
+    useLayoutEffect(() => {
+        const box = tabWindowRef.current;
+        const active = tabsRef.current?.querySelector("[data-sub-page-active='true']");
+        if (!box || !active) return;
+        const left = active.offsetLeft;
+        const right = left + active.offsetWidth;
+        const fits = left >= box.scrollLeft && right <= box.scrollLeft + box.clientWidth;
+        if (!fits || !hasPlacedTabsRef.current) glideTabsTo(left + active.offsetWidth / 2 - box.clientWidth / 2, !hasPlacedTabsRef.current);
+        hasPlacedTabsRef.current = true;
+    }, [activeSubPage.id, glideTabsTo, tabWindowRef]);
 
     useEffect(() => {
-        const active = tabsRef.current?.querySelector("[data-sub-page-active='true']");
-        const strip = tabsRef.current?.parentElement;
-        if (!active || !strip || strip.scrollWidth <= strip.clientWidth || !window.matchMedia("(max-width: 1023.98px)").matches) return;
-        strip.scrollLeft = active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2;
-    }, [activeSubPage.id]);
+        const box = tabWindowRef.current;
+        if (!box) return undefined;
+        readTabEdges();
+        box.addEventListener("scroll", readTabEdges, { passive: true });
+        window.addEventListener("resize", readTabEdges);
+        return () => {
+            box.removeEventListener("scroll", readTabEdges);
+            window.removeEventListener("resize", readTabEdges);
+            if (tabGlideRef.current) cancelAnimationFrame(tabGlideRef.current);
+            stopTabHold();
+        };
+    }, [readTabEdges, tabWindowRef, stopTabHold]);
 
     const pendingAnchorRef = useRef(null);
 
@@ -3699,11 +3986,40 @@ const SpecialModeInfoPage = () => {
 
     const selectSubPage = (id) => {
         if (id === activeSubPage.id) return;
-        setTabStart((start) => tabStartShowing(start, INFO_SUB_PAGES.findIndex((page) => page.id === id)));
         setSearchParams({ [SUB_PAGE_SEARCH_PARAM]: id }, { replace: true });
     };
 
-    const scrollTabs = (direction) => setTabStart((start) => clampTabStart(start + direction));
+    const startTabHold = (direction) => {
+        const box = tabWindowRef.current;
+        if (!box) return;
+        stopTabGlide();
+        stopTabHold();
+        const hold = tabHoldRef.current;
+        hold.direction = direction;
+        hold.startedAt = performance.now();
+        hold.last = hold.startedAt;
+        const step = (now) => {
+            if (!hold.direction) return;
+            const held = (now - hold.startedAt) / 1000;
+            const dt = Math.min(48, now - hold.last);
+            hold.last = now;
+            const speed = TAB_HOLD_MIN_SPEED + (TAB_HOLD_MAX_SPEED - TAB_HOLD_MIN_SPEED) * Math.min(1, (held / TAB_HOLD_RAMP_S) ** 2);
+            const max = box.scrollWidth - box.clientWidth;
+            const next = Math.max(0, Math.min(max, box.scrollLeft + hold.direction * speed * dt));
+            box.scrollLeft = next;
+            if ((hold.direction < 0 && next <= 0) || (hold.direction > 0 && next >= max)) {
+                stopTabHold();
+                return;
+            }
+            hold.frame = requestAnimationFrame(step);
+        };
+        hold.frame = requestAnimationFrame(step);
+    };
+
+    const handleTabsPointerDown = (e) => {
+        stopTabGlide();
+        handleTabsDragDown(e);
+    };
 
     const [indicator, setIndicator] = useState({
         top: 0,
@@ -3831,7 +4147,7 @@ const SpecialModeInfoPage = () => {
     };
 
     const renderSubPageArrow = (direction) => {
-        const isHidden = direction < 0 ? tabStart <= 0 : tabStart >= MAX_TAB_START;
+        const isHidden = direction < 0 ? tabEdges.start : tabEdges.end;
         const Icon = direction < 0 ? IoIosArrowBack : IoIosArrowForward;
         return (
             <button
@@ -3839,7 +4155,29 @@ const SpecialModeInfoPage = () => {
                 aria-label={direction < 0 ? "Previous tournaments" : "Next tournaments"}
                 aria-hidden={isHidden}
                 tabIndex={isHidden ? -1 : 0}
-                onClick={() => scrollTabs(direction)}
+                onPointerDown={(e) => {
+                    if (e.pointerType === "mouse" && e.button !== 0) return;
+                    e.preventDefault();
+                    try {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                    } catch {
+                        return startTabHold(direction);
+                    }
+                    startTabHold(direction);
+                }}
+                onPointerUp={stopTabHold}
+                onPointerCancel={stopTabHold}
+                onLostPointerCapture={stopTabHold}
+                onKeyDown={(e) => {
+                    if ((e.key !== "Enter" && e.key !== " ") || e.repeat) return;
+                    e.preventDefault();
+                    startTabHold(direction);
+                }}
+                onKeyUp={(e) => {
+                    if (e.key === "Enter" || e.key === " ") stopTabHold();
+                }}
+                onBlur={stopTabHold}
+                onContextMenu={(e) => e.preventDefault()}
                 className={`${css.sub_page_button} ${css.sub_page_arrow} ${isHidden ? css.sub_page_arrow_hidden : ""}`}
             >
                 <Icon />
@@ -3847,35 +4185,39 @@ const SpecialModeInfoPage = () => {
         );
     };
 
-    const tabTransition = tabWindow.animate ? { type: "tween", duration: 0.3, ease: "easeInOut" } : { duration: 0 };
-
     const renderSubPageNavigation = () => (
         <div ref={headerRef} className={css.second_header}>
             <div className={css.sub_page_strip}>
                 {renderSubPageArrow(-1)}
-                <motion.div
+                <div
+                    ref={tabWindowRef}
                     className={css.sub_page_window}
-                    initial={false}
-                    animate={{ width: tabWindow.width ?? "auto" }}
-                    transition={tabTransition}
+                    data-lenis-prevent
+                    data-fade-start={tabEdges.start ? "false" : "true"}
+                    data-fade-end={tabEdges.end ? "false" : "true"}
+                    onWheel={(e) => {
+                        stopTabGlide();
+                        handleTabsWheel(e);
+                    }}
+                    onPointerDown={handleTabsPointerDown}
+                    onPointerMove={handleTabsPointerMove}
+                    onPointerUp={handleTabsPointerUp}
+                    onPointerCancel={handleTabsPointerUp}
+                    onClickCapture={handleTabsClickCapture}
+                    onDragStart={(e) => e.preventDefault()}
                 >
-                    <motion.nav
+                    <nav
                         ref={tabsRef}
                         className={css.sub_page_navigation}
-                        initial={false}
-                        animate={{ x: -tabWindow.x }}
-                        transition={tabTransition}
                     >
-                        {INFO_SUB_PAGES.map((page, index) => {
+                        {INFO_SUB_PAGES.map((page) => {
                             const isActive = page.id === activeSubPage.id;
-                            const isVisible = index >= tabStart && index < tabStart + VISIBLE_SUB_PAGES;
                             return (
                                 <button
                                     key={page.id}
                                     type="button"
                                     data-sub-page-tab
                                     data-sub-page-active={isActive}
-                                    tabIndex={isVisible ? 0 : -1}
                                     onClick={() => selectSubPage(page.id)}
                                     className={`${css.sub_page_button} ${isActive ? css.sub_page_button_active : ""}`}
                                 >
@@ -3889,8 +4231,8 @@ const SpecialModeInfoPage = () => {
                             animate={{ left: tabIndicator.left, width: tabIndicator.width }}
                             transition={tabIndicator.animate ? { type: "tween", duration: 0.3, ease: "easeInOut" } : { duration: 0 }}
                         />
-                    </motion.nav>
-                </motion.div>
+                    </nav>
+                </div>
                 {renderSubPageArrow(1)}
             </div>
         </div>

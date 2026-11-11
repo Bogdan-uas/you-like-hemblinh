@@ -480,7 +480,7 @@ const predictSetWin = (env, prevLoser) => {
 
 const factorialOf = (n) => (n <= 1 ? 1 : n * factorialOf(n - 1));
 
-const predictSeriesWin = (env, setsToWin) => {
+const predictSeriesWin = (env, setsToWin, start = null) => {
     const setProbability = {};
     const pSet = (prevLoser) => {
         const key = prevLoser ?? "none";
@@ -502,7 +502,7 @@ const predictSeriesWin = (env, setsToWin) => {
         return value;
     };
 
-    return walk(0, 0, null);
+    return walk(start?.leftSets ?? 0, start?.rightSets ?? 0, start?.prevLoser ?? null);
 };
 
 export const predictLeftSeriesWin = ({ seeded, matchCtx, setsToWin }) => {
@@ -525,4 +525,58 @@ export const predictLeftSeriesWin = ({ seeded, matchCtx, setsToWin }) => {
     }
     predictionCache.set(cacheKey, leftWinProbability);
     return leftWinProbability;
+};
+
+const liveRollContext = (s) => {
+    const inPens = s.tiebreakerPhase === "penalties";
+    const otActive = !inPens && s.tiebreakerPhase !== "extended" && s.isOvertime && s.overtimeBlock > 0;
+    const sideAhead = (left, right) => (left > right ? "left" : right > left ? "right" : null);
+    const leadSide = inPens || s.tiebreakerPhase === "extended"
+        ? null
+        : sideAhead(s.roundWins ?? 0, s.roundLosses ?? 0) ?? sideAhead(s.miniWins ?? 0, s.miniLosses ?? 0);
+    return {
+        liveStats: s.liveStats ?? { left: {}, right: {} },
+        otContext: inPens ? { active: true, depth: (s.penaltyLeftScore ?? 0) + (s.penaltyRightScore ?? 0) } : { active: otActive, depth: s.overtimeBlock },
+        leadSide,
+        bounceBackArmedSide: inPens ? null : s.bounceBackArmedSide,
+        lastRoundLoserSide: inPens ? null : s.lastRoundLoserSide,
+        matchCtx: s.matchCtx ?? null,
+        finisherActive: (s.setsToWin ?? 2) > 1,
+    };
+};
+
+export const predictLiveMiniWin = (s) => {
+    const ctx = liveRollContext(s);
+    const edge = splitRollEdge(computeRollBonus("left", MULTIPLIER_MIN, ctx), computeRollBonus("right", MULTIPLIER_MIN, ctx));
+    const width = MULTIPLIER_MAX - MULTIPLIER_MIN;
+    const pLeft = miniBeatProbability(MULTIPLIER_MIN + edge.left, width, MULTIPLIER_MIN + edge.right, width);
+    const pRight = miniBeatProbability(MULTIPLIER_MIN + edge.right, width, MULTIPLIER_MIN + edge.left, width);
+    return pLeft + pRight > 0 ? pLeft / (pLeft + pRight) : 0.5;
+};
+
+export const predictLiveRoundWin = (s, target) => {
+    const q = predictLiveMiniWin(s);
+    const needLeft = Math.max(0, target - (s.miniWins ?? 0));
+    const needRight = Math.max(0, target - (s.miniLosses ?? 0));
+    if (needLeft === 0) return 1;
+    if (needRight === 0) return 0;
+    let sum = 0;
+    let ways = 1;
+    for (let j = 0; j < needRight; j++) {
+        if (j > 0) ways = (ways * (needLeft - 1 + j)) / j;
+        sum += ways * Math.pow(q, needLeft) * Math.pow(1 - q, j);
+    }
+    return Math.min(1, Math.max(0, sum));
+};
+
+export const predictLiveSeriesWin = ({ seeded, matchCtx, setsToWin, leftSets = 0, rightSets = 0, prevLoser = null }) => {
+    const start = { leftSets, rightSets, prevLoser };
+    const cacheKey = JSON.stringify([seeded, matchCtx, setsToWin, start]);
+    const cached = predictionCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+    const env = { leftStats: seeded.left, rightStats: seeded.right, matchCtx, finisherActive: setsToWin > 1, cache: new Map() };
+    const value = predictSeriesWin(env, setsToWin, start);
+    if (predictionCache.size >= PREDICTION_CACHE_MAX) predictionCache.delete(predictionCache.keys().next().value);
+    predictionCache.set(cacheKey, value);
+    return value;
 };

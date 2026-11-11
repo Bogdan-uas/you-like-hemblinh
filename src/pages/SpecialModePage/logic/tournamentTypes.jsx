@@ -1,4 +1,4 @@
-import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription, PgxDescription, EssDescription } from "../components/TournamentTypeInfo.jsx";
+import { PemSmallDescription, PemBigDescription, GplDescription, PbsDescription, PgxDescription, EssDescription, SwcDescription } from "../components/TournamentTypeInfo.jsx";
 import { SKYLINES_TYPE_ID } from "./skylines.jsx";
 import { TOURNAMENT_NUMBERS_LS_KEY, TOURNAMENT_PICKER_LS_KEY, TOURNAMENT_BANS_LS_KEY, CURRENT_TOURNAMENT_TYPE_LS_KEY } from "./storageKeys.js";
 
@@ -15,6 +15,8 @@ export const PGX_CM_TYPE_ID = "PGX Candidate Masters";
 export const ESS_TYPE_ID = "Elite Star Series";
 export const ESS_CH_TYPE_ID = "Elite Star Series Challenger";
 export const ESS_LQ_TYPE_ID = "Elite Star Series Ladder Qualifier";
+export const SWC_TYPE_ID = "Stormdraft World Championship";
+export const SWC_SC_TYPE_ID = "Stormdraft World Championship Storm Chase";
 
 export const TOURNAMENT_TYPES = [
     {
@@ -76,6 +78,12 @@ export const TOURNAMENT_TYPES = [
         tier: "tier1",
         descriptionNode: <EssDescription />,
     },
+    {
+        id: SWC_TYPE_ID,
+        label: "Stormdraft World Championship",
+        tier: "tier1",
+        descriptionNode: <SwcDescription />,
+    },
 ];
 
 const EVENT_TOURNAMENT_TYPES = [
@@ -87,6 +95,7 @@ const EVENT_TOURNAMENT_TYPES = [
     { id: PGX_CM_TYPE_ID, label: "PGX Candidate Masters", tier: "qualifier" },
     { id: ESS_CH_TYPE_ID, label: "Elite Star Series Challenger", tier: "tier15" },
     { id: ESS_LQ_TYPE_ID, label: "Elite Star Series Ladder Qualifier", tier: "qualifier" },
+    { id: SWC_SC_TYPE_ID, label: "Stormdraft World Championship Storm Chase", tier: "qualifier" },
 ];
 
 export const NUMBERED_TOURNAMENT_TYPES = [...TOURNAMENT_TYPES, ...EVENT_TOURNAMENT_TYPES];
@@ -163,6 +172,7 @@ export const TOURNAMENT_BAN_ROLLS = 2;
 
 export const TOURNAMENT_BAN_EXCEPTIONS = [
     { id: ACTIVE_TOURNAMENT_TYPE, rolls: 3 },
+    { id: SWC_TYPE_ID, rolls: 3 },
 ];
 
 export const getTournamentBanRolls = (id) =>

@@ -190,6 +190,36 @@ const PbsToast = ({ t, message }) => {
     );
 };
 
+const SwcToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+    const accent = t.accent ?? event.accent;
+
+    return (
+        <div
+            className={`${css.swc} ${t.visible ? css.swc_enter : css.swc_exit}`}
+            style={{ "--toast-accent": readableAccent(accent), "--label-text": labelTextOn(accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.swc_swap}>
+                <span className={css.swc_icon}>
+                    <span className={css.swc_spark} aria-hidden="true" />
+                    <span className={css.swc_emoji}>{t.icon ?? "📣"}</span>
+                </span>
+                <span className={css.swc_body}>
+                    <span className={css.swc_head}>
+                        <span className={css.swc_label}>{t.label ?? event.label}</span>
+                        <span className={css.swc_brand}>Stormdraft</span>
+                    </span>
+                    <span className={css.swc_message}>{message}</span>
+                    <Countdown t={t} barRef={barRef} />
+                </span>
+            </div>
+        </div>
+    );
+};
+
 const PgxToast = ({ t, message }) => {
     const { barRef, close } = useDrainClose(t);
     const event = eventOf(t.icon);
@@ -302,6 +332,7 @@ export function AppToast({ t }) {
     if (t.variant === "series" && t.hud === "cst") return <CstToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "pgx") return <PgxToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "pbs") return <PbsToast t={t} message={message} />;
+    if (t.variant === "series" && t.hud === "swc") return <SwcToast t={t} message={message} />;
     if (t.variant === "series" && (t.hud === "pem" || t.hud === "gpl" || t.hud === "gcc")) return <LowerThird t={t} message={message} />;
     if (t.variant === "series") return <SeriesToast t={t} message={message} />;
     return <PlainToast t={t} message={message} />;

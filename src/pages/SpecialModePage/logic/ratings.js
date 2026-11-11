@@ -9,6 +9,7 @@ import { QUALIFIER_RATING_WEIGHTS, OPEN_QUALIFIER_RATING_WEIGHTS } from "./quali
 import { SKYLINES_FLOOR_RATING_WEIGHTS, SKYLINES_ROOF_RATING_WEIGHTS } from "./skylines.jsx";
 import { PGX_CM_RATING_WEIGHTS, PGX_IM_RATING_WEIGHTS, PGX_GM_SWISS_RATING_WEIGHT, PGX_GM_PLAYOFFS_RATING_WEIGHTS } from "./pgx.jsx";
 import { essLadderRatingWeight, ESS_CH_RATING_WEIGHTS, ESS_FINAL_RATING_WEIGHTS } from "./ess.jsx";
+import { SWC_SC_RATING_WEIGHTS, SWC_MAIN_RATING_WEIGHTS } from "./swc.jsx";
 import { buildLeaderboard, clampMin0 } from "./teamData.js";
 
 export const expectedScore = (ratingA, ratingB) => {
@@ -67,6 +68,10 @@ const matchImportance = ({ phase, swissStageKey, playoffsStage, bestOf, loserSet
                                                     ? (ESS_CH_RATING_WEIGHTS[playoffsStage] ?? 1.08)
                                                     : phase === "essFin"
                                                     ? (ESS_FINAL_RATING_WEIGHTS[playoffsStage] ?? 1.6)
+                                                    : phase === "swcSc"
+                                                    ? (SWC_SC_RATING_WEIGHTS[playoffsStage] ?? 0.74)
+                                                    : phase === "swcMain"
+                                                    ? (SWC_MAIN_RATING_WEIGHTS[playoffsStage] ?? 1.28)
                                                     : phase === "pgxCm"
                                                     ? (PGX_CM_RATING_WEIGHTS[playoffsStage] ?? 0.86)
                                                     : phase === "pgxIm"
@@ -203,7 +208,7 @@ export const applyRatings = ({
     );
 
     const isGrandFinal =
-        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "gplPlayoffs", "gccPlayoffs", "pbsPlayoffs", "ecl", "skyline", "pgxIm", "pgxPlayoffs", "essFin"].includes(phase) && playoffsStage === "gf";
+        ["playoffs", "cstPlayoffs", "pemPlayoffs", "pemBigPlayoffs", "gplPlayoffs", "gccPlayoffs", "pbsPlayoffs", "ecl", "skyline", "pgxIm", "pgxPlayoffs", "essFin", "swcMain"].includes(phase) && playoffsStage === "gf";
 
     if (isGrandFinal) {
         losePoints = Math.round(winPoints * 0.2);

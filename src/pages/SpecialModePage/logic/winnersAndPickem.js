@@ -6,6 +6,8 @@ export const PGX_PODIUM_TROPHY_SIZE = 100;
 export const PGX_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-74px" };
 export const ESS_PODIUM_TROPHY_SIZE = 100;
 export const ESS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-74px" };
+export const SWC_PODIUM_TROPHY_SIZE = 140;
+export const SWC_PODIUM_TROPHY_STYLE = { marginLeft: "4px", marginTop: "-108px" };
 
 export const WINNERS_TIMELINE = {
     headline: 500,
@@ -286,6 +288,8 @@ export const PICKEM_INTRO_SCALE = 8;
 export const PICKEM_INTRO_HOLD_S = 0.5;
 export const PICKEM_INTRO_MOVE_S = 1.4;
 export const PICKEM_WIN_COUNT_MS = 30000;
-export const PICKEM_LOSS_COUNT_MS = 10000;
+export const PICKEM_LOSS_COUNT_MS = 12000;
+export const PICKEM_LOSS_CLOSE_MS = 14000;
+export const PICKEM_LOSS_STALL_MS = 700;
 export const PICKEM_SLOWDOWN = 4;
 export const PICKEM_SNAP_DELAY_MS = 500;

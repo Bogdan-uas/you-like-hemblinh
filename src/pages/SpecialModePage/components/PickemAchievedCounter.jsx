@@ -4,6 +4,8 @@ import { motion, useAnimation } from "framer-motion";
 import {
     PICKEM_WIN_COUNT_MS,
     PICKEM_LOSS_COUNT_MS,
+    PICKEM_LOSS_CLOSE_MS,
+    PICKEM_LOSS_STALL_MS,
     PICKEM_SLOWDOWN,
     PICKEM_SNAP_DELAY_MS,
     PICKEM_INTRO_SCALE,
@@ -43,13 +45,36 @@ export const PickemAchievedCounter = ({ run, instant, finalPoints, neededPoints,
         const final = finalPoints;
         const won = final >= needed;
         const endValue = won ? needed : final;
-        const duration = won ? PICKEM_WIN_COUNT_MS : PICKEM_LOSS_COUNT_MS;
+        const closeness = needed > 0 ? Math.min(1, Math.max(0, final / needed)) : 0;
+        const duration = won ? PICKEM_WIN_COUNT_MS : PICKEM_LOSS_COUNT_MS + PICKEM_LOSS_CLOSE_MS * closeness;
         const qEnd = endValue > 0 && needed > 0
             ? 1 - Math.pow(1 - endValue / needed, 1 / PICKEM_SLOWDOWN)
             : 0;
         const valueAt = (t) => {
-            const q = qEnd * Math.min(t / duration, 1);
+            const p = Math.min(t / duration, 1);
+            if (!won) return endValue * (1 - Math.pow(1 - p, PICKEM_SLOWDOWN));
+            const q = qEnd * p;
             return needed * (1 - Math.pow(1 - q, PICKEM_SLOWDOWN));
+        };
+
+        const strain = async () => {
+            await new Promise((resolve) => {
+                snapTimer = setTimeout(resolve, PICKEM_LOSS_STALL_MS);
+            });
+            for (let i = 0; i < 2 && !cancelled; i++) {
+                await controls.start({
+                    x: [0, -4, 4, -3, 3, -2, 2, 0],
+                    scale: [1, 1.06, 1.06, 1.04, 1.04, 1.02, 1.02, 1],
+                    transition: { duration: 0.75, ease: "easeInOut" },
+                });
+                if (cancelled) return;
+                await new Promise((resolve) => {
+                    snapTimer = setTimeout(resolve, 260);
+                });
+            }
+            if (cancelled) return;
+            onSettledRef.current?.();
+            await controls.start({ y: [0, 7, 0], scale: [1, 0.94, 1], transition: { duration: 0.5, ease: "easeOut" } });
         };
 
         const finish = () => {
@@ -60,7 +85,7 @@ export const PickemAchievedCounter = ({ run, instant, finalPoints, neededPoints,
                     onSettledRef.current?.();
                 }, PICKEM_SNAP_DELAY_MS);
             } else {
-                onSettledRef.current?.();
+                strain();
             }
         };
 

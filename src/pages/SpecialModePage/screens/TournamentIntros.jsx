@@ -16,10 +16,10 @@ const PBS_INTRO_STAGES = { ro16: "Stage II", qf: "Finals" };
 
 export function TournamentIntros({ intro, phase, labels, tournament }) {
     const { showTournamentIntro, handleCloseTournamentIntro } = intro;
-    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase, isEssLqPhase, isEssChPhase, isEssMainPhase } = phase;
-    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, essLqLabel, essChLabel, essLabel, tournamentLabel } = labels;
-    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin } = tournament;
-    const isPgxPhase = isPgxCmPhase || isPgxImPhase || isPgxMainPhase || isEssLqPhase || isEssChPhase || isEssMainPhase;
+    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase, isEssLqPhase, isEssChPhase, isEssMainPhase, isSwcScPhase, isSwcMainPhase } = phase;
+    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, essLqLabel, essChLabel, essLabel, swcScLabel, swcLabel, tournamentLabel } = labels;
+    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin, swcSc, swcMain } = tournament;
+    const isPgxPhase = isPgxCmPhase || isPgxImPhase || isPgxMainPhase || isEssLqPhase || isEssChPhase || isEssMainPhase || isSwcScPhase || isSwcMainPhase;
 
     const renderTeamsIntro = (titleNode, sections) => (
         <div className={css.intro_overlay}>
@@ -593,6 +593,17 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                     [
                         { title: "Invited via the Leaderboard", teams: essSeries?.seeds?.finals, width: "50%" },
                         { title: "Qualified via the Challenger", teams: essFin?.teams?.slice(6), width: "50%", highlighted: true },
+                    ]
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isSwcScPhase && renderTeamsIntro(
+                    renderQualifierTitle({ badgeHeight: 40, label: swcScLabel }),
+                    ["A", "B"].map((group) => ({ title: `Bracket ${group}`, teams: swcSc?.brackets?.[group]?.teams, width: "70%" }))
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isSwcMainPhase && renderTeamsIntro(
+                    swcLabel,
+                    [
+                        { title: "Invited via the Leaderboard", teams: swcMain?.directTeams, width: "50%" },
+                        { title: "Qualified via the Storm Chase", teams: swcMain?.chaseQualified, width: "50%", highlighted: true },
                     ]
                 )}</FadeOut>
                 <FadeOut variant="overlay">{showTournamentIntro && isSkylinesPhase && (

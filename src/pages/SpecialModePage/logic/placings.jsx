@@ -1,7 +1,7 @@
-import { PemSilverTrophy, PemGoldTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, Tier15Medal } from "../components/Trophies.jsx";
+import { PemSilverTrophy, PemGoldTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, Tier15Medal } from "../components/Trophies.jsx";
 import { getPemSeriesConfig } from "./pemConfig.js";
 import { TEAM_PLACINGS_LS_KEY } from "./storageKeys.js";
-import { PEM_BIG_TYPE_ID, PEM_SMALL_TYPE_ID, GPL_TYPE_ID, PBS_TYPE_ID, PGX_GM_TYPE_ID, ESS_TYPE_ID } from "./tournamentTypes.jsx";
+import { PEM_BIG_TYPE_ID, PEM_SMALL_TYPE_ID, GPL_TYPE_ID, PBS_TYPE_ID, PGX_GM_TYPE_ID, ESS_TYPE_ID, SWC_TYPE_ID } from "./tournamentTypes.jsx";
 
 export const EMPTY_TEAM_PLACINGS = {
     wins: 0,
@@ -13,6 +13,7 @@ export const EMPTY_TEAM_PLACINGS = {
     pbsWins: 0,
     pgxWins: 0,
     essWins: 0,
+    swcWins: 0,
     tier1Seconds: 0,
     tier1Thirds: 0,
     tier15Wins: 0,
@@ -54,6 +55,7 @@ export const loadTeamPlacings = (teams) => {
                 pbsWins: Math.max(0, Number(v.pbsWins) || 0),
                 pgxWins: Math.max(0, Number(v.pgxWins) || 0),
                 essWins: Math.max(0, Number(v.essWins) || 0),
+                swcWins: Math.max(0, Number(v.swcWins) || 0),
                 tier1Seconds: Math.max(0, Number(v.tier1Seconds) || 0),
                 tier1Thirds: Math.max(0, Number(v.tier1Thirds) || 0),
                 tier15Wins: Math.max(0, Number(v.tier15Wins) || 0),
@@ -111,6 +113,9 @@ export const buildPlacingItems = (p, trophyIcon, tier1TrophyIcon = <PemSilverTro
     }
     if ((p?.essWins ?? 0) > 0) {
         items.push({ key: "essWins", icon: <EssTrophy />, value: p.essWins, title: `${p.essWins} from ${ESS_TYPE_ID}` });
+    }
+    if ((p?.swcWins ?? 0) > 0) {
+        items.push({ key: "swcWins", icon: <SwcTrophy />, value: p.swcWins, title: `${p.swcWins} from ${SWC_TYPE_ID}` });
     }
     if ((p?.tier15Wins ?? 0) > 0) {
         items.push({ key: "tier15Wins", icon: <Tier15Medal />, value: p.tier15Wins, title: medalBreakdownText(0, 0, 0, p.tier15Wins) });

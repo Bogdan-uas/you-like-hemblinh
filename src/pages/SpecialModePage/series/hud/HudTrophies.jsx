@@ -174,5 +174,20 @@ const GccMiniEmblem = ({ size }) => (
     </svg>
 );
 
+const SWC_FUNNEL = "M12 44 C30 52 70 52 88 44 C78 62 62 84 57 114 H43 C38 84 22 62 12 44 Z";
+const SWC_RIM = "M8 42 C8 32 92 32 92 42 C92 50 8 50 8 42 Z";
+const SWC_BOLT = "M54 2 H72 L62 20 H74 L40 50 L50 28 H38 Z";
+const SWC_BASE = "M38 114 H62 L64 122 H36 Z M32 124 H68 L74 148 H26 Z";
+
+const SwcMiniTrophy = ({ size }) => (
+    <svg viewBox="4 0 92 150" style={svgStyle(size, 92 / 150)} aria-hidden="true">
+        <path d={SWC_FUNNEL} fill={WHITE} />
+        <path d={SWC_RIM} fill={WHITE} />
+        <path d="M22 60 C40 66 62 66 80 58 M30 78 C44 82 58 82 72 76 M38 96 C46 98 54 98 62 94" fill="none" stroke={LINE} strokeWidth="4" strokeLinecap="round" />
+        <path d={SWC_BOLT} fill="#5cc6ff" />
+        <path d={SWC_BASE} fill={WHITE} />
+    </svg>
+);
+
 export const HudTrophy = ({ type, size = 38 }) =>
-    type === "ess" ? <EssMiniTrophy size={size} /> : type === "essCh" ? <MedalMiniTrophy size={size} /> : type === "gcc" ? <GccMiniEmblem size={size} /> : type === "pgxCm" || type === "cst" || type === "ecl" ? null : type === "pgxIm" ? <MedalMiniTrophy size={size} /> : type === "gpl" ? <GplMiniTrophy size={size} /> : type === "pbs" ? <PbsMiniTrophy size={size} /> : type === "pgx" ? <PgxMiniTrophy size={size} /> : <PemMiniTrophy big={type === PEM_BIG_TYPE_ID} size={size} />;
+    type === "swc" ? <SwcMiniTrophy size={size} /> : type === "ess" ? <EssMiniTrophy size={size} /> : type === "essCh" ? <MedalMiniTrophy size={size} /> : type === "gcc" ? <GccMiniEmblem size={size} /> : type === "pgxCm" || type === "cst" || type === "ecl" ? null : type === "pgxIm" ? <MedalMiniTrophy size={size} /> : type === "gpl" ? <GplMiniTrophy size={size} /> : type === "pbs" ? <PbsMiniTrophy size={size} /> : type === "pgx" ? <PgxMiniTrophy size={size} /> : <PemMiniTrophy big={type === PEM_BIG_TYPE_ID} size={size} />;

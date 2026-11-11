@@ -5,6 +5,7 @@ import GplTrophyIcon from "../../../components/GplTrophyIcon/GplTrophyIcon.jsx";
 import PbsTrophyIcon from "../../../components/PbsTrophyIcon/PbsTrophyIcon.jsx";
 import PgxTrophyIcon from "../../../components/PgxTrophyIcon/PgxTrophyIcon.jsx";
 import EssTrophyIcon from "../../../components/EssTrophyIcon/EssTrophyIcon.jsx";
+import SwcTrophyIcon from "../../../components/SwcTrophyIcon/SwcTrophyIcon.jsx";
 import { PEM_TROPHY_SILVER, PEM_TROPHY_GOLD } from "../logic/pemConfig.js";
 import { PBS_TROPHY_BODY, PBS_TROPHY_GEM } from "../logic/pbsConfig.js";
 import { PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
@@ -61,7 +62,19 @@ export const EssTrophy = ({ style, ...props }) => (
     />
 );
 
-export const Tier15Medal = ({ size = "1em", style, title }) => {
+export const SwcTrophy = ({ style, ...props }) => (
+    <SwcTrophyIcon
+        color={PEM_TROPHY_GOLD}
+        accentColor="linear-gradient(180deg, #f2fbff 0%, #8fd3ff 20%, #2f8dff 46%, #1650d6 72%, #0a2a78 100%)"
+        glowColor="#5cb8ff"
+        baseColor={{ top: "#4a4c60", middle: "#2e2f42", bottom: "#15161f" }}
+        plaqueColor={{ top: "#ffffff", middle: "#c9ccd2", bottom: "#7a7d85" }}
+        style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))", ...style }}
+        {...props}
+    />
+);
+
+export const Tier15Medal =({ size = "1em", style, title }) => {
     const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
     return (
         <svg

@@ -196,6 +196,24 @@ export const EssDescription = () => (
     </>
 );
 
+export const SwcDescription = () => (
+    <>
+        Two tournaments, played one after another, while places 1-4 of the Leaderboard take a break:
+        <PemSmallEventLine tier="qualifier">
+            <b>Stormdraft World Championship Storm Chase</b> — places 11-42 of the Leaderboard are split into
+            Bracket A and Bracket B (16 teams each). Both are Single Elimination brackets: the Rounds of 16, the
+            Quarterfinals and the Semifinals are Bo3, the Finals Bo5. Both Bracket winners qualify to the main
+            event.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>Stormdraft World Championship</b> — the main event: places 5-10 of the Leaderboard and the 2 teams
+            from the Storm Chase in Group A and Group B of 4 teams (Opening Matches, Winners&apos; Match, Elimination
+            Match and Decider Match, all Bo3). Every Group&apos;s top 2 teams go to the Playoffs: the Semifinals and
+            the Third Place Decider are Bo5, the Grand Final is Bo7.
+        </PemSmallEventLine>
+    </>
+);
+
 export const PbsDescription = () => (
     <>
         Two tournaments, played one after another:

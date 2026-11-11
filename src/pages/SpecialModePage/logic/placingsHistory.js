@@ -12,6 +12,7 @@ const awardKeysOf = (record) => {
     if (["ecl", "skylines", "cst", "gcc"].includes(event)) return TIER2;
     if (event === "pgxIm") return TIER15;
     if (event === "ess") return ["essWins", ...TIER1_PODIUM];
+    if (event === "swc") return ["swcWins", ...TIER1_PODIUM];
     if (event === "pbs") return ["pbsWins", ...TIER1_PODIUM];
     if (event === "gpl") return ["gplWins", ...TIER1_PODIUM];
     if (event === "pgxGm") return ["pgxWins", ...TIER1_PODIUM];

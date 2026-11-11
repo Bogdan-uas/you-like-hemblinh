@@ -10,7 +10,7 @@ import { getLeaderboardDividers } from "../logic/leaderboardDividers.js";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import { TeamStatsHoverPopover } from "../components/TeamStatsHoverPopover.jsx";
 import { useLeaderboardHover, useIsScrolling } from "./leaderboardHover.js";
-import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
+import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, MedalWithBreakdown } from "../components/Trophies.jsx";
 import { EMPTY_TEAM_PLACINGS, trophyCountToDisplay, buildPlacingItems } from "../logic/placings.jsx";
 import { readUnbeatenStreak } from "../logic/statsUi.js";
 import { DEFAULT_LEADERBOARD_SORT, formatOrdinal } from "../logic/teamData.js";
@@ -243,7 +243,8 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                     const pbsTrophyDisplay = trophyCountToDisplay(p.pbsWins);
                     const pgxTrophyDisplay = trophyCountToDisplay(p.pgxWins);
                     const essTrophyDisplay = trophyCountToDisplay(p.essWins);
-                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay || !!pbsTrophyDisplay || !!pgxTrophyDisplay || !!essTrophyDisplay;
+                    const swcTrophyDisplay = trophyCountToDisplay(p.swcWins);
+                    const hasTrophies = !!trophyDisplay || !!tier1TrophyDisplay || !!pemBigTrophyDisplay || !!gplTrophyDisplay || !!pbsTrophyDisplay || !!pgxTrophyDisplay || !!essTrophyDisplay || !!swcTrophyDisplay;
 
                     const unbeatenStreak = readUnbeatenStreak(teamStats?.[t.id]);
                     const pointsRank = rankById[t.id] ?? rank;
@@ -296,6 +297,16 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                 ) : (
                                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
                                         {pgxTrophyDisplay.n} <PgxTrophy />
+                                    </span>
+                                ))}
+                            {swcTrophyDisplay &&
+                                (swcTrophyDisplay.mode === "icons" ? (
+                                    Array.from({ length: swcTrophyDisplay.n }).map((_, k) => (
+                                        <SwcTrophy key={k} style={{ transition: "none" }} />
+                                    ))
+                                ) : (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, transition: "none" }}>
+                                        {swcTrophyDisplay.n} <SwcTrophy />
                                     </span>
                                 ))}
                             {essTrophyDisplay &&
@@ -475,7 +486,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                                                 </span>
                                             )}
                                             {buildPlacingItems(p, null)
-                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins" && item.key !== "pbsWins" && item.key !== "pgxWins" && item.key !== "essWins")
+                                                .filter((item) => item.key !== "wins" && item.key !== "tier1Wins" && item.key !== "pemBigWins" && item.key !== "gplWins" && item.key !== "pbsWins" && item.key !== "pgxWins" && item.key !== "essWins" && item.key !== "swcWins")
                                                 .map((item) => (
                                                     <MedalWithBreakdown
                                                         key={item.key}

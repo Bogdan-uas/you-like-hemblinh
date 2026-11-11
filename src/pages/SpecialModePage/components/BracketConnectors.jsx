@@ -13,7 +13,7 @@ export const BracketConnectors = ({ links }) => {
             const base = container.getBoundingClientRect();
             const next = [];
 
-            links.forEach(({ from, to, toY = 0.5 }) => {
+            links.forEach(({ from, to, toY = 0.5, reverse = false }) => {
                 const a = container.querySelector(`[data-bracket-rect="${from}"]`);
                 const b = container.querySelector(`[data-bracket-rect="${to}"]`);
                 if (!a || !b) return;
@@ -22,9 +22,9 @@ export const BracketConnectors = ({ links }) => {
                 const rb = b.getBoundingClientRect();
 
                 next.push(buildConnectorPath(
-                    Math.round(ra.right - base.left) + 0.5,
+                    Math.round((reverse ? ra.left : ra.right) - base.left) + 0.5,
                     Math.round(ra.top + ra.height / 2 - base.top) + 0.5,
-                    Math.round(rb.left - base.left) + 0.5,
+                    Math.round((reverse ? rb.right : rb.left) - base.left) + 0.5,
                     Math.round(rb.top + rb.height * toY - base.top) + 0.5
                 ));
             });

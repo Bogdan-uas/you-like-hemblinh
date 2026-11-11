@@ -97,6 +97,19 @@ const collectFrom = (src, push) => {
     }
 
     if (src.essFin) arraysOf(src.essFin).forEach(([stage, items]) => list(items, (m) => ({ type: "essFin", section: "finals", stage: m.stage ?? stage, group: null })));
+
+    if (src.swcSc) {
+        Object.entries(src.swcSc.brackets || {}).forEach(([group, holder]) =>
+            arraysOf(holder).forEach(([stage, items]) => list(items, (m) => ({ type: "swcSc", section: "brackets", stage: m.stage ?? stage, group: m.group ?? group }))),
+        );
+    }
+
+    if (src.swcMain) {
+        Object.entries(src.swcMain.groups || {}).forEach(([group, holder]) =>
+            arraysOf(holder).forEach(([stage, items]) => list(items, (m) => ({ type: "swcMain", section: "groups", stage: m.stage ?? stage, group: m.group ?? group }))),
+        );
+        arraysOf(src.swcMain.playoffs).forEach(([stage, items]) => list(items, (m) => ({ type: "swcMain", section: "playoffs", stage: m.stage ?? stage, group: null })));
+    }
 };
 
 const hallSourceOf = (record) => {
@@ -113,6 +126,8 @@ const hallSourceOf = (record) => {
     if (event === "essLq") return { essLq: record.ladder };
     if (event === "essCh") return { essCh: record.challenger };
     if (event === "ess") return { essFin: record.finals };
+    if (event === "swcSc") return { swcSc: record.chase };
+    if (event === "swc") return { swcMain: record.main };
     if (event === "pbs") return { playoffs: record.playoffs };
     return base;
 };

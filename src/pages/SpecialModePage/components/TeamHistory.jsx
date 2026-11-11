@@ -399,6 +399,7 @@ function RatingChart({ views, team }) {
     const area = points.length ? `${line} L${x(points.length - 1).toFixed(1)},${height - pad.b} L${pad.l},${height - pad.b} Z` : "";
     const stroke = darkenHex(team.color, 0.12);
     const ticks = [...new Set([max, Math.round((max + min) / 2), min])];
+    const markerR = Math.max(2, Math.min(5.5, step * 0.3));
 
     let hover = null;
     if (hoverX != null && points.length > 1 && width) {
@@ -407,7 +408,7 @@ function RatingChart({ views, team }) {
         const f = t - i0;
         const value = points[i0].value + (points[i0 + 1].value - points[i0].value) * f;
         const nearest = points[Math.round(t)];
-        hover = { x: pad.l + t * step, y: y(value), nearest };
+        hover = { x: pad.l + t * step, y: y(value), nearest, index: Math.round(t) };
     }
 
     const onMove = (e) => {
@@ -493,6 +494,20 @@ function RatingChart({ views, team }) {
                                 <circle cx={hover.x} cy={hover.y} r="5.5" fill={stroke} stroke="#ffffff" strokeWidth="2.5" />
                             </>
                         ) : null}
+                        {points.map((p, i) =>
+                            p.view ? (
+                                <circle
+                                    key={p.view.entry.key}
+                                    className={`${css.chart_marker} ${hover?.index === i ? css.chart_marker_on : ""}`}
+                                    cx={x(i)}
+                                    cy={y(p.value)}
+                                    r={markerR}
+                                    fill={p.view.result === "T" ? "#ffffff" : resultColor(p.view.result)}
+                                    stroke={p.view.result === "T" ? resultColor("T") : "#ffffff"}
+                                    strokeWidth={p.view.result === "T" ? 2 : markerR > 2.6 ? 1.5 : 1}
+                                />
+                            ) : null,
+                        )}
                     </svg>
                 ) : null}
                 {hover ? (

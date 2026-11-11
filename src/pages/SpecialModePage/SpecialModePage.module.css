@@ -8505,3 +8505,32 @@ button.breakdown_er_tag:not(:disabled):hover {
     color: #2e2f42;
     opacity: 0.85;
 }
+
+.swc_sc_bracket {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 44px;
+    margin: 0 auto;
+    transition: none;
+}
+
+.swc_sc_qualified {
+    position: absolute;
+    top: calc(100% + 28px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    white-space: nowrap;
+    transition: none;
+}
+
+.swc_sc_qualified::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    height: 28px;
+    border-left: 1px solid #8a8a8a;
+}

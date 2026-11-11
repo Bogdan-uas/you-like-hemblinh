@@ -3,7 +3,7 @@ import toastLib from "react-hot-toast";
 let commentaryMuted = false;
 let seriesToastMode = false;
 let seriesHud = null;
-const LOWER_THIRD_HUDS = new Set(["pem", "gpl", "pbs", "pgx", "cst", "ess", "gcc"]);
+const LOWER_THIRD_HUDS = new Set(["pem", "gpl", "pbs", "pgx", "cst", "ess", "gcc", "swc"]);
 
 const SERIES_TRAIL_LENGTH = 4;
 const SERIES_DEFAULT_DURATION = 2000;

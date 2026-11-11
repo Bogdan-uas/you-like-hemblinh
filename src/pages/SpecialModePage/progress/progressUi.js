@@ -110,6 +110,8 @@ import {
     FaUsers,
     FaWandMagicSparkles,
     FaWind,
+    FaTornado,
+    FaCloudBolt,
 } from "react-icons/fa6";
 import { ONE_TIME_LOOK, TIERS, anniversaryRank, levelInfo } from "./progressConfig.js";
 import { getAnniversaryTheme } from "../logic/winnersAndPickem.js";
@@ -208,6 +210,8 @@ export const ACHIEVEMENT_ICONS = {
     international: FaGlobe,
     ladderClimber: FaArrowUpWideShort,
     challengerCircuit: FaFlag,
+    stormChaser: FaTornado,
+    eyeOfTheStorm: FaCloudBolt,
     benefitCollector: FaBoxOpen,
     nightOwl: FaMoon,
     earlyBird: FaSun,

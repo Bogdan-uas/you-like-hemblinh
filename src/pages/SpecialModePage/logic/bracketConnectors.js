@@ -54,14 +54,15 @@ export const buildConnectorPath = (x1, y1, x2, y2, radius = 8) => {
 
     const midX = x1 + (x2 - x1) / 2;
     const dir = y2 > y1 ? 1 : -1;
+    const side = x2 >= x1 ? 1 : -1;
     const r = Math.max(0, Math.min(radius, Math.abs(y2 - y1) / 2, Math.abs(midX - x1)));
 
     return [
         `M${x1} ${y1}`,
-        `H${midX - r}`,
+        `H${midX - side * r}`,
         `Q${midX} ${y1} ${midX} ${y1 + dir * r}`,
         `V${y2 - dir * r}`,
-        `Q${midX} ${y2} ${midX + r} ${y2}`,
+        `Q${midX} ${y2} ${midX + side * r} ${y2}`,
         `H${x2}`,
     ].join(" ");
 };

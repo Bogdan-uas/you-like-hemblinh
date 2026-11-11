@@ -1,7 +1,7 @@
 import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
 import progressCss from "../progress/Progress.module.css";
-import { progressOpenSummaryThen, useProgress } from "../progress/progressStore.js";
+import { useProgress } from "../progress/progressStore.js";
 import { NeededPerkTag } from "../progress/HudPerks.jsx";
 import { perkUseLabel } from "../progress/progressEngine.js";
 // eslint-disable-next-line no-unused-vars
@@ -168,11 +168,8 @@ export function PickemSummary({ pickem, phase, actions }) {
                     }}
                 >
                     <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => {
-                        const toBracket = () => {
-                            setShowPickemSummary(false);
-                            setShowWinnersScreen(false);
-                        };
-                        if (!progressOpenSummaryThen(toBracket)) toBracket();
+                        setShowPickemSummary(false);
+                        setShowWinnersScreen(false);
                     }}>
                         To the bracket
                     </button>
