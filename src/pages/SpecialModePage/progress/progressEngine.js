@@ -1,4 +1,5 @@
 import { applyTaskRun } from "./tasks.js";
+import { COMEBACK_NAMES, comebackSizeOf } from "../logic/comebacks.js";
 import {
     ACHIEVEMENTS,
     FAVORITE_CHANCE,
@@ -293,12 +294,13 @@ export const applySeries = (input, seriesInfo) => {
 
     const upset = correct && chance != null && chance <= UPSET_CHANCE;
     const longShot = correct && chance != null && chance <= LONG_SHOT_CHANCE;
-    const comeback = correct && info.bestOf >= 3 && setsWon[0] === false;
+    const comebackSize = correct ? comebackSizeOf(info.bestOf, setsWon) : 0;
+    const comeback = comebackSize > 0;
     const sweep = correct && info.bestOf >= 3 && setsWon.length > 0 && setsWon.every(Boolean);
     const decider = !info.tie && info.bestOf >= 3 && sets.length >= info.bestOf;
     if (upset) gains.push(makeGain("upset", `Upset pick (${Math.round(chance * 100)}%)`, XP.upset, detail));
     if (longShot) gains.push(makeGain("longShot", `Long shot (${Math.round(chance * 100)}%)`, XP.longShot, detail));
-    if (comeback) gains.push(makeGain("comeback", "Comeback", XP.comeback, detail));
+    if (comeback) gains.push(makeGain("comeback", COMEBACK_NAMES[comebackSize], XP.comeback[comebackSize], detail));
     if (sweep) gains.push(makeGain("sweep", "Sweep", XP.sweep, detail));
     if (decider) gains.push(makeGain("decider", "Down to the wire", XP.decider, detail));
     if (info.stage === "gf") gains.push(makeGain("grandFinal", "Grand Final", XP.grandFinal, detail));
@@ -439,6 +441,7 @@ export const applySeries = (input, seriesInfo) => {
         setsWon: setsWon.filter(Boolean).length,
         sweep,
         comeback,
+        comebackSize,
         decider,
         overtimes: blocks,
         otSets: overtimeSets,

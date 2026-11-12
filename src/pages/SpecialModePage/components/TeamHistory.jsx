@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState, useEffect } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FaTrophy } from "react-icons/fa";
-import { FaArrowLeft, FaLock } from "react-icons/fa6";
+import { FaArrowLeft, FaArrowRight, FaLock } from "react-icons/fa6";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import css from "./TeamHistory.module.css";
 import page from "../SpecialModePage.module.css";
@@ -275,7 +275,22 @@ const Tile = ({ label, value, sub, title, color }) => (
     </span>
 );
 
-export function FormPanelBody({ form, onOpen, before }) {
+const ProfileLink = ({ team, onProfile }) =>
+    team && onProfile ? (
+        <button
+            type="button"
+            className={`${pcss.filter} ${css.form_profile}`}
+            title={`Open the profile of Team ${team.name}. Closing it brings you back to this match`}
+            onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                onProfile(team, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, size: rect.height });
+            }}
+        >
+            Full profile <FaArrowRight aria-hidden="true" />
+        </button>
+    ) : null;
+
+export function FormPanelBody({ form, onOpen, before, team = null, onProfile = null }) {
     if (!form) return null;
     const { views, stats, latest } = form;
     const heading = latest ? "Recent form" : "Form before this match";
@@ -284,6 +299,7 @@ export function FormPanelBody({ form, onOpen, before }) {
             <div className={css.form}>
                 <div className={css.form_caption}>{heading}</div>
                 <div className={css.empty}>{before ? "No matches before this one" : "No matches played yet"}</div>
+                <ProfileLink team={team} onProfile={onProfile} />
             </div>
         );
     }
@@ -330,6 +346,7 @@ export function FormPanelBody({ form, onOpen, before }) {
                     <HistoryCard key={view.entry.key} view={view} onOpen={onOpen} />
                 ))}
             </div>
+            <ProfileLink team={team} onProfile={onProfile} />
         </div>
     );
 }
@@ -536,14 +553,70 @@ const translateYOf = (el) => {
     }
 };
 
-export function TeamProfile({ team, history, origin, restored, rating, rank, rankColor, placings, stats: factorStats, streak, onOpenEntry, onOpenEvent, onClose, savedView }) {
+const FLOOD_EASE = [0.7, 0, 0.25, 1];
+
+const HERO_BORDER = 4;
+const HERO_BORDER_RGB = [153, 153, 153];
+
+const rgbOf = (color) => {
+    const m = String(color ?? "").match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+    return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : HERO_BORDER_RGB;
+};
+
+const borderAt = (origin, eased) => {
+    if (origin.border == null) return null;
+    const from = origin.border;
+    const rgb = rgbOf(origin.borderColor);
+    const mix = rgb.map((v, i) => Math.round(v + (HERO_BORDER_RGB[i] - v) * eased));
+    return { width: from + (HERO_BORDER - from) * eased, color: `rgb(${mix.join(", ")})` };
+};
+
+const ringStyle = (origin, eased, scale, shadow) => {
+    const border = borderAt(origin, eased);
+    if (!border) return null;
+    const ring = `inset 0 0 0 ${border.width / scale}px ${border.color}`;
+    return { borderWidth: 0, boxShadow: shadow ? `${ring}, ${shadow}` : ring };
+};
+
+export function ProfileFloodOverlay({ team, origin, onDone }) {
+    const [top] = useState(headerBottom);
+    const [box] = useState(() => ({ width: window.innerWidth, height: window.innerHeight - top }));
+    const cx = origin.x;
+    const cy = origin.y - top;
+    const radius = Math.max(Math.hypot(cx, cy), Math.hypot(box.width - cx, cy), Math.hypot(cx, box.height - cy), Math.hypot(box.width - cx, box.height - cy)) + 40;
+    return (
+        <div className={css.flood_overlay} style={{ top }} aria-hidden="true">
+            <motion.div
+                className={css.profile_flood}
+                style={{ left: cx - radius, top: cy - radius, width: radius * 2, height: radius * 2 }}
+                initial={{ scale: origin.size / (radius * 2) }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.65, ease: FLOOD_EASE }}
+                onAnimationComplete={onDone}
+            />
+            <div
+                className={css.profile_fly}
+                style={{
+                    width: origin.size,
+                    height: origin.size,
+                    background: team.gradient || team.color,
+                    boxShadow: team.shadow,
+                    transform: `translate(${cx - origin.size / 2}px, ${cy - origin.size / 2}px)`,
+                    ...ringStyle(origin, 0, 1, team.shadow),
+                }}
+            />
+        </div>
+    );
+}
+
+export function TeamProfile({ team, history, origin, restored, rating, rank, rankColor, placings, stats: factorStats, streak, onOpenEntry, onOpenEvent, onClose, savedView, fromMatch = false, flooded = false }) {
     const { smoothScroll } = useSpecialModeSettings();
     const { wrapperRef, contentRef, lenisRef } = useScreenLenis(smoothScroll);
     const rootRef = useRef(null);
     const heroRef = useRef(null);
     const flyRef = useRef(null);
     const [top] = useState(headerBottom);
-    const [phase, setPhase] = useState(restored || !origin ? "shown" : "flood");
+    const [phase, setPhase] = useState(restored || !origin ? "shown" : flooded ? "fly" : "flood");
     const [geo, setGeo] = useState(null);
     const [shown, setShown] = useState(savedView?.shown ?? PROFILE_PAGE);
     const views = history.views;
@@ -564,31 +637,36 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
     useLayoutEffect(() => {
         if (phase !== "fly" || !geo || !flyRef.current) return undefined;
         const el = flyRef.current;
-        const startX = geo.cx - geo.heroSize / 2;
-        const startY = geo.cy - geo.heroSize / 2;
-        const startScale = origin.size / geo.heroSize;
         const started = performance.now();
         let frame = 0;
         const step = (now) => {
-            const progress = Math.min(1, (now - started) / FLY_MS);
+            const progress = Math.max(0, Math.min(1, (now - started) / FLY_MS));
             const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
             const root = rootRef.current?.getBoundingClientRect();
             const hero = heroRef.current?.getBoundingClientRect();
             if (root && hero) {
                 const size = hero.width;
+                const startX = geo.cx - size / 2;
+                const startY = geo.cy - size / 2;
+                const startScale = origin.size / size;
                 const x = startX + (hero.left - root.left - startX) * eased;
                 const y = startY + (hero.top - root.top - startY) * eased;
-                const scale = startScale * (geo.heroSize / size) + (1 - startScale * (geo.heroSize / size)) * eased;
+                const scale = startScale + (1 - startScale) * eased;
                 el.style.width = `${size}px`;
                 el.style.height = `${size}px`;
                 el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+                const ring = ringStyle(origin, eased, scale, team.shadow);
+                if (ring) {
+                    el.style.borderWidth = "0px";
+                    el.style.boxShadow = ring.boxShadow;
+                }
             }
             if (progress < 1) frame = requestAnimationFrame(step);
             else setPhase((p) => (p === "fly" ? "shown" : p));
         };
         frame = requestAnimationFrame(step);
         return () => cancelAnimationFrame(frame);
-    }, [phase, geo, origin]);
+    }, [phase, geo, origin, team.shadow]);
 
     useEffect(() => {
         if (!savedView?.scrollTop) return;
@@ -633,9 +711,9 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
                 <motion.div
                     className={css.profile_flood}
                     style={{ left: geo.cx - geo.radius, top: geo.cy - geo.radius, width: geo.radius * 2, height: geo.radius * 2 }}
-                    initial={{ scale: origin.size / (geo.radius * 2) }}
+                    initial={{ scale: flooded ? 1 : origin.size / (geo.radius * 2) }}
                     animate={{ scale: 1 }}
-                    transition={{ duration: 0.65, ease: [0.7, 0, 0.25, 1] }}
+                    transition={{ duration: 0.65, ease: FLOOD_EASE }}
                     onAnimationComplete={() => setPhase((p) => (p === "flood" ? "fly" : p))}
                 />
             ) : null}
@@ -649,6 +727,7 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
                         background: teamFill,
                         boxShadow: team.shadow,
                         transform: `translate(${flyStart.x}px, ${flyStart.y}px) scale(${flyStart.scale})`,
+                        ...ringStyle(origin, 0, flyStart.scale, team.shadow),
                     }}
                 />
             ) : null}
@@ -663,7 +742,7 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
                     <div className={css.hero_sticky}>
                         <span className={`${page.second_header} ${css.hero_bg}`} aria-hidden="true" />
                         <button type="button" className={`${pcss.filter} ${css.profile_back}`} onClick={onClose}>
-                            <FaArrowLeft aria-hidden="true" /> Leaderboard
+                            <FaArrowLeft aria-hidden="true" /> {fromMatch ? "Back to the match" : "Leaderboard"}
                         </button>
                         <div className={css.hero}>
                             <span className={css.hero_glow} style={{ background: `radial-gradient(closest-side, ${team.color}38, ${team.color}00)` }} aria-hidden="true" />
@@ -732,19 +811,26 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
                                 title="Average of this team's multipliers over every mini-round it played, compared with its opponents"
                             />
                             <BigTile label="Mini-rounds won" value={formatPct(stats.miniRate)} color={pctColor(stats.miniRate)} accent="#b84dff" title="Share of mini-rounds, which this team's multiplier won" />
-                            <BigTile label="Series record" value={<Record wins={stats.seriesWon} losses={stats.seriesPlayed - stats.seriesWon} />} sub="Best of 2 and longer, won - lost" accent="#2f80ed" />
+                            <BigTile
+                                label="Series record"
+                                value={<Record wins={stats.seriesWon} losses={stats.seriesPlayed - stats.seriesWon} />}
+                                sub={<>Best of 2 and longer · <span style={{ color: countColor(stats.sweeps) }}>{stats.sweeps}</span> {stats.sweeps === 1 ? "sweep" : "sweeps"}</>}
+                                title="Series of a Best of 2 or longer, won - lost. A sweep is a series won without losing a set"
+                                accent="#2f80ed"
+                            />
                             <BigTile label="Bo1 record" value={<Record wins={stats.bo1Won} losses={stats.bo1Played - stats.bo1Won} />} sub="single set matches, won - lost" accent="#2f80ed" />
                             <BigTile label="Overtime sets" value={`${stats.otSetsWon}/${stats.otSets}`} color={ratioColor(stats.otSetsWon, stats.otSets)} sub="won / played" accent="#ff3d77" />
                             <BigTile label="Deciders" value={`${stats.decidersWon}/${stats.deciders}`} color={ratioColor(stats.decidersWon, stats.deciders)} sub="series to the last set, won / played" accent="#ff3d77" />
                             <BigTile label="Current run" value={runText(stats)} color={resultColor(stats.streakType)} sub={<>Best winning run: <span style={{ color: countColor(stats.bestRun) }}>{stats.bestRun}</span></>} accent={stats.streakType === "W" ? "#2e7d32" : stats.streakType === "L" ? "#d32f2f" : "#8a8d99"} />
                             <BigTile
-                                label="Comebacks · Sweeps"
+                                label="Comebacks · In a set"
                                 value={
                                     <>
-                                        <span style={{ color: countColor(stats.comebacks) }}>{stats.comebacks}</span> · <span style={{ color: countColor(stats.sweeps) }}>{stats.sweeps}</span>
+                                        <span style={{ color: countColor(stats.comebacks) }}>{stats.comebacks}</span> · <span style={{ color: countColor(stats.setComebacks) }}>{stats.setComebacks}</span>
                                     </>
                                 }
-                                sub="series won after losing set 1 · without losing a set"
+                                sub="of a whole series · inside a single set"
+                                title="A series comeback: this team was 2 sets behind (1 in a Best of 3) and still won the series. A comeback in a set: it won a set after being 5 rounds behind, or 3 behind with its opponent one round from the set (in an Overtime: from 0-3)"
                                 accent="#27ae60"
                             />
                             <BigTile label="Upsets" value={stats.upsets} color={countColor(stats.upsets)} sub="wins against a higher ranked team" accent="#e0a800" />

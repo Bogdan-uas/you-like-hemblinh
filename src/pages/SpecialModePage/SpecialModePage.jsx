@@ -465,6 +465,8 @@ import { LeaderboardAdminModals } from "./leaderboard/LeaderboardAdminModals.jsx
 import { createTournamentRenderers } from "./renderers/tournamentRenderers.jsx";
 import { SeriesScreen } from "./series/SeriesScreen.jsx";
 import { MatchModal } from "./matchModal/MatchModal.jsx";
+import { createPortal } from "react-dom";
+import { ProfileFloodOverlay } from "./components/TeamHistory.jsx";
 import { matchTitleOf, matchSmallLabelOf } from "./logic/matchLabels.js";
 import { useGlobalTips } from "./logic/useGlobalTips.js";
 import { useMatchSpotlight } from "./logic/useMatchSpotlight.js";
@@ -3497,7 +3499,7 @@ function SpecialModeContent() {
         const { ui: progressUi } = getProgress();
         historyStackRef.current.push(
             profileView && teamProfile
-                ? { kind: "profile", teamId: teamProfile.teamId, view: profileView }
+                ? { kind: "profile", teamId: teamProfile.teamId, view: profileView, fromMatch: !!teamProfile.fromMatch }
                 : {
                     kind: "modal",
                     modalContext,
@@ -3531,7 +3533,7 @@ function SpecialModeContent() {
                 setSelectedHallTournament(null);
             }
             setIsLeaderboardOpen(true);
-            setTeamProfile({ teamId: snap.teamId, origin: null, restored: true, savedView: snap.view });
+            setTeamProfile({ teamId: snap.teamId, origin: null, restored: true, savedView: snap.view, fromMatch: !!snap.fromMatch });
             return;
         }
         setIsHallOfFameOpen(snap.isHallOfFameOpen);
@@ -3544,6 +3546,10 @@ function SpecialModeContent() {
         setModalRightTeam(snap.modalRightTeam);
         setHasChosen(snap.hasChosen);
         setIsMatchModalOpen(true);
+        if (snap.fromModal) {
+            setIsLeaderboardOpen(snap.isLeaderboardOpen);
+            setTeamProfile(snap.teamProfile ? { ...snap.teamProfile, origin: null, restored: true } : null);
+        }
         progressSetInsuranceArmed(snap.insuranceArmed);
         progressSetBonusArmed(snap.bonusArmed);
         requestAnimationFrame(() =>
@@ -3556,7 +3562,7 @@ function SpecialModeContent() {
 
     const openProfileTournament = (entry, profileView) => {
         if (!entry?.record) return;
-        historyStackRef.current = [];
+        historyStackRef.current = historyStackRef.current.filter((snap) => snap.fromModal);
         setTeamProfile((prev) => (prev ? { ...prev, origin: null, restored: true, savedView: profileView } : prev));
         hall.setHallReturnOnLeave(true);
         setSelectedHallMatch(null);
@@ -3574,7 +3580,79 @@ function SpecialModeContent() {
         setTeamProfile({ teamId: team.id, origin, restored: false, savedView: null });
     };
 
+    const [profileFlood, setProfileFlood] = useState(null);
+    const [modalPresenceKey, setModalPresenceKey] = useState(0);
+
+    const modalCircleOf = (team) => {
+        const overlay = document.querySelector(`.${css.match_modal_overlay}`);
+        const name = `Team ${team.name}`;
+        const circles = [...(overlay?.querySelectorAll(`.${css.team_circle_ro32}`) ?? [])].filter(
+            (el) => (el.getAttribute("title") ?? el.dataset.tip) === name && el.getBoundingClientRect().width > 0,
+        );
+        const circle = circles.sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+        if (!circle) return null;
+        const rect = circle.getBoundingClientRect();
+        const style = getComputedStyle(circle);
+        return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            size: rect.width,
+            border: parseFloat(style.borderTopWidth) || 0,
+            borderColor: style.borderTopColor,
+        };
+    };
+
+    const openProfileFromModal = (team, origin) => {
+        if (!team?.id || profileFlood) return;
+        setProfileFlood({ team, origin: modalCircleOf(team) ?? origin });
+    };
+
+    const finishProfileFlood = () => {
+        const flood = profileFlood;
+        if (!flood) return;
+        const { team, origin } = flood;
+        const { ui: progressUi } = getProgress();
+        historyStackRef.current.push({
+            kind: "modal",
+            fromModal: true,
+            modalContext,
+            modalLeftTeam,
+            modalRightTeam,
+            hasChosen,
+            selectedHallMatch,
+            isHallOfFameOpen,
+            selectedHallTournament,
+            hallQualifierGroup: hall.hallQualifierGroup,
+            hallStage1Group: hall.hallStage1Group,
+            scrollY: window.scrollY,
+            insuranceArmed: progressUi.insuranceArmed,
+            bonusArmed: progressUi.bonusArmed,
+            isLeaderboardOpen,
+            teamProfile,
+        });
+        setBreakdownSetIndex(null);
+        setIsMatchModalOpen(false);
+        setModalContext(null);
+        setModalLeftTeam(null);
+        setModalRightTeam(null);
+        setHasChosen(false);
+        setSelectedHallMatch(null);
+        if (isHallOfFameOpen) {
+            setIsHallOfFameOpen(false);
+            setSelectedHallTournament(null);
+        }
+        setIsLeaderboardOpen(true);
+        setTeamProfile({ teamId: team.id, origin, restored: false, savedView: null, fromMatch: true, flooded: true });
+        setProfileFlood(null);
+        setModalPresenceKey((k) => k + 1);
+    };
+
     const closeTeamProfile = () => {
+        const stack = historyStackRef.current;
+        if (stack[stack.length - 1]?.fromModal) {
+            restoreHistory(stack.pop());
+            return;
+        }
         historyStackRef.current = [];
         setTeamProfile(null);
         const y = leaderboardScrollRef.current;
@@ -3588,7 +3666,11 @@ function SpecialModeContent() {
     };
 
     useEffect(() => {
-        if (!isLeaderboardOpen) setTeamProfile(null);
+        if (isLeaderboardOpen) return;
+        const stack = historyStackRef.current;
+        if (stack[stack.length - 1]?.fromModal) restoreHistory(stack.pop());
+        else setTeamProfile(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLeaderboardOpen]);
 
     const closeMatchModal = () => {
@@ -11139,6 +11221,8 @@ function SpecialModeContent() {
         10: "#b0bec5",
     };
 
+    const profileFloodNode = profileFlood ? createPortal(<ProfileFloodOverlay team={profileFlood.team} origin={profileFlood.origin} onDone={finishProfileFlood} />, document.body) : null;
+
     const matchModalNode = (isMatchModalOpen && modalContext && currentModalMatch) ? (
         <MatchModal
             key="match-modal"
@@ -11181,6 +11265,7 @@ function SpecialModeContent() {
                 setStatsPanelTab,
                 getTeamForm,
                 openHistoryEntry,
+                openProfileFromModal,
                 getMatchPlacings,
             }}
             teams={{ placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings }}
@@ -11223,7 +11308,8 @@ function SpecialModeContent() {
                         getTypeNumber,
                         allTeams,
                     }} />
-                <AnimatePresence>{matchModalNode}</AnimatePresence>
+                <AnimatePresence key={modalPresenceKey}>{matchModalNode}</AnimatePresence>
+            {profileFloodNode}
             </>
         );
     }
@@ -11269,7 +11355,8 @@ function SpecialModeContent() {
                         openProfileEntry: openHistoryEntry,
                         openProfileTournament,
                     }} />
-                <AnimatePresence>{matchModalNode}</AnimatePresence>
+                <AnimatePresence key={modalPresenceKey}>{matchModalNode}</AnimatePresence>
+                {profileFloodNode}
                 <GameControlModals
                     controls={{ isRestartModalOpen, confirmRestart, isTerminateModalOpen, confirmTerminate, setIsRestartModalOpen, setIsTerminateModalOpen }}
                 />
@@ -11403,7 +11490,8 @@ function SpecialModeContent() {
                     tournament={{ ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin, swcSc, swcMain }}
                 />
             </div>
-            <AnimatePresence>{matchModalNode}</AnimatePresence>
+            <AnimatePresence key={modalPresenceKey}>{matchModalNode}</AnimatePresence>
+                {profileFloodNode}
         </>
     );
 }

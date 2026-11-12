@@ -1,3 +1,5 @@
+import { COMEBACK_RULE_TEXT, comebackMaxFor } from "../logic/comebacks.js";
+
 export const PROGRESS_LS_KEY = "specialMode_progress_v1";
 export const PROGRESS_SNAPSHOT_LS_KEY = "specialMode_progressSnapshot_v1";
 
@@ -42,7 +44,7 @@ export const XP = {
     pickemPoint: 5,
     upset: 40,
     longShot: 60,
-    comeback: 25,
+    comeback: { 1: 25, 2: 60, 3: 120 },
     sweep: 15,
     decider: 15,
     grandFinal: 30,
@@ -81,7 +83,7 @@ export const XP_SOURCE_GROUPS = [
             { source: "Pick'em points", criteria: "Every Pick'em point a series gives you (level benefits included)", xp: `+${XP.pickemPoint} per point` },
             { source: "Upset pick", criteria: `Your pick had ${Math.round(UPSET_CHANCE * 100)}% or less predicted and still won`, xp: `+${XP.upset}` },
             { source: "Long shot", criteria: `Your pick had ${Math.round(LONG_SHOT_CHANCE * 100)}% or less predicted and still won (on top of the upset)`, xp: `+${XP.longShot}` },
-            { source: "Comeback", criteria: "Your pick won a Best of 3 or longer after losing the first set", xp: `+${XP.comeback}` },
+            { source: "Comeback", criteria: `Your pick came back ${COMEBACK_RULE_TEXT}, and won. A big comeback (3 sets behind, or 2 with the opponent one set from winning) and a huge one (from 0-3 in a Best of 7 or 0-4 in a Best of 9) give more`, xp: `+${XP.comeback[1]} / +${XP.comeback[2]} / +${XP.comeback[3]}` },
             { source: "Sweep", criteria: "Your pick won a Best of 3 or longer without losing a set", xp: `+${XP.sweep}` },
             { source: "Down to the wire", criteria: "The series went all the way to its last possible set", xp: `+${XP.decider}` },
             { source: "Grand Final", criteria: "Any Grand Final played", xp: `+${XP.grandFinal}` },
@@ -187,7 +189,7 @@ export const ACHIEVEMENTS = [
     { id: "setCollector", name: "Set Collector", category: "matches", difficulty: "easy", since: 2, stat: "setsPlayed", tiers: [100, 500, 2000, 5000, 12000], text: (n) => `Play ${n.toLocaleString("en-US")} sets` },
     { id: "marathon", name: "Marathon", category: "matches", difficulty: "easy", stat: "overtimes", tiers: [10, 50, 200, 600, 1500], text: (n) => `Play ${n} Overtimes` },
     { id: "bigStage", name: "Big Stage", category: "matches", difficulty: "medium", stat: "grandFinals", tiers: [3, 10, 25, 50, 100], text: (n) => `Play ${n} Grand Finals` },
-    { id: "comebackKid", name: "Comeback Kid", category: "matches", difficulty: "medium", since: 2, stat: "comebacks", tiers: [3, 15, 50, 150, 400], text: (n) => `See your pick win ${n} ${s(n, "series", "series")} after losing the first set` },
+    { id: "comebackKid", name: "Comeback Kid", category: "matches", difficulty: "medium", since: 2, stat: "comebacks", tiers: [3, 15, 50, 150, 400], text: (n) => `See your pick come back and win ${n} ${s(n, "series", "series")} (${COMEBACK_RULE_TEXT})` },
     { id: "sweeper", name: "Sweeper", category: "matches", difficulty: "easy", since: 2, stat: "sweeps", tiers: [10, 50, 200, 600, 1500], text: (n) => `See your pick win ${n} Best of 3 or longer without losing a set` },
     { id: "downToTheWire", name: "Down to the Wire", category: "matches", difficulty: "easy", since: 2, stat: "deciders", tiers: [10, 50, 150, 500, 1200], text: (n) => `Play ${n} series, which go to their last possible set` },
     { id: "extendedStay", name: "Extended Stay", category: "matches", difficulty: "extreme", since: 2, stat: "erSets", tiers: [1, 2, 4, 7, 12], text: (n) => `Play ${n} ${s(n, "set")}, which go into the Extended Rounds` },
@@ -301,7 +303,7 @@ const PERK_SCHEDULE = {
     upsetBonus: [[45, 1], [175, 2], [350, 3], [600, 4], [900, 5]],
     longShotBonus: [[22, 1], [70, 2], [180, 3], [475, 4], [775, 5]],
     streakBonus: [[8, 1], [65, 2], [160, 3], [425, 4], [725, 5]],
-    comebackBonus: [[12, 1], [85, 2], [210, 3], [525, 4], [825, 5]],
+    comebackBonus: [[12, 1], [55, 2], [100, 3]],
     sweepBonus: [[18, 1], [110, 2], [275, 3], [575, 4], [925, 5]],
     streakShield: [[35, 1], [200, 2], [500, 3], [950, 4]],
     overtimeBonus: [[6, 1], [95, 2], [230, 3], [540, 4], [860, 5]],
@@ -363,7 +365,7 @@ export const perkLines = (set) => [
     set.upsetBonus && `+${set.upsetBonus} Pick'em ${s(set.upsetBonus, "point")} for a correct upset pick`,
     set.longShotBonus && `+${set.longShotBonus} more for a correct long shot pick (${Math.round(LONG_SHOT_CHANCE * 100)}% or less)`,
     set.streakBonus && `+${set.streakBonus} Pick'em ${s(set.streakBonus, "point")} for every ${STREAK_STEP}th correct pick in a row`,
-    set.comebackBonus && `+${set.comebackBonus} Pick'em ${s(set.comebackBonus, "point")}, when your pick wins after losing the first set`,
+    set.comebackBonus && (set.comebackBonus > 1 ? `Comeback bonus: up to +${set.comebackBonus} Pick'em points, when your pick comes back and wins (+1 for a comeback, +2 for a big one${set.comebackBonus > 2 ? ", +3 for a huge one" : ""})` : `+1 Pick'em point, when your pick comes back and wins (${COMEBACK_RULE_TEXT})`),
     set.sweepBonus && `+${set.sweepBonus} Pick'em ${s(set.sweepBonus, "point")}, when your pick wins a Best of 3 or longer without losing a set`,
     set.streakShield && `Streak Shield: ${set.streakShield} wrong ${s(set.streakShield, "pick")} per tournament won't break your pick streak`,
     set.overtimeBonus && `+${set.overtimeBonus} Pick'em ${s(set.overtimeBonus, "point")}, when your pick wins a series with an Overtime`,
@@ -384,7 +386,7 @@ export const BONUS_OPTIONS = [
     { type: "upsetBonus", label: "Upset", when: `your pick has ${Math.round(UPSET_CHANCE * 100)}% or less predicted and still wins` },
     { type: "longShotBonus", label: "Long shot", when: `your pick has ${Math.round(LONG_SHOT_CHANCE * 100)}% or less predicted and still wins` },
     { type: "streakBonus", label: "Streak", when: `your pick wins and it is your ${STREAK_STEP}th correct pick in a row` },
-    { type: "comebackBonus", label: "Comeback", when: "your pick wins after losing the first set" },
+    { type: "comebackBonus", label: "Comeback", when: `your pick comes back ${COMEBACK_RULE_TEXT}, and wins` },
     { type: "sweepBonus", label: "Sweep", when: "your pick wins without losing a set" },
     { type: "overtimeBonus", label: "Overtime", when: "your pick wins a series with an Overtime" },
     { type: "deciderBonus", label: "Decider", when: "your pick wins in the last possible set" },
@@ -412,7 +414,7 @@ export const bonusOptionsFor = ({ perks, stage = null, bestOf = 1, knockout = fa
         if (option.type === "knockoutBonus") return knockout;
         if (option.type === "longSeriesBonus") return bestOf >= 5;
         return true;
-    }).map((option) => ({ ...option, value: perks[option.type] }));
+    }).map((option) => ({ ...option, value: option.type === "comebackBonus" ? Math.min(perks.comebackBonus, comebackMaxFor(bestOf)) : perks[option.type] }));
 
 export const bonusCapPoints = (needed, pct) => (pct && Number.isFinite(needed) && needed > 0 ? Math.max(1, Math.round((needed * pct) / 100)) : 0);
 

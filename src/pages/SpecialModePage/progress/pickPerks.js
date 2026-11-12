@@ -1,13 +1,20 @@
 import { insurancePayout, pickedBonusesOf } from "./progressConfig.js";
+import { comebackSizeOf } from "../logic/comebacks.js";
 
 const BONUS_KEYS = ["gfBonus", "upsetBonus", "longShotBonus", "streakBonus"];
 
 export const bonusConditionMet = (type, { bestOf = 1, setsWon = [], setScores = [], ready = false }) => {
-    if (type === "comebackBonus") return bestOf >= 3 && setsWon[0] === false;
+    if (type === "comebackBonus") return comebackSizeOf(bestOf, setsWon) > 0;
     if (type === "sweepBonus") return bestOf >= 3 && setsWon.length > 0 && setsWon.every(Boolean);
     if (type === "overtimeBonus") return setScores.some((score) => Math.max(score.left ?? 0, score.right ?? 0) >= 16);
     if (type === "deciderBonus") return bestOf >= 3 && setsWon.length >= bestOf;
     return !!ready;
+};
+
+export const bonusPayout = (type, value, context) => {
+    if (!bonusConditionMet(type, context)) return 0;
+    if (type === "comebackBonus") return Math.min(value || 0, comebackSizeOf(context.bestOf, context.setsWon));
+    return value || 0;
 };
 
 const resolveChosenBonus = ({ correct, bestOf, base, setsWon, setScores, perks }) => {
@@ -18,8 +25,9 @@ const resolveChosenBonus = ({ correct, bestOf, base, setsWon, setScores, perks }
     if (correct) {
         let left = perks.bonusLeft ?? 0;
         chosen.forEach((bonus) => {
-            const met = bonusConditionMet(bonus.type, { bestOf, setsWon, setScores, ready: bonus.ready });
-            const amount = met ? Math.min(bonus.value || 0, left) : 0;
+            const context = { bestOf, setsWon, setScores, ready: bonus.ready };
+            const met = bonusConditionMet(bonus.type, context);
+            const amount = Math.min(bonusPayout(bonus.type, bonus.value, context), left);
             if (amount > 0) {
                 points += amount;
                 left -= amount;
@@ -49,7 +57,7 @@ export const resolvePickPerks = ({ correct, bestOf, base, setsWon = [], setScore
             if (value) earned.push({ type, points: value });
         };
         BONUS_KEYS.forEach((key) => add(key, perks[key]));
-        if (bestOf >= 3 && setsWon[0] === false) add("comebackBonus", perks.comebackBonus);
+        add("comebackBonus", bonusPayout("comebackBonus", perks.comebackBonus, { bestOf, setsWon }));
         if (bestOf >= 3 && setsWon.length > 0 && setsWon.every(Boolean)) add("sweepBonus", perks.sweepBonus);
         if (setScores.some((score) => Math.max(score.left ?? 0, score.right ?? 0) >= 16)) add("overtimeBonus", perks.overtimeBonus);
         if (bestOf >= 3 && setsWon.length >= bestOf) add("deciderBonus", perks.deciderBonus);

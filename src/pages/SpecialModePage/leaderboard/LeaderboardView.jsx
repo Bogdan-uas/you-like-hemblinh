@@ -528,6 +528,8 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
                     onOpenEntry={openProfileEntry}
                     onOpenEvent={openProfileTournament}
                     onClose={closeTeamProfile}
+                    fromMatch={!!teamProfile.fromMatch}
+                    flooded={!!teamProfile.flooded}
                 />
             ) : null}
         </AnimatePresence>

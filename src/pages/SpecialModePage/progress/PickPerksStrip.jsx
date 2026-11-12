@@ -3,6 +3,7 @@ import { FaHeart, FaShieldHalved, FaStar } from "react-icons/fa6";
 import { UnbeatenStreakFire } from "../components/StreakBadges.jsx";
 import css from "./Progress.module.css";
 import { INSURANCE_MIN_BEST_OF, bonusOptionsFor, bonusPicksFor, levelInfo, perksForLevel } from "./progressConfig.js";
+import { comebackValueLabel } from "../logic/comebacks.js";
 import { progressBonusCap, progressSetBonusArmed, progressSetInsuranceArmed, streakReadyNext, useProgress } from "./progressStore.js";
 
 export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance = null }) {
@@ -99,16 +100,17 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
                                 const on = armed.includes(option.type);
                                 const blocked = !on && full && maxPicks > 1;
                                 const value = Math.min(option.value, bonus.cap ? bonus.left : option.value);
+                                const shown = option.type === "comebackBonus" ? comebackValueLabel(value, bestOf) : `+${value}`;
                                 return (
                                     <button
                                         key={option.type}
                                         type="button"
                                         aria-pressed={on}
                                         className={`${css.filter} ${css.bonus_option} ${on ? css.filter_active : ""} ${blocked ? css.bonus_option_blocked : ""}`}
-                                        title={blocked ? `You can choose up to ${maxPicks} bonuses for one pick` : `+${value} Pick'em point${value === 1 ? "" : "s"}, if ${option.when}. Otherwise, the bonus is lost.`}
+                                        title={blocked ? `You can choose up to ${maxPicks} bonuses for one pick` : `${shown} Pick'em point${value === 1 ? "" : "s"}, if ${option.when}.${option.type === "comebackBonus" && value > 1 && bestOf >= 7 ? " A big comeback gives +2" + (value > 2 && bestOf >= 7 ? ", a huge one +3." : ".") : ""} Otherwise, the bonus is lost.`}
                                         onClick={() => (maxPicks === 1 ? progressSetBonusArmed(on ? [] : [option.type]) : toggle(option.type))}
                                     >
-                                        +{value} {option.label}
+                                        {shown} {option.label}
                                     </button>
                                 );
                             })}

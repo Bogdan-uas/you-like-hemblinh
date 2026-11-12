@@ -74,6 +74,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
         setStatsPanelTab,
         getTeamForm,
         openHistoryEntry,
+        openProfileFromModal,
         getMatchPlacings,
     } = modal;
     const { placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings } = teams;
@@ -2463,6 +2464,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             rightForm={getTeamForm?.(statsRightTeam?.id, isPlayedModal ? currentModalMatch : null)}
                             formBefore={isPlayedModal}
                             onOpenEntry={openHistoryEntry}
+                            onOpenProfile={openProfileFromModal}
                         />
                     );
                 })()}

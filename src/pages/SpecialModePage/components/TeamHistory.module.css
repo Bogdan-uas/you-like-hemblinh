@@ -235,6 +235,14 @@
     white-space: normal;
 }
 
+.form_profile {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
 .form_caption {
     margin-top: -2px;
     text-align: center;
@@ -315,6 +323,16 @@
     border-radius: 50%;
     background: #ffffff;
     will-change: transform;
+    transition: none;
+}
+
+.flood_overlay {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10050;
+    overflow: hidden;
     transition: none;
 }
 

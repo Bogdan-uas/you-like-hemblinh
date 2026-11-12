@@ -327,7 +327,7 @@ export const StatsFactorPanelBody = ({ team, statsNow, statsBefore, tab = 0 }) =
     );
 };
 
-const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes = null, tab: tabProp = null, onTabChange = null, form = null, formBefore = false, onOpenEntry = null }) => {
+const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes = null, tab: tabProp = null, onTabChange = null, form = null, formBefore = false, onOpenEntry = null, onOpenProfile = null }) => {
     const anchorProp = side === "left" ? "right" : "left";
     const [ownTab, setOwnTab] = useState(0);
     const total = STAT_TABS.length + (form ? 1 : 0);
@@ -389,7 +389,7 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
             </div>
             {isFormTab ? (
                 <div style={{ marginTop: "4px", paddingBottom: "4px" }}>
-                    <FormPanelBody form={form} before={formBefore} onOpen={onOpenEntry} />
+                    <FormPanelBody form={form} before={formBefore} onOpen={onOpenEntry} team={team} onProfile={onOpenProfile} />
                 </div>
             ) : (
             <>
@@ -688,6 +688,7 @@ export const MatchStatsOverlay = ({
     rightForm = null,
     formBefore = false,
     onOpenEntry = null,
+    onOpenProfile = null,
 }) => {
     if (!leftTeam || !rightTeam) return null;
 
@@ -737,6 +738,7 @@ export const MatchStatsOverlay = ({
                 form={leftForm}
                 formBefore={formBefore}
                 onOpenEntry={onOpenEntry}
+                onOpenProfile={onOpenProfile}
             />
             <MatchStatsSidePanel
                 side="right"
@@ -750,6 +752,7 @@ export const MatchStatsOverlay = ({
                 form={rightForm}
                 formBefore={formBefore}
                 onOpenEntry={onOpenEntry}
+                onOpenProfile={onOpenProfile}
             />
         </>
     );

@@ -4,7 +4,8 @@ import css from "./Progress.module.css";
 import page from "../SpecialModePage.module.css";
 import { BONUS_OPTIONS, insurancePayout, pickedBonusesOf } from "./progressConfig.js";
 import { basePickemPoints } from "./progressEngine.js";
-import { bonusConditionMet } from "./pickPerks.js";
+import { bonusPayout } from "./pickPerks.js";
+import { comebackValueLabel } from "../logic/comebacks.js";
 import { useProgress } from "./progressStore.js";
 import { getLiveSetResult, getSetResultWinner } from "../logic/series.js";
 
@@ -34,13 +35,13 @@ const bonusOutcomes = (pick, seriesState) => {
     const sets = playedSets(seriesState);
     let left = pick.bonusLeft ?? 0;
     return chosen.map((bonus) => {
-        const met = bonusConditionMet(bonus.type, {
+        const payout = bonusPayout(bonus.type, bonus.value, {
             bestOf: pick.bestOf,
             setsWon: sets.map((set) => set.won),
             setScores: sets.map((set) => ({ left: set.left, right: set.right })),
             ready: bonus.ready,
         });
-        const amount = met ? Math.min(bonus.value || 0, left) : 0;
+        const amount = Math.min(payout, left);
         left -= amount;
         return amount > 0 ? { kind: "paid", value: `+${amount}` } : { kind: "lost", value: "Lost" };
     });
@@ -136,7 +137,7 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
                 hud={hud}
                 ghost={ghost}
                 label={name}
-                value={outcome?.value ?? `+${amount}`}
+                value={outcome?.value ?? (bonus.type === "comebackBonus" ? comebackValueLabel(amount, pick.bestOf) : `+${amount}`)}
                 icon={outcome?.kind === "lost" ? FaXmark : FaStar}
                 tone={outcome?.kind === "paid" ? "paid" : outcome?.kind === "lost" ? "returned" : null}
                 title={
@@ -144,7 +145,7 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
                         ? `Your ${name} bonus is activated: ${outcome.value} Pick'em point${outcome.value === "+1" ? "" : "s"}`
                         : outcome?.kind === "lost"
                             ? `Your ${name} bonus wasn't activated in this match, so it is lost`
-                            : `${name} bonus: +${amount}, if ${BONUS_WHEN[bonus.type] ?? "it is activated"}`
+                            : `${name} bonus: ${bonus.type === "comebackBonus" ? comebackValueLabel(amount, pick.bestOf) : `+${amount}`}, if ${BONUS_WHEN[bonus.type] ?? "it is activated"}`
                 }
             />,
         );
@@ -175,7 +176,7 @@ const BONUS_INFO = {
     upsetBonus: ["Upset", "Level benefit: upset bonus for a correct pick with 35% or less predicted"],
     longShotBonus: ["Long shot", "Level benefit: long shot bonus for a correct pick with 15% or less predicted"],
     streakBonus: ["Streak", "Level benefit: streak bonus for every 5th correct pick in a row"],
-    comebackBonus: ["Comeback", "Level benefit: comeback bonus, your pick won after losing the first set"],
+    comebackBonus: ["Comeback", "Level benefit: comeback bonus, your pick came back from 2 sets behind (1 in a Best of 3) and won. A bigger comeback gives more"],
     sweepBonus: ["Sweep", "Level benefit: sweep bonus, your pick won without losing a set"],
     overtimeBonus: ["Overtime", "Level benefit: overtime bonus, your pick won a series with an Overtime"],
     deciderBonus: ["Decider", "Level benefit: decider bonus, your pick won a series that went to its last possible set"],

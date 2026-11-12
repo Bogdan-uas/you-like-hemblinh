@@ -3,6 +3,16 @@ import { hallRecordTime } from "./hallOfFameDb.js";
 import { matchTitleOf, matchSmallLabelOf } from "./matchLabels.js";
 import { recordName, recordTier, overtimeBlocks } from "../progress/progressEngine.js";
 import { PEM_BIG_TYPE_ID } from "./tournamentTypes.jsx";
+import { comebackSizeOf, wonSetFromBehind } from "./comebacks.js";
+import { COMEBACK } from "./statEffects.js";
+import { BASE_ROUNDS_TO_WIN, OT_ROUNDS_TO_WIN } from "./gameConstants.js";
+
+const SET_COMEBACK_RULE = {
+    regulationToWin: BASE_ROUNDS_TO_WIN,
+    overtimeToWin: OT_ROUNDS_TO_WIN,
+    minDeficit: COMEBACK.round.minDeficit,
+    pointDeficit: COMEBACK.round.pointDeficit,
+};
 
 const SWISS_STAGE_KEYS = ["stage1", "stage2", "stage3"];
 
@@ -263,10 +273,12 @@ export const teamView = (entry, teamId) => {
         const level = (set.wins ?? 0) === (set.losses ?? 0);
         const trueTie = !!set.tie;
         const won = trueTie ? null : isHistoryLeft ? !!set.won : !set.won;
+        const winnerInLog = trueTie ? null : set.won ? "left" : "right";
         return {
             mine,
             theirs,
             won,
+            fromBehind: won === true && wonSetFromBehind(set.roundLog, winnerInLog, SET_COMEBACK_RULE),
             tie: trueTie,
             ot: overtimeBlocks(set.wins, set.losses),
             er: level && !trueTie && !pens,
@@ -310,7 +322,9 @@ export const teamView = (entry, teamId) => {
         otSets: sets.filter((set) => set.ot > 0).length,
         otSetsWon: sets.filter((set) => set.ot > 0 && set.won).length,
         decider: bestOf > 1 && sets.length === bestOf,
-        comeback: result === "W" && bestOf > 1 && sets[0]?.won === false,
+        comeback: result === "W" && comebackSizeOf(bestOf, sets.map((set) => set.won)) > 0,
+        comebackSize: result === "W" ? comebackSizeOf(bestOf, sets.map((set) => set.won)) : 0,
+        setComebacks: sets.filter((set) => set.fromBehind).length,
         sweep: result === "W" && bestOf > 1 && setsLost === 0,
         pointsBefore,
         pointsAfter,
@@ -397,6 +411,7 @@ export const teamStatsOf = (views) => {
         bo1Played: played - series.length,
         bo1Won: views.filter((v) => v.bestOf === 1 && v.result === "W").length,
         comebacks: views.filter((v) => v.comeback).length,
+        setComebacks: views.reduce((sum, v) => sum + v.setComebacks, 0),
         sweeps: views.filter((v) => v.sweep).length,
         upsets: views.filter((v) => v.upset).length,
         streak,
