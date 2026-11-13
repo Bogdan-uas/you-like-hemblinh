@@ -2875,7 +2875,7 @@ button.chip:disabled {
     left: 0;
     z-index: 2;
     width: 5px;
-    background: var(--team-gradient);
+    background: var(--team-color);
     pointer-events: none;
 }
 
@@ -2995,7 +2995,7 @@ button.chip:disabled {
 }
 
 .theme_swc .name_won {
-    background: var(--team-gradient);
+    background: var(--team-color);
 }
 
 .theme_swc .name_won .name_prefix {
@@ -3013,7 +3013,7 @@ button.chip:disabled {
 }
 
 .theme_swc .stinger {
-    background: linear-gradient(90deg, #0e0e0f 0%, #2e2e31 50%, #0e0e0f 100%);
+    background: #2e2e31;
 }
 
 .theme_swc .stinger_edge {
@@ -3026,7 +3026,7 @@ button.chip:disabled {
 }
 
 .hud.theme_swc.intro {
-    background: radial-gradient(70% 70% at 50% 50%, rgba(28, 30, 35, 0.6) 0%, rgba(0, 0, 0, 0.84) 100%);
+    background: rgba(14, 15, 18, 0.74);
 }
 
 .theme_swc .intro_band {
@@ -3046,7 +3046,7 @@ button.chip:disabled {
 }
 
 .hud.theme_swc.er_overlay {
-    background: radial-gradient(70% 70% at 50% 50%, rgba(18, 38, 62, 0.62) 0%, rgba(0, 0, 0, 0.86) 100%);
+    background: rgba(10, 22, 38, 0.76);
 }
 
 .theme_swc .er_card {
@@ -3085,7 +3085,7 @@ button.chip:disabled {
 }
 
 .theme_swc .divider_line {
-    background: linear-gradient(90deg, transparent, rgba(31, 176, 239, 0.55), transparent);
+    background: rgba(31, 176, 239, 0.55);
 }
 
 .theme_swc .divider_half .divider_to {

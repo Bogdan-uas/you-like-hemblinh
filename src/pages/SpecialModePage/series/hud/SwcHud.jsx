@@ -233,7 +233,7 @@ const Fit = ({ children }) => {
 
 const teamVars = (team) => ({
     "--team-color": team?.color ?? "#8b909e",
-    "--team-gradient": team?.gradient ?? team?.color ?? "#8b909e",
+    "--team-gradient": team?.color ?? "#8b909e",
     "--team-text": pemTextOn(team?.color),
 });
 
@@ -317,7 +317,7 @@ const Streak = ({ streak = 0 }) => (
 );
 
 const Logo = ({ team, className = "" }) => (
-    <span className={`${css.logo} ${className}`} style={{ background: team?.gradient ?? team?.color, "--team-color": team?.color ?? "#8b909e" }} />
+    <span className={`${css.logo} ${className}`} style={{ background: team?.color ?? "#8b909e", "--team-color": team?.color ?? "#8b909e" }} />
 );
 
 const Panel = ({ side, team, volt = 0, streak = 0, finale = null, play = false, cheat = false, result = null, opacity = 1 }) => (
@@ -809,7 +809,7 @@ export const SwcSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, 
                     disabled={onSelect ? selected : undefined}
                     onClick={onSelect ? () => onSelect(i) : undefined}
                     className={`${css.set} ${css[`set_${chip.status}`] ?? ""} ${selected ? css.set_selected : ""}`}
-                    style={{ "--set-color": chip.winnerTeam?.color ?? "transparent", "--set-gradient": chip.winnerTeam?.gradient ?? "transparent" }}
+                    style={{ "--set-color": chip.winnerTeam?.color ?? "transparent", "--set-gradient": chip.winnerTeam?.color ?? "transparent" }}
                 >
                     <span className={css.set_label}>{chip.label === "DEC" ? "Decider" : `Set ${chip.set}`}</span>
                     {chip.result ? (
