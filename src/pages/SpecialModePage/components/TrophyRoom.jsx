@@ -47,6 +47,8 @@ const MEDAL_KEYS = [
 ];
 
 const PLACE_TEXT = { 1: "Champion", 2: "Runner-up", 3: "Third place" };
+const MINOR_PLACE_TEXT = { 1: "1st place", 2: "2nd place", 3: "3rd place" };
+const placeTextOf = (item) => (/^tier(15|2)/.test(item.key) ? MINOR_PLACE_TEXT : PLACE_TEXT)[item.place];
 
 const hashOf = (text) => {
     let h = 2166136261;
@@ -232,7 +234,7 @@ const Inspect = ({ item, team, onClose, onOpenTournament }) => {
 
             <motion.aside className={css.panel} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
                 <span className={css.panel_place} data-place={item.place}>
-                    {PLACE_TEXT[item.place]}
+                    {placeTextOf(item)}
                 </span>
                 <span className={css.panel_title}><TournamentNumberText text={titleOf(item)} /></span>
                 {host ? <HostBadge host={host} title={titleOf(item)} /> : null}

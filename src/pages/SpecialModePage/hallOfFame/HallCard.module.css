@@ -710,3 +710,26 @@
 .card[data-settling] * {
     transition: none !important;
 }
+
+.champion[data-minor] .champion_rays {
+    opacity: 0.45;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--team) 40%, transparent), transparent);
+}
+
+.champion[data-minor] .champion_circle {
+    width: 84px;
+    height: 84px;
+    border-width: 3px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--team) 40%, transparent), 0 0 12px color-mix(in srgb, var(--team) 60%, transparent), 0 6px 12px rgba(0, 0, 0, 0.18);
+}
+
+.champion[data-minor] .champion_name {
+    margin-bottom: -12px;
+    font-size: 24px;
+}
+
+.champion[data-minor] .champion_word {
+    margin-top: -24px;
+    font-size: 34px;
+    text-transform: none;
+}

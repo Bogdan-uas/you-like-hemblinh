@@ -1004,7 +1004,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 host={hostOfRecord(item)}
                 champion={isQualifierEvent ? null : results.winner ?? null}
                 places={isQualifierEvent ? [] : [
-                    { place: 2, label: "Runner-up", team: results.runnerUp },
+                    { place: 2, label: tier === "tier2" || tier === "tier15" ? "2nd place" : "Runner-up", team: results.runnerUp },
                     { place: 3, label: "3rd place", team: results.thirdPlace },
                     { place: 4, label: "4th place", team: results.fourthPlace },
                 ].filter((entry) => entry.team)}

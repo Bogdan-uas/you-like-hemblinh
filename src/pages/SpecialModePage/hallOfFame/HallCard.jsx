@@ -108,12 +108,12 @@ export function HallCard({ item, accent, tier, tierText, title, numberText, trop
             </span>
 
             {champion ? (
-                <span className={css.champion} data-morph-fade="" data-badge={badge ? "" : undefined} style={{ "--team": champion.color }}>
+                <span className={css.champion} data-morph-fade="" data-minor={tier === "tier2" || tier === "tier15" || undefined} data-badge={badge ? "" : undefined} style={{ "--team": champion.color }}>
                     <span className={css.champion_rays} aria-hidden="true" />
                     <span className={css.champion_name} data-len={lengthTier(champion.name)}>Team {champion.name}</span>
                     <span className={css.champion_circle} style={{ background: teamFill(champion) }} />
                     <span className={css.champion_word} style={{ textShadow: glowOf(champion.color) }}>
-                        Champion
+                        {tier === "tier2" || tier === "tier15" ? "1st place" : "Champion"}
                     </span>
                     {badge}
                 </span>
