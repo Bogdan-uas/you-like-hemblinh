@@ -16,10 +16,10 @@ const PBS_INTRO_STAGES = { ro16: "Stage II", qf: "Finals" };
 
 export function TournamentIntros({ intro, phase, labels, tournament }) {
     const { showTournamentIntro, handleCloseTournamentIntro } = intro;
-    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase, isEssLqPhase, isEssChPhase, isEssMainPhase, isSwcScPhase, isSwcMainPhase } = phase;
-    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, essLqLabel, essChLabel, essLabel, swcScLabel, swcLabel, tournamentLabel } = labels;
-    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin, swcSc, swcMain } = tournament;
-    const isPgxPhase = isPgxCmPhase || isPgxImPhase || isPgxMainPhase || isEssLqPhase || isEssChPhase || isEssMainPhase || isSwcScPhase || isSwcMainPhase;
+    const { isQualifierPhase, isCstPhase, isEclPhase, isPemMainPhase, isPemBigSeries, isGccPhase, isGplMainPhase, isPbsPhase, isSkylinesPhase, isPgxCmPhase, isPgxImPhase, isPgxMainPhase, isEssLqPhase, isEssChPhase, isEssMainPhase, isSwcScPhase, isSwcMainPhase, isEwcOqPhase, isEwcMainPhase } = phase;
+    const { renderQualifierTitle, renderCstTitle, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxCmLabel, pgxImLabel, pgxGmLabel, essLqLabel, essChLabel, essLabel, swcScLabel, swcLabel, ewcOqLabel, ewcLabel, tournamentLabel } = labels;
+    const { ecl, pemSeries, leaderboard, qualifier, teamRatings, cst, pemStage1, pemMain, gcc, gplSeries, pbs, pbsTeamsById, skylines, pgxSeries, pgxCm, pgxIm, essSeries, essLq, essCh, essFin, swcSc, swcMain, ewcOq, ewcMain } = tournament;
+    const isPgxPhase = isPgxCmPhase || isPgxImPhase || isPgxMainPhase || isEssLqPhase || isEssChPhase || isEssMainPhase || isSwcScPhase || isSwcMainPhase || isEwcOqPhase || isEwcMainPhase;
 
     const renderTeamsIntro = (titleNode, sections) => (
         <div className={css.intro_overlay}>
@@ -604,6 +604,20 @@ export function TournamentIntros({ intro, phase, labels, tournament }) {
                     [
                         { title: "Invited via the Leaderboard", teams: swcMain?.directTeams, width: "50%" },
                         { title: "Qualified via the Storm Chase", teams: swcMain?.chaseQualified, width: "50%", highlighted: true },
+                    ]
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isEwcOqPhase && renderTeamsIntro(
+                    renderQualifierTitle({ badgeHeight: 40, label: ewcOqLabel }),
+                    [
+                        { title: "Play-in", teams: ewcOq?.playIn?.teams, width: "40%" },
+                        { title: "Group Stage", teams: (ewcOq?.teams || []).filter((team) => !(ewcOq?.playIn?.teams || []).some((p) => p.id === team.id)), width: "60%" },
+                    ]
+                )}</FadeOut>
+                <FadeOut variant="overlay">{showTournamentIntro && isEwcMainPhase && renderTeamsIntro(
+                    ewcLabel,
+                    [
+                        { title: "Invited via the Leaderboard", teams: ewcMain?.directTeams, width: "70%" },
+                        { title: "Qualified via the Open Qualifier", teams: ewcMain?.oqQualified, width: "30%", highlighted: true },
                     ]
                 )}</FadeOut>
                 <FadeOut variant="overlay">{showTournamentIntro && isSkylinesPhase && (

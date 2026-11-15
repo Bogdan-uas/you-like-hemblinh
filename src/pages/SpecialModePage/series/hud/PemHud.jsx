@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCaretLeft, FaCaretRight } from "react-icons/fa";
@@ -304,7 +305,7 @@ function BandIntro({ seriesState, eventName, eventNumber, stageText, setsToWin, 
                     key="pem-intro"
                     className={`${css.hud} ${css[`theme_${theme}`] ?? ""} ${css.intro}`}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.25 } }}
                     transition={{ duration: 0.25 }}
@@ -343,7 +344,10 @@ function BandIntro({ seriesState, eventName, eventNumber, stageText, setsToWin, 
                                         transition={{ duration: 0.6, delay: 0.5, ease }}
                                     >
                                         <PemCircle team={team} className={css.intro_circle} />
-                                        <span className={css.intro_name}>Team {team?.name}</span>
+                                        <span className={css.intro_name} style={{ position: "relative" }}>
+                                            Team {team?.name}
+                                            <IntroHome team={team} under={side === "left" ? "left" : "right"} />
+                                        </span>
                                     </motion.div>
                                 );
                             })}

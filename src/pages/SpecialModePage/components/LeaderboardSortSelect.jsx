@@ -1,5 +1,6 @@
 import { FaTrophy } from "react-icons/fa";
-import { FaChartSimple } from "react-icons/fa6";
+import { FaChartSimple, FaEarthEurope } from "react-icons/fa6";
+import { PlaceMedal } from "./Trophies.jsx";
 import { LeaderboardSelect } from "./LeaderboardSelect.jsx";
 import { LEADERBOARD_SORT_TEXT_COLOR, LEADERBOARD_SORT_LABEL_ID, LEADERBOARD_SORT_VALUE_ID, LEADERBOARD_SORT_OPTION_ID } from "../logic/leaderboardSort.js";
 import { LEADERBOARD_SORT_OPTIONS } from "../logic/teamData.js";
@@ -49,13 +50,19 @@ const LeaderboardSortIcon = ({ value }) => {
         case "seconds":
             return (
                 <span style={{ ...box, fontSize: 18 }} aria-hidden="true">
-                    🥈
+                    <PlaceMedal place={2} size={20} />
                 </span>
             );
         case "thirds":
             return (
                 <span style={{ ...box, fontSize: 18 }} aria-hidden="true">
-                    🥉
+                    <PlaceMedal place={3} size={20} />
+                </span>
+            );
+        case "regions":
+            return (
+                <span style={box} aria-hidden="true">
+                    <FaEarthEurope size={15} color={LEADERBOARD_SORT_TEXT_COLOR} />
                 </span>
             );
         case "stats":

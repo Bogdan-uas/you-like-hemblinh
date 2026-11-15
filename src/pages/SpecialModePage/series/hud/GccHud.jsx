@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import css from "./PemHud.module.css";
@@ -227,7 +228,7 @@ export function GccIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     key="gcc-intro"
                     className={`${css.hud} ${css.theme_gcc} ${css.gcc_intro}`}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.3 } }}
                     transition={{ duration: 0.2 }}
@@ -299,6 +300,7 @@ export function GccIntro({ seriesState, eventName, eventNumber, stageText, setsT
                                         <span className={css.gcc_in_name}>
                                             <span className={css.name_prefix}>Team</span>
                                             {team?.name}
+                                            <IntroHome team={team} className={css.gcc_in_home} />
                                         </span>
                                     </motion.div>
                                 );

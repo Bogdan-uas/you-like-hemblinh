@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, cloneElement } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCheck, FaXmark } from "react-icons/fa6";
@@ -1302,7 +1303,7 @@ export function SwcIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     key="swc-intro"
                     className={`${css.hud} ${css.intro}`}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.3, delay: 0.35 } }}
                     transition={{ duration: 0.2 }}
@@ -1345,6 +1346,7 @@ export function SwcIntro({ seriesState, eventName, eventNumber, stageText, setsT
                                 >
                                     <span className={css.intro_name}>{team?.name}</span>
                                     <Logo team={team} className={css.intro_logo} />
+                                    <IntroHome team={team} under={side === "left" ? "left" : "right"} style={{ marginTop: 8, color: "#ffffff" }} />
                                 </motion.div>
                             );
                         })}

@@ -2,7 +2,6 @@ import { NeededPerkTag } from "../progress/HudPerks.jsx";
 import React from "react";
 import css from "../SpecialModePage.module.css";
 import Header from "../../../components/Header/Header.jsx";
-import { FaTrophy } from "react-icons/fa";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
 import { PemPlayoffsLayout, GccKnockoutLayout, PbsStageLayout } from "../components/BracketLayouts.jsx";
@@ -11,10 +10,14 @@ import { QualifierBadge } from "../components/QualifierBadge.jsx";
 import { QualifierGroupNav } from "../components/QualifierGroupNav.jsx";
 import { StickyBelow } from "../components/StickyBelow.jsx";
 import { SkylinesHallSummary } from "../components/SkylinesView.jsx";
-import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, Tier15Medal } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, EwcTrophy, Tier15Medal, OfficialTrophy, PlaceMedal } from "../components/Trophies.jsx";
 import { PGX_CM_GROUPS } from "../logic/pgx.jsx";
 import { ESS_LADDERS, ESS_CH_GROUPS } from "../logic/ess.jsx";
 import { SWC_SC_BRACKETS, SWC_GROUPS } from "../logic/swc.jsx";
+import { EWC_OQ_GROUPS, EWC_GROUPS } from "../logic/ewc.jsx";
+import { EwcTotem } from "../components/EwcCeremonies.jsx";
+import { HostBadge } from "../worldMap/HostCity.jsx";
+import { hostOfRecord } from "../logic/hostCities.js";
 import { CST_GROUPS } from "../logic/cst.js";
 import { hallRecordTime } from "../logic/hallOfFameDb.js";
 import { PEM_QUALIFIED_HIGHLIGHT, getPemSeriesConfig } from "../logic/pemConfig.js";
@@ -26,11 +29,27 @@ import { QUALIFIER_GROUPS, PLAY_IN_GROUP } from "../logic/qualifier.jsx";
 import { formatOrdinal } from "../logic/teamData.js";
 import { PBS_POT_SIZE } from "../logic/pbsConfig.js";
 import { getTournamentTypeConfig, formatTournamentNumber, PEM_SMALL_TYPE_ID, PEM_BIG_TYPE_ID } from "../logic/tournamentTypes.jsx";
-import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE, ESS_PODIUM_TROPHY_SIZE, ESS_PODIUM_TROPHY_STYLE, SWC_PODIUM_TROPHY_SIZE, SWC_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { getTournamentNumberStyle, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE, ESS_PODIUM_TROPHY_SIZE, ESS_PODIUM_TROPHY_STYLE, SWC_PODIUM_TROPHY_SIZE, SWC_PODIUM_TROPHY_STYLE, EWC_PODIUM_TROPHY_SIZE, EWC_PODIUM_TROPHY_STYLE, OFFICIAL_PODIUM_TROPHY_SIZE, OFFICIAL_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 import { HallManagerModals } from "./HallManagerModals.jsx";
+import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
+import { HallCard } from "./HallCard.jsx";
+import { setHallMorphSource, setHallReturnSource, takeHallReturnSource, playHallReturn } from "./hallCardStyle.js";
+import hcss from "./HallCard.module.css";
+import { SummaryHero, ModernSectionTitle } from "./HallSummaryParts.jsx";
+import { useSpecialModeSettings } from "../logic/settings.js";
 import { matchDomKey } from "../logic/matchDomKey.js";
 
 export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, page }) {
+    const { classicHallCards, classicHallSummary } = useSpecialModeSettings();
+    const [morphingId, setMorphingId] = React.useState(null);
+
+    const leaveWithMorph = () => {
+        if (!classicHallCards && !classicHallSummary && selectedHallTournament) {
+            setHallReturnSource(document.querySelector("[data-hall-hero]"), selectedHallTournament.id);
+        }
+        leaveHallRecord();
+    };
+
     const {
         setHallQualifierGroup,
         setSelectedHallTournament,
@@ -122,10 +141,24 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         renderEssQualifierWinnersBlock,
         renderSwcStormChase,
         renderSwcMainSection,
+        renderEwcOqSection,
+        renderEwcMainSection,
         hallManagerScrollRef,
         getTypeNumber,
         allTeams,
     } = page;
+
+    React.useLayoutEffect(() => {
+        if (selectedHallTournament) return;
+        const source = takeHallReturnSource();
+        const container = hallScrollRef.current;
+        if (!source || !container) return;
+        const card = container.querySelector(`[data-hall-id="${CSS.escape(String(source.recordId))}"]`);
+        if (!card) return;
+        container.scrollLeft = Math.max(0, card.offsetLeft - (container.clientWidth - card.offsetWidth) / 2);
+        const faders = [...container.querySelectorAll("button[data-hall-id]"), ...document.querySelectorAll("[data-hall-fade]")].filter((el) => el !== card);
+        playHallReturn(source, card, faders);
+    }, [selectedHallTournament, hallScrollRef]);
 
     const hallTeamCircle = (team, size = 52, highlighted = false, highlightedNote = "(via the Qualifier)") => (
         <div
@@ -141,6 +174,16 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             }}
         />
     );
+    const classicHostLine = (item) => {
+        const host = hostOfRecord(item);
+        if (!host) return null;
+        return (
+            <span className={hcss.classic_host}>
+                <HostBadge host={host} title={hallRecordLabel(item)} variant="line" className={hcss.classic_host_badge} />
+            </span>
+        );
+    };
+
     const hallCardIcon = (won) => (
         <div style={{ top: "-3.2%", left: "-4.75%" }} className={css.modalSuccessPickemIndicator}>
             <FaCircle size={32} color={won ? "#37b737" : "#be3939"} />
@@ -342,13 +385,36 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </span>
     );
 
+    const renderEwcCardName = (item, subtitle) => (
+        <>
+            {["Esports", "World Cup"].map((word) => (
+                <span key={word} style={{ display: "block", fontSize: 27 }}>{word}</span>
+            ))}
+            <span style={{ display: "block", whiteSpace: "nowrap", fontSize: 30, fontStyle: "normal" }}>
+                {subtitle}{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(item.number))}>#{item.number}</span>
+            </span>
+        </>
+    );
+
+    const renderEwcMainCardName = (number) => (
+        <span style={{ fontSize: 30 }}>
+            <span style={{ display: "block" }}>Esports</span>
+            <span style={{ display: "block", whiteSpace: "nowrap" }}>
+                World Cup{" "}
+                <span style={getTournamentNumberStyle(getTournamentTheme(number))}>#{number}</span>
+            </span>
+        </span>
+    );
+
     const renderPgxTier2CardName = (item) => renderPgxCardName(item, ["PGX", "International"], 87);
 
     const renderQualifierHallCard = (item) => {
         const won = item.pickemWon;
         const isEssCh = item.event === "essCh";
         const isSwcSc = item.event === "swcSc";
-        const qualifiedTeams = item.event === "pgxCm" || item.event === "essLq" || isEssCh || isSwcSc
+        const isEwcOq = item.event === "ewcOq";
+        const qualifiedTeams = item.event === "pgxCm" || item.event === "essLq" || isEssCh || isSwcSc || isEwcOq
             ? item.qualifiers || []
             : QUALIFIER_GROUPS.flatMap((group) => item.results?.qualifiers?.[group] || []);
 
@@ -376,6 +442,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 }}
             >
                 {hallCardIcon(won)}
+                {classicHostLine(item)}
 
                 <div style={{ display: "flex", position: "relative", zIndex: 2, marginTop: 24 }}>
                     <div
@@ -449,6 +516,8 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             ? renderEssCardName(item, "Challenger")
                             : isSwcSc
                             ? renderSwcCardName(item, "Storm Chase")
+                            : isEwcOq
+                            ? renderEwcCardName(item, "Open Qualifier")
                             : item.owner ? renderOpenQualifierHallCardName(item) : renderPemHallCardName(item.number, item.type)}
                     </span>
                 </div>
@@ -498,7 +567,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                 width: "max-content",
                             }}
                         >
-                            {isSwcSc ? "🥈 Finalists" : "🥉 Bronze Medalists"}
+                            {isSwcSc ? <><PlaceMedal place={2} size={26} /> Finalists</> : <><PlaceMedal place={3} size={26} /> Bronze Medalists</>}
                         </span>
                         <div style={{ display: "flex", justifyContent: "center", gap: 84 }}>
                             {(isSwcSc ? (item.places || []).slice(2, 4).map((entry) => entry.team).filter(Boolean) : item.bronze || []).map((team) => (
@@ -537,6 +606,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 }}
             >
                 {hallCardIcon(won)}
+                {classicHostLine(item)}
 
                 <div style={{ display: "flex", position: "relative", zIndex: 2, marginTop: 24 }}>
                     <span
@@ -680,6 +750,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         const isPgx = item.event === "pgxGm";
         const isEss = item.event === "ess";
         const isSwc = item.event === "swc";
+        const isEwc = item.event === "ewc";
 
         return (
             <button
@@ -705,6 +776,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 }}
             >
                 {hallCardIcon(won)}
+                {classicHostLine(item)}
 
                 <div style={{ display: "flex", position: "relative", zIndex: 2, marginTop: 12 }}>
                     <span
@@ -728,7 +800,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                             display: "flex",
                         }}
                     >
-                        {isSwc ? <SwcTrophy size={30} /> : isEss ? <EssTrophy size={28} /> : isPgx ? <PgxTrophy size={28} /> : isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
+                        {isEwc ? <EwcTrophy size={34} keyColor={results.winner?.color} shardColors={item.pickedKeys?.map((team) => team.color)} /> : isSwc ? <SwcTrophy size={30} /> : isEss ? <EssTrophy size={28} /> : isPgx ? <PgxTrophy size={28} /> : isPbs ? <PbsTrophy size={28} /> : isGpl ? <GplTrophy size={28} /> : <PemSeriesTrophy type={item.type} size={28} />}
                     </span>
                     <span
                         style={{
@@ -755,10 +827,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         lineHeight: 1,
                         textTransform: "none",
                         fontSize: 20,
-                        marginTop: isPbs ? "4px" : isGpl || isPgx || isEss || isSwc ? "20px" : ""
+                        marginTop: isPbs ? "4px" : isGpl || isPgx || isEss || isSwc || isEwc ? "20px" : ""
                     }}
                 >
-                    {isSwc ? renderSwcMainCardName(item.number) : isEss ? renderEssMainCardName(item.number) : isPgx ? <span style={{ fontSize: 30 }}>{renderPgxHallCardName(item, ["Grandmasters"])}</span> : isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
+                    {isEwc ? renderEwcMainCardName(item.number) : isSwc ? renderSwcMainCardName(item.number) : isEss ? renderEssMainCardName(item.number) : isPgx ? <span style={{ fontSize: 30 }}>{renderPgxHallCardName(item, ["Grandmasters"])}</span> : isPbs ? renderPbsHallCardName(item.number) : isGpl ? renderGplHallCardName(item.number) : renderPemHallCardName(item.number, item.type)}
                 </div>
 
                 <div
@@ -766,7 +838,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        marginTop: isPbs ? 38 : isGpl || isEss || isSwc ? 52 : isPgx ? 76 - getPgxGmCitySize(item) : 36,
+                        marginTop: isPbs ? 38 : isGpl || isEss || isSwc ? 52 : isEwc ? 82 : isPgx ? 76 - getPgxGmCitySize(item) : 36,
                         position: "relative"
                     }}
                 >
@@ -819,7 +891,150 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         );
     };
 
+    const HALL_TIER_TEXT = { official: "Official", tier1: "Tier 1", tier15: "Tier 1.5", tier2: "Tier 2", qualifier: "Qualifier" };
+
+    const hallAccentOf = (item) => {
+        const type = String(item?.type ?? "");
+        if (!item?.event) return { base: "#3a3b52", deep: "#16171f", glow: "#ffd23c" };
+        if (/Esports World Cup/.test(type)) return { base: "#2a2b30", deep: "#050506", glow: "#c8a24a" };
+        if (/Stormdraft/.test(type)) return { base: "#2f8dff", deep: "#0a2a78", glow: "#8fd3ff" };
+        if (/Elite Star/.test(type)) return { base: "#d9142b", deep: "#5e0612", glow: "#ff7a86" };
+        if (/PGX/.test(type)) return { base: "#7a5a12", deep: "#2b1f05", glow: "#ffd23c" };
+        if (/Premier Bounty/.test(type)) return { base: "#12b36a", deep: "#06452a", glow: "#9dffcf" };
+        if (/Global Pro League/.test(type)) return { base: "#3c4a8c", deep: "#141a3a", glow: "#ffd23c" };
+        if (/Champions Series/.test(type)) return { base: "#7b4fd6", deep: "#2c1466", glow: "#c9b2ff" };
+        if (/Elite Competition/.test(type)) return { base: "#11909f", deep: "#063b42", glow: "#8ff0fa" };
+        if (/Global Challenger/.test(type)) return { base: "#e06a2a", deep: "#6b2508", glow: "#ffc28f" };
+        if (/Skylines/.test(type)) return { base: "#4a6fa5", deep: "#1a2740", glow: "#bcd6ff" };
+        if (type === PEM_BIG_TYPE_ID) return { base: "#c49000", deep: "#4f3900", glow: "#fff1a8" };
+        return { base: "#8a8fa0", deep: "#3a3d4a", glow: "#ffffff" };
+    };
+
+    const hallTrophyOf = (item, scale = 1) => {
+        const z = (n) => Math.round(n * scale);
+        const results = item.results || {};
+        switch (item.event) {
+            case "ewc":
+                return <EwcTrophy size={z(84)} keyColor={results.winner?.color} shardColors={item.pickedKeys?.map((team) => team.color)} />;
+            case "swc":
+                return <SwcTrophy size={z(82)} />;
+            case "ess":
+                return <EssTrophy size={z(78)} />;
+            case "pgxGm":
+                return <PgxTrophy size={z(78)} />;
+            case "pbs":
+                return <PbsTrophy size={z(78)} />;
+            case "gpl":
+                return <GplTrophy size={z(80)} />;
+            case "main":
+                return <PemSeriesTrophy type={item.type} size={z(78)} />;
+            case "pgxIm":
+            case "essCh":
+                return <Tier15Medal size={z(74)} />;
+            case "cst":
+            case "ecl":
+            case "gcc":
+            case "skylines":
+                return <PlaceMedal place={1} size={z(74)} />;
+            case "qualifier":
+            case "pgxCm":
+            case "essLq":
+            case "swcSc":
+            case "ewcOq":
+                return <QualifierBadge height={z(24)} color="#ffffff" textColor="#2e2f42" />;
+            default:
+                return <OfficialTrophy size={z(84)} gold />;
+        }
+    };
+
+    const hallCardTitle = (item) => {
+        const label = item.event === "main" ? `${getTournamentTypeConfig(item.type).label} #${item.number}` : hallRecordLabel(item);
+        const match = label.match(/^(.*?)\s+(#\S+|Season \S+)$/);
+        return match ? { title: match[1], numberText: match[2] } : { title: label, numberText: "" };
+    };
+
+    const hallTierOf = (item) => (!item?.event ? "official" : item.event === "qualifier" ? "qualifier" : getTournamentTypeConfig(item.type).tier);
+
+    const renderSummaryHero = (record, anchor = null) => {
+        const tier = hallTierOf(record);
+        const { title, numberText } = hallCardTitle(record);
+        return (
+            <SummaryHero
+                record={record}
+                accent={hallAccentOf(record)}
+                tier={tier}
+                tierText={HALL_TIER_TEXT[tier] ?? "Tournament"}
+                title={title}
+                numberText={numberText}
+                trophy={hallTrophyOf(record)}
+                host={hostOfRecord(record)}
+                anchor={anchor}
+            />
+        );
+    };
+
+    const renderModernHallCard = (item) => {
+        const results = item.results || {};
+        const isQualifierEvent = ["qualifier", "pgxCm", "essLq", "essCh", "swcSc", "ewcOq"].includes(item.event);
+        const config = getTournamentTypeConfig(item.type);
+        const tier = !item.event ? "official" : item.event === "qualifier" ? "qualifier" : config.tier;
+        const { title, numberText } = hallCardTitle(item);
+        let qualified = null;
+        if (isQualifierEvent) {
+            const teams = item.event === "qualifier" ? QUALIFIER_GROUPS.flatMap((group) => item.results?.qualifiers?.[group] || []) : item.qualifiers || [];
+            const extraTeams = item.event === "essCh" ? item.bronze || [] : item.event === "swcSc" ? (item.places || []).slice(2, 4).map((entry) => entry.team).filter(Boolean) : [];
+            qualified = {
+                title: `${teams.length === 2 ? "Two" : teams.length === 4 ? "Four" : teams.length} qualifiers`,
+                teams,
+                extraTitle: item.event === "swcSc" ? <><PlaceMedal place={2} size={16} /> Finalists</> : <><PlaceMedal place={3} size={16} /> Bronze medalists</>,
+                extraTeams,
+            };
+        }
+        return (
+            <HallCard
+                key={item.id}
+                item={item}
+                accent={hallAccentOf(item)}
+                tier={tier}
+                tierText={HALL_TIER_TEXT[tier] ?? "Tournament"}
+                hostTitle={`${title} ${numberText}`.trim()}
+                title={title}
+                numberText={numberText}
+                trophy={hallTrophyOf(item)}
+                host={hostOfRecord(item)}
+                champion={isQualifierEvent ? null : results.winner ?? null}
+                places={isQualifierEvent ? [] : [
+                    { place: 2, label: "Runner-up", team: results.runnerUp },
+                    { place: 3, label: "3rd place", team: results.thirdPlace },
+                    { place: 4, label: "4th place", team: results.fourthPlace },
+                ].filter((entry) => entry.team)}
+                qualified={qualified}
+                badge={item.event === "pgxIm" ? (
+                    <span className={hcss.badge}>
+                        <PgxTrophy size={16} />
+                        Qualified to PGX Grandmasters
+                    </span>
+                ) : null}
+                dimmed={!!morphingId && morphingId !== item.id}
+                chosen={morphingId === item.id}
+                onOpen={(e) => {
+                    if (morphingId) return;
+                    const element = e?.currentTarget ?? null;
+                    setMorphingId(item.id);
+                    window.setTimeout(() => {
+                        setHallMorphSource(element);
+                        setHallQualifierGroup("A");
+                        setHallStage1Group("A");
+                        setSelectedHallTournament(item);
+                        setMorphingId(null);
+                    }, 320);
+                }}
+            />
+        );
+    };
+
     const renderHallCard = (item) => {
+        if (!classicHallCards) return renderModernHallCard(item);
         if (item.event === "qualifier") return renderQualifierHallCard(item);
         if (item.event === "cst") return renderTier2HallCard(item, ["Champions", "Series", "Tour"]);
         if (item.event === "ecl") return renderTier2HallCard(item, ["Elite", "Competition", "League"]);
@@ -843,6 +1058,8 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         if (item.event === "ess") return renderPemMainHallCard(item);
         if (item.event === "swcSc") return renderQualifierHallCard(item);
         if (item.event === "swc") return renderPemMainHallCard(item);
+        if (item.event === "ewcOq") return renderQualifierHallCard(item);
+        if (item.event === "ewc") return renderPemMainHallCard(item);
 
         const won = item.pickemWon;
         const config = getTournamentTypeConfig(item.type);
@@ -869,6 +1086,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 }}
             >
                 {hallCardIcon(won)}
+                {classicHostLine(item)}
 
                 <div style={{
                     display: "flex",
@@ -899,7 +1117,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                 fontSize: "32px"
                             }}
                         >
-                            <FaTrophy />
+                            <OfficialTrophy />
                         </span>
                     )}
                     <span
@@ -1294,7 +1512,9 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         );
     };
 
-    const HallOfFameSectionTitle = ({ text, marginTop = "48px", marginBottom = "48px", sectionId }) => (
+    const HallOfFameSectionTitle = ({ text, marginTop = "48px", marginBottom = "48px", sectionId }) => !classicHallSummary ? (
+        <ModernSectionTitle text={text} marginTop={marginTop} marginBottom={marginBottom} sectionId={sectionId} />
+    ) : (
         <div data-hall-section={sectionId} style={{ marginTop, marginBottom, position: "relative" }}>
             <div style={{ position: "absolute", top: "-22px", right: "50%", transform: "translateX(50%)" }}>
                 <h4
@@ -1341,12 +1561,12 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
         </button>
     );
 
-    const renderHallPodium = (podium, trophy = null, winnerBadge = null) => (
+    const renderHallPodium = (podium, trophy = null, winnerBadge = null, held = false) => (
         <div className={css.winnerPodium} style={{ height: "732px" }}>
             {podium.runnerUp && (
-                <div className={css.podiumRow}>
+                <div className={css.podiumRow} data-podium-team={podium.runnerUp.id}>
                     <div className={css.runnerUpLogo} style={{ backgroundColor: podium.runnerUp.color, boxShadow: podium.runnerUp.shadow }} />
-                    <span className={css.runnerUpMedal}>🥈</span>
+                    <span className={css.runnerUpMedal}><PlaceMedal place={2} /></span>
                     <div className={css.secondPodium} style={{ height: "500px", marginBottom: "0px" }}>
                         <ReactFitty key={podium.runnerUp?.name} className={css.runnerUpName} maxSize={16} minSize={10}>
                             Team <b>{podium.runnerUp.name}</b>
@@ -1356,10 +1576,10 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 </div>
             )}
             {podium.winner && (
-                <div className={css.podiumRow}>
+                <div className={css.podiumRow} data-podium-team={podium.winner.id}>
                     <div className={css.winnerLogo} style={{ backgroundColor: podium.winner.color, boxShadow: podium.winner.shadow }} />
-                    <span className={css.winnerMedal}>🥇</span>
-                    {trophy && <span className={css.winnerTrophy}>{trophy}</span>}
+                    <span className={css.winnerMedal}><PlaceMedal place={1} /></span>
+                    {trophy && <span className={`${css.winnerTrophy} ${held ? css.winnerTrophyHeld : ""}`}>{trophy}</span>}
                     <div className={css.firstPodium} style={{ height: "600px", marginBottom: "0px" }}>
                         <ReactFitty key={podium.winner?.name} className={css.firstPlaceName} maxSize={16} minSize={10}>
                             Team <b>{podium.winner.name}</b>
@@ -1370,9 +1590,9 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 </div>
             )}
             {podium.thirdPlace && (
-                <div className={css.podiumRow}>
+                <div className={css.podiumRow} data-podium-team={podium.thirdPlace.id}>
                     <div className={css.placeLogoThird} style={{ background: podium.thirdPlace.color }} />
-                    <span className={css.thirdPlaceMedal}>🥉</span>
+                    <span className={css.thirdPlaceMedal}><PlaceMedal place={3} /></span>
                     <div className={css.thirdPodium} style={{ height: "300px", marginBottom: "0px" }}>
                         <ReactFitty key={podium.thirdPlace?.name} className={css.thirdPlaceName} maxSize={16} minSize={10}>
                             Team <b>{podium.thirdPlace.name}</b>
@@ -1382,9 +1602,9 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 </div>
             )}
             {podium.fourthPlace && (
-                <div className={css.podiumRow}>
+                <div className={css.podiumRow} data-podium-team={podium.fourthPlace.id}>
                     <div className={css.placeLogoFourth} style={{ background: podium.fourthPlace.color }} />
-                    <span className={css.fourthPlaceMedal}>🏅</span>
+                    <span className={css.fourthPlaceMedal}><PlaceMedal place={4} /></span>
                     <div className={css.fourthPodium} style={{ height: "200px", marginBottom: "0px" }}>
                         <ReactFitty key={podium.fourthPlace?.name} className={css.fourthPlaceName} maxSize={16} minSize={10}>
                             Team <b>{podium.fourthPlace.name}</b>
@@ -1429,6 +1649,11 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                 >
                     {record.pickemWon ? "Challenge won" : "Challenge lost"}
                 </span>
+                {hostOfRecord(record) ? (
+                    <span style={{ display: "flex", justifyContent: "center", margin: "6px 0 2px" }}>
+                        <HostBadge host={hostOfRecord(record)} />
+                    </span>
+                ) : null}
                 <br />
                 <i>
                     <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
@@ -1503,6 +1728,66 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
             </div>
         );
 
+        const hallTimeline = [...hallOfFame].sort((a, b) => hallRecordTime(a) - hallRecordTime(b));
+        const hallStreaks = hallTimeline.reduce((acc, item) => {
+            const current = item.pickemWon ? acc.current + 1 : 0;
+            return { current, best: Math.max(acc.best, current) };
+        }, { current: 0, best: 0 });
+        const hallBest = hallOfFame.reduce((best, item) => {
+            const diff = (Number(item.achievedPickemPoints) || 0) - (Number(item.neededPickemPoints) || 0);
+            return !best || diff > best.diff ? { diff, item } : best;
+        }, null);
+        const hallTitleCounts = {};
+        hallOfFame.forEach((item) => {
+            const winner = item.results?.winner;
+            if (!winner?.id) return;
+            const entry = (hallTitleCounts[winner.id] ||= { team: winner, n: 0 });
+            entry.n += 1;
+        });
+        const hallTopTeam = Object.values(hallTitleCounts).sort((a, b) => b.n - a.n)[0] ?? null;
+        const hallWinRate = hallOfFame.length ? Math.round((hallPickemWonCount / hallOfFame.length) * 100) : 0;
+        const signed = (n) => `${n > 0 ? "+" : ""}${n}`;
+        const hallStats = (
+            <div className={hcss.stats} data-hall-fade="" style={{ opacity: morphingId ? 0 : 1, transition: "opacity 280ms ease" }}>
+                <span className={hcss.stat} data-tone={hallPickemScore >= 0 ? "good" : "bad"}>
+                    <span className={hcss.stat_label}>Pick&apos;em score</span>
+                    <span className={hcss.stat_value}>{signed(hallPickemScore)}</span>
+                </span>
+                <span className={hcss.stat} data-tone="good">
+                    <span className={hcss.stat_label}>Challenges won</span>
+                    <span className={hcss.stat_value}>{hallPickemWonCount}</span>
+                </span>
+                <span className={hcss.stat} data-tone="bad">
+                    <span className={hcss.stat_label}>Challenges lost</span>
+                    <span className={hcss.stat_value}>{hallPickemLostCount}</span>
+                </span>
+                <span className={hcss.stat}>
+                    <span className={hcss.stat_label}>Win rate</span>
+                    <span className={hcss.stat_value}>{hallWinRate}%</span>
+                    <span className={hcss.stat_bar}><span style={{ width: `${hallWinRate}%` }} /></span>
+                </span>
+                <span className={hcss.stat}>
+                    <span className={hcss.stat_label}>Win streak</span>
+                    <span className={hcss.stat_value}>{hallStreaks.current}<small> now · best {hallStreaks.best}</small></span>
+                </span>
+                {hallBest ? (
+                    <span className={hcss.stat} data-tone={hallBest.diff >= 0 ? "good" : "bad"}>
+                        <span className={hcss.stat_label}>Best challenge</span>
+                        <span className={hcss.stat_value}>{signed(hallBest.diff)}<small> <TournamentNumberText text={hallRecordLabel(hallBest.item)} /></small></span>
+                    </span>
+                ) : null}
+                {hallTopTeam ? (
+                    <span className={hcss.stat}>
+                        <span className={hcss.stat_label}>Most titles</span>
+                        <span className={hcss.stat_value}>
+                            <span className={hcss.stat_dot} style={{ background: hallTopTeam.team.color }} />
+                            {hallTopTeam.n}<small> Team {hallTopTeam.team.name}</small>
+                        </span>
+                    </span>
+                ) : null}
+            </div>
+        );
+
         const managerButton = (
             <button
                 type="button"
@@ -1543,16 +1828,17 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         style={{ position: "relative", alignItems: "center", marginTop: "48px" }}
                     >
                         {managerButton}
-                        {pickemCounters}
+                        {classicHallCards ? pickemCounters : null}
 
                         <div className={css.header_row}>
                             <div
                                 className={css.game_title}
-                                style={{ fontSize: "40px", textShadow: "0 0 4px #000", textTransform: "none" }}
+                                data-hall-fade="" style={{ fontSize: "40px", textShadow: "0 0 4px #000", textTransform: "none", opacity: morphingId ? 0 : 1, transition: "opacity 280ms ease" }}
                             >
                                 Hall of Fame
                             </div>
                         </div>
+                        {classicHallCards ? null : hallStats}
 
                         <div
                             ref={hallScrollRef}
@@ -1571,7 +1857,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                                 overflowY: "hidden",
                                 gap: 28,
                                 width: "100vw",
-                                padding: "24px 6vw 128px",
+                                padding: classicHallCards ? "24px 6vw 128px" : "18px 6vw 128px",
                                 cursor: "grab",
                             }}
                         >
@@ -1612,57 +1898,64 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header}>
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none", display: "inline-flex", alignItems: "center", gap: 12 }} className={css.game_title}>
-                                <span>
-                                    Champions Series Tour{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header}>
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none", display: "inline-flex", alignItems: "center", gap: 12 }} className={css.game_title}>
+                                    <span>
+                                        Champions Series Tour{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            <div
-                                className={css.info_text}
-                                style={{ textAlign: "center", width: "max-content" }}
-                            >
-                                <span
-                                    style={{
-                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
-                                        fontWeight: 800,
-                                        fontSize: "28px",
-                                        display: "inline-block",
-                                        marginBottom: "12px",
-                                        marginTop: "6px",
-                                    }}
+                                </h2>
+                                <div
+                                    className={css.info_text}
+                                    style={{ textAlign: "center", width: "max-content" }}
                                 >
-                                    {record.pickemWon ? "Challenge won" : "Challenge lost"}
-                                </span>
-                                <br />
-                                <i>
-                                    <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
-                                    needed Pick&apos;em points
-                                </i>
-                                <br />
-                                <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
-                                <i>
-                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
-                                        {record.achievedPickemPoints}{" "}
+                                    <span
+                                        style={{
+                                            color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                            fontWeight: 800,
+                                            fontSize: "28px",
+                                            display: "inline-block",
+                                            marginBottom: "12px",
+                                            marginTop: "6px",
+                                        }}
+                                    >
+                                        {record.pickemWon ? "Challenge won" : "Challenge lost"}
                                     </span>
-                                    achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
-                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
-                                        ({record.achievedPickemPoints - record.neededPickemPoints > 0 ? "+" : ""}
-                                        {record.achievedPickemPoints - record.neededPickemPoints})
-                                    </span>
-                                </i>
-                                <br />
+                                    {hostOfRecord(record) ? (
+                                        <span style={{ display: "flex", justifyContent: "center", margin: "6px 0 2px" }}>
+                                            <HostBadge host={hostOfRecord(record)} />
+                                        </span>
+                                    ) : null}
+                                    <br />
+                                    <i>
+                                        <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
+                                        needed Pick&apos;em points
+                                    </i>
+                                    <br />
+                                    <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
+                                    <i>
+                                        <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
+                                            {record.achievedPickemPoints}{" "}
+                                        </span>
+                                        achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
+                                        <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
+                                            ({record.achievedPickemPoints - record.neededPickemPoints > 0 ? "+" : ""}
+                                            {record.achievedPickemPoints - record.neededPickemPoints})
+                                        </span>
+                                    </i>
+                                    <br />
+                                </div>
                             </div>
-                        </div>
+                        ) : renderSummaryHero(record)}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(allCstTeams)}
@@ -1734,23 +2027,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header}>
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span>
-                                    Global Challenger Cup{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header}>
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span>
+                                        Global Challenger Cup{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record)}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(record.teams?.length ? record.teams : record.league?.teams, 38, openQualifiedIds, "(via the Open Qualifier)")}
@@ -1812,23 +2107,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header}>
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span>
-                                    Global Pro League{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header}>
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span>
+                                        Global Pro League{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record)}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(allGplTeams)}
@@ -1917,23 +2214,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header}>
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span>
-                                    Premier Bounty Series{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        Season {record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header}>
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span>
+                                        Premier Bounty Series{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            Season {record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record)}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(teams, 38, openQualifiedIds, "(via the Open Qualifier)")}
@@ -1976,6 +2275,161 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                             {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
                         </div>
+
+                        {renderHallManagerModals()}
+                    </div>
+                </>
+            );
+        }
+
+        if (record.event === "ewcOq" || record.event === "ewc") {
+            const findEwcRecord = (event) => hallOfFame.find((item) => item.event === event && item.number === record.number) ?? null;
+            const titleName = record.event === "ewcOq" ? "Esports World Cup Open Qualifier" : "Esports World Cup";
+            const idsOf = (teams) => new Set((teams || []).map((team) => team?.id));
+            const divisionRow = (columns, highlightedIds = null, highlightedNote) => (
+                <div style={{ display: "flex", gap: 24, marginTop: 36, flexWrap: "wrap", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
+                    {columns.map(([title, teams]) => (
+                        <div key={title} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            <h4 className={css.game_title} style={{ fontSize: 22, color: "#999" }}>
+                                {title}
+                            </h4>
+                            {renderHallTeamRow(teams, 38, highlightedIds, highlightedNote)}
+                        </div>
+                    ))}
+                </div>
+            );
+            const hallLinkRow = (linked, label, marginTop = 40) => (linked ? (
+                <div style={{ marginTop }}>{renderHallLink(label, () => openLinkedHallRecord(linked))}</div>
+            ) : null);
+            const stickyNav = (value, groups) => (
+                <StickyBelow
+                    anchor='[data-sticky-anchor="hall-ewc"]'
+                    style={{ width: "calc(100% + 12vw)", margin: "0 -6vw", paddingTop: 6 }}
+                >
+                    <QualifierGroupNav value={value} onChange={setHallStage1Group} groups={groups} />
+                </StickyBelow>
+            );
+
+            let content = null;
+
+            if (record.event === "ewcOq") {
+                const oq = record.openQualifier;
+                const group = EWC_OQ_GROUPS.includes(hallStage1Group) ? hallStage1Group : "A";
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, null, undefined, true)}
+
+                        <HallOfFameSectionTitle text="Play-in" marginTop="64px" />
+                        {renderEwcOqSection(oq, "PI", { archived: true, record })}
+
+                        <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            {stickyNav(group, EWC_OQ_GROUPS)}
+                            {renderEwcOqSection(oq, group, { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Knockout Stage" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                            {renderEwcOqSection(oq, "KO", { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Qualified teams" marginTop="64px" />
+                        {renderEssQualifierWinnersBlock(record.qualifiers, { kind: "ewcOq", number: record.number })}
+                        {hallLinkRow(findEwcRecord("ewc"), `See how the qualified teams did in Esports World Cup #${record.number}`)}
+                    </>
+                );
+            } else {
+                const main = record.main;
+                const podium = record.results || {};
+                const oqQualified = record.oqQualified ?? main?.oqQualified ?? [];
+                const oqIds = idsOf(oqQualified);
+                const viaOq = "(via the Open Qualifier)";
+                const playoffTeams = (main?.playoffs?.r16 || []).flatMap((match) => [match.slotA, match.slotB]).filter(Boolean);
+                const group = EWC_GROUPS.includes(hallStage1Group) ? hallStage1Group : "A";
+                const restPlaces = (record.places || []).filter((entry) => entry.place >= 5 && entry.place <= 8);
+                const placementColors = { 5: "#40e0d0", 6: "#ba68c8", 7: "#ff5e2d", 8: "#81c784" };
+
+                content = (
+                    <>
+                        <HallOfFameSectionTitle text="All teams" />
+                        {renderHallTeamRow(record.teams, 38, oqIds, viaOq, true)}
+                        {divisionRow([["Invited via the Leaderboard", main?.directTeams], ["Qualified via the Open Qualifier", oqQualified]], oqIds, viaOq)}
+                        {hallLinkRow(findEwcRecord("ewcOq"), `See how the 4 qualifiers made it through Esports World Cup Open Qualifier #${record.number}`, 24)}
+
+                        <HallOfFameSectionTitle text="Group Stage" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            {stickyNav(group, EWC_GROUPS)}
+                            {renderEwcMainSection(main, group, { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="All teams to the Playoffs" marginTop="64px" />
+                        {renderHallTeamRow(playoffTeams, 38, oqIds, viaOq)}
+
+                        <HallOfFameSectionTitle text="Playoffs" marginTop="64px" />
+                        <div style={{ width: "100%", display: "flex", justifyContent: "center", paddingBottom: 120 }}>
+                            {renderEwcMainSection(main, "PO", { archived: true, record })}
+                        </div>
+
+                        <HallOfFameSectionTitle text="Podium" marginTop="64px" />
+                        {renderHallPodium(podium, <EwcTrophy size={EWC_PODIUM_TROPHY_SIZE} style={EWC_PODIUM_TROPHY_STYLE} keyColor={podium.winner?.color} motto={record.motto} shardColors={record.pickedKeys?.map((team) => team.color)} />)}
+
+                        {(record.pickedKeys || []).length ? (
+                            <>
+                                <HallOfFameSectionTitle text="Keys sealed into the trophy" marginTop="82px" />
+                                {renderHallTeamRow(record.pickedKeys, 38)}
+                            </>
+                        ) : null}
+
+                        <HallOfFameSectionTitle text="The Totem" marginTop="82px" />
+                        <EwcTotem records={hallOfFame.filter((item) => item.event === "ewc")} />
+
+                        <HallOfFameSectionTitle text="5th - 8th places" marginTop="82px" />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {restPlaces.map((entry) => renderHallPlaceEntry(entry, placementColors))}
+                        </div>
+                    </>
+                );
+            }
+
+            const titleLabel = (
+                <>
+                    {titleName}{" "}
+                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                        #{record.number}
+                    </span>
+                </>
+            );
+
+            return (
+                <>
+                    {hallHeader}
+                    <div
+                        className={css.page_container}
+                        style={{ position: "relative", padding: "12vh 6vw 32px" }}
+                    >
+                        <button
+                            type="button"
+                            className={css.gamble_button}
+                            onClick={leaveWithMorph}
+                            style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
+                        >
+                            Back to Hall of Fame
+                        </button>
+
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-ewc">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    {record.event === "ewcOq"
+                                        ? renderQualifierTitle({ badgeHeight: 36, label: titleLabel })
+                                        : <span>{titleLabel}</span>}
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-ewc")}
+
+                        {content}
 
                         {renderHallManagerModals()}
                     </div>
@@ -2100,20 +2554,22 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-swc">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                {record.event === "swcSc"
-                                    ? renderQualifierTitle({ badgeHeight: 36, label: titleLabel })
-                                    : <span>{titleLabel}</span>}
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-swc">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    {record.event === "swcSc"
+                                        ? renderQualifierTitle({ badgeHeight: 36, label: titleLabel })
+                                        : <span>{titleLabel}</span>}
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-swc")}
 
                         {content}
 
@@ -2252,20 +2708,22 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-ess">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                {record.event === "essLq"
-                                    ? renderQualifierTitle({ badgeHeight: 36, label: titleLabel })
-                                    : <span>{titleLabel}</span>}
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-ess">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    {record.event === "essLq"
+                                        ? renderQualifierTitle({ badgeHeight: 36, label: titleLabel })
+                                        : <span>{titleLabel}</span>}
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-ess")}
 
                         {content}
 
@@ -2438,35 +2896,37 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-pgx">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                {record.event === "pgxCm" ? renderQualifierTitle({
-                                    badgeHeight: 36,
-                                    label: (
-                                        <>
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-pgx">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    {record.event === "pgxCm" ? renderQualifierTitle({
+                                        badgeHeight: 36,
+                                        label: (
+                                            <>
+                                                {titleName} {record.city}{" "}
+                                                <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                                    #{record.number}
+                                                </span>
+                                            </>
+                                        ),
+                                    }) : (
+                                        <span>
                                             {titleName} {record.city}{" "}
                                             <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
                                                 #{record.number}
                                             </span>
-                                        </>
-                                    ),
-                                }) : (
-                                    <span>
-                                        {titleName} {record.city}{" "}
-                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                            #{record.number}
                                         </span>
-                                    </span>
-                                )}
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                    )}
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-pgx")}
 
                         {content}
 
@@ -2499,23 +2959,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-skylines">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span>
-                                    Official Skylines{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-skylines">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span>
+                                        Official Skylines{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-skylines")}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(record.teams?.length ? record.teams : record.skylines?.teams)}
@@ -2572,23 +3034,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header}>
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span>
-                                    Elite Competition League{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header}>
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span>
+                                        Elite Competition League{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record)}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(record.teams?.length ? record.teams : record.bracket?.teams)}
@@ -2649,23 +3113,25 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-pem-big">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span>
-                                    {getPemSeriesConfig(record.type).longLabel}{" "}
-                                    <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                        #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-pem-big">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span>
+                                        {getPemSeriesConfig(record.type).longLabel}{" "}
+                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                            #{record.number}
+                                        </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-pem-big")}
 
                         <HallOfFameSectionTitle text="Tournament start" />
                         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content" }}>
@@ -2758,25 +3224,27 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-pem-main">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                                    <span>
-                                        Pro Extreme Masters Small Tournament{" "}
-                                        <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                            #{record.number}
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-pem-main">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                                        <span>
+                                            Pro Extreme Masters Small Tournament{" "}
+                                            <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                                #{record.number}
+                                            </span>
                                         </span>
                                     </span>
-                                </span>
-                            </h2>
-                            {renderHallChallengeInfo(record)}
-                        </div>
+                                </h2>
+                                {renderHallChallengeInfo(record)}
+                            </div>
+                        ) : renderSummaryHero(record, "hall-pem-main")}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(allMainEventTeams, 38, qualifiedTeamIds)}
@@ -2849,62 +3317,69 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                         <button
                             type="button"
                             className={css.gamble_button}
-                            onClick={leaveHallRecord}
+                            onClick={leaveWithMorph}
                             style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                         >
                             Back to Hall of Fame
                         </button>
 
-                        <div className={css.second_header} data-sticky-anchor="hall-qualifier">
-                            <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
-                                {renderQualifierTitle({
-                                    badgeHeight: 36,
-                                    label: (
-                                        <>
-                                            {openOwner ? `${getTournamentTypeConfig(record.type).label} Open Qualifier` : getPemSeriesConfig(record.type).longLabel}{" "}
-                                            <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
-                                                {openOwner ? formatTournamentNumber(record.type, record.number) : `#${record.number}`}
-                                            </span>
-                                        </>
-                                    ),
-                                })}
-                            </h2>
-                            <div
-                                className={css.info_text}
-                                style={{ textAlign: "center", width: "max-content" }}
-                            >
-                                <span
-                                    style={{
-                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
-                                        fontWeight: 800,
-                                        fontSize: "28px",
-                                        display: "inline-block",
-                                        marginBottom: "12px",
-                                        marginTop: "6px",
-                                    }}
+                        {classicHallSummary ? (
+                            <div className={css.second_header} data-sticky-anchor="hall-qualifier">
+                                <h2 style={{ fontStyle: "oblique", textTransform: "none" }} className={css.game_title}>
+                                    {renderQualifierTitle({
+                                        badgeHeight: 36,
+                                        label: (
+                                            <>
+                                                {openOwner ? `${getTournamentTypeConfig(record.type).label} Open Qualifier` : getPemSeriesConfig(record.type).longLabel}{" "}
+                                                <span style={getTournamentNumberStyle(getTournamentTheme(record.number))}>
+                                                    {openOwner ? formatTournamentNumber(record.type, record.number) : `#${record.number}`}
+                                                </span>
+                                            </>
+                                        ),
+                                    })}
+                                </h2>
+                                <div
+                                    className={css.info_text}
+                                    style={{ textAlign: "center", width: "max-content" }}
                                 >
-                                    {record.pickemWon ? "Challenge won" : "Challenge lost"}
-                                </span>
-                                <br />
-                                <i>
-                                    <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
-                                    needed Pick&apos;em points
-                                </i>
-                                <br />
-                                <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
-                                <i>
-                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
-                                        {record.achievedPickemPoints}{" "}
+                                    <span
+                                        style={{
+                                            color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                            fontWeight: 800,
+                                            fontSize: "28px",
+                                            display: "inline-block",
+                                            marginBottom: "12px",
+                                            marginTop: "6px",
+                                        }}
+                                    >
+                                        {record.pickemWon ? "Challenge won" : "Challenge lost"}
                                     </span>
-                                    achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
-                                    <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
-                                        ({record.achievedPickemPoints - record.neededPickemPoints > 0 ? "+" : ""}
-                                        {record.achievedPickemPoints - record.neededPickemPoints})
-                                    </span>
-                                </i>
-                                <br />
+                                    {hostOfRecord(record) ? (
+                                        <span style={{ display: "flex", justifyContent: "center", margin: "6px 0 2px" }}>
+                                            <HostBadge host={hostOfRecord(record)} />
+                                        </span>
+                                    ) : null}
+                                    <br />
+                                    <i>
+                                        <span style={{ fontWeight: 900 }}>{record.neededPickemPoints}</span>{" "}
+                                        needed Pick&apos;em points
+                                    </i>
+                                    <br />
+                                    <hr style={{ margin: "0", marginTop: "2px" }} className={css.divider} />
+                                    <i>
+                                        <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 900 }}>
+                                            {record.achievedPickemPoints}{" "}
+                                        </span>
+                                        achieved Pick&apos;em point{record.achievedPickemPoints !== 1 ? "s" : ""}
+                                        <span style={{ color: record.pickemWon ? "#2e7d32" : "#be3939", fontWeight: 800 }}>
+                                            ({record.achievedPickemPoints - record.neededPickemPoints > 0 ? "+" : ""}
+                                            {record.achievedPickemPoints - record.neededPickemPoints})
+                                        </span>
+                                    </i>
+                                    <br />
+                                </div>
                             </div>
-                        </div>
+                        ) : renderSummaryHero(record, "hall-qualifier")}
 
                         <HallOfFameSectionTitle text="All teams" />
                         {renderHallTeamRow(allQualifierTeams)}
@@ -3007,84 +3482,91 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     <button
                         type="button"
                         className={css.gamble_button}
-                        onClick={leaveHallRecord}
+                        onClick={leaveWithMorph}
                         style={{ position: "fixed", top: "7%", left: "2%", zIndex: 21 }}
                     >
                         Back to Hall of Fame
                     </button>
 
-                    <div className={css.second_header}>
-                        <h2 style={{ fontStyle: "oblique" }} className={css.game_title}>
-                            {renderTournamentLabelFor(record.type, record.number)}
-                        </h2>
-                        <div
-                            className={css.info_text}
-                            style={{
-                                textAlign: "center",
-                                width: "max-content",
-                            }}
-                        >
-                            <span
+                    {classicHallSummary ? (
+                        <div className={css.second_header}>
+                            <h2 style={{ fontStyle: "oblique" }} className={css.game_title}>
+                                {renderTournamentLabelFor(record.type, record.number)}
+                            </h2>
+                            <div
+                                className={css.info_text}
                                 style={{
-                                    color: record.pickemWon ? "#2e7d32" : "#be3939",
-                                    fontWeight: 800,
-                                    fontSize: "28px",
-                                    display: "inline-block",
-                                    marginBottom: "12px",
-                                    marginTop: "6px",
+                                    textAlign: "center",
+                                    width: "max-content",
                                 }}
                             >
-                                {record.pickemWon ? "Challenge won" : "Challenge lost"}
-                            </span>
-                            <br />
-                            <i>
-                                <span style={{ fontWeight: 900 }}>
-                                    {record.neededPickemPoints}
-                                </span>{" "}
-                                needed Pick&apos;em points
-                            </i>
-                            <br />
-                            <hr
-                                style={{
-                                    margin: "0",
-                                    marginTop: "2px",
-                                }}
-                                className={css.divider}
-                            />
-                            <i>
-                                <span
-                                    style={{
-                                        color: record.pickemWon ? "#2e7d32" : "#be3939",
-                                        fontWeight: 900,
-                                    }}
-                                >
-                                    {record.achievedPickemPoints}{" "}
-                                </span>
-                                achieved Pick&apos;em point
-                                {record.achievedPickemPoints !== 1 ? "s" : ""}
                                 <span
                                     style={{
                                         color: record.pickemWon ? "#2e7d32" : "#be3939",
                                         fontWeight: 800,
+                                        fontSize: "28px",
+                                        display: "inline-block",
+                                        marginBottom: "12px",
+                                        marginTop: "6px",
                                     }}
                                 >
-                                    (
-                                    {record.achievedPickemPoints -
-                                        record.neededPickemPoints >
-                                        0 &&
-                                        record.achievedPickemPoints -
-                                        record.neededPickemPoints !==
-                                        0
-                                        ? "+"
-                                        : ""}
-                                    {record.achievedPickemPoints -
-                                        record.neededPickemPoints}
-                                    )
+                                    {record.pickemWon ? "Challenge won" : "Challenge lost"}
                                 </span>
-                            </i>
-                            <br />
+                                {hostOfRecord(record) ? (
+                                    <span style={{ display: "flex", justifyContent: "center", margin: "6px 0 2px" }}>
+                                        <HostBadge host={hostOfRecord(record)} />
+                                    </span>
+                                ) : null}
+                                <br />
+                                <i>
+                                    <span style={{ fontWeight: 900 }}>
+                                        {record.neededPickemPoints}
+                                    </span>{" "}
+                                    needed Pick&apos;em points
+                                </i>
+                                <br />
+                                <hr
+                                    style={{
+                                        margin: "0",
+                                        marginTop: "2px",
+                                    }}
+                                    className={css.divider}
+                                />
+                                <i>
+                                    <span
+                                        style={{
+                                            color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                            fontWeight: 900,
+                                        }}
+                                    >
+                                        {record.achievedPickemPoints}{" "}
+                                    </span>
+                                    achieved Pick&apos;em point
+                                    {record.achievedPickemPoints !== 1 ? "s" : ""}
+                                    <span
+                                        style={{
+                                            color: record.pickemWon ? "#2e7d32" : "#be3939",
+                                            fontWeight: 800,
+                                        }}
+                                    >
+                                        (
+                                        {record.achievedPickemPoints -
+                                            record.neededPickemPoints >
+                                            0 &&
+                                            record.achievedPickemPoints -
+                                            record.neededPickemPoints !==
+                                            0
+                                            ? "+"
+                                            : ""}
+                                        {record.achievedPickemPoints -
+                                            record.neededPickemPoints}
+                                        )
+                                    </span>
+                                </i>
+                                <br />
+                            </div>
                         </div>
-                    </div>
+                    ) : renderSummaryHero(record)}
 
                     <HallOfFameSectionTitle text="Tournament start" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", width: "max-content" }}>
@@ -3172,7 +3654,7 @@ export function HallOfFameView({ hall, hallManager, leaderboardState, hallDrag, 
                     )}
 
                     <HallOfFameSectionTitle text="Podium" marginTop="102px" />
-                    {renderHallPodium(podium, <FaTrophy />)}
+                    {renderHallPodium(podium, <OfficialTrophy size={OFFICIAL_PODIUM_TROPHY_SIZE} style={OFFICIAL_PODIUM_TROPHY_STYLE} />, null, true)}
 
                     <HallOfFameSectionTitle text={isThirtyTwoTeamOfficial ? "5th - 8th places" : "5th - 16th places"} marginTop="82px" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

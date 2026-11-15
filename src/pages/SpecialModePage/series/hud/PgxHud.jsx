@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, cloneElement } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaCrown, FaFire } from "react-icons/fa";
@@ -875,7 +876,7 @@ export function PgxIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     key="pgx-intro"
                     className={`${css.hud} ${css.intro}`}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.25, delay: 0.45 } }}
                     transition={{ duration: 0.2 }}
@@ -949,6 +950,7 @@ export function PgxIntro({ seriesState, eventName, eventNumber, stageText, setsT
                                             <span className={css.intro_name_text}>
                                                 <Fit>{team?.name}</Fit>
                                             </span>
+                                            <IntroHome team={team} className={css.intro_home} />
                                         </span>
                                     </motion.div>
                                 );

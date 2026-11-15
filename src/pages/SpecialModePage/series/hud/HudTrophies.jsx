@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { PEM_BIG_TYPE_ID } from "../../logic/tournamentTypes.jsx";
+import EwcTrophyIcon from "../../../../components/EwcTrophyIcon/EwcTrophyIcon.jsx";
 
 const PEM_CUP = [
     "M98 24 H414 a10 10 0 0 1 10 10 V42 a10 10 0 0 1 -10 10 H98 a10 10 0 0 1 -10 -10 V34 a10 10 0 0 1 10 -10 Z",
@@ -190,4 +191,4 @@ const SwcMiniTrophy = ({ size }) => (
 );
 
 export const HudTrophy = ({ type, size = 38 }) =>
-    type === "swc" ? <SwcMiniTrophy size={size} /> : type === "ess" ? <EssMiniTrophy size={size} /> : type === "essCh" ? <MedalMiniTrophy size={size} /> : type === "gcc" ? <GccMiniEmblem size={size} /> : type === "pgxCm" || type === "cst" || type === "ecl" ? null : type === "pgxIm" ? <MedalMiniTrophy size={size} /> : type === "gpl" ? <GplMiniTrophy size={size} /> : type === "pbs" ? <PbsMiniTrophy size={size} /> : type === "pgx" ? <PgxMiniTrophy size={size} /> : <PemMiniTrophy big={type === PEM_BIG_TYPE_ID} size={size} />;
+    type === "ewc" ? <EwcTrophyIcon size={size} style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))" }} /> : type === "swc" ? <SwcMiniTrophy size={size} /> : type === "ess" ? <EssMiniTrophy size={size} /> : type === "essCh" ? <MedalMiniTrophy size={size} /> : type === "gcc" ? <GccMiniEmblem size={size} /> : type === "pgxCm" || type === "cst" || type === "ecl" ? null : type === "pgxIm" ? <MedalMiniTrophy size={size} /> : type === "gpl" ? <GplMiniTrophy size={size} /> : type === "pbs" ? <PbsMiniTrophy size={size} /> : type === "pgx" ? <PgxMiniTrophy size={size} /> : <PemMiniTrophy big={type === PEM_BIG_TYPE_ID} size={size} />;

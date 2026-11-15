@@ -3,7 +3,6 @@ import CountUp from "react-countup";
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { FaTrophy } from "react-icons/fa";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import { FaCircle, FaCheck, FaXmark, FaCircleInfo, FaCircleCheck, FaCircleHalfStroke } from "react-icons/fa6";
 import { ReactFitty } from "react-fitty";
@@ -15,7 +14,11 @@ import { BestOfBadge } from "../components/BestOfBadge.jsx";
 import { centerOverflowX } from "../../../rubber.js";
 import { UnbeatenStreakFire, LostStreakFire } from "../components/StreakBadges.jsx";
 import { TeamCircle } from "../components/SwissMatch.jsx";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, Tier15Medal, BountyGem } from "../components/Trophies.jsx";
+import CountryFlag from "../worldMap/CountryFlag.jsx";
+import { EwcKeyBadge } from "../components/EwcCeremonies.jsx";
+import ecss from "../components/EwcCeremonies.module.css";
+import { EWC_ELIMINATING_STAGES } from "../logic/ewc.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, EwcTrophy, Tier15Medal, BountyGem, OfficialTrophy, PlaceMedal } from "../components/Trophies.jsx";
 import { PGX_SWISS_FORMAT } from "../logic/swiss.js";
 import { SimulateAttachment } from "../components/SimulateAttachment.jsx";
 import { PickPerksStrip } from "../progress/PickPerksStrip.jsx";
@@ -79,7 +82,17 @@ export function MatchModal({ modal, teams, actions, labels }) {
     } = modal;
     const { placementColors, rankById, teamRatings, teamStats, allTeams, teamPlacings } = teams;
     const { closeMatchModal, handleChooseLeft, handleChooseRight, handleStartMatch, handleSimulateMatch, simulateEnabled } = actions;
-    const { getOvertimeShortLabel } = labels;
+    const { getOvertimeShortLabel, ewcDefenderId = null } = labels;
+    const ewcKeyOf = (team) => {
+        if (modalContext?.type !== "ewcMain" || !team) return null;
+        const m = currentModalMatch;
+        const crushedHere = !!m?.played && EWC_ELIMINATING_STAGES.includes(m.stage) && String(m.loserTeamId) === String(team.id);
+        const champion = !!m?.played && m.stage === "gf" && String(m.winnerTeamId) === String(team.id);
+        const crushedBefore = m?.stage === "tp";
+        const defender = ewcDefenderId != null && String(ewcDefenderId) === String(team.id);
+        const caption = crushedBefore ? "Crushed in the Semifinals" : crushedHere ? "Key crushed" : champion ? "The champion's Key" : defender ? "Title defender's Key" : "Esports World Cup Key";
+        return <EwcKeyBadge key={`${m?.id}-${team.id}-${crushedHere}`} team={team} defender={defender} crushAnim={crushedHere} crushed={crushedBefore} caption={caption} size={44} />;
+    };
 
     const placementColorLeft = placementColors[rankById[modalLeftTeam?.id]] || "#ffffff";
     const placementColorRight = placementColors[rankById[modalRightTeam?.id]] || "#ffffff";
@@ -394,7 +407,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                         };
 
                         const renderStats = (stats) => {
-                            const items = buildPlacingItems(stats, <FaTrophy />);
+                            const items = buildPlacingItems(stats, <OfficialTrophy />);
 
                             if (items.length === 0) return null;
 
@@ -480,7 +493,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                     ? "pgxCm"
                                                                     : modalContext?.type === "pgxIm"
                                                                     ? "pgxIm"
-                                                                    : modalContext?.type === "essLq" || modalContext?.type === "essCh" || modalContext?.type === "essFin" || modalContext?.type === "swcSc" || modalContext?.type === "swcMain"
+                                                                    : modalContext?.type === "essLq" || modalContext?.type === "essCh" || modalContext?.type === "essFin" || modalContext?.type === "swcSc" || modalContext?.type === "swcMain" || modalContext?.type === "ewcOq" || modalContext?.type === "ewcMain"
                                                                     ? modalContext.type
                                                                     : modalContext?.kind === "pbs"
                                                                         ? "pbsPlayoffs"
@@ -730,6 +743,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                             >
                                                 {modalLeftTeam?.name}
                                             </span>
+                                            <CountryFlag team={modalLeftTeam} size={14} className={css.modal_team_flag} />
                                         </button>
                                         {rsPrediction && (
                                             <>
@@ -815,6 +829,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                             >
                                                 {modalRightTeam?.name}
                                             </span>
+                                            <CountryFlag team={modalRightTeam} size={14} className={css.modal_team_flag} />
                                         </button>
                                         {rsPrediction && (
                                             <>
@@ -917,14 +932,19 @@ export function MatchModal({ modal, teams, actions, labels }) {
 
                             const stage = modalContext?.stage;
                             const isGrandFinal = stage === "gf";
-                            const isThirdPlace = stage === "thirdPlace" || (modalContext?.type === "swcMain" && stage === "tp");
+                            const isThirdPlace = stage === "thirdPlace" || ((modalContext?.type === "swcMain" || modalContext?.type === "ewcMain") && stage === "tp");
+
+                            const labelFlag = (team, badge) => {
+                                const flag = <CountryFlag team={team} size={14} style={{ position: "absolute", right: "100%", top: "50%", translate: "-3px -50%", transition: "none" }} />;
+                                return badge ? React.cloneElement(badge, { style: { ...badge.props.style, position: "relative" } }, flag, badge.props.children) : flag;
+                            };
 
                             const getPlacementBadge = (isWinner, isLoser) => {
                                 if (isGrandFinal) {
                                     if (isWinner && (modalContext?.kind === "cst" || modalContext?.kind === "gcc" || modalContext?.type === "ecl" || modalContext?.type === "skyline" || modalContext?.type === "pgxIm")) {
                                         return (
                                             <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                                🥇+
+                                                <PlaceMedal place={1} />+
                                             </span>
                                         );
                                     }
@@ -939,6 +959,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                         return (
                                             <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
                                                 <PbsTrophy />+
+                                            </span>
+                                        );
+                                    }
+                                    if (isWinner && modalContext?.type === "ewcMain") {
+                                        return (
+                                            <span style={{ marginLeft: '-24px', marginRight: '4px', color: '#2e2f42' }}>
+                                                <EwcTrophy keyColor={currentModalMatch?.slotA?.id === currentModalMatch?.winnerTeamId ? currentModalMatch?.slotA?.color : currentModalMatch?.slotB?.color} />+
                                             </span>
                                         );
                                     }
@@ -973,14 +1000,14 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                     if (isWinner) {
                                         return (
                                             <span style={{ marginLeft: '-28px', marginRight: '4px', color: '#2e2f42' }}>
-                                                <FaTrophy style={{ color: '#2e2f42' }} />+
+                                                <OfficialTrophy style={{ color: '#2e2f42' }} />+
                                             </span>
                                         );
                                     }
                                     if (isLoser) {
                                         return (
                                             <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                                🥈+
+                                                <PlaceMedal place={2} />+
                                             </span>
                                         );
                                     }
@@ -997,7 +1024,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                 if ((isThirdPlace && isWinner) || ((modalContext?.type === "ecl" || modalContext?.type === "essFin") && stage === "cf" && isLoser) || (modalContext?.type === "essCh" && stage === "sf" && isLoser)) {
                                     return (
                                         <span style={{ marginLeft: '-36px', marginRight: '4px', color: '#2e2f42' }}>
-                                            🥉+
+                                            <PlaceMedal place={3} />+
                                         </span>
                                     );
                                 }
@@ -1048,7 +1075,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             };
 
                             const renderStats = (stats, side) => {
-                                const items = buildPlacingItems(stats, <FaTrophy />);
+                                const items = buildPlacingItems(stats, <OfficialTrophy />);
 
                                 if (!items.length) return null;
 
@@ -1163,7 +1190,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                     </span>
                                                                 </span>
                                                                 <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
-                                                                    {getPlacementBadge(winnerIsLeft, leftIsLoser)}
+                                                                    {labelFlag(modalPlayedLeft, getPlacementBadge(winnerIsLeft, leftIsLoser))}
                                                                     <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedLeft?.id && leftIsPick ? leftPickFailed ? '0 0 8px red' : '0 0 8px #2e7d32' : '0 0 4px #000' }}>
                                                                         {modalPlayedLeft?.name}
                                                                         {leftStakeText === "path ends here, for now!" || leftStakeText === "second place is still wonderful!" ? "'s" : ""}
@@ -1325,7 +1352,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                                                     </span>
                                                                 </span>
                                                                 <span style={{ width: 'max-content', top: '62%', zIndex: 3, }} className={css.finished_modal_team_label}>
-                                                                    {getPlacementBadge(winnerIsRight, rightIsLoser)}
+                                                                    {labelFlag(modalPlayedRight, getPlacementBadge(winnerIsRight, rightIsLoser))}
                                                                     <span style={{ color: '#ffffff', textShadow: currentModalMatch.pickTeamId === modalPlayedRight?.id && rightIsPick ? rightPickFailed ? '0 0 8px 2px red' : '0 0 8px 2px #2e7d32' : '0 0 4px #000' }}>
                                                                         {modalPlayedRight?.name}
                                                                         {rightStakeText === "path ends here, for now!" || rightStakeText === "second place is still wonderful!" ? "'s" : ""}
@@ -2435,7 +2462,13 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             teams: allTeams,
                         });
 
+                    const leftKey = ewcKeyOf(statsLeftTeam);
+                    const rightKey = ewcKeyOf(statsRightTeam);
+
                     return (
+                        <>
+                        {leftKey ? <div className={`${ecss.modal_key} ${ecss.modal_key_left}`}>{leftKey}</div> : null}
+                        {rightKey ? <div className={`${ecss.modal_key} ${ecss.modal_key_right}`}>{rightKey}</div> : null}
                         <MatchStatsOverlay
                             leftTeam={statsLeftTeam}
                             rightTeam={statsRightTeam}
@@ -2466,6 +2499,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             onOpenEntry={openHistoryEntry}
                             onOpenProfile={openProfileFromModal}
                         />
+                        </>
                     );
                 })()}
             </div>

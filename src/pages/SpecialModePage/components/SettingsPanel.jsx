@@ -8,6 +8,8 @@ import { SECRET_KEY_CODE_HASH } from "../logic/storageKeys.js";
 import {
     resetSettingsKeepingSecret,
     GAMBLE_KEY_PRESETS,
+    MAP_KEY_BINDS,
+    MAP_KEY_PRESETS,
     IGNORED_KEY_CODES,
     formatKeyCode,
     isDefaultSettings,
@@ -83,13 +85,23 @@ function SettingsChoice({ label, hint, value, options, disabled = false, onChang
     );
 }
 
-function KeySelect({ label, hint, value, onChange: setKey, capturing, setCapturing, takenKeys = [], showTaken = false }) {
+const MAP_KEY_HINTS = {
+    mapUpKey: "Moves the World Map up while you hold it.",
+    mapLeftKey: "Moves the World Map to the left while you hold it.",
+    mapDownKey: "Moves the World Map down while you hold it.",
+    mapRightKey: "Moves the World Map to the right while you hold it.",
+    mapZoomInKey: "Zooms into the World Map while you hold it.",
+    mapZoomOutKey: "Zooms out of the World Map while you hold it.",
+    mapResetKey: "Flies back out to the whole world.",
+};
+
+function KeySelect({ label, hint, value, onChange: setKey, capturing, setCapturing, takenKeys = [], showTaken = false, presets = GAMBLE_KEY_PRESETS }) {
     const [open, setOpen] = useState(false);
     const containerRef = useRef(null);
     const taken = takenKeys.filter((entry) => entry.code);
     const extraKeys = [value, ...(showTaken ? taken.map((entry) => entry.code) : [])].filter((key, i, list) =>
-        key && !GAMBLE_KEY_PRESETS.includes(key) && list.indexOf(key) === i);
-    const options = [null, ...GAMBLE_KEY_PRESETS, ...extraKeys, CUSTOM_KEY];
+        key && !presets.includes(key) && list.indexOf(key) === i);
+    const options = [null, ...presets, ...extraKeys, CUSTOM_KEY];
     const takenBy = (option) => (option && option !== CUSTOM_KEY ? taken.find((entry) => entry.code === option) : null);
 
     const onChange = (code) => {
@@ -590,7 +602,58 @@ export function SettingsPanel({ settings, onChange, open, setOpen }) {
                                     checked={settings.broadcastIntro}
                                     onChange={update("broadcastIntro")}
                                 />
+                                <SettingsSwitch
+                                    id="settings-ewc-press-ceremony"
+                                    label="Key press ceremony"
+                                    hint="When a team is knocked out of the Esports World Cup, you crush its Key in the hydraulic press. Turn it off to skip the ceremony, the Key is still crushed."
+                                    checked={settings.ewcPressCeremony}
+                                    onChange={update("ewcPressCeremony")}
+                                />
                             </div>
+                            <div className={css.settings_row}>
+                                <SettingsSwitch
+                                    id="settings-skip-series-end"
+                                    label="Skip the series end"
+                                    hint="When a series is over, you go back to the tournament view almost right away instead of watching the end-of-series animation (about 3.5 seconds)."
+                                    checked={settings.skipSeriesEnd}
+                                    onChange={update("skipSeriesEnd")}
+                                />
+                                <SettingsSwitch
+                                    id="settings-classic-hall-cards"
+                                    label="Classic Hall of Fame cards"
+                                    hint="Show the Hall of Fame tournaments with the old card look instead of the redesigned cards."
+                                    checked={settings.classicHallCards}
+                                    onChange={update("classicHallCards")}
+                                />
+                                <SettingsSwitch
+                                    id="settings-classic-hall-summary"
+                                    label="Classic Hall of Fame summaries"
+                                    hint="Open a Hall of Fame tournament with the old summary look instead of the redesigned one."
+                                    checked={settings.classicHallSummary}
+                                    onChange={update("classicHallSummary")}
+                                />
+                            </div>
+
+                            <div className={css.settings_divider} />
+                            <h3 className={css.settings_section_title}>World Map</h3>
+                            {[0, 2, 4, 6].map((start) => (
+                                <div key={start} className={css.settings_row}>
+                                    {MAP_KEY_BINDS.slice(start, start + 2).map(({ key, label }) => (
+                                        <KeySelect
+                                            key={key}
+                                            label={label}
+                                            hint={MAP_KEY_HINTS[key]}
+                                            value={settings[key]}
+                                            onChange={update(key)}
+                                            capturing={capturing === key}
+                                            setCapturing={(on) => setCapturing(on ? key : null)}
+                                            takenKeys={MAP_KEY_BINDS.filter((other) => other.key !== key).map((other) => ({ code: settings[other.key], label: `${other.label} key` }))}
+                                            showTaken
+                                            presets={MAP_KEY_PRESETS}
+                                        />
+                                    ))}
+                                </div>
+                            ))}
 
                             <div className={css.settings_divider} />
                             <h3 className={css.settings_section_title}>Level & XP</h3>

@@ -120,6 +120,21 @@ const collectFrom = (src, push) => {
         );
         arraysOf(src.swcMain.playoffs).forEach(([stage, items]) => list(items, (m) => ({ type: "swcMain", section: "playoffs", stage: m.stage ?? stage, group: null })));
     }
+
+    if (src.ewcOq) {
+        arraysOf(src.ewcOq.playIn).forEach(([stage, items]) => list(items, (m) => ({ type: "ewcOq", section: "playin", stage: m.stage ?? stage, group: "P" })));
+        Object.entries(src.ewcOq.groups || {}).forEach(([group, holder]) =>
+            arraysOf(holder).forEach(([stage, items]) => list(items, (m) => ({ type: "ewcOq", section: "groups", stage: m.stage ?? stage, group: m.group ?? group }))),
+        );
+        arraysOf(src.ewcOq.knockout).forEach(([stage, items]) => list(items, (m) => ({ type: "ewcOq", section: "knockout", stage: m.stage ?? stage, group: "K" })));
+    }
+
+    if (src.ewcMain) {
+        Object.entries(src.ewcMain.groups || {}).forEach(([group, holder]) =>
+            arraysOf(holder).forEach(([stage, items]) => list(items, (m) => ({ type: "ewcMain", section: "groups", stage: m.stage ?? stage, group: m.group ?? group }))),
+        );
+        arraysOf(src.ewcMain.playoffs).forEach(([stage, items]) => list(items, (m) => ({ type: "ewcMain", section: "playoffs", stage: m.stage ?? stage, group: null })));
+    }
 };
 
 const hallSourceOf = (record) => {
@@ -138,6 +153,8 @@ const hallSourceOf = (record) => {
     if (event === "ess") return { essFin: record.finals };
     if (event === "swcSc") return { swcSc: record.chase };
     if (event === "swc") return { swcMain: record.main };
+    if (event === "ewcOq") return { ewcOq: record.openQualifier };
+    if (event === "ewc") return { ewcMain: record.main };
     if (event === "pbs") return { playoffs: record.playoffs };
     return base;
 };

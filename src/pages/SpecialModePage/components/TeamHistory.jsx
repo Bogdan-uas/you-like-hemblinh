@@ -1,7 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, useEffect } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-import { FaTrophy } from "react-icons/fa";
 import { FaArrowLeft, FaArrowRight, FaLock } from "react-icons/fa6";
 import { MdOutlineKeyboardDoubleArrowUp, MdOutlineKeyboardDoubleArrowDown } from "react-icons/md";
 import css from "./TeamHistory.module.css";
@@ -28,6 +27,12 @@ import { StatFactorRow, StatAverageLine } from "./StatsPanels.jsx";
 import { UnbeatenStreakFire } from "./StreakBadges.jsx";
 import { useScreenLenis } from "../progress/progressUi.js";
 import { useSpecialModeSettings } from "../logic/settings.js";
+import { ewcHomeOf } from "../logic/ewcHomes.js";
+import CountryStage from "../worldMap/CountryStage.jsx";
+import CountryFlag from "../worldMap/CountryFlag.jsx";
+import { EwcTrophy, OfficialTrophy } from "./Trophies.jsx";
+import { hasTrophyRoom, trophyRoomCounts } from "../logic/trophyCase.js";
+import rcss from "./TrophyRoom.module.css";
 
 const RESULT_WORD = { W: "Win", L: "Loss", T: "Tie" };
 const PROFILE_PAGE = 20;
@@ -609,7 +614,7 @@ export function ProfileFloodOverlay({ team, origin, onDone }) {
     );
 }
 
-export function TeamProfile({ team, history, origin, restored, rating, rank, rankColor, placings, stats: factorStats, streak, onOpenEntry, onOpenEvent, onClose, savedView, fromMatch = false, flooded = false }) {
+export function TeamProfile({ team, history, origin, restored, rating, rank, rankColor, placings, stats: factorStats, streak, onOpenEntry, onOpenEvent, onClose, savedView, fromMatch = false, flooded = false, ewcTrophies = [], onOpenTrophyRoom = null, roomOpen = false }) {
     const { smoothScroll } = useSpecialModeSettings();
     const { wrapperRef, contentRef, lenisRef } = useScreenLenis(smoothScroll);
     const rootRef = useRef(null);
@@ -621,6 +626,22 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
     const [shown, setShown] = useState(savedView?.shown ?? PROFILE_PAGE);
     const views = history.views;
     const stats = history.stats;
+    const home = useMemo(() => ewcHomeOf(team), [team]);
+    const [homePlay, setHomePlay] = useState(0);
+    const [homeReady, setHomeReady] = useState(false);
+    const homeTarget = useMemo(
+        () => (home && homePlay ? { code: home.code, flag: home.flag, dots: [{ id: team.id, team, hq: home.hq }], activeId: team.id } : null),
+        [home, homePlay, team],
+    );
+    const replayHome = () => {
+        if (!homeReady) return;
+        setHomeReady(false);
+        setHomePlay((n) => n + 1);
+    };
+
+    useEffect(() => {
+        if (phase === "shown" && home) setHomePlay((n) => n || 1);
+    }, [phase, home]);
 
     useLayoutEffect(() => {
         if (phase === "shown" || geo) return;
@@ -684,14 +705,17 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
             if (document.querySelector(`.${page.match_modal_overlay}`)) return;
             onClose();
         };
-        window.addEventListener("keydown", onKey);
+        if (!roomOpen) window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
+    }, [onClose, roomOpen]);
 
     const open = (entry) => onOpenEntry(entry, { shown, scrollTop: wrapperRef.current?.scrollTop ?? 0 });
     const openEvent = onOpenEvent ? (entry) => onOpenEvent(entry, { shown, scrollTop: wrapperRef.current?.scrollTop ?? 0 }) : null;
 
-    const placingItems = buildPlacingItems(placings ?? EMPTY_TEAM_PLACINGS, <FaTrophy style={{ verticalAlign: "middle" }} />);
+    const placingItems = buildPlacingItems(placings ?? EMPTY_TEAM_PLACINGS, <OfficialTrophy />);
+    const roomPlacings = placings ?? EMPTY_TEAM_PLACINGS;
+    const roomUnlocked = hasTrophyRoom(roomPlacings);
+    const roomCounts = trophyRoomCounts(roomPlacings);
     const teamFill = team.gradient || team.color;
     const contentVisible = phase !== "flood";
     const flyStart = geo ? { x: geo.cx - geo.heroSize / 2, y: geo.cy - geo.heroSize / 2, scale: origin.size / geo.heroSize } : null;
@@ -752,6 +776,11 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
                             <div className={css.hero_side}>
                                 <span className={css.hero_kicker}>
                                     Team profile · <span style={{ color: rankTone }}>{formatOrdinal(rank)}</span> on the Leaderboard
+                                    {home ? (
+                                        <span className={css.hero_home}>
+                                            · <CountryFlag team={team} size={13} /> {home.country}
+                                        </span>
+                                    ) : null}
                                 </span>
                                 <h2 className={css.hero_name}>
                                     Team {team.name}
@@ -778,21 +807,84 @@ export function TeamProfile({ team, history, origin, restored, rating, rank, ran
                                 </div>
                             </div>
                             <div className={css.hero_trophies}>
-                                <span className={css.hero_chip_label}>Trophies & medals</span>
-                                {placingItems.length ? (
-                                    <div className={css.shelf}>
-                                        {placingItems.map((item) => (
-                                            <span key={item.key} className={css.shelf_item} title={item.title ?? undefined}>
-                                                {item.icon} ×{item.value}
+                                {roomUnlocked ? (
+                                    <button type="button" className={rcss.room_button} onClick={() => onOpenTrophyRoom?.()}>
+                                        <span className={rcss.room_button_icons}>
+                                            {placingItems.slice(0, 3).map((item) => (
+                                                <span key={item.key}>{item.key === "ewcWins" && ewcTrophies.length ? <EwcTrophy keyColor={ewcTrophies[0].keyColor} shardColors={ewcTrophies[0].shardColors} /> : item.icon}</span>
+                                            ))}
+                                        </span>
+                                        <span className={rcss.room_button_text}>
+                                            Trophy room
+                                            <span className={rcss.room_button_sub}>
+                                                {roomCounts.trophies} {roomCounts.trophies === 1 ? "trophy" : "trophies"} · {roomCounts.medals} {roomCounts.medals === 1 ? "medal" : "medals"}
                                             </span>
-                                        ))}
-                                    </div>
+                                        </span>
+                                        <FaArrowRight aria-hidden="true" style={{ color: "#8a8d99", fontSize: 13 }} />
+                                    </button>
                                 ) : (
-                                    <span className={css.shelf_empty}>None yet</span>
+                                    <>
+                                        <span className={css.hero_chip_label}>Trophies & medals</span>
+                                    {placingItems.length ? (
+                                        <div className={css.shelf}>
+                                            {placingItems.map((item) => (item.key === "ewcWins" && ewcTrophies.length ? (
+                                                <span key={item.key} className={css.shelf_item}>
+                                                    {ewcTrophies.map((trophy) => (
+                                                        <EwcTrophy key={trophy.id} keyColor={trophy.keyColor} shardColors={trophy.shardColors} data-tip={`Esports World Cup #${trophy.number}`} />
+                                                    ))}
+                                                    {item.value > ewcTrophies.length ? <span title={item.title ?? undefined}>{item.icon}</span> : null} ×{item.value}
+                                                </span>
+                                            ) : (
+                                                <span key={item.key} className={css.shelf_item} title={item.title ?? undefined}>
+                                                    {item.icon} ×{item.value}
+                                                </span>
+                                            )))}
+                                        </div>
+                                    ) : (
+                                        <span className={css.shelf_empty}>None yet</span>
+                                    )}
+
+                                        <span className={rcss.room_locked}>
+                                            <FaLock aria-hidden="true" style={{ fontSize: 10, marginRight: 4 }} />
+                                            Trophy room opens at 3 trophies or 5 medals
+                                        </span>
+                                    </>
                                 )}
                             </div>
                         </div>
                     </div>
+
+                    {home ? (
+                        <>
+                            <h3 className={css.section_title}>
+                                Home <span className={css.section_count}>{home.country} · {home.hq?.city}</span>
+                            </h3>
+                            <div
+                                role="button"
+                                tabIndex={homeReady ? 0 : -1}
+                                aria-disabled={!homeReady}
+                                className={css.home_card}
+                                data-ready={homeReady}
+                                onClick={replayHome}
+                                onKeyDown={(e) => {
+                                    if (e.key !== "Enter" && e.key !== " ") return;
+                                    e.preventDefault();
+                                    replayHome();
+                                }}
+                                title={homeReady ? "Play it again" : undefined}
+                            >
+                                <CountryStage
+                                    className={css.home_stage}
+                                    target={homeTarget}
+                                    playId={homePlay}
+                                    from="world"
+                                    countryName={home.country}
+                                    dotLabel={() => `Team ${team.name} · ${home.hq?.city ?? home.country}`}
+                                    onDone={() => homePlay && setHomeReady(true)}
+                                />
+                            </div>
+                        </>
+                    ) : null}
 
                     <h3 className={css.section_title}>
                         Match statistics <span className={css.section_count}>{stats.played} {stats.played === 1 ? "match" : "matches"}</span>

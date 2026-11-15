@@ -127,7 +127,7 @@ export const GplDescription = () => (
     <>
         Three tournaments, played one after another:
         <PemSmallEventLine tier="qualifier">
-            <b>Global Challenger Cup Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>
+            <b>Global Challenger Cup Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>{" "}
             (4 Bo3 matches) and its 4 winners join places 37-56 in Group A and Group B (12 teams each, the 4 best
             seeds of every Group skip the Opening Round and the Lower Round 1). Every Group is a Double Elimination
             bracket (Opening Round, Upper Quarterfinals and Upper Semifinals are Bo1, the rest Bo3) and every
@@ -214,11 +214,30 @@ export const SwcDescription = () => (
     </>
 );
 
+export const EwcDescription = () => (
+    <>
+        Two tournaments, played one after another. Every team of the main event gets a Key: a knocked-out
+        team&apos;s Key is crushed in the hydraulic press and the champion picks three of them for its trophy.
+        <PemSmallEventLine tier="qualifier">
+            <b>Esports World Cup Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>{" "}
+            (4 Bo3 matches) and its 4 winners join places 29-56 in 8 GSL Groups of 4 (Opening Rounds Bo1, the rest
+            Bo3). Every Group&apos;s top 2 teams go to the Knockout Stage (Round of 16 and Quarterfinals, Bo3) and the
+            4 Quarterfinal winners qualify to the main event.
+        </PemSmallEventLine>
+        <PemSmallEventLine tier="tier1">
+            <b>Esports World Cup</b> — the main event: places 1-28 of the Leaderboard and the 4 teams from the Open
+            Qualifier in Groups A-D of 8 teams. Every Group is a Double Elimination bracket (Opening Rounds Bo1, the
+            rest Bo3) and its top 4 teams go to the Playoffs: the Round of 16 is Bo3, the Quarterfinals Bo5, the
+            Semifinals and the Third Place Decider Bo7, the Grand Final Bo9.
+        </PemSmallEventLine>
+    </>
+);
+
 export const PbsDescription = () => (
     <>
         Two tournaments, played one after another:
         <PemSmallEventLine tier="qualifier">
-            <b>Premier Bounty Series Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>
+            <b>Premier Bounty Series Open Qualifier</b> — places 57-64 of the Leaderboard play the <b>Play-in</b>{" "}
             (4 Bo3 matches) and its 4 winners join places 29-56 in Group A and Group B (16 teams each). Every Group
             is a Double Elimination bracket (Opening Round, Upper Quarterfinals and Upper Semifinals are Bo1, the
             rest Bo3) and every Group&apos;s top 2 teams qualify to the Premier Bounty Series.

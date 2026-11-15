@@ -14,6 +14,10 @@ export const DEFAULT_SETTINGS = {
     podiumEffects: true,
     skipPodiumReveal: false,
     broadcastIntro: true,
+    ewcPressCeremony: true,
+    skipSeriesEnd: false,
+    classicHallCards: false,
+    classicHallSummary: false,
     xpAllAtOnce: false,
     simulateEnabled: true,
     simulateMode: "set",
@@ -23,6 +27,13 @@ export const DEFAULT_SETTINGS = {
     simulateKeepOpen: false,
     simulateInSeries: true,
     simulateKey: null,
+    mapUpKey: "KeyW",
+    mapLeftKey: "KeyA",
+    mapDownKey: "KeyS",
+    mapRightKey: "KeyD",
+    mapZoomInKey: "KeyE",
+    mapZoomOutKey: "KeyQ",
+    mapResetKey: "KeyR",
     secretPanelKey: null,
     secretLeftKey: null,
     secretRightKey: null,
@@ -51,6 +62,20 @@ export const SIMULATE_INSTANT_MODES = [
 
 export const isSecretUnlocked = (settings) =>
     isSecretCodeConfigured() && settings.secretUnlock === SECRET_KEY_CODE_HASH;
+
+export const MAP_KEY_BINDS = [
+    { key: "mapUpKey", bind: "up", label: "Move up" },
+    { key: "mapLeftKey", bind: "left", label: "Move left" },
+    { key: "mapDownKey", bind: "down", label: "Move down" },
+    { key: "mapRightKey", bind: "right", label: "Move right" },
+    { key: "mapZoomInKey", bind: "zoomIn", label: "Zoom in" },
+    { key: "mapZoomOutKey", bind: "zoomOut", label: "Zoom out" },
+    { key: "mapResetKey", bind: "reset", label: "Whole world" },
+];
+
+export const MAP_KEY_PRESETS = ["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyR", "ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight", "Equal", "Minus", "Space"];
+
+export const mapKeysOf = (settings) => Object.fromEntries(MAP_KEY_BINDS.map(({ key, bind }) => [bind, settings?.[key] ?? DEFAULT_SETTINGS[key]]));
 
 export const GAMBLE_KEY_PRESETS = ["Space", "Enter", "KeyG", "KeyF", "KeyJ", "ArrowRight", "ArrowUp"];
 

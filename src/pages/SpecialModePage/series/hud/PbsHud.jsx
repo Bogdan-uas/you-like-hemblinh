@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, cloneElement } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaCrown } from "react-icons/fa";
@@ -787,7 +788,7 @@ export function PbsIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     key="pbs-intro"
                     className={`${css.hud} ${css.intro}`}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.2, delay: 0.55 } }}
                     transition={{ duration: 0.15 }}
@@ -866,6 +867,7 @@ export function PbsIntro({ seriesState, eventName, eventNumber, stageText, setsT
                                         <span className={css.intro_name}>
                                             <span className={css.name_prefix}>Team</span>
                                             {team?.name}
+                                            <IntroHome team={team} className={css.intro_home} />
                                         </span>
                                     </motion.div>
                                 );

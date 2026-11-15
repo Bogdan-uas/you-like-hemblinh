@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaClock, FaCrown, FaFire, FaStar } from "react-icons/fa";
@@ -1043,7 +1044,7 @@ export function EssIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     className={`${css.hud} ${css.intro}`}
                     style={{ "--left-color": left?.color ?? "#3fb6c9", "--right-color": right?.color ?? "#e2353f" }}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.35 } }}
                     transition={{ duration: 0.25 }}
@@ -1107,6 +1108,7 @@ export function EssIntro({ seriesState, eventName, eventNumber, stageText, setsT
                                         <span className={css.intro_name_text}>
                                             <Fit>{team?.name}</Fit>
                                         </span>
+                                        <IntroHome team={team} className={css.intro_home} />
                                     </motion.span>
                                 </motion.div>
                             ))}

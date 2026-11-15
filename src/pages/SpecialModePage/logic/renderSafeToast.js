@@ -3,7 +3,19 @@ import toastLib from "react-hot-toast";
 let commentaryMuted = false;
 let seriesToastMode = false;
 let seriesHud = null;
-const LOWER_THIRD_HUDS = new Set(["pem", "gpl", "pbs", "pgx", "cst", "ess", "gcc", "swc"]);
+const LOWER_THIRD_HUDS = new Set(["pem", "gpl", "pbs", "pgx", "cst", "ess", "gcc", "swc", "ewc"]);
+
+const HUD_TOAST_POSITION = {
+    pem: "bottom-center",
+    gpl: "bottom-center",
+    gcc: "bottom-center",
+    cst: "bottom-center",
+    pbs: "bottom-right",
+    ess: "bottom-right",
+    swc: "bottom-right",
+    ewc: "top-right",
+    pgx: "top-right",
+};
 
 const SERIES_TRAIL_LENGTH = 4;
 const SERIES_DEFAULT_DURATION = 2000;
@@ -120,7 +132,7 @@ const seriesOptions = (options) => {
         current: { icon: options?.icon ?? null, accent: options?.accent ?? null },
     };
 
-    const position = LOWER_THIRD_HUDS.has(seriesHud) ? { position: "bottom-left" } : {};
+    const position = LOWER_THIRD_HUDS.has(seriesHud) ? { position: HUD_TOAST_POSITION[seriesHud] ?? "bottom-left" } : {};
 
     return { ...options, ...position, duration, variant: "series", hud: seriesHud, id: seriesFeed.id, seq: seriesFeed.seq, trail: seriesFeed.trail };
 };

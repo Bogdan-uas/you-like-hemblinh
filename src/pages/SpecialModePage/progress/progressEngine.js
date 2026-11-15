@@ -75,6 +75,7 @@ export const emptyStats = () => ({
 
 export const BACKFILL_STAT_KEYS_BY_VERSION = {
     3: ["closeSets", "eventCounts", "championStreak", "mainWinners"],
+    5: [],
 };
 
 export const BACKFILL_STAT_KEYS = [
@@ -467,7 +468,7 @@ export const applySeries = (input, seriesInfo) => {
 export const recordTier = (record) => {
     const event = record?.event;
     if (!event) return "official";
-    if (event === "qualifier" || event === "pgxCm" || event === "essLq" || event === "swcSc") return "qualifier";
+    if (event === "qualifier" || event === "pgxCm" || event === "essLq" || event === "swcSc" || event === "ewcOq") return "qualifier";
     if (["cst", "ecl", "gcc", "skylines"].includes(event)) return "tier2";
     if (event === "essCh" || event === "pgxIm") return "tier15";
     return "tier1";
@@ -477,7 +478,7 @@ export const mainKindOf = (record) => {
     const event = record?.event;
     if (!event) return "official";
     if (event === "main") return record.type === PEM_BIG_TYPE_ID ? "pemBig" : record.type === PEM_SMALL_TYPE_ID ? "pemSmall" : "pemSmall";
-    if (["gpl", "pbs", "pgxGm", "ess", "swc"].includes(event)) return event;
+    if (["gpl", "pbs", "pgxGm", "ess", "swc", "ewc"].includes(event)) return event;
     return null;
 };
 
@@ -486,7 +487,7 @@ const circuitOf = (record) => {
     if (!event) return "official";
     if (event === "main") return "pem";
     if (event === "pgxGm") return "pgx";
-    if (["gpl", "pbs", "ess", "swc", "skylines", "gcc"].includes(event)) return event;
+    if (["gpl", "pbs", "ess", "swc", "ewc", "skylines", "gcc"].includes(event)) return event;
     return null;
 };
 
@@ -530,6 +531,7 @@ const storyFlags = (record) => {
     if (winner) {
         if (record.event === "ess" && (record.chQualified || []).some((t) => t.id === winner.id)) flags.add("allTheWayUp");
         if (record.event === "swc" && (record.scQualified || []).some((t) => t.id === winner.id)) flags.add("allTheWayUp");
+        if (record.event === "ewc" && (record.oqQualified || []).some((t) => t.id === winner.id)) flags.add("allTheWayUp");
         if (record.event === "pgxGm" && record.imChampion?.id === winner.id) flags.add("allTheWayUp");
         if (record.event === "main" && (record.qualifiedTeamIds || []).map(String).includes(String(winner.id))) flags.add("allTheWayUp");
         if (record.event === "pbs") {

@@ -1525,6 +1525,14 @@
     pointer-events: none;
 }
 
+.modal_team_flag.modal_team_flag {
+    position: absolute;
+    z-index: 3;
+    top: calc(65% + 5px);
+    right: 57%;
+    pointer-events: none;
+}
+
 .modal_team_placing {
     position: absolute;
     top: 15%;
@@ -8516,6 +8524,25 @@ button.breakdown_er_tag:not(:disabled):hover {
     transition: none;
 }
 
+.ewc_oq_qualified {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 24px);
+    transform: translateY(-50%);
+    display: flex;
+    white-space: nowrap;
+    transition: none;
+}
+
+.ewc_oq_qualified::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    width: 24px;
+    border-top: 1px solid #8a8a8a;
+}
+
 .swc_sc_qualified {
     position: absolute;
     top: calc(100% + 28px);
@@ -8533,4 +8560,159 @@ button.breakdown_er_tag:not(:disabled):hover {
     bottom: 100%;
     height: 28px;
     border-left: 1px solid #8a8a8a;
+}
+
+.leaderboard_region {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: 640px;
+    max-width: 100%;
+    margin: 30px auto 18px;
+    user-select: none;
+    transition: none;
+}
+
+.leaderboard_region_line {
+    flex: 1 1 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(46, 47, 66, 0.25));
+}
+
+.leaderboard_region_line:last-child {
+    background: linear-gradient(270deg, transparent, rgba(46, 47, 66, 0.25));
+}
+
+.host_corner {
+    position: fixed;
+    z-index: 20;
+    top: 64px;
+    left: 20px;
+}
+
+.winnerPodium .firstPodium,
+.winnerPodium .secondPodium,
+.winnerPodium .thirdPodium,
+.winnerPodium .fourthPodium {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 14px 14px 6px 6px;
+    box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.7), inset 0 -60px 80px rgba(0, 0, 0, 0.1), 0 12px 28px rgba(26, 28, 44, 0.18);
+}
+
+.winnerPodium .firstPodium {
+    background: linear-gradient(90deg, #c99a00 0%, #ffd84a 20%, #fff3b0 36%, #ffd23c 56%, #d9a400 82%, #b88a00 100%);
+}
+
+.winnerPodium .secondPodium {
+    background: linear-gradient(90deg, #8f949e 0%, #d3d6dd 20%, #ffffff 36%, #cdd1d8 56%, #a7acb6 82%, #888d97 100%);
+}
+
+.winnerPodium .thirdPodium {
+    background: linear-gradient(90deg, #95551f 0%, #d48a4c 20%, #f3c59a 36%, #cd7f32 56%, #a8642c 82%, #85491a 100%);
+}
+
+.winnerPodium .fourthPodium {
+    background: linear-gradient(90deg, #2c5f8c 0%, #4f8fc8 20%, #a4cdf2 36%, #4682b4 56%, #3a72a3 82%, #2a5a85 100%);
+}
+
+.winnerPodium .firstPodium::after,
+.winnerPodium .secondPodium::after,
+.winnerPodium .thirdPodium::after,
+.winnerPodium .fourthPodium::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 8px;
+    right: 8px;
+    height: 10px;
+    border-radius: 0 0 8px 8px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+    pointer-events: none;
+}
+
+.winnerPodium .firstPlaceName,
+.winnerPodium .runnerUpName,
+.winnerPodium .thirdPlaceName,
+.winnerPodium .fourthPlaceName {
+    color: #ffffff;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.winnerPodium .firstPlaceLabel,
+.winnerPodium .runnerUpLabel,
+.winnerPodium .thirdPlaceLabel,
+.winnerPodium .fourthPlaceLabel {
+    color: #ffffff;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 255, 255, 0.55), 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.winnerPodium .firstPlaceQuote,
+.winnerPodium .runnerUpQuote,
+.winnerPodium .thirdPlaceQuote,
+.winnerPodium .fourthPlaceQuote {
+    position: relative;
+    display: block;
+    margin-top: 18px;
+    padding: 10px 9px 11px;
+    border-radius: 10px;
+    background: rgba(22, 23, 34, 0.32);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.winnerPodium .firstPlaceQuote::before,
+.winnerPodium .runnerUpQuote::before,
+.winnerPodium .thirdPlaceQuote::before,
+.winnerPodium .fourthPlaceQuote::before {
+    content: "❝";
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    color: #2e2f42;
+    font-size: 16px;
+    font-style: normal;
+    line-height: 26px;
+    text-shadow: none;
+}
+
+.winnerPodium .winnerLogo,
+.winnerPodium .runnerUpLogo,
+.winnerPodium .placeLogoThird,
+.winnerPodium .placeLogoFourth {
+    border: 3px solid #ffffff;
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: 2px;
+    filter: drop-shadow(0 8px 12px rgba(26, 28, 44, 0.25));
+}
+
+.winnerPodium .winnerMedal,
+.winnerPodium .runnerUpMedal,
+.winnerPodium .thirdPlaceMedal,
+.winnerPodium .fourthPlaceMedal {
+    z-index: 2;
+}
+
+.winnerTrophyHeld {
+    top: 30px;
+    left: 90px;
+    rotate: 40deg;
+    font-size: 0;
+    line-height: 0;
 }

@@ -1,3 +1,4 @@
+import { FaEarthEurope } from "react-icons/fa6";
 import css from './Header.module.css';
 
 const Header = ({
@@ -20,6 +21,8 @@ const Header = ({
     hasAnyPlacings = false,
     onInfoPage,
     onHallOfFame,
+    onWorldMap,
+    isWorldMapOpen = false,
 }) => {
     const armedStyle = { opacity: 1, pointerEvents: "auto" };
     const unarmedStyle = { opacity: 0, pointerEvents: "auto", cursor: "default" };
@@ -108,6 +111,20 @@ const Header = ({
                     </button>
                 ) : null}
 
+                {isLeaderboardOpen && !isHallOfFameOpen && onWorldMap ? (
+                    <button
+                        className={`${css.gamble_button} ${css.world_button} ${isScoreBoardButtonLocked ? css.locked : ""}`}
+                        onClick={onWorldMap}
+                        disabled={isScoreBoardButtonLocked || isWorldMapOpen}
+                        aria-hidden={isWorldMapOpen || undefined}
+                        tabIndex={isWorldMapOpen ? -1 : undefined}
+                        style={{ pointerEvents: isGameWon || isWorldMapOpen ? "none" : "auto", opacity: isWorldMapOpen ? 0 : 1 }}
+                    >
+                        <FaEarthEurope className={css.world_icon} aria-hidden="true" />
+                        World map
+                    </button>
+                ) : null}
+
                 {isLeaderboardOpen && !isHallOfFameOpen ? (
                     <>
                         <button
@@ -116,7 +133,7 @@ const Header = ({
                             disabled={isScoreBoardButtonLocked}
                             style={{
                                 pointerEvents: isGameWon ? "none" : "auto",
-                                marginLeft: onHallOfFame ? "345px" : "512px",
+                                marginLeft: onWorldMap ? "175px" : onHallOfFame ? "345px" : "512px",
                                 ...(arePlacingButtonsArmed ? armedStyle : unarmedStyle),
                             }}
                         >

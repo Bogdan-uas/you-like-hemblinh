@@ -6,6 +6,7 @@ import { skylinesStageLabel, SKYLINES_ROOF, getSkylinesFloorName } from "./skyli
 import { pgxStageLabel } from "./pgx.jsx";
 import { essStageLabel } from "./ess.jsx";
 import { swcStageLabel } from "./swc.jsx";
+import { ewcStageLabel } from "./ewc.jsx";
 import { pemStage1StageLabel } from "./pemStage1.jsx";
 import { stageLabelPlayoffs } from "./playoffs.js";
 
@@ -19,6 +20,7 @@ export const matchTitleOf = (ctx) => {
     if (ctx.type === "pgxCm" || ctx.type === "pgxIm") return pgxStageLabel(ctx.type === "pgxIm" ? "im" : "cm", ctx.stage);
     if (ctx.type === "essLq" || ctx.type === "essCh" || ctx.type === "essFin") return essStageLabel(ctx.type, ctx.stage);
     if (ctx.type === "swcSc" || ctx.type === "swcMain") return swcStageLabel(ctx.type, ctx.stage);
+    if (ctx.type === "ewcOq" || ctx.type === "ewcMain") return ewcStageLabel(ctx.type, ctx.stage);
     if (ctx.type === "pemStage1") return pemStage1StageLabel(ctx.stage);
     if (ctx.type === "cstGroup") return `Group ${ctx.group}`;
     if (ctx.type === "gccLeague") return `Matchday ${ctx.matchday}`;
@@ -41,6 +43,8 @@ export const matchSmallLabelOf = (ctx, isPemBig = false) => {
     if (ctx.type === "essFin") return "";
     if (ctx.type === "swcSc") return `Storm Chase | Bracket ${ctx.group}`;
     if (ctx.type === "swcMain") return ctx.section === "playoffs" ? "Playoffs" : `Group Stage | Group ${ctx.group}`;
+    if (ctx.type === "ewcOq") return ctx.section === "playin" ? "Open Qualifier | Play-in" : ctx.section === "knockout" ? "Open Qualifier | Knockout Stage" : `Open Qualifier | Group ${ctx.group}`;
+    if (ctx.type === "ewcMain") return ctx.section === "playoffs" ? "Playoffs" : `Group Stage | Group ${ctx.group}`;
     if (ctx.stageKey === "stage1" && ctx.format === PGX_SWISS_FORMAT) return "Swiss Stage";
     if (ctx.type === "skyline") {
         return ctx.round === SKYLINES_ROOF ? "Rooftop Final" : `Round ${ctx.round + 1} | ${getSkylinesFloorName(ctx.floor)}`;

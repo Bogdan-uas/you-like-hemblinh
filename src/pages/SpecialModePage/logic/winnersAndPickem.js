@@ -8,6 +8,10 @@ export const ESS_PODIUM_TROPHY_SIZE = 100;
 export const ESS_PODIUM_TROPHY_STYLE = { marginLeft: "10px", marginTop: "-74px" };
 export const SWC_PODIUM_TROPHY_SIZE = 140;
 export const SWC_PODIUM_TROPHY_STYLE = { marginLeft: "4px", marginTop: "-108px" };
+export const EWC_PODIUM_TROPHY_SIZE = 140;
+export const EWC_PODIUM_TROPHY_STYLE = { marginLeft: "4px", marginTop: "-108px" };
+export const OFFICIAL_PODIUM_TROPHY_SIZE = 100;
+export const OFFICIAL_PODIUM_TROPHY_STYLE = { display: "block" };
 
 export const WINNERS_TIMELINE = {
     headline: 500,

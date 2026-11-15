@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import css from "./OfficialIntro.module.css";
@@ -50,7 +51,7 @@ export function OfficialIntro({ seriesState, labelParts, medallion, plate = null
                     key="official-intro"
                     className={css.intro}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.32 } }}
                     transition={{ duration: 0.25 }}
@@ -149,6 +150,7 @@ export function OfficialIntro({ seriesState, labelParts, medallion, plate = null
                                         <span className={`${base.team_name_fancy} ${css.name}`} style={gradientText(team)}>
                                             <span className={base.team_name_prefix}>Team</span> {team?.name}
                                         </span>
+                                        <IntroHome team={team} className={css.home} />
                                     </motion.div>
                                 );
                             })}

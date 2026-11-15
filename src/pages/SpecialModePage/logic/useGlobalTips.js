@@ -1,5 +1,34 @@
 import { useEffect } from "react";
 import css from "./GlobalTips.module.css";
+import { NUMBERED_TOURNAMENT_TYPES } from "./tournamentTypes.jsx";
+import { getAnniversaryTheme, getTournamentNumberStyle } from "./winnersAndPickem.js";
+
+const NUMBER_PATTERN = /(#\d+|Season \d+)/;
+const TOURNAMENT_NAMES = [...new Set(NUMBERED_TOURNAMENT_TYPES.flatMap((type) => [type.label, type.longLabel]).filter(Boolean))];
+
+const fillTip = (tip, text) => {
+    const named = TOURNAMENT_NAMES.some((name) => text.includes(name));
+    if (!named || !NUMBER_PATTERN.test(text)) {
+        tip.textContent = text;
+        return;
+    }
+    tip.textContent = "";
+    text.split(NUMBER_PATTERN).forEach((part, i) => {
+        if (i % 2 === 0) {
+            if (part) tip.appendChild(document.createTextNode(part));
+            return;
+        }
+        const style = getTournamentNumberStyle(getAnniversaryTheme(Number(part.replace(/\D/g, ""))));
+        if (!style) {
+            tip.appendChild(document.createTextNode(part));
+            return;
+        }
+        const span = document.createElement("span");
+        span.textContent = part;
+        Object.assign(span.style, style, { transition: "none" });
+        tip.appendChild(span);
+    });
+};
 
 const GAP = 8;
 const EDGE = 6;
@@ -53,7 +82,7 @@ export function useGlobalTips() {
                 return;
             }
             current = el;
-            tip.textContent = text;
+            fillTip(tip, text);
             const size = el.getAttribute("data-tip-size") ?? (relativeFontPx(el) <= SMALL_FONT_PX ? "small" : "normal");
             tip.classList.toggle(css.small, size === "small");
             tip.classList.remove(css.shown);

@@ -4,7 +4,7 @@ import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FaCircle, FaCheck, FaXmark } from "react-icons/fa6";
-import { PemPlayoffsLayout, QualifierBracketLayout, PlayInBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout, PgxPlayInLayout, PgxMatchesLayout, EssLaddersLayout, EssChallengerPlayoffsLayout, EssFinalsBracketLayout, SwcStormChaseLayout, SwcPlayoffsLayout } from "../components/BracketLayouts.jsx";
+import { PemPlayoffsLayout, QualifierBracketLayout, PlayInBracketLayout, PemGroupBracketLayout, PemStage1BracketLayout, EclBracketLayout, GccKnockoutLayout, PbsStageLayout, PgxPlayInLayout, PgxMatchesLayout, EssLaddersLayout, EssChallengerPlayoffsLayout, EssFinalsBracketLayout, SwcStormChaseLayout, EwcOqKnockoutLayout, EwcGroupLayout, EwcPlayoffsLayout, SwcPlayoffsLayout } from "../components/BracketLayouts.jsx";
 import {
     SWC_SC_BRACKETS,
     SWC_GROUPS,
@@ -20,6 +20,21 @@ import {
     getBestOfForSwcMain,
     isSingleSwcStage,
 } from "../logic/swc.jsx";
+import {
+    EWC_OQ_GROUPS,
+    EWC_GROUPS,
+    ewcOqSlotSource,
+    canOpenEwcOqMatch,
+    findCurrentEwcOqMatch,
+    findNextEwcOqMatch,
+    getBestOfForEwcOq,
+    ewcMainSlotSource,
+    canOpenEwcMainMatch,
+    findCurrentEwcMainMatch,
+    findNextEwcMainMatch,
+    getBestOfForEwcMain,
+    isSingleEwcStage,
+} from "../logic/ewc.jsx";
 import {
     ESS_CH_GROUPS,
     essLadderSlotSource,
@@ -186,6 +201,12 @@ export function createTournamentRenderers({
     setSwcView,
     swcScLabel,
     swcLabel,
+    ewcOq,
+    ewcMain,
+    ewcView,
+    setEwcView,
+    ewcOqLabel,
+    ewcLabel,
 }) {
     const renderQualifierTitle = ({ badgeHeight = 34, fontSize, label = qualifierLabel ?? pemLabel, gap = 6 } = {}) => (
         <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap, fontSize }}>
@@ -2695,6 +2716,237 @@ export function createTournamentRenderers({
         );
     };
 
+    const renderEwcOqSection = (oq, view, { archived = false, record = null } = {}) => {
+        if (!oq) return null;
+        const section = view === "PI" ? "playin" : view === "KO" ? "knockout" : "groups";
+        const holder = section === "playin" ? oq.playIn : section === "knockout" ? oq.knockout : oq.groups?.[view];
+
+        if (!holder) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    The Knockout Stage starts after the Group Stage.
+                </div>
+            );
+        }
+
+        const current = archived || oq.phase !== section ? null : findCurrentEwcOqMatch(oq, section === "groups" ? view : null);
+        const next = archived ? null : findNextEwcOqMatch(holder, section, current);
+        const format = {
+            slotSource: ewcOqSlotSource(section),
+            canOpen: (bracketHolder, stage, idx) => !archived && canOpenEwcOqMatch(oq, section, bracketHolder, stage, idx),
+            bestOf: getBestOfForEwcOq,
+            isSingle: (stage) => isSingleEwcStage("ewcOq", stage),
+            open: (_group, _stage, matchId) => openEssMatchModal("ewcOq", matchId),
+            openArchived: (_record, _group, _stage, _idx, match) => openArchivedEssMatchModal("ewcOq", record, match, section),
+        };
+        const renderMatch = (match, stage, idx) => renderQualifierMatch(holder, match, stage, idx, { archived, record, current, next, format });
+
+        if (section === "playin") return <PlayInBracketLayout key={archived ? "hall-ewcqp" : "ewcqp"} bracket={holder} renderMatch={renderMatch} />;
+        if (section === "knockout") {
+            return (
+                <EwcOqKnockoutLayout
+                    key={archived ? "hall-ewcqk" : "ewcqk"}
+                    bracket={holder}
+                    renderMatch={renderMatch}
+                    renderQualified={(match) => renderEssQualified(getMatchWinnerTeam(match), "Main event spot")}
+                />
+            );
+        }
+        return <PemStage1BracketLayout key={`${archived ? "hall" : "live"}-ewcqg-${view}`} bracket={holder} renderMatch={renderMatch} />;
+    };
+
+    const renderEwcMainSection = (main, view, { archived = false, record = null } = {}) => {
+        if (!main) return null;
+        const section = view === "PO" ? "playoffs" : "groups";
+        const holder = section === "playoffs" ? main.playoffs : main.groups?.[view];
+
+        if (!holder) {
+            return (
+                <div style={{ opacity: 0.75, textAlign: "center", marginTop: 40 }}>
+                    The Playoffs start after the Group Stage.
+                </div>
+            );
+        }
+
+        const current = archived || main.phase !== section ? null : findCurrentEwcMainMatch(main, section === "groups" ? view : null);
+        const next = archived ? null : findNextEwcMainMatch(holder, section, current);
+        const format = {
+            slotSource: ewcMainSlotSource(section),
+            canOpen: (bracketHolder, stage, idx) => !archived && canOpenEwcMainMatch(main, section, bracketHolder, stage, idx),
+            bestOf: getBestOfForEwcMain,
+            isSingle: (stage) => isSingleEwcStage("ewcMain", stage),
+            open: (_group, _stage, matchId) => openEssMatchModal("ewcMain", matchId),
+            openArchived: (_record, _group, _stage, _idx, match) => openArchivedEssMatchModal("ewcMain", record, match, section),
+        };
+        const renderMatch = (match, stage, idx) => renderQualifierMatch(holder, match, stage, idx, { archived, record, current, next, format });
+
+        if (section === "playoffs") return <EwcPlayoffsLayout key={archived ? "hall-ewcp" : "ewcp"} bracket={holder} renderMatch={renderMatch} />;
+        return <EwcGroupLayout key={`${archived ? "hall" : "live"}-ewcg-${view}`} bracket={holder} renderMatch={renderMatch} />;
+    };
+
+    const renderEwcPage = (kind) => {
+        const isOq = kind === "ewcOq";
+        const groupsList = isOq ? EWC_OQ_GROUPS : EWC_GROUPS;
+        const fallbackView = isOq
+            ? ewcOq?.phase === "playin" ? "PI" : ewcOq?.phase === "knockout" || ewcOq?.phase === "done" ? "KO" : "A"
+            : ewcMain?.playoffs ? "PO" : "A";
+        const view = isOq
+            ? ewcView === "PI" || groupsList.includes(ewcView) || (ewcView === "KO" && ewcOq?.knockout) ? ewcView : fallbackView
+            : groupsList.includes(ewcView) || (ewcView === "PO" && ewcMain?.playoffs) ? ewcView : fallbackView;
+        const isGroupView = groupsList.includes(view);
+        const phases = isOq
+            ? [{ id: "PI", label: "Play-in" }, { id: "G", label: "Group Stage" }, ...(ewcOq?.knockout ? [{ id: "KO", label: "Knockout Stage" }] : [])]
+            : [{ id: "G", label: "Group Stage" }, ...(ewcMain?.playoffs ? [{ id: "PO", label: "Playoffs" }] : [])];
+        const sectionTitle = view === "PI" ? "Play-in" : view === "KO" ? "Knockout Stage" : view === "PO" ? "Playoffs" : "Group Stage";
+        const handlePhaseChange = (id) => {
+            if (id !== "G") {
+                setEwcView(id);
+                return;
+            }
+            const container = isOq ? ewcOq : ewcMain;
+            const find = isOq ? findCurrentEwcOqMatch : findCurrentEwcMainMatch;
+            setEwcView(groupsList.find((group) => find(container, group)) ?? "A");
+        };
+
+        const finished = tournamentResults?.kind === (isOq ? "ewcOq" : "ewc");
+        const showEndButtons = showPickemLine2 && finished;
+        const highlightTeam = isOq ? tournamentResults?.qualifiers?.[0] : tournamentResults?.winner;
+
+        const title = isOq
+            ? renderQualifierTitle({ badgeHeight: 34, label: <>{ewcOqLabel} | {sectionTitle}</> })
+            : <>{ewcLabel} | {sectionTitle}</>;
+
+        const endButtons = (
+            <>
+                <button className={`${css.gamble_button} ${css.back_button}`} onClick={() => setShowPickemSummary(true)}>
+                    Back to the Pick&apos;em challenge summary
+                </button>
+                <button
+                    className={`${css.gamble_button} ${css.back_back_button}`}
+                    style={highlightTeam ? { backgroundColor: hover ? highlightTeam.hoverOn : highlightTeam.color } : undefined}
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                    onClick={() => setShowWinnersScreen(true)}
+                >
+                    Back to the Winners&apos; screen
+                </button>
+            </>
+        );
+
+        const side = showEndButtons && !isOq ? (
+            <div className={css.pickem_buttons} style={{ top: "96px", left: "auto", right: "3%", zIndex: 19 }}>
+                {endButtons}
+                <button className={css.gamble_button} onClick={handleBackToHome}>
+                    To Home Page
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToSpecialStart}>
+                    Back to the start of Special Mode
+                </button>
+                <button className={css.gamble_button} onClick={handleBackToGambling}>
+                    Back to normal Gambling
+                </button>
+            </div>
+        ) : showEndButtons ? (
+            <div
+                style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "calc(50% - 670px)",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 10,
+                }}
+            >
+                {endButtons}
+                <button className={css.gamble_button} onClick={handlePemProceedToNextEvent} data-proceed-button>
+                    Proceed
+                </button>
+            </div>
+        ) : (
+            <div
+                style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "calc(50% - 670px)",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                }}
+            >
+                <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                <span className={css.points}>
+                    <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                    <NeededPerkTag value={neededPickemPoints} />
+                </span>
+            </div>
+        );
+
+        const content = isOq ? renderEwcOqSection(ewcOq, view) : renderEwcMainSection(ewcMain, view);
+        const phaseValue = isGroupView ? "G" : view;
+        const phaseNav = renderPhaseNav(phases, "10%", { value: phaseValue, onChange: handlePhaseChange });
+        const floatingSide = showEndButtons && !isOq;
+
+        if (isGroupView) {
+            return (
+                <>
+                    <QualifierGroupNav fixed value={view} onChange={setEwcView} groups={groupsList} />
+                    <div className={css.qualifier_page} style={{ position: "relative", minWidth: 1464 }}>
+                        {phaseNav}
+                        {floatingSide ? side : null}
+                        <StickyBelow
+                            anchor='[data-sticky-anchor="qualifier-groups"]'
+                            style={{ width: "calc(100% + 48px)", margin: "0 -24px 4px", padding: showEndButtons && !floatingSide ? "18px 0 36px" : "6px 0 16px" }}
+                        >
+                            <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                                {title}
+                            </div>
+                            {floatingSide ? null : side}
+                        </StickyBelow>
+                        <div className={css.pem_stage1_area}>{content}</div>
+                    </div>
+                </>
+            );
+        }
+
+        if (!isOq) {
+            return (
+                <div className={css.cst_page} style={{ paddingBottom: 12 }}>
+                    {phaseNav}
+                    {floatingSide ? side : (
+                        <div style={{ gap: 0, top: "96px", left: "auto", right: "5%" }} className={css.pickem_buttons}>
+                            <span className={css.match_modal_prompt}>Needed Pick&apos;em points:</span>
+                            <span className={css.points}>
+                                <CountUp start={0} duration={1.2} end={neededPickemPoints} key={neededPickemPoints} />
+                                <NeededPerkTag value={neededPickemPoints} />
+                            </span>
+                        </div>
+                    )}
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {title}
+                    </div>
+                    <div style={{ width: "100%", marginTop: 0, display: "flex", justifyContent: "center" }}>{content}</div>
+                </div>
+            );
+        }
+
+        return (
+            <div className={css.cst_page} style={{ paddingTop: 56 }}>
+                {phaseNav}
+                {floatingSide ? side : null}
+                <div className={css.ecl_header} style={showEndButtons && !floatingSide ? { minHeight: 176, padding: "18px 0 36px" } : { padding: "6px 0 16px" }}>
+                    <div className={css.stage_title} style={{ marginBottom: 0 }}>
+                        {title}
+                    </div>
+                    {floatingSide ? null : side}
+                </div>
+                <div style={{ marginTop: 24, display: "flex", justifyContent: "center" }}>{content}</div>
+            </div>
+        );
+    };
+
     const renderQualifierPage = () => {
         const group = qualifierGroupView;
         const firstQualified = tournamentResults?.kind === "pemQualifier"
@@ -3392,6 +3644,9 @@ export function createTournamentRenderers({
         renderEssChallengerSection,
         renderEssFinalsBracket,
         renderSwcPage,
+        renderEwcPage,
+        renderEwcOqSection,
+        renderEwcMainSection,
         renderSwcStormChase,
         renderSwcMainSection,
     };

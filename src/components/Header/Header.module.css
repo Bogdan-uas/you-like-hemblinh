@@ -68,6 +68,60 @@
     box-shadow: var(--ui-shadow-raised);
 }
 
+.world_button {
+    position: relative;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    background-color: #1d3557;
+    color: #f3cf62;
+    box-shadow: var(--ui-shadow), inset 0 0 0 1px rgba(243, 207, 98, 0.45);
+}
+
+.world_button::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    bottom: 0;
+    left: -24px;
+    right: 0;
+    background:
+        repeating-linear-gradient(90deg, rgba(243, 207, 98, 0.22) 0 1px, transparent 1px 24px),
+        repeating-linear-gradient(0deg, rgba(243, 207, 98, 0.14) 0 1px, transparent 1px 12px);
+    animation: world_button_drift 3.6s linear infinite;
+    transition: none;
+    pointer-events: none;
+}
+
+@keyframes world_button_drift {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(24px);
+    }
+}
+
+.world_button:hover {
+    background-color: #24507f;
+    color: #ffe08a;
+    box-shadow: var(--ui-shadow-raised), inset 0 0 0 1px rgba(243, 207, 98, 0.75);
+}
+
+.world_icon {
+    flex: 0 0 auto;
+    font-size: 16px;
+    transition: none;
+}
+
+.world_button.locked {
+    background-color: #ccc;
+    color: #fff;
+}
+
 .back_back_back_button {
     color: #fff;
     background-color: tomato;

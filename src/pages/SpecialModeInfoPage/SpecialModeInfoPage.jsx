@@ -80,6 +80,7 @@ import Lenis from "lenis";
 import { FaFire } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { useGlobalTips } from "../SpecialModePage/logic/useGlobalTips.js";
+import { PlaceMedal } from "../SpecialModePage/components/Trophies.jsx";
 
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
@@ -268,6 +269,18 @@ const OFFICIAL_SECTIONS = [
         label: "Leaderboard format and points system",
     },
     {
+        id: "world-map",
+        label: "Team countries and the World Map",
+    },
+    {
+        id: "host-cities",
+        label: "Host cities",
+    },
+    {
+        id: "trophy-room",
+        label: "The Trophy room",
+    },
+    {
         id: "levels-explained",
         label: "Levels, XP, Tasks and Achievements",
     },
@@ -439,6 +452,33 @@ const SWC_SECTIONS = [
     {
         id: "swc-rewards",
         label: "The tornado trophy and Hall of Fame",
+    },
+];
+
+const EWC_SECTIONS = [
+    {
+        id: "ewc-overview",
+        label: "The road to the World Cup",
+    },
+    {
+        id: "ewc-oq",
+        label: "Esports World Cup Open Qualifier",
+    },
+    {
+        id: "ewc-hud",
+        label: "The EWC HUD",
+    },
+    {
+        id: "ewc-main",
+        label: "Esports World Cup",
+    },
+    {
+        id: "ewc-keys",
+        label: "The Keys and the hydraulic press",
+    },
+    {
+        id: "ewc-rewards",
+        label: "The trophy, the Totem and Hall of Fame",
     },
 ];
 
@@ -893,6 +933,9 @@ const LeaderboardExplained = ({ scrollToAnchor }) => {
             <p className={css.info_text}>
                 If two teams are worth exactly the same, the more important trophies decide first (an Official one before all the others and so on), and only then the points.
             </p>
+            <p className={css.info_text}>
+                The trophies of the same kind are ordered by their tournaments: the oldest one is always the rightmost. Every trophy and medal has a hint with the tournament, where it was won, and a click on it opens the <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("trophy-room")} href='#trophy-room'>Trophy room</a> of that team.
+            </p>
 
             <h4 className={css.stat_group_title}>Team profiles</h4>
             <p className={css.info_text}>
@@ -901,7 +944,7 @@ const LeaderboardExplained = ({ scrollToAnchor }) => {
             </p>
             <ProfileShot n={1} alt="Everything around the clicked circle of Team Indigo turns white" />
             <p className={css.info_text}>
-                The head of the profile shows the points inside the circle, the place in the Leaderboard, the unbeaten streak, the record, the win rate, the average multiplier and every trophy and medal of the team. While scrolling, it stays at the top and gets smaller, just like the second header of every tournament.
+                The head of the profile shows the points inside the circle, the place in the Leaderboard, the home country, the unbeaten streak, the record, the win rate, the average multiplier and every trophy and medal of the team (or the button of its <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("trophy-room")} href='#trophy-room'>Trophy room</a>, once it has enough of them). While scrolling, it stays at the top and gets smaller, just like the second header of every tournament.
                 Below it, "Match statistics" tells everything about the matches of the team: the win rate, the won sets, the round difference, the average multiplier (compared to the one of its opponents) and its best one, the won mini-rounds, the series and Best of 1 records, the Overtime sets, the deciders, the current run, the comebacks (of a whole series and inside a single set), the sweeps and upsets, the points, which it got from its matches,
                 in how many tournaments it has played, and the team, which it beat the most often, and the one, which beat it the most often. All of those numbers are colored: a share is red, if it&apos;s 25% or less, gray at 50% and green from 60% on, wins are green and losses are red:
             </p>
@@ -964,6 +1007,110 @@ const ProfileShot = ({ n, alt, width = "34vw" }) => (
     <div className={css.image_container}>
         <img src={PROFILE_IMAGES[`../../../assets/images/profile-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
     </div>
+);
+
+const shotsOf = (glob, prefix) => {
+    const Shot = ({ n, alt, width = "34vw" }) => (
+        <div className={css.image_container}>
+            <img src={glob[`../../../assets/images/${prefix}-${String(n).padStart(2, "0")}.png`]} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+        </div>
+    );
+    return Shot;
+};
+
+const WorldShot = shotsOf(import.meta.glob("../../../assets/images/world-*.png", { eager: true, import: "default" }), "world");
+const RoomShot = shotsOf(import.meta.glob("../../../assets/images/room-*.png", { eager: true, import: "default" }), "room");
+const HallShot = shotsOf(import.meta.glob("../../../assets/images/hall-*.png", { eager: true, import: "default" }), "hall");
+const SettingsShot = shotsOf(import.meta.glob("../../../assets/images/settings-*.png", { eager: true, import: "default" }), "settings");
+
+const WorldMapExplained = ({ scrollToAnchor }) => (
+    <>
+        <p className={css.info_text}>
+            Every team has a <b>home country</b> and a headquarters in one of its cities. The small flag shows up next to the team name in the Leaderboard, in the match window, in every series opening and in the team profile, where the "Home" section flies to the country and lights up its headquarters.
+            The teams come from 36 countries, mostly from Europe and the Americas, with a few from Asia and Australia.
+        </p>
+        <p className={css.info_text}>
+            The countries also give the Leaderboard one more sorting option: <b>"Regions"</b>. It groups the teams into the five esports regions (Europe, CIS, North America, South America and Asia-Pacific), each with its own heading and the number of its teams.
+            Inside a region, the teams of the same country stay together, and the country of the best team comes first. The places of this sorting don&apos;t mean anything, so they aren&apos;t shown at all: every team only keeps its "Original ranking":
+        </p>
+        <WorldShot n={2} alt="The Leaderboard sorted by Regions, starting with Europe" />
+        <WorldShot n={3} alt="North America ending and South America starting, with the Brazilian teams together" />
+        <p className={css.info_text}>
+            The <b>"World map"</b> button in the header of the Leaderboard opens the whole map. On the left, there is a list of all 64 teams with their place, headquarters and flag; a click on a team flies the camera to its country, which lights up in its flag colors, and shows the golden point of its headquarters.
+            The card at the bottom-right tells everything about that team: its place, country, city and language, every other team from the same country (each one a link) and a "Full profile" button. The chosen team can&apos;t be clicked again, until another one is chosen:
+        </p>
+        <WorldShot n={4} alt="The World Map with the whole world and the list of all teams" />
+        <WorldShot n={5} alt="Team Green chosen on the World Map: Brazil in its flag colors with the golden points of every Brazilian team" />
+        <p className={css.info_text}>
+            Every country with a team can be clicked right on the map as well: it shows all the headquarters there, and a click on a golden point tells whose headquarters it is.
+            The map can be dragged around and zoomed with the mouse wheel, or moved with the keys from the "Controls" box (W, A, S, D, E, Q and R for the whole world by default, changeable in the Settings):
+        </p>
+        <WorldShot n={6} alt="Germany clicked on the World Map with the headquarters of Team Gray in Cologne" />
+        <p className={css.info_text}>
+            And since the teams have their countries now, every series opening shows them under the team names as well:
+        </p>
+        <WorldShot n={11} alt="Series opening of Team Plum from Romania against Team Lavender from France" />
+        <p className={css.info_text}>
+            The map is also the stage of the{" "}
+            <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("host-cities")} href='#host-cities'>Host cities</a>.
+        </p>
+    </>
+);
+
+const HostCitiesExplained = () => (
+    <>
+        <p className={css.info_text}>
+            Every big tournament is played in its own <b>host city</b>. The Official and the Official Skylines are always in Budapest, the PEM Small Tournament in Rio de Janeiro, Berlin, Kraków or Stockholm, the PEM Big Tournament in Cologne or Katowice,
+            the Global Pro League in Stockholm or Katowice, the Premier Bounty Series and the Stormdraft World Championship on Malta, the Elite Star Series in Madrid or Budapest and the Esports World Cup in one of the biggest cities, which could host such a tournament (Riyadh, Jeddah, Paris, Berlin, London, Abu Dhabi, Tokyo or Seoul).
+            The PGX tournaments keep their city in the name. If a tournament has more than one possible city, it is drawn when the tournament starts, and every already played tournament got a city of its own as well.
+        </p>
+        <p className={css.info_text}>
+            When a tournament starts, the screen turns into the world map, the camera flies to the host country, which lights up golden and gets its flag, and then the host city shows up. A click skips it, and it only plays once for every tournament:
+        </p>
+        <WorldShot n={7} alt="The world map flying to Hungary, which lights up golden, for Official #2" />
+        <WorldShot n={8} alt="Hungary in its flag colors with Budapest as the host city of Official #2" />
+        <p className={css.info_text}>
+            During the tournament, the host city stays as a small pill in the top-left corner, both in the tournament view and on the series screen.
+            A Qualifier already knows the city of its main event, so its pill says "Main event" first. The Elite Star Series Challenger and the PGX International Masters are played in the city of their main event, and the Global Challenger Cup and its Open Qualifier don&apos;t have any host city:
+        </p>
+        <WorldShot n={9} alt="The Budapest pill in the top-left corner of Official #2" />
+        <WorldShot n={13} alt="The Budapest pill on the series screen of Official #2" />
+        <WorldShot n={12} alt="The Main event pill with Riyadh in the Esports World Cup Open Qualifier" />
+        <p className={css.info_text}>
+            A click on the pill slides a window from above, where the map flies to the host city once more. The same pill (and the same window) is on every Hall of Fame card, in every Hall of Fame summary and in the Trophy room:
+        </p>
+        <WorldShot n={10} alt="The host city window of Official #2 with Budapest" />
+    </>
+);
+
+const TrophyRoomExplained = ({ scrollToAnchor }) => (
+    <>
+        <p className={css.info_text}>
+            Once a team has won at least <b>3 trophies or 5 medals</b>, its profile shows a "Trophy room" button in place of the list of its trophies and medals.
+            A click on a trophy or a medal of that team right in the Leaderboard opens the Trophy room as well, without the profile, and the clicked one glows there (a team without a Trophy room opens its profile instead). Every trophy and medal in the Leaderboard has a hint with the tournament, where it was won:
+        </p>
+        <RoomShot n={1} alt="The profile of Team Blue with the Trophy room button" />
+        <p className={css.info_text}>
+            The most valuable trophy stands on a pedestal under a spotlight with its nameplate, all the other trophies stand on the shelves, and the medals hang on the hooks of the medal wall:
+        </p>
+        <RoomShot n={2} alt="The Trophy room of Team Blue with the Esports World Cup trophy on the pedestal" />
+        <p className={css.info_text}>
+            A click on a trophy or a medal shows it big: it can be zoomed in and out with the mouse wheel or the buttons, dragged around and reset with a double click.
+            The panel tells the place, the tournament with its host city, the day, when it was won, and the team, which it beat or lost to in the final. The trophy of the Esports World Cup also lists the three Keys sealed into its base, and choosing one of them lights up its shard (more on the Keys in the Esports World Cup tab):
+        </p>
+        <RoomShot n={3} alt="The Esports World Cup trophy up close with the Key of Team Blush lit up in its base" />
+        <RoomShot n={4} alt="The trophy zoomed in on its base" />
+        <p className={css.info_text}>
+            "Go to the tournament" opens its summary in the Hall of Fame and scrolls right to the match, where the team won it (or, if the tournament has no saved matches, to the podium), which lights up with a golden ring. "Back to Hall of Fame" leads right back into the Trophy room:
+        </p>
+        <RoomShot n={5} alt="The Grand Final of Esports World Cup #1 lit up in its summary" />
+        <RoomShot n={6} alt="The Trophy room opened from the Leaderboard with the Global Pro League trophy glowing" />
+        <p className={css.info_text}>
+            The trophies and medals themselves got a new look too: the Official trophy is a dark cup with a golden star and an "OFFICIAL" plate, and all the medals ({" "}
+            <PlaceMedal place={1} size="1.2em" /> <PlaceMedal place={2} size="1.2em" /> <PlaceMedal place={3} size="1.2em" /> ) are drawn medals with a ribbon instead of the small pictures from before. See also{" "}
+            <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("leaderboard-explained")} href='#leaderboard-explained'>Leaderboard format and points system</a>.
+        </p>
+    </>
 );
 
 const OfficialSubPage = ({ scrollToAnchor }) => (
@@ -1058,7 +1205,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>
                 As you may have noticed already, the Leaderboard has a button, called as "Placement sorting".
-                This is a "select" button, which can be opened and you'll see some options: "Points (default)", "Trophies and first places", "Second Places", "Third Places" and "Stats".
+                This is a "select" button, which can be opened and you'll see some options: "Points (default)", "Trophies and first places", "Second Places", "Third Places", "Stats" and "Regions" (more on the last one in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("world-map")} href='#world-map'>Team countries and the World Map</a>).
                 These are the sorting options, which you can sort the teams by.
                 Since we have gotten into this Tournament Simulator only recently, none of the teams have any trophies, stats and medals for high placements in the tournaments because no tournament have been played yet. <br />
                 But, yet there is still one sorting option or rather two sorting options, which are available to be seen: Stats and Points.
@@ -1089,8 +1236,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 Hall of Fame will store all the played tournaments and their results but since we haven't played any tournament yet, it is empty.
-                In the top-right corner, you can see "Pick'em points score", "0 Pick'em challenges won" and "0 Pick'em challenges lost".
-                These are stats, which are being gathered from all of the registered and played tournaments. "Pick'em points" will meet us again soon...
+                Right below the title, there is a row of stats: the "Pick'em score", the "Challenges won" and "Challenges lost", the "Win rate" and the "Win streak" (the current one and the best one). Once tournaments are played, the best challenge and the team with the most titles join them.
+                These stats are gathered from all of the registered and played tournaments. "Pick'em points" will meet us again soon...
             </p>
             <p className={css.info_text}>
                 Before we start anything, let&apos;s also click on that gear in the top-right corner. It smoothly opens the <b>Settings</b> on top of the screen you are on, so you can change them at any moment, even in the middle of a series:
@@ -1116,12 +1263,17 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <br />• <b>Commentary notifications</b>: turn them off to hide the play-by-play notifications, like "Second Half begins" (the warnings will still be shown)
                 <br />• <b>Smooth scrolling</b>: turn it off, if you prefer the instant, normal mouse wheel scrolling
                 <br />• <b>Series opening</b>: plays a short intro with both teams, every time a series starts. When it&apos;s off, the scoreboard just makes a quick entrance instead
+                <br />• <b>Key press ceremony</b>: whether you crush the Key of a team knocked out of the Esports World Cup yourself in the hydraulic press (the Key is crushed either way)
+                <br />• <b>Skip the series end</b>: once a series is over, you are back in the tournament view almost right away, instead of watching the end of the series for about 3.5 seconds
+                <br />• <b>Classic Hall of Fame cards</b> and <b>Classic Hall of Fame summaries</b>: show the Hall of Fame with its old look (more on the new one in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("finale")} href='#finale'>Finale? Or not?</a>)
+                <br />• <b>World Map</b>: the keys, which move and zoom the World Map (more on it in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("world-map")} href='#world-map'>Team countries and the World Map</a>)
                 <br />• <b>All XP sources at once</b>: after a series, every XP source on the XP card flies into the level bar at the same time, instead of one after another (more on the XP card in{" "}
                 <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("levels-explained")} href='#levels-explained'>Levels, XP, Tasks and Achievements</a>)
                 <br />• <b>Skip the podium reveal</b>: the Winners&apos; Screen shows the whole Top 4 at once instead of revealing them one by one
                 <br />• <b>Winners&apos; Screen effects</b>: the rays, sparkles and confetti around the podium
             </p>
             <p className={css.info_text}>
+                <SettingsShot n={2} alt="The Broadcast HUD and World Map parts of the Settings" width="24vw" />
                 The greyed out options only become available once you choose a Gambling Key (or turn off "Skip the podium reveal" for the effects, or allow the playback of the simulated rounds for "What it simulates", "Speed" and "Slow down on important moments"). All the settings are saved, so they stay the same after reloading the page, and the "Reset settings" button brings them back to their defaults (with a chance to undo it, of course).
                 Gambling Key is "Off" by default, so nothing changes until you pick one. <br />
                 Once you have played something (or changed anything), a black <b>"Reset everything!"</b> button shows up below "Reset settings". It resets really everything: the settings, the Hall of Fame, the Leaderboard, your level, your achievements and every tournament, so the Special Mode is as new as on the very first visit.
@@ -1146,7 +1298,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 But, in this tab, I am explaining <b>Official</b> tournament and not the other ones in that list, so I will choose the Official explicitly and click "Start Game" button.
             </p>
             <p className={css.info_text}>
-                But first, I will be redirected to the "Tournament Intro Screen", where we can see the overview of the qualifiers with their points for each stage one more time, in case you haven't seen the Leaderboard:
+                But first, the screen flies over the world map to Budapest, the host city of every Official (more on it in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("host-cities")} href='#host-cities'>Host cities</a>), and then I will be redirected to the "Tournament Intro Screen", where we can see the overview of the qualifiers with their points for each stage one more time, in case you haven't seen the Leaderboard:
             </p>
             <div className={css.image_container}>
                 <img src={tournamentIntroScreenImg} alt="Tournament Intro Screen" className={css.image} style={{ width: '35vw', height: '35vh' }} />
@@ -1333,7 +1485,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 </span>
             </div>
             <p className={css.info_text}>
-                At the very top, there is the upper label: on the left, the name of the tournament with its number and, below it in small grey letters, the stage (here it&apos;s "STAGE I"); in the middle, the trophy, which all teams are fighting for, in a round medallion (tournaments without a trophy of their own show "🥇" there instead); and on the right, the match name with its order number. <br />
+                At the very top, there is the upper label: on the left, the name of the tournament with its number and, below it in small grey letters, the stage (here it&apos;s "STAGE I"); in the middle, the trophy, which all teams are fighting for, in a round medallion (tournaments without a trophy of their own show "<PlaceMedal place={1} size="1.15em" />" there instead); and on the right, the match name with its order number. <br />
                 Lower from it, there is the same "BEST OF" badge of the match as in the match modal. In non-Bo1 matches, there is also a "SET" badge below it, which shows the set that is being played right now (the last possible set of a series is the "DECIDER" and it gets its own red badge), and below them, there is the set history. It shows every possible set of the series right from the start (S1, S2, ... and the orange "DEC" for the Decider). The set, which is being played right now, is dark with a pulsing red dot and a glowing ring. Once a set ends, its chip smoothly extends with the color of the set winner on its left edge and the set score, where the winner&apos;s rounds are green and the loser&apos;s are red ("ER" or "P" next to it show the result of Extended Rounds or Penalties). Sets, which are not 100% to happen yet, are faded. <br />
                 In the center, there is the scoreboard. In the middle, there is a leading indicator, which is a grey diamond while the score is tied. As soon as a team leads, it turns into chevrons in the color of that team, pointing at it: one chevron for a lead of 1-2 rounds, two for 3-5 and three pulsing ones for 6 rounds or more. Right under it, the "ROUND" badge counts the rounds of the set (it doesn&apos;t move on when a set has just ended or before the next Overtime has really started). On the left and on the right, there are these big numbers, which tell who how much rounds has a team already taken (every new round slides in from below), and below them, there are set lines, which stand for sets and they light themselves, when a set is taken. Near those big round counts, there are team names and squares standing for won and yet not won mini-rounds. On the left side, there's always your picked team. <br />
                 Below the scoreboard, there is the Overtime badge, like "OVERTIME | First to 16". It smoothly shows up, once it's Overtime: the left part tells which Overtime it is and the "Double" or "Triple" in it mean that Overtime was pushed to multiple ones, like "Triple Overtime" means word-to-word: "Third Overtime" (every Overtime has its own color: orange for the first one, then a darker orange, red and pink for the Quadruple Overtime), and the right part tells how many rounds a team needs to win the set. <br />
@@ -1670,6 +1822,27 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <LeaderboardExplained scrollToAnchor={scrollToAnchor} />
         </section>
         <section>
+            <div id="world-map" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Team countries and the World Map</h3>
+                <div className={css.divider} />
+            </div>
+            <WorldMapExplained scrollToAnchor={scrollToAnchor} />
+        </section>
+        <section>
+            <div id="host-cities" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Host cities</h3>
+                <div className={css.divider} />
+            </div>
+            <HostCitiesExplained />
+        </section>
+        <section>
+            <div id="trophy-room" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The Trophy room</h3>
+                <div className={css.divider} />
+            </div>
+            <TrophyRoomExplained scrollToAnchor={scrollToAnchor} />
+        </section>
+        <section>
             <div id="levels-explained" style={{ marginTop: '24px' }} className={css.divider_container}>
                 <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Levels, XP, Tasks and Achievements</h3>
                 <div className={css.divider} />
@@ -1780,6 +1953,9 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 The teams move into the building by their placements: places 33-36 into the Penthouse, 37-40 into Floor 2 and so on, until places 61-64 on the Ground Floor.
             </p>
             <p className={css.info_text}>
+                Same as the Official, the Official Skylines is played in Budapest, the only Tier 2 tournament with a host city.
+            </p>
+            <p className={css.info_text}>
                 The Official Skylines isn&apos;t played all at once, but in three blocks in between the Official: <b>Rounds 1 and 2</b> right after Stage I, <b>Rounds 3 and 4</b> right after Stage II and the <b>Rooftop Final</b> right after Stage III, before the Playoffs of the Official begin.
                 So, after the last match of Stage I, the Official takes a short break and the Tournament Intro Screen of the Official Skylines shows up with every Floor and its 4 teams:
             </p>
@@ -1850,7 +2026,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <SkyShot n={23} alt="The series screen of the Rooftop Grand Final with the railing on top" />
             <p className={css.info_text}>
                 But Team Sand won it 3:2, from Floor 4 to the top of the building in two Rounds. Team Ivory took the Third Place 2:0 against Team Forest.
-                The Official Skylines is a Tier 2 tournament, so the Winners&apos; Screen has neither quotes nor a trophy and the winner gets a 🥇:
+                The Official Skylines is a Tier 2 tournament, so the Winners&apos; Screen has neither quotes nor a trophy and the winner gets a <PlaceMedal place={1} size="1.15em" />:
             </p>
             <SkyShot n={9} alt="Winners' screen of Official Skylines #1" width="28vw" />
             <p className={css.info_text}>
@@ -1900,8 +2076,11 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner&apos;s screen, where the first 4 places of the tournament show up one by one: at first the Fourth Place, then the Third Place, the Runner-Up and at the very end, the Winner. Every place rises with its own little celebration: blue embers for the Fourth Place, bronze sparkles for the Third Place, silver rays for the Runner-Up and golden rays, fireworks and confetti all over the screen for the Winner:
             </p>
             <div className={css.image_container}>
-                <img src={winnersScreenImg} alt="Team Indigo as Winner, Team Blue as Runner-up, Team Lime as Third Place, Team Navy as Fourth Place" className={css.image} style={{ width: '35vw', height: '72vh' }} />
+                <img src={winnersScreenImg} alt="Team Indigo as Winner, Team Blue as Runner-up, Team Lime as Third Place, Team Navy as Fourth Place" className={css.image} style={{ width: '35vw', height: 'auto' }} />
             </div>
+            <p className={css.info_text}>
+                Every team stands on its own metal column (gold, silver, bronze and steel blue) with its medal hanging right below its circle, and its quote is written on a small plaque under its place. The winner holds its trophy right behind itself.
+            </p>
             <p className={css.info_text}>After clicking "Proceed", we are redirected to Pick&apos;em summary, where you can see how many matches overall you've guessed correctly throughout the tournament and your final Pick&apos;em points score and also whether you won the Pick'em challenge or not:</p>
             <div className={css.image_container}>
                 <img src={pickemSummaryImg} alt="Pick'em Summary Screen" className={css.image} style={{ width: '41vw', height: '39vh' }} />
@@ -1949,7 +2128,33 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <img src={hallOfFameWithOfficialOne} alt="Hall of Fame with the Official #1 and the Official Skylines #1 cards" className={css.image} style={{ width: '34vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>
-                Hall of Fame has stored the very first played Tournaments with their Pick'em points info and Podiums: the Official #1 card on the left (the newest card is always on the left) and the Official Skylines #1 card next to it, since that one was finished before the Playoffs of the Official. In top-right corner, we see also a change: 1 Pick'em challenge won, 1 lost, and the Pick'em points score of -26 (-40 from the Official and +14 from the Official Skylines). This way, any played tournament will be stored here. Here is the full look of it, when we open the Official #1 overview: first the teams of every Stage, then the whole Stage I, all teams to Stage II, the whole Stage II, all teams to Stage III, the whole Stage III, all teams to Playoffs and the Playoffs, and at the end the Podium, the 5th-8th places and a link to the summary of the Official Skylines (every match in there can be clicked and opened, just like during the tournament):
+                Hall of Fame has stored the very first played Tournaments: the Official #1 card on the left (the newest card is always on the left) and the Official Skylines #1 card next to it, since that one was finished before the Playoffs of the Official.
+                Every card has the tier of the tournament, the day, when it ended, its name with the trophy (or the medal) and its host city, then the result of its Pick&apos;em challenge and the champion with the rest of the top 4.
+                The border glows green for a won Pick&apos;em challenge and red for a lost one, but the Official always glows golden, has a dark card and the "OFFICIAL" ribbon in its corner. The stats below the title changed too: 1 Pick&apos;em challenge won, 1 lost, and the Pick&apos;em score of -26 (-40 from the Official and +14 from the Official Skylines). This way, any played tournament will be stored here.
+            </p>
+            <p className={css.info_text}>
+                Here is how it looks after many more tournaments. The cards can be scrolled with the mouse wheel or dragged sideways:
+            </p>
+            <HallShot n={1} alt="The Hall of Fame with many cards and its stats" />
+            <HallShot n={2} alt="The oldest cards at the end of the Hall of Fame, with the golden Official #1 card" />
+            <p className={css.info_text}>
+                When I click a card, everything around it fades away, and the card turns into the head of the summary: its name, trophy, host city and Pick&apos;em result fly right into their new places:
+            </p>
+            <HallShot n={3} alt="Everything around the clicked Esports World Cup card fading away" />
+            <HallShot n={4} alt="The card turning into the head of the summary" />
+            <HallShot n={5} alt="The head of the Esports World Cup summary" />
+            <p className={css.info_text}>
+                While scrolling down, the head gets smaller and spreads over the whole width, so it stays at the top as the second header of the summary. The tabs of the Groups join it right below:
+            </p>
+            <HallShot n={6} alt="The head of the summary spreading over the whole width" />
+            <HallShot n={7} alt="The second header with the Group tabs right below it" />
+            <p className={css.info_text}>
+                "Back to Hall of Fame" plays it all backwards: the head turns back into its card, and the other cards show up around it again.
+                (If you prefer the old look, the "Classic Hall of Fame cards" and "Classic Hall of Fame summaries" settings bring it back. The pictures of the Hall of Fame in the other tabs still show the old look.)
+            </p>
+            <HallShot n={8} alt="The head of the summary turning back into its card" />
+            <p className={css.info_text}>
+                Here is the full look of the Official #1 summary: first the teams of every Stage, then the whole Stage I, all teams to Stage II, the whole Stage II, all teams to Stage III, the whole Stage III, all teams to Playoffs and the Playoffs, and at the end the Podium, the 5th-8th places and a link to the summary of the Official Skylines (every match in there can be clicked and opened, just like during the tournament):
             </p>
             <div className={css.image_container} style={{ gap: 24 }}>
                 <img src={hallOfFameOfficialOnePartOne} alt="Hall of Fame, Official #1: the challenge result and the teams of every Stage" className={css.image} style={{ width: '34vw', height: '35vh' }} />
@@ -2015,6 +2220,9 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
                 • <b>Champions Series Tour</b> (Tier 2) <br />
                 • <b>PEM Small Tournament</b> itself, the main event (Tier 1)
             </p>
+            <p className={css.info_text}>
+                Every PEM Small Tournament is played in Rio de Janeiro, Berlin, Kraków or Stockholm, and its Qualifier already shows the city of its main event (see "Host cities" in the Official tab).
+            </p>
             <PemShot n={1} alt="Choose how you want to play modal with the PEM Small Tournament picked, Official excluded from the next 3 rolls" caption={'(Official #1 has just ended, so the "Random" option shows, that Official is excluded from the next 3 tournaments)'} />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
                 All the teams are seeded by the Leaderboard at the moment the PEM Small Tournament is chosen: <br />
@@ -2077,7 +2285,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             </p>
             <PemShot n={38} alt="The PEM HUD at 0-5: the strip, the set history, the bar and the Momentum Streak of Team Peach" />
             <p className={css.info_text}>
-                The play-by-play notifications don&apos;t come from the top anymore. In every broadcast HUD, they slide in at the bottom-left corner as a lower third in the style of the HUD:
+                The play-by-play notifications don&apos;t come from the top anymore. In every broadcast HUD, they slide in as a lower third in the style of the HUD, at the same place as on its real broadcast: here, in the PEM HUD, at the bottom in the middle:
             </p>
             <PemShot n={6} alt="Series screen of a Qualifier match with the PEM HUD and a lower third notification" width="34vw" caption='(The Qualifier, the Group and the match are written in the strip on the right now)' />
             <p className={css.info_text}>
@@ -2249,7 +2457,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
             </p>
             <PemShot n={27} alt="Hovered medal of Team Indigo: 1 from Tier 1 tournament" width="28vw" />
             <p className={css.info_text}>
-                The winner of the Champions Series Tour gets a 🥇 medal instead of a trophy, so Team Jade, the 24th team in the Leaderboard, can show off its title as well:
+                The winner of the Champions Series Tour gets a <PlaceMedal place={1} size="1.15em" /> medal instead of a trophy, so Team Jade, the 24th team in the Leaderboard, can show off its title as well:
             </p>
             <PemShot n={28} alt="Hovered gold medal of Team Jade: 1 from Tier 2 tournament" width="28vw" />
             <p className={css.info_text}>
@@ -2300,6 +2508,9 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
                 • <b>PEM Big Tournament Qualifier</b> (Qualifier) <br />
                 • <b>Elite Competition League</b> (Tier 2) <br />
                 • <b>PEM Big Tournament</b> itself, the main event (Tier 1)
+            </p>
+            <p className={css.info_text}>
+                The PEM Big Tournament is played in Cologne or Katowice.
             </p>
             <BigShot n={1} alt="Choose how you want to play modal with the PEM Big Tournament picked" />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
@@ -2485,8 +2696,8 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 In the Leaderboard, the golden trophy gets its own icon, the same way the silver one does, and it&apos;s placed before it.
-                Team Blue has both PEM trophies now: the golden one and the silver one. Its Unbeaten Streak went up to 10 as well, and Team Indigo has two 🥈 medals from both PEM Grand Finals.
-                The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with the PEM Small Tournament (see{" "}
+                Team Blue has both PEM trophies now: the golden one and the silver one. Its Unbeaten Streak went up to 10 as well, and Team Indigo has two <PlaceMedal place={2} size="1.15em" /> medals from both PEM Grand Finals.
+                The 2nd and 3rd places count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals, same as with the PEM Small Tournament (see{" "}
                 <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">Trophies, medals and Hall of Fame</InfoLink>
                 ):
             </p>
@@ -2546,6 +2757,9 @@ const GplSubPage = ({ scrollToAnchor }) => (
                 • <b>Global Challenger Cup Open Qualifier</b> (Qualifier) comes first <br />
                 • <b>Global Challenger Cup</b> (GCC), a Tier 2 tournament, comes second <br />
                 • <b>Global Pro League</b> itself (Tier 1) comes right after it
+            </p>
+            <p className={css.info_text}>
+                The Global Pro League is played in Stockholm or Katowice, while the Global Challenger Cup and its Open Qualifier don&apos;t have a host city.
             </p>
             <GplShot n={1} alt="Choose how you want to play modal with the Global Pro League picked" />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
@@ -2785,8 +2999,8 @@ const GplSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 In the Leaderboard, the Global Pro League trophy gets its own icon and it is placed before all the other trophies. It is worth the same as the golden PEM trophy, so when you sort by "Trophies and first places",
-                both of them count as much. Team Blue has three different trophies now and its Unbeaten Streak went up to 16. Team Chartreuse got a 🥇 for the Global Challenger Cup, Team Indigo has its third 🥈 and,
-                same as with every other Tier 1 or Tier 2 tournament, the 2nd and 3rd places count into the 🥈 and 🥉 totals:
+                both of them count as much. Team Blue has three different trophies now and its Unbeaten Streak went up to 16. Team Chartreuse got a <PlaceMedal place={1} size="1.15em" /> for the Global Challenger Cup, Team Indigo has its third <PlaceMedal place={2} size="1.15em" /> and,
+                same as with every other Tier 1 or Tier 2 tournament, the 2nd and 3rd places count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals:
             </p>
             <GplShot n={23} alt="Leaderboard after Global Pro League #1" />
             <p className={css.info_text}>
@@ -2840,6 +3054,9 @@ const PbsSubPage = ({ scrollToAnchor }) => (
                 The fifth option in the "Choose how you want to play" modal is the <b>Premier Bounty Series</b> (PBS), a Tier 1 tournament like no other one.
                 It is only two tournaments: the <b>Premier Bounty Series Open Qualifier</b> and the Premier Bounty Series itself, with no Tier 2 tournament in between. And it doesn&apos;t even count with a "#": every edition is a <b>Season</b>,
                 so the very first one is the <b>Premier Bounty Series Season 1</b>.
+            </p>
+            <p className={css.info_text}>
+                Every season of the Premier Bounty Series is played on Malta.
             </p>
             <PbsShot n={1} alt="Choose how you want to play modal with the Premier Bounty Series picked" />
             <p style={{ marginTop: '12px' }} className={css.info_text}>
@@ -3058,7 +3275,7 @@ const PbsSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>
                 In the Leaderboard, the Premier Bounty Series trophy gets its own icon. It is worth more than the silver PEM trophy and less than the golden one, so it is placed between them.
-                Team Green has it now, while Team Blue is still the 1st one with 1,742 points, even without its Unbeaten Streak. The 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament (see{" "}
+                Team Green has it now, while Team Blue is still the 1st one with 1,742 points, even without its Unbeaten Streak. The 2nd and 3rd places count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals, same as with every other Tier 1 tournament (see{" "}
                 <InfoLink onClick={scrollToAnchor("pem-rewards", "pem-small")} href="?page=pem-small#pem-rewards">Trophies, medals and Hall of Fame</InfoLink>
                 ):
             </p>
@@ -3113,6 +3330,9 @@ const PgxSubPage = ({ scrollToAnchor }) => (
                 • <b>PGX Candidate Masters</b> (Qualifier): its 4 best teams go up to the International Masters <br />
                 • <b>PGX International Masters</b> (Tier 1.5): only its winner goes up to the Grandmasters <br />
                 • <b>PGX Grandmasters</b> itself (Tier 1)
+            </p>
+            <p className={css.info_text}>
+                The city of the PGX tournaments shows up as a host city pill as well, and the PGX International Masters is played in the city of its Grandmasters.
             </p>
             <PgxShot n={1} alt="Choose how you want to play modal with the PGX Grandmasters picked" />
             <p className={css.info_text}>
@@ -3238,7 +3458,7 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <PgxShot n={17} alt="The finished Upper Bracket of the International Masters with the Grand Final" />
             <PgxShot n={18} alt="The finished Lower Bracket of the International Masters" />
             <p className={css.info_text}>
-                The Winners&apos; Screen has no quotes, and as a Tier 1.5 tournament, its winner gets the Tier 1.5 medal in the Leaderboard, while 2nd and 3rd place count into the 🥈 and 🥉 totals. But the winner also gets a golden <b>"Qualified to PGX Grandmasters"</b> badge with the PGX trophy on its podium:
+                The Winners&apos; Screen has no quotes, and as a Tier 1.5 tournament, its winner gets the Tier 1.5 medal in the Leaderboard, while 2nd and 3rd place count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals. But the winner also gets a golden <b>"Qualified to PGX Grandmasters"</b> badge with the PGX trophy on its podium:
             </p>
             <PgxShot n={19} alt="Winners' screen of PGX International Masters Jönköping #1 with the Qualified to PGX Grandmasters badge" />
             <p className={css.info_text}>
@@ -3341,6 +3561,9 @@ const EssSubPage = ({ scrollToAnchor }) => (
                 • <b>Elite Star Series Ladder Qualifier</b> (Qualifier): its 4 Ladder winners go up to the Challenger <br />
                 • <b>Elite Star Series Challenger</b> (Tier 1.5): its 2 Semifinal winners go up to the main event <br />
                 • <b>Elite Star Series</b> itself (Tier 1)
+            </p>
+            <p className={css.info_text}>
+                The Elite Star Series is played in Madrid or Budapest, and its Challenger in the same city as the main event.
             </p>
             <EssShot n={1} alt="Choose how you want to play modal with the Elite Star Series picked" />
             <p className={css.info_text}>
@@ -3499,8 +3722,8 @@ const EssSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
-                The Elite Star Series trophy gets its own icon in the Leaderboard. It is valued as the lowest Tier 1 trophy, so it comes right after the silver PEM trophy and the PGX trophy, and its 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament.
-                The golden Tier 1.5 medal of the Challenger gets its own icon as well, while the Tier 1.5 bronze medals count into the 🥉 totals.
+                The Elite Star Series trophy gets its own icon in the Leaderboard. It is valued as the lowest Tier 1 trophy, so it comes right after the silver PEM trophy and the PGX trophy, and its 2nd and 3rd places count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals, same as with every other Tier 1 tournament.
+                The golden Tier 1.5 medal of the Challenger gets its own icon as well, while the Tier 1.5 bronze medals count into the <PlaceMedal place={3} size="1.15em" /> totals.
                 Team Blue is still the 1st one, now with its fifth trophy and an Unbeaten Streak of 10, Team Green went up to the 2nd place, Team Yellow gained 119 points and Team Red, with its Tier 1.5 medal, is now 5th:
             </p>
             <EssShot n={33} alt="Leaderboard after Elite Star Series #1" />
@@ -3556,6 +3779,9 @@ const SwcSubPage = ({ scrollToAnchor }) => (
                 It is two tournaments, played one after another, and the second one is the main event: <br />
                 • <b>Stormdraft World Championship Storm Chase</b> (Qualifier): its 2 Bracket winners go up to the main event <br />
                 • <b>Stormdraft World Championship</b> itself (Tier 1)
+            </p>
+            <p className={css.info_text}>
+                The Stormdraft World Championship is played on Malta.
             </p>
             <SwcShot n={1} alt="Choose how you want to play modal with the Stormdraft World Championship picked" />
             <p className={css.info_text}>
@@ -3706,7 +3932,7 @@ const SwcSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
-                The Stormdraft World Championship trophy, a silver tornado with a lightning bolt inside it, gets its own icon in the Leaderboard. It is valued right after the Elite Star Series trophy, and its 2nd and 3rd places count into the 🥈 and 🥉 totals, same as with every other Tier 1 tournament.
+                The Stormdraft World Championship trophy, a silver tornado with a lightning bolt inside it, gets its own icon in the Leaderboard. It is valued right after the Elite Star Series trophy, and its 2nd and 3rd places count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals, same as with every other Tier 1 tournament.
                 Team Blue is still the 1st one, as it took a break, and Team Honey jumped from the 10th to the 5th place with 158 more points. Team Royal, the winner of Bracket B, climbed from the 36th to the 24th place:
             </p>
             <SwcShot n={33} alt="Leaderboard after Stormdraft World Championship #1" />
@@ -3732,7 +3958,274 @@ const SwcSubPage = ({ scrollToAnchor }) => (
             <SwcShot n={43} alt="Hall of Fame, Stormdraft World Championship #1: the places 5-8" />
             <p className={css.info_text}>
                 And now, there are eight tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b>, <b>PGX Grandmasters</b>, <b>Elite Star Series</b> and <b>Stormdraft World Championship</b>.
-                Who rides the next storm? Not right now via "Random", at least: the Stormdraft World Championship is excluded for the next 3 tournaments and the Elite Star Series for the next one.
+                Who rides the next storm? Not right now via "Random", at least: the Stormdraft World Championship is excluded for the next 3 tournaments and the Elite Star Series for the next one. (And there is one more tournament, where all 64 teams fight for a Key, see the{" "}
+                <InfoLink onClick={scrollToAnchor("ewc-overview", "ewc")} href="?page=ewc#ewc-overview">Esports World Cup</InfoLink> tab.)
+            </p>
+        </section>
+    </>
+);
+
+const EWC_IMAGES = import.meta.glob("../../../assets/images/ewc-*.png", { eager: true, import: "default" });
+const ewcImg = (n) => EWC_IMAGES[`../../../assets/images/ewc-${String(n).padStart(2, "0")}.png`];
+
+const EwcShot = ({ n, ...props }) => <PemShot src={ewcImg(n)} {...props} />;
+
+const EwcSubPage = ({ scrollToAnchor }) => (
+    <>
+        <section>
+            <div id="ewc-overview" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The road to the World Cup</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The ninth option in the "Choose how you want to play" modal is the <b>Esports World Cup</b>, a Tier 1 tournament, valued just below the Official.
+                It is two tournaments, played one after another, and the second one is the main event: <br />
+                • <b>Esports World Cup Open Qualifier</b> (Qualifier): its 4 Quarterfinal winners go up to the main event <br />
+                • <b>Esports World Cup</b> itself (Tier 1)
+            </p>
+            <p className={css.info_text}>
+                Every Esports World Cup is played in one of the biggest cities, which could host it: Riyadh, Jeddah, Paris, Berlin, London, Abu Dhabi, Tokyo or Seoul.
+            </p>
+            <EwcShot n={1} alt="Choose how you want to play modal with the Esports World Cup picked" />
+            <p className={css.info_text}>
+                Both tournaments share the same number, so my first one was the <b>Esports World Cup #1</b> with the <b>Esports World Cup Open Qualifier #1</b> before it.
+                The teams are seeded by the Leaderboard at the moment the Esports World Cup is started, and this time, all 64 teams play: <br />
+                • Top 1-28 → Invited straight to the <b>Esports World Cup</b> <br />
+                • Top 29-56 → Start in the Group Stage of the <b>Open Qualifier</b> <br />
+                • Top 57-64 → Start in the <b>Play-in</b> of the Open Qualifier
+            </p>
+            <p className={css.info_text}>
+                The "Stage dividers" select of the Leaderboard has an "Esports World Cup" option as well, with a divider before every one of those groups:
+            </p>
+            <EwcShot n={2} alt="Leaderboard with the divider between the invited teams and the Open Qualifier" />
+            <EwcShot n={3} alt="Leaderboard with the divider between the Open Qualifier and the Play-in" />
+            <p className={css.info_text}>
+                What makes the Esports World Cup special are the <b>Keys</b>: every team of the main event has its own golden triangle Key, and every team, which is knocked out, gets its Key crushed in a hydraulic press.
+                The champion then picks three crushed Keys of the teams it beat and seals them into the base of its trophy. More about it in{" "}
+                <InfoLink onClick={scrollToAnchor("ewc-keys", "ewc")} href="?page=ewc#ewc-keys">The Keys and the hydraulic press</InfoLink>.
+            </p>
+            <p className={css.info_text}>
+                How a match itself is played, you can see in{" "}
+                <InfoLink onClick={scrollToAnchor("start-match", "official")} href="?page=official#start-match">How to start a match?</InfoLink>{" "}
+                of the Official tab. I chose the Esports World Cup explicitly and clicked "Start Game", right after{" "}
+                <InfoLink onClick={scrollToAnchor("swc-rewards", "swc")} href="?page=swc#swc-rewards">Stormdraft World Championship #1</InfoLink>.
+            </p>
+        </section>
+        <section>
+            <div id="ewc-oq" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Esports World Cup Open Qualifier</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The first step is the <b>Open Qualifier</b> for the 36 teams from the places 29-64. The Tournament Intro Screen shows the 8 teams of the Play-in and the 28 teams, which start in the Group Stage:
+            </p>
+            <EwcShot n={4} alt="Tournament Intro Screen of Esports World Cup Open Qualifier #1" />
+            <p className={css.info_text}>
+                It starts with the <b>Play-in</b>: 4 <b>Best of 3</b> matches between the places 57-64 (the 57th against the 64th and so on), and every winner goes to its own Group (E, F, G or H):
+            </p>
+            <EwcShot n={5} alt="The Play-in of the Open Qualifier before the first match" />
+            <EwcShot n={6} alt="Match modal of Play-in #1: Team Slate against Team Forest" width="35vw" />
+            <p className={css.info_text}>
+                Both tournaments of the Esports World Cup have their own HUD, more about it in{" "}
+                <InfoLink onClick={scrollToAnchor("ewc-hud", "ewc")} href="?page=ewc#ewc-hud">The EWC HUD</InfoLink>.
+                The first match was Team Slate against Team Forest: Team Slate won Set 1 13-2 and Set 2 16-14 in the Overtime. Team Denim beat Team Ocean 2:0, Team Sunflower beat Team Seafoam 2:1, and Team Copper beat Team Lilac 2:0:
+            </p>
+            <EwcShot n={21} alt="The finished Play-in of the Open Qualifier" />
+            <p className={css.info_text}>
+                Then comes the <b>Group Stage</b>: 8 GSL Groups (A-H) of 4 teams each, with the 28 teams spread with a snake seeding and one Play-in winner in each of the Groups E-H.
+                Every Group is a small Double Elimination bracket: the <b>Opening Round</b> is <b>Best of 1</b>, the <b>Winners&apos; Match</b>, the <b>Elimination Match</b> and the <b>Decider Match</b> are <b>Best of 3</b>.
+                The winner of the Winners&apos; Match and the winner of the Decider Match go to the Knockout Stage:
+            </p>
+            <EwcShot n={20} alt="Group A of the Open Qualifier before the first match" />
+            <EwcShot n={22} alt="The finished Group A of the Open Qualifier" />
+            <p className={css.info_text}>
+                The Play-in winners didn&apos;t go far: Team Slate lost the Decider Match of Group E against Team Emerald 1:2 and Team Copper the one of Group H against Team Azure 1:2.
+            </p>
+            <p className={css.info_text}>
+                The last stage is the <b>Knockout Stage</b>: the 16 teams play the <b>Round of 16</b> and the <b>Quarterfinals</b>, all <b>Best of 3</b>, and the 4 winners of the Quarterfinals take the <b>"Main event spots"</b>.
+                Team Lavender beat Team Magenta 2:1, Team Blush beat Team Wine 2:1, Team Spring beat Team Raspberry 2:0 and Team Apricot beat Team Moss 2:0:
+            </p>
+            <EwcShot n={23} alt="The finished Knockout Stage of the Open Qualifier with the 4 Main event spots" />
+            <p className={css.info_text}>
+                The Winners&apos; Screen shows the four qualifiers, each of them with its brand-new Esports World Cup Key, which they get right when they qualify:
+            </p>
+            <EwcShot n={24} alt="The 4 qualifiers of Esports World Cup Open Qualifier #1 with their Keys" />
+            <p className={css.info_text}>
+                And the Pick&apos;em challenge was won: 95 out of 54 needed Pick&apos;em points.
+            </p>
+            <EwcShot n={25} alt="Pick'em summary of the Open Qualifier" width="30vw" />
+        </section>
+        <section>
+            <div id="ewc-hud" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The EWC HUD</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The HUD is modelled on the Counter-Strike broadcast of the real Esports World Cup, as if my simulator were one of its disciplines.
+                The series opening covers the screen in the orange light beams of the EWC: the name of the tournament with its trophy, the "EWC" tab ("ROAD TO EWC" in the Open Qualifier), both teams with their countries, the white "VS" and the stage of the match:
+            </p>
+            <EwcShot n={7} alt="Series opening of Play-in #1: Team Slate against Team Forest" />
+            <p className={css.info_text}>
+                The scorebug itself is compact: both teams in their black panels with the name and the logo, and the white trapezoid in the middle with the score of the set, the round and the slanted lines of the won sets below the scores.
+                The thin bar at the outer edge of every panel is in the color of the team. Above it, the "EWC #1" tab shows the number of the tournament and the current match.
+            </p>
+            <p className={css.info_text}>
+                Below it are the <b>mini-rounds</b> of the current round: the squares show, how many mini-rounds each team has won, and the lines next to them, how many it needs to win the round. On the left, there is the Best of with all sets of the series:
+            </p>
+            <EwcShot n={8} alt="The EWC HUD during Round 1 with the mini-rounds below the scorebug" />
+            <p className={css.info_text}>
+                When a team wins a round, its panel flashes and a "ROUND WON" tab with its logo slides out from behind the scorebug:
+            </p>
+            <EwcShot n={9} alt="ROUND WON of Team Slate" />
+            <p className={css.info_text}>
+                The <b>Momentum Streak</b> is shown in the style of the EWC as well: from 2 rounds in a row on, orange light beams start to drift through the panel of the team and an orange tag with the count shows up below its logo. The longer the streak, the brighter the beams.
+                Team Slate won 5 rounds in a row here:
+            </p>
+            <EwcShot n={10} alt="Team Slate with a Momentum Streak of 5" />
+            <p className={css.info_text}>
+                One round before the end of the set, a "SET POINT" tab in the color of the team slides out above its panel (or "MATCH POINT", if it&apos;s the last set a team needs):
+            </p>
+            <EwcShot n={11} alt="SET POINT for Team Slate at 12-2" />
+            <p className={css.info_text}>
+                The end of a set gets a "WINS SET 1" tab with the score, and until the next set starts, the score of the series and the next set ("SET 2 · UP NEXT") show up below the scorebug, the same way as the next map on the real broadcast:
+            </p>
+            <EwcShot n={12} alt="WINS SET 1 for Team Slate" />
+            <EwcShot n={13} alt="1:0 and SET 2 UP NEXT between the sets" />
+            <p className={css.info_text}>
+                Overtimes get their own announcement in the same place, and the dark tab below the scorebug shows, which Overtime it is and how many rounds are needed (and later "DOUBLE OVERTIME - FIRST TO 19" and so on). Set 2 went to 12-12:
+            </p>
+            <EwcShot n={14} alt="Overtime announcement at 12-12" />
+            <EwcShot n={15} alt="ROUND WON of Team Forest in the Overtime" />
+            <EwcShot n={16} alt="MATCH POINT for Team Slate at 15-14 in the Overtime" />
+            <p className={css.info_text}>
+                And when the series is over, a big orange "GG" pops up in the middle, triangles burst out from behind the scorebug, the panel of the winner flashes and fills up with its color, while the panel of the loser shakes and goes dark:
+            </p>
+            <EwcShot n={17} alt="GG: Team Slate wins the series 2:0" />
+            <p className={css.info_text}>
+                The commentary toasts, Extended Rounds, Penalties and the set breakdown of the match modal use the same style. The board of the set, which decided the series, gets the "GG" as well:
+            </p>
+            <EwcShot n={18} alt="Set breakdown of Set 2 of Slate against Forest" />
+            <EwcShot n={19} alt="The last rounds of the set breakdown with the GG board" />
+        </section>
+        <section>
+            <div id="ewc-main" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>Esports World Cup</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The second step is the <b>Esports World Cup</b> itself: the 28 teams invited via the Leaderboard and the 4 qualifiers from the Open Qualifier, Team Lavender, Team Blush, Team Spring and Team Apricot:
+            </p>
+            <EwcShot n={26} alt="Tournament Intro Screen of Esports World Cup #1" />
+            <p className={css.info_text}>
+                It starts with a <b>Group Stage</b> of <b>Group A</b> to <b>Group D</b> with 8 teams each, spread with a snake seeding, so every Group gets one qualifier. Every Group is a Double Elimination bracket:
+                the <b>Opening Round</b> (<b>Best of 1</b>), then <b>Lower Round 1</b>, the <b>Upper Semifinals</b> and the <b>Lower Semifinals</b> (all <b>Best of 3</b>).
+                Both winners of the Upper Semifinals and both winners of the Lower Semifinals go to the Playoffs, every loss in the lower half of the bracket knocks a team out:
+            </p>
+            <EwcShot n={27} alt="Group A of the Esports World Cup before the first match" />
+            <EwcShot n={28} alt="Match modal of the first Opening Round of Group A: Team Blue against Team Blush, with their Keys" />
+            <EwcShot n={29} alt="Series opening of the Esports World Cup: Team Blue against Team Blush" />
+            <EwcShot n={30} alt="The EWC HUD in the Group Stage of the main event" />
+            <p className={css.info_text}>
+                Team Blue, the 1st team of the Leaderboard, beat Team Blush 13-8 in the Opening Round, but then lost the Upper Semifinal against Team Crimson 1:2 and had to go through the Lower Semifinals (2:0 against Team Silver).
+                Team Blush beat Team Cyan 2:1 and Team Brown 2:0 and got to the Playoffs as well, together with Team Crimson and Team Royal:
+            </p>
+            <EwcShot n={35} alt="The finished Group A of the Esports World Cup" />
+            <p className={css.info_text}>
+                In Group D, Team Spring, the 3rd qualifier, even won its Upper Semifinal against Team Amber 2:1, and Team Apricot made it through Group B. Only Team Lavender was out in Group C:
+            </p>
+            <EwcShot n={36} alt="The finished Group D of the Esports World Cup" />
+            <p className={css.info_text}>
+                After the Group Stage, the <b>Playoffs</b> start right away, a Single Elimination bracket of 16 teams, which fits on the screen without scrolling: the <b>Round of 16</b> is <b>Best of 3</b>, the <b>Quarterfinals</b> are <b>Best of 5</b>,
+                the <b>Semifinals</b> and the <b>Third Place Decider</b> <b>Best of 7</b> and the <b>Grand Final</b> <b>Best of 9</b>. The pairs of the Round of 16 never meet a team from the same Group:
+            </p>
+            <EwcShot n={37} alt="The Playoffs of the Esports World Cup before the first match" />
+            <p className={css.info_text}>
+                Team Blush lost against Team Indigo 1:2 and Team Spring against Team Apricot 0:2, while Team Apricot went on to the Quarterfinals, where Team Blue beat it 3:0.
+                In the Semifinals, Team Indigo beat Team Salmon 4:0 and Team Blue beat Team Green 4:1. The Third Place Decider between Team Green and Team Salmon was 3:2 after Set 5, which went to Extended Rounds (24-24, 4-2 in the Extended Rounds), and Team Green won it 4:2:
+            </p>
+            <EwcShot n={38} alt="The EWC HUD in the Third Place Decider: the Best of 7 with the Extended Rounds badge on Set 5" />
+            <p className={css.info_text}>
+                And in the Grand Final, Team Indigo took Set 1, but Team Blue won five of the next six sets and the Esports World Cup 5:2:
+            </p>
+            <EwcShot n={39} alt="The EWC HUD in the Grand Final, a Best of 9" />
+            <EwcShot n={40} alt="GG: Team Blue wins Esports World Cup #1" />
+            <EwcShot n={45} alt="The finished Playoffs of the Esports World Cup" />
+            <EwcShot n={42} alt="Winners' screen of Esports World Cup #1 with the Esports World Cup trophy" width="28vw" />
+            <p className={css.info_text}>
+                And the last Pick&apos;em challenge was won as well: 150 out of 72 needed Pick&apos;em points.
+            </p>
+            <EwcShot n={44} alt="Pick'em summary of Esports World Cup #1" width="30vw" />
+        </section>
+        <section>
+            <div id="ewc-keys" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The Keys and the hydraulic press</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                Every team of the main event has its Key, a golden triangle with its color inside, which is shown next to its stats in the match modal. The Key of the last champion is black (the "Title defender&apos;s Key").
+            </p>
+            <p className={css.info_text}>
+                Right after a series, which knocks a team out (Lower Round 1, the Lower Semifinals, every round of the Playoffs and the Grand Final), the hydraulic press shows up, still on top of the series screen. I press the button (or Space) myself, the press slams down and the Key is crushed.
+                The first one was the Key of Team Cyan, which lost against Team Blush in Lower Round 1:
+            </p>
+            <EwcShot n={31} alt="The hydraulic press: Team Cyan is out" />
+            <EwcShot n={32} alt="The press slams down on the Key of Team Cyan" />
+            <EwcShot n={33} alt="Team Cyan's Key is crushed" />
+            <p className={css.info_text}>
+                The finished match modal then shows the Key of the loser, which breaks from its normal state into the crushed one. The Third Place Decider has no press, as both teams already lost their Keys in the Semifinals. The press can be skipped with the "Key press ceremony" switch in the Settings:
+            </p>
+            <EwcShot n={34} alt="Finished match modal of Lower Round 1 #1 with the crushed Key of Team Cyan" />
+            <p className={css.info_text}>
+                The last Key to be crushed is the one of the runner-up, right after the Grand Final:
+            </p>
+            <EwcShot n={41} alt="Team Indigo's Key is crushed after the Grand Final" />
+            <p className={css.info_text}>
+                After the Winners&apos; Screen, the champion picks three of the crushed Keys of the teams it beat and seals them into the base of its trophy. Team Blue picked the Keys of Team Indigo, Team Green and Team Blush.
+                Around the trophy, the motto of the Esports World Cup, "Nothing is granted, everything is earned", is engraved in the language of the last champion, in English for the very first one:
+            </p>
+            <EwcShot n={43} alt="Team Blue picks three Keys for its trophy: Team Indigo, Team Green and Team Blush" />
+        </section>
+        <section>
+            <div id="ewc-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
+                <h3 style={{ marginTop: '12px', width: "max-content" }} className={css.title}>The trophy, the Totem and Hall of Fame</h3>
+                <div className={css.divider} />
+            </div>
+            <p className={css.info_text}>
+                The Esports World Cup trophy gets its own icon in the Leaderboard, valued right after the Official trophy, and every team shows its own trophies, with its own Key and the three sealed Keys of that Esports World Cup. Its 2nd and 3rd places count into the <PlaceMedal place={2} size="1.15em" /> and <PlaceMedal place={3} size="1.15em" /> totals, same as with every other Tier 1 tournament.
+                Team Blue stays 1st with 39 more points, and the qualifiers climbed up: Team Apricot by 12 places to the 24th, Team Blush by 7 places to the 21st:
+            </p>
+            <p className={css.info_text}>
+                In the Trophy room, the panel of an Esports World Cup trophy lists the three sealed Keys, and choosing one of them lights up its shard in the base (see "The Trophy room" in the Official tab).
+            </p>
+            <EwcShot n={46} alt="Leaderboard after Esports World Cup #1 with the Esports World Cup trophy of Team Blue" />
+            <EwcShot n={47} alt="Leaderboard after Esports World Cup #1: the qualifiers" />
+            <p className={css.info_text}>
+                In the Hall of Fame, there are two new cards: the Esports World Cup card with its own trophy on top and the top four, and the Open Qualifier card with the Qualifier badge and its four qualifiers:
+            </p>
+            <EwcShot n={48} alt="Hall of Fame with the cards of Esports World Cup #1" />
+            <p className={css.info_text}>
+                The Open Qualifier&apos;s summary starts with all teams and the Play-in. Then come the Group Stage (one Group at a time, with the Group navigation), the Knockout Stage and the qualified teams with a link to the main event:
+            </p>
+            <EwcShot n={49} alt="Hall of Fame, Esports World Cup Open Qualifier #1: all teams and the Play-in" />
+            <EwcShot n={50} alt="Hall of Fame, Esports World Cup Open Qualifier #1: the Group Stage" />
+            <EwcShot n={51} alt="Hall of Fame, Esports World Cup Open Qualifier #1: the Knockout Stage" />
+            <EwcShot n={52} alt="Hall of Fame, Esports World Cup Open Qualifier #1: the qualified teams and the link to the main event" />
+            <p className={css.info_text}>
+                The main event&apos;s summary has all teams, split into the teams invited via the Leaderboard and the qualifiers with a link back to the Open Qualifier. Then come the Group Stage, all teams to the Playoffs, the Playoffs, the podium with the trophy and the three Keys sealed into it:
+            </p>
+            <EwcShot n={53} alt="Hall of Fame, Esports World Cup #1: all teams and the link to the Open Qualifier" />
+            <EwcShot n={54} alt="Hall of Fame, Esports World Cup #1: the Group Stage" />
+            <EwcShot n={55} alt="Hall of Fame, Esports World Cup #1: all teams to the Playoffs and the Playoffs" />
+            <EwcShot n={56} alt="Hall of Fame, Esports World Cup #1: the podium with the trophy" />
+            <EwcShot n={57} alt="Hall of Fame, Esports World Cup #1: the Keys sealed into the trophy" />
+            <p className={css.info_text}>
+                And below them stands <b>The Totem</b>: a monument of all Esports World Cups, with the names of all champions engraved into it and a glass case at its base, where the crushed Keys of every Esports World Cup rest (31 of them after the first one). Then come the 5th-8th places:
+            </p>
+            <EwcShot n={58} alt="Hall of Fame, Esports World Cup #1: The Totem" />
+            <EwcShot n={59} alt="Hall of Fame, Esports World Cup #1: the places 5-8" />
+            <p className={css.info_text}>
+                And now, there are nine tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b>, <b>PEM Big Tournament</b>, <b>Global Pro League</b>, <b>Premier Bounty Series</b>, <b>PGX Grandmasters</b>, <b>Elite Star Series</b>, <b>Stormdraft World Championship</b> and <b>Esports World Cup</b>.
+                Whose Key is going to be sealed into the next trophy? Not right now via "Random", at least: the Esports World Cup is excluded for the next 4 tournaments and the Stormdraft World Championship for the next 2.
             </p>
         </section>
     </>
@@ -3786,6 +4279,12 @@ const INFO_SUB_PAGES = [
         label: <>Stormdraft World Championship Storm Chase /<br />Stormdraft World Championship</>,
         sections: SWC_SECTIONS,
         Content: SwcSubPage,
+    },
+    {
+        id: "ewc",
+        label: <>Esports World Cup Open Qualifier /<br />Esports World Cup</>,
+        sections: EWC_SECTIONS,
+        Content: EwcSubPage,
     },
 ];
 

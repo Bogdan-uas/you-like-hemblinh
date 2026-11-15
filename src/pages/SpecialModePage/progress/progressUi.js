@@ -111,6 +111,8 @@ import {
     FaWandMagicSparkles,
     FaWind,
     FaTornado,
+    FaKey,
+    FaEarthAmericas,
     FaCloudBolt,
 } from "react-icons/fa6";
 import { ONE_TIME_LOOK, TIERS, anniversaryRank, levelInfo } from "./progressConfig.js";
@@ -211,6 +213,8 @@ export const ACHIEVEMENT_ICONS = {
     ladderClimber: FaArrowUpWideShort,
     challengerCircuit: FaFlag,
     stormChaser: FaTornado,
+    openWorld: FaEarthAmericas,
+    worldStage: FaKey,
     eyeOfTheStorm: FaCloudBolt,
     benefitCollector: FaBoxOpen,
     nightOwl: FaMoon,

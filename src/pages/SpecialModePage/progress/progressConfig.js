@@ -36,7 +36,7 @@ export const anniversaryRank = (level) => {
     return 0;
 };
 
-export const PROGRESS_VERSION = 4;
+export const PROGRESS_VERSION = 5;
 
 export const XP = {
     series: 15,
@@ -252,6 +252,8 @@ export const ACHIEVEMENTS = [
     { id: "ladderClimber", name: "Ladder Climber", category: "circuits", difficulty: "easy", since: 3, stat: "event:essLq", tiers: [1, 3, 6, 12, 25], text: (n) => `Finish ${n} Elite Star Series Ladder ${s(n, "Qualifier")}` },
     { id: "stormChaser", name: "Storm Chaser", category: "circuits", difficulty: "easy", since: 4, stat: "event:swcSc", tiers: [1, 3, 6, 12, 25], text: (n) => `Finish ${n} Stormdraft World Championship Storm ${s(n, "Chase")}` },
     { id: "eyeOfTheStorm", name: "Eye of the Storm", category: "circuits", difficulty: "medium", since: 4, stat: "kind:swc", tiers: [1, 3, 6, 12, 25], text: (n) => `Finish ${n} Stormdraft World ${s(n, "Championship")}` },
+    { id: "openWorld", name: "Open World", category: "circuits", difficulty: "easy", since: 5, stat: "event:ewcOq", tiers: [1, 3, 6, 12, 25], text: (n) => `Finish ${n} Esports World Cup Open ${s(n, "Qualifier")}` },
+    { id: "worldStage", name: "World Stage", category: "circuits", difficulty: "medium", since: 5, stat: "kind:ewc", tiers: [1, 3, 6, 12, 25], text: (n) => `Finish ${n} Esports World ${s(n, "Cup")}` },
     { id: "challengerCircuit", name: "Challenger", category: "circuits", difficulty: "easy", since: 3, stat: "event:essCh", tiers: [1, 3, 6, 12, 25], text: (n) => `Finish ${n} Elite Star Series ${s(n, "Challenger")}` },
     { id: "benefitCollector", name: "Benefit Collector", category: "milestones", difficulty: "medium", since: 3, stat: "perkMilestones", tiers: [5, 15, 30, 50, 75], text: (n) => `Unlock ${n} level benefit milestones` },
     { id: "nightOwl", name: "Night Owl", category: "milestones", difficulty: "easy", since: 3, flag: true, text: () => "Play a series between midnight and 5 AM" },
@@ -292,7 +294,7 @@ completionist.text = (n) =>
 
 export const achievementXp = (a, tierIndex = 0) => DIFFICULTIES[a.difficulty].xp * (isTiered(a) ? TIERS[tierIndex].mult : 1);
 
-export const MAIN_TOURNAMENT_KINDS = ["official", "pemSmall", "pemBig", "gpl", "pbs", "pgxGm", "ess", "swc"];
+export const MAIN_TOURNAMENT_KINDS = ["official", "pemSmall", "pemBig", "gpl", "pbs", "pgxGm", "ess", "swc", "ewc"];
 
 const PERK_SCHEDULE = {
     xpBoost: [[3, 2], [28, 5], [45, 8], [65, 10], [85, 13], [100, 16], [140, 20], [190, 25], [250, 30], [375, 40], [500, 50], [625, 60], [750, 70], [875, 85], [1000, 100]],

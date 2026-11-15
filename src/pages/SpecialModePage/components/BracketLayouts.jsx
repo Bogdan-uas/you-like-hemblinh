@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import css from "../SpecialModePage.module.css";
 import { BracketConnectors } from "./BracketConnectors.jsx";
 import { QUALIFIER_CONNECTOR_LINKS, PEM_GROUP_CONNECTOR_LINKS, PEM_PLAYOFFS_CONNECTOR_LINKS, GCC_KNOCKOUT_CONNECTOR_LINKS, PBS_FINALS_CONNECTOR_LINKS } from "../logic/bracketConnectors.js";
@@ -9,6 +10,7 @@ import { QUALIFIER_COLUMN_TITLES, isByeOpeningBracket } from "../logic/qualifier
 import { PGX_PLAYIN_CONNECTOR_LINKS } from "../logic/pgx.jsx";
 import { ESS_LADDERS, ESS_CH_PLAYOFFS_CONNECTOR_LINKS, ESS_FINAL_CONNECTOR_LINKS, ESS_FINAL_COLUMN_TITLES, essRungLabel } from "../logic/ess.jsx";
 import { SWC_SC_CONNECTOR_LINKS, SWC_SC_COLUMN_TITLES, SWC_PLAYOFFS_CONNECTOR_LINKS, SWC_PLAYOFFS_COLUMN_TITLES } from "../logic/swc.jsx";
+import { EWC_OQ_KO_CONNECTOR_LINKS, EWC_OQ_KO_COLUMN_TITLES, EWC_GROUP_CONNECTOR_LINKS, EWC_GROUP_STAGE_LABELS, EWC_PLAYOFFS_CONNECTOR_LINKS, EWC_PLAYOFFS_COLUMN_TITLES } from "../logic/ewc.jsx";
 
 export const PlayInBracketLayout = ({ bracket, renderMatch }) => (
     <div className={css.play_in_bracket}>
@@ -465,3 +467,106 @@ export const SwcPlayoffsLayout = ({ bracket, renderMatch }) => (
         </div>
     </div>
 );
+
+export const EwcOqKnockoutLayout = ({ bracket, renderMatch, renderQualified }) => (
+    <div className={css.swc_sc_bracket}>
+        <BracketConnectors links={EWC_OQ_KO_CONNECTOR_LINKS} />
+        <div className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{EWC_OQ_KO_COLUMN_TITLES.r16}</h4>
+            <div className={css.columnRo16} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.r16 || []).map((match, idx) => renderMatch(match, "r16", idx))}
+            </div>
+        </div>
+        <div className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{EWC_OQ_KO_COLUMN_TITLES.qf}</h4>
+            <div className={css.columnQuarters} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.qf || []).map((match, idx) => (
+                    <div key={match.id} style={{ position: "relative", width: "100%", transition: "none" }}>
+                        {renderMatch(match, "qf", idx)}
+                        <div className={css.ewc_oq_qualified}>{renderQualified(match)}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
+export const EwcGroupLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{EWC_GROUP_STAGE_LABELS[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={css.pem_stage1_bracket}>
+            <BracketConnectors links={EWC_GROUP_CONNECTOR_LINKS} />
+            {column("uo", css.columnRo16)}
+            {column("us", css.columnQuarters)}
+            {column("lr1", css.columnRo16)}
+            {column("lr2", css.columnRo16)}
+        </div>
+    );
+};
+
+const EWC_PO_GAPS = { r16: 2, qf: 98, sf: 290 };
+
+export const EwcPlayoffsLayout = ({ bracket, renderMatch }) => {
+    const column = (stage, columnClass, extra = null) => (
+        <div key={stage} className={css.column_container} style={{ width: 170, transition: "none" }}>
+            <h4 className={`${css.column_title} ${css.qualifier_column_title}`}>{EWC_PLAYOFFS_COLUMN_TITLES[stage]}</h4>
+            <div className={columnClass} style={{ width: "100%", position: "relative", gap: EWC_PO_GAPS[stage], transition: "none" }}>
+                {(bracket?.[stage] || []).map((match, idx) => renderMatch(match, stage, idx))}
+                {extra}
+            </div>
+        </div>
+    );
+    const third = bracket?.tp?.[0];
+    const bracketRef = useRef(null);
+    const [tpTop, setTpTop] = useState(null);
+
+    useLayoutEffect(() => {
+        const root = bracketRef.current;
+        if (!root) return undefined;
+        const measure = () => {
+            const qf = root.querySelector('[data-bracket-rect="qf-3"]');
+            const tp = root.querySelector('[data-bracket-rect="tp-0"]');
+            const holder = root.querySelector("[data-ewc-third]");
+            if (!qf || !tp || !holder) return;
+            const a = qf.getBoundingClientRect();
+            const b = tp.getBoundingClientRect();
+            const delta = a.top + a.height / 2 - (b.top + b.height / 2);
+            if (Math.abs(delta) < 0.5) return;
+            setTpTop(Math.round(holder.offsetTop + delta));
+        };
+        measure();
+        const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+        observer?.observe(root);
+        window.addEventListener("resize", measure);
+        document.fonts?.ready?.then(measure).catch(() => { });
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", measure);
+        };
+    });
+
+    return (
+        <div ref={bracketRef} className={css.swc_sc_bracket} style={{ gap: 72 }}>
+            <BracketConnectors links={EWC_PLAYOFFS_CONNECTOR_LINKS} />
+            {column("r16", css.columnRo16)}
+            {column("qf", css.columnQuarters)}
+            {column("sf", css.columnSemis)}
+            {column("gf", css.columnGrandFinal, (
+                <div data-ewc-third className={css.thirdPlace_container} style={{ top: tpTop ?? "calc(100% + 28px)", left: "50%", transform: "translateX(-50%)", marginTop: 0, transition: "none" }}>
+                    <h4 style={{ width: "17ch" }} className={`${css.column_title} ${css.qualifier_column_title}`}>{EWC_PLAYOFFS_COLUMN_TITLES.tp}</h4>
+                    <div className={css.columnThirdPlace} style={{ width: 170, transition: "none" }}>
+                        {third ? renderMatch(third, "tp", 0) : null}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};

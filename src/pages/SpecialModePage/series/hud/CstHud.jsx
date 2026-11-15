@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCaretLeft, FaCaretRight, FaCrown } from "react-icons/fa";
@@ -791,7 +792,7 @@ export function CstIntro({ seriesState, eventName, eventNumber, stageText, setsT
                     className={`${css.hud} ${css.intro}`}
                     style={{ "--left-color": left?.color ?? "#e0a526", "--right-color": right?.color ?? "#27a9e1" }}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.25, delay: 0.4 } }}
                     transition={{ duration: 0.18 }}
@@ -842,10 +843,11 @@ export function CstIntro({ seriesState, eventName, eventNumber, stageText, setsT
                                         <span className={css.intro_tile}>
                                             <PemCircle team={team} className={css.intro_circle} />
                                         </span>
-                                        <span className={css.intro_name}>
+                                        <span className={css.intro_name} style={{ position: "relative" }}>
                                             <span className={css.intro_name_text}>
                                                 <Fit>{team?.name}</Fit>
                                             </span>
+                                            <IntroHome team={team} under={side === "left" ? "left" : "right"} style={{ top: "auto", bottom: 18, marginTop: 0, left: side === "left" ? 18 : "auto", right: side === "left" ? "auto" : 18 }} />
                                         </span>
                                     </motion.div>
                                 );

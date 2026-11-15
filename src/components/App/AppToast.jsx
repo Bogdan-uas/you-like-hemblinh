@@ -220,6 +220,33 @@ const SwcToast = ({ t, message }) => {
     );
 };
 
+const EwcToast = ({ t, message }) => {
+    const { barRef, close } = useDrainClose(t);
+    const event = eventOf(t.icon);
+    const accent = t.accent ?? event.accent;
+
+    return (
+        <div
+            className={`${css.ewc} ${t.visible ? css.ewc_enter : css.ewc_exit}`}
+            style={{ "--toast-accent": readableAccent(accent) }}
+            onClick={close}
+            {...t.ariaProps}
+        >
+            <div key={t.seq ?? t.id} className={css.ewc_swap}>
+                <span className={css.ewc_pic}>
+                    <span className={css.ewc_beam} aria-hidden="true" />
+                    <span className={css.ewc_emoji}>{t.icon ?? "📣"}</span>
+                </span>
+                <span className={css.ewc_body}>
+                    <span className={css.ewc_title}>{t.label ?? event.label}</span>
+                    <span className={css.ewc_message}>{message}</span>
+                    <Countdown t={t} barRef={barRef} />
+                </span>
+            </div>
+        </div>
+    );
+};
+
 const PgxToast = ({ t, message }) => {
     const { barRef, close } = useDrainClose(t);
     const event = eventOf(t.icon);
@@ -333,6 +360,7 @@ export function AppToast({ t }) {
     if (t.variant === "series" && t.hud === "pgx") return <PgxToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "pbs") return <PbsToast t={t} message={message} />;
     if (t.variant === "series" && t.hud === "swc") return <SwcToast t={t} message={message} />;
+    if (t.variant === "series" && t.hud === "ewc") return <EwcToast t={t} message={message} />;
     if (t.variant === "series" && (t.hud === "pem" || t.hud === "gpl" || t.hud === "gcc")) return <LowerThird t={t} message={message} />;
     if (t.variant === "series") return <SeriesToast t={t} message={message} />;
     return <PlainToast t={t} message={message} />;

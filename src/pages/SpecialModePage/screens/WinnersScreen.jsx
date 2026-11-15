@@ -1,13 +1,12 @@
 import css from "../SpecialModePage.module.css";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { FaTrophy } from "react-icons/fa";
 import { ReactFitty } from "react-fitty";
-import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy } from "../components/Trophies.jsx";
+import { PemSeriesTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, EwcTrophy, OfficialTrophy, PlaceMedal } from "../components/Trophies.jsx";
 import { TournamentNumberText } from "../components/TournamentNumberText.jsx";
 import { PodiumEffect, ConfettiRain } from "../components/PodiumEffects.jsx";
 import { useSpecialModeSettings } from "../logic/settings.js";
-import { PODIUM_QUOTES, WINNERS_TIMELINE, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE, ESS_PODIUM_TROPHY_SIZE, ESS_PODIUM_TROPHY_STYLE, SWC_PODIUM_TROPHY_SIZE, SWC_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
+import { PODIUM_QUOTES, WINNERS_TIMELINE, GPL_PODIUM_TROPHY_SIZE, GPL_PODIUM_TROPHY_STYLE, PBS_PODIUM_TROPHY_SIZE, PBS_PODIUM_TROPHY_STYLE, PGX_PODIUM_TROPHY_SIZE, PGX_PODIUM_TROPHY_STYLE, ESS_PODIUM_TROPHY_SIZE, ESS_PODIUM_TROPHY_STYLE, SWC_PODIUM_TROPHY_SIZE, SWC_PODIUM_TROPHY_STYLE, EWC_PODIUM_TROPHY_SIZE, EWC_PODIUM_TROPHY_STYLE, OFFICIAL_PODIUM_TROPHY_SIZE, OFFICIAL_PODIUM_TROPHY_STYLE } from "../logic/winnersAndPickem.js";
 
 const RISE_EASE = [0.16, 1, 0.3, 1];
 const POP_SPRING = { type: "spring", stiffness: 260, damping: 15 };
@@ -18,7 +17,7 @@ const PLACES = [
         riseFrom: 900,
         logo: css.runnerUpLogo,
         medal: css.runnerUpMedal,
-        medalIcon: "🥈",
+        medalIcon: <PlaceMedal place={2} />,
         podium: css.secondPodium,
         name: css.runnerUpName,
         label: css.runnerUpLabel,
@@ -32,7 +31,7 @@ const PLACES = [
         riseFrom: 1100,
         logo: css.winnerLogo,
         medal: css.winnerMedal,
-        medalIcon: "🥇",
+        medalIcon: <PlaceMedal place={1} />,
         podium: css.firstPodium,
         name: css.firstPlaceName,
         label: css.firstPlaceLabel,
@@ -46,7 +45,7 @@ const PLACES = [
         riseFrom: 700,
         logo: css.placeLogoThird,
         medal: css.thirdPlaceMedal,
-        medalIcon: "🥉",
+        medalIcon: <PlaceMedal place={3} />,
         podium: css.thirdPodium,
         name: css.thirdPlaceName,
         label: css.thirdPlaceLabel,
@@ -60,7 +59,7 @@ const PLACES = [
         riseFrom: 600,
         logo: css.placeLogoFourth,
         medal: css.fourthPlaceMedal,
-        medalIcon: "🏅",
+        medalIcon: <PlaceMedal place={4} />,
         podium: css.fourthPodium,
         name: css.fourthPlaceName,
         label: css.fourthPlaceLabel,
@@ -81,7 +80,7 @@ export function WinnersScreen({ winners, labels, actions }) {
         showPodium,
         showProceed,
     } = winners;
-    const { cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxImLabel, pgxGmLabel, essLabel, swcLabel, tournamentLabel, pemType } = labels;
+    const { cstLabel, eclLabel, pemLabel, gccLabel, pbsLabel, skylinesLabel, pgxImLabel, pgxGmLabel, essLabel, swcLabel, ewcLabel, tournamentLabel, pemType } = labels;
     const { handleProceed } = actions;
     const reduceMotion = useReducedMotion();
 
@@ -95,14 +94,16 @@ export function WinnersScreen({ winners, labels, actions }) {
     const isPgxResults = tournamentResults.kind === "pgx";
     const isEssResults = tournamentResults.kind === "ess";
     const isSwcResults = tournamentResults.kind === "swc";
+    const isEwcResults = tournamentResults.kind === "ewc";
     const isPgxQualifiedWinner = tournamentResults.kind === "pgxIm";
     const isPemResults = tournamentResults.kind === "pem";
     const isGplResults = tournamentResults.kind === "gpl";
     const isPbsResults = tournamentResults.kind === "pbs";
+    const isOfficialResults = !isPemResults && !isGplResults && !isPbsResults && !isPgxResults && !isEssResults && !isSwcResults && !isEwcResults;
     const animated = !hasPlayedWinnerAnimation;
     const { podiumEffects } = useSpecialModeSettings();
     const effects = animated && !reduceMotion && podiumEffects;
-    const finalLabel = tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : tournamentResults.kind === "skylines" ? skylinesLabel : tournamentResults.kind === "pgxIm" ? pgxImLabel : isPgxResults ? pgxGmLabel : isEssResults ? essLabel : isSwcResults ? swcLabel : isPemResults ? pemLabel : isPbsResults ? pbsLabel : tournamentLabel;
+    const finalLabel = tournamentResults.kind === "cst" ? cstLabel : tournamentResults.kind === "ecl" ? eclLabel : tournamentResults.kind === "gcc" ? gccLabel : tournamentResults.kind === "skylines" ? skylinesLabel : tournamentResults.kind === "pgxIm" ? pgxImLabel : isPgxResults ? pgxGmLabel : isEssResults ? essLabel : isSwcResults ? swcLabel : isEwcResults ? ewcLabel : isPemResults ? pemLabel : isPbsResults ? pbsLabel : tournamentLabel;
     const headlineKey = hasPlayedWinnerAnimation ? "top-4" : winnersText;
 
     const renderTrophy = () => (
@@ -118,7 +119,9 @@ export function WinnersScreen({ winners, labels, actions }) {
                     ? <EssTrophy size={ESS_PODIUM_TROPHY_SIZE} style={ESS_PODIUM_TROPHY_STYLE} />
                     : isSwcResults
                     ? <SwcTrophy size={SWC_PODIUM_TROPHY_SIZE} style={SWC_PODIUM_TROPHY_STYLE} />
-                    : <FaTrophy />
+                    : isEwcResults
+                    ? <EwcTrophy size={EWC_PODIUM_TROPHY_SIZE} style={EWC_PODIUM_TROPHY_STYLE} keyColor={tournamentResults.winner?.color} motto={tournamentResults.motto} shardColors={tournamentResults.pickedKeys?.map((team) => team.color)} />
+                    : <OfficialTrophy size={OFFICIAL_PODIUM_TROPHY_SIZE} style={OFFICIAL_PODIUM_TROPHY_STYLE} />
     );
 
     const renderPlace = (place) => {
@@ -178,7 +181,7 @@ export function WinnersScreen({ winners, labels, actions }) {
                 </motion.span>
                 {isWinner && !isTier2Results ? (
                     <motion.span
-                        className={css.winnerTrophy}
+                        className={`${css.winnerTrophy} ${isOfficialResults ? css.winnerTrophyHeld : ""}`}
                         initial={animated ? { opacity: 0, scale: 0.3, rotate: -70 } : false}
                         animate={{ opacity: 1, scale: 1, rotate: 0 }}
                         transition={animated ? { type: "spring", stiffness: 200, damping: 12, ...at(0.1) } : { duration: 0 }}
@@ -223,7 +226,7 @@ export function WinnersScreen({ winners, labels, actions }) {
                             animate={{ opacity: 1, y: 0, filter: "blur(0px)", transitionEnd: { filter: "none" } }}
                             transition={animated ? { duration: 0.7, ease: "easeOut", ...at(0.45) } : { duration: 0 }}
                         >
-                            &quot;{pickQuote(PODIUM_QUOTES[place.key], team.id ?? 0)}&quot;
+                            {pickQuote(PODIUM_QUOTES[place.key], team.id ?? 0)}
                         </motion.span>
                     ) : null}
                 </div>

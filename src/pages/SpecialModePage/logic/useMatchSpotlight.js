@@ -10,7 +10,7 @@ const coveredTop = () => {
     return rect ? Math.max(0, rect.bottom) : 0;
 };
 
-const playSpotlight = (el) => {
+export const playSpotlight = (el) => {
     const rect = el.getBoundingClientRect();
     const ring = document.createElement("div");
     ring.className = css.spotlight;

@@ -851,6 +851,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="wins">🏆</option>
                         <option value="seconds">🥈</option>
                         <option value="thirds">🥉</option>
+                        <option value="ewcWins">🏆 (EWC)</option>
                         <option value="pemBigWins">🏆 (PEM Big)</option>
                         <option value="gplWins">🏆 (GPL)</option>
                         <option value="pbsWins">🏆 (PBS)</option>
@@ -860,6 +861,8 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="swcWins">🏆 (SWC)</option>
                         <option value="tier1Seconds">🥈 (Tier 1)</option>
                         <option value="tier1Thirds">🥉 (Tier 1)</option>
+                        <option value="ewcSeconds">🥈 (EWC)</option>
+                        <option value="ewcThirds">🥉 (EWC)</option>
                         <option value="tier15Wins">🏅 (Tier 1.5)</option>
                         <option value="tier15Seconds">🥈 (Tier 1.5)</option>
                         <option value="tier15Thirds">🥉 (Tier 1.5)</option>
@@ -1037,6 +1040,7 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="wins">🏆</option>
                         <option value="seconds">🥈</option>
                         <option value="thirds">🥉</option>
+                        <option value="ewcWins">🏆 (EWC)</option>
                         <option value="pemBigWins">🏆 (PEM Big)</option>
                         <option value="gplWins">🏆 (GPL)</option>
                         <option value="pbsWins">🏆 (PBS)</option>
@@ -1046,6 +1050,8 @@ export function LeaderboardAdminModals({ full, tournamentNumberAdmin, statsAdmin
                         <option value="swcWins">🏆 (SWC)</option>
                         <option value="tier1Seconds">🥈 (Tier 1)</option>
                         <option value="tier1Thirds">🥉 (Tier 1)</option>
+                        <option value="ewcSeconds">🥈 (EWC)</option>
+                        <option value="ewcThirds">🥉 (EWC)</option>
                         <option value="tier15Wins">🏅 (Tier 1.5)</option>
                         <option value="tier15Seconds">🥈 (Tier 1.5)</option>
                         <option value="tier15Thirds">🥉 (Tier 1.5)</option>

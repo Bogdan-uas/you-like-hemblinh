@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import IntroHome from "../../worldMap/IntroHome.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import css from "./PemHud.module.css";
@@ -158,7 +159,7 @@ export function ClayIntro({ seriesState, eventName, eventNumber, stageText, sets
                     key="clay-intro"
                     className={`${css.hud} ${css.theme_gpl} ${css.clay}`}
                     onClick={() => setOpen(false)}
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.25 } }}
                     transition={{ duration: 0.2 }}
@@ -186,7 +187,10 @@ export function ClayIntro({ seriesState, eventName, eventNumber, stageText, sets
                                         return (
                                             <div key={side} className={`${css.clay_team} ${side === "right" ? css.clay_team_right : ""}`}>
                                                 <PemCircle team={team} className={css.clay_circle} />
-                                                <span className={css.clay_name}>Team {team?.name}</span>
+                                                <span className={css.clay_name} style={{ position: "relative" }}>
+                                                    Team {team?.name}
+                                                    <IntroHome team={team} under={side} />
+                                                </span>
                                             </div>
                                         );
                                     })}

@@ -1,7 +1,7 @@
-import { PemSilverTrophy, PemGoldTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, Tier15Medal } from "../components/Trophies.jsx";
+import { PemSilverTrophy, PemGoldTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTrophy, SwcTrophy, EwcTrophy, Tier15Medal, PlaceMedal } from "../components/Trophies.jsx";
 import { getPemSeriesConfig } from "./pemConfig.js";
 import { TEAM_PLACINGS_LS_KEY } from "./storageKeys.js";
-import { PEM_BIG_TYPE_ID, PEM_SMALL_TYPE_ID, GPL_TYPE_ID, PBS_TYPE_ID, PGX_GM_TYPE_ID, ESS_TYPE_ID, SWC_TYPE_ID } from "./tournamentTypes.jsx";
+import { PEM_BIG_TYPE_ID, PEM_SMALL_TYPE_ID, GPL_TYPE_ID, PBS_TYPE_ID, PGX_GM_TYPE_ID, ESS_TYPE_ID, SWC_TYPE_ID, EWC_TYPE_ID } from "./tournamentTypes.jsx";
 
 export const EMPTY_TEAM_PLACINGS = {
     wins: 0,
@@ -14,6 +14,9 @@ export const EMPTY_TEAM_PLACINGS = {
     pgxWins: 0,
     essWins: 0,
     swcWins: 0,
+    ewcWins: 0,
+    ewcSeconds: 0,
+    ewcThirds: 0,
     tier1Seconds: 0,
     tier1Thirds: 0,
     tier15Wins: 0,
@@ -24,8 +27,11 @@ export const EMPTY_TEAM_PLACINGS = {
     tier2Thirds: 0,
 };
 
-export const totalSecondPlaces = (p) => (p?.seconds ?? 0) + (p?.tier1Seconds ?? 0) + (p?.tier15Seconds ?? 0) + (p?.tier2Seconds ?? 0);
-export const totalThirdPlaces = (p) => (p?.thirds ?? 0) + (p?.tier1Thirds ?? 0) + (p?.tier15Thirds ?? 0) + (p?.tier2Thirds ?? 0);
+export const tier1SecondPlaces = (p) => (p?.tier1Seconds ?? 0) + (p?.ewcSeconds ?? 0);
+export const tier1ThirdPlaces = (p) => (p?.tier1Thirds ?? 0) + (p?.ewcThirds ?? 0);
+
+export const totalSecondPlaces = (p) => (p?.seconds ?? 0) + tier1SecondPlaces(p) + (p?.tier15Seconds ?? 0) + (p?.tier2Seconds ?? 0);
+export const totalThirdPlaces = (p) => (p?.thirds ?? 0) + tier1ThirdPlaces(p) + (p?.tier15Thirds ?? 0) + (p?.tier2Thirds ?? 0);
 
 export const buildDefaultTeamPlacings = (teams) => {
     const out = {};
@@ -56,6 +62,9 @@ export const loadTeamPlacings = (teams) => {
                 pgxWins: Math.max(0, Number(v.pgxWins) || 0),
                 essWins: Math.max(0, Number(v.essWins) || 0),
                 swcWins: Math.max(0, Number(v.swcWins) || 0),
+                ewcWins: Math.max(0, Number(v.ewcWins) || 0),
+                ewcSeconds: Math.max(0, Number(v.ewcSeconds) || 0),
+                ewcThirds: Math.max(0, Number(v.ewcThirds) || 0),
                 tier1Seconds: Math.max(0, Number(v.tier1Seconds) || 0),
                 tier1Thirds: Math.max(0, Number(v.tier1Thirds) || 0),
                 tier15Wins: Math.max(0, Number(v.tier15Wins) || 0),
@@ -96,6 +105,9 @@ const pemTrophyTitle = (type, n) => `${n} from ${getPemSeriesConfig(type).label}
 export const buildPlacingItems = (p, trophyIcon, tier1TrophyIcon = <PemSilverTrophy />) => {
     const items = [];
     if ((p?.wins ?? 0) > 0) items.push({ key: "wins", icon: trophyIcon, value: p.wins, title: null });
+    if ((p?.ewcWins ?? 0) > 0) {
+        items.push({ key: "ewcWins", icon: <EwcTrophy />, value: p.ewcWins, title: `${p.ewcWins} from ${EWC_TYPE_ID}${p.ewcWins === 1 ? "" : "s"}` });
+    }
     if ((p?.pemBigWins ?? 0) > 0) {
         items.push({ key: "pemBigWins", icon: <PemGoldTrophy />, value: p.pemBigWins, title: pemTrophyTitle(PEM_BIG_TYPE_ID, p.pemBigWins) });
     }
@@ -121,15 +133,15 @@ export const buildPlacingItems = (p, trophyIcon, tier1TrophyIcon = <PemSilverTro
         items.push({ key: "tier15Wins", icon: <Tier15Medal />, value: p.tier15Wins, title: medalBreakdownText(0, 0, 0, p.tier15Wins) });
     }
     if ((p?.tier2Wins ?? 0) > 0) {
-        items.push({ key: "tier2Wins", icon: "🥇", value: p.tier2Wins, title: medalBreakdownText(0, 0, p.tier2Wins) });
+        items.push({ key: "tier2Wins", icon: <PlaceMedal place={1} />, value: p.tier2Wins, title: medalBreakdownText(0, 0, p.tier2Wins) });
     }
     const seconds = totalSecondPlaces(p);
     if (seconds > 0) {
-        items.push({ key: "seconds", icon: "🥈", value: seconds, title: medalBreakdownTitle(p?.seconds ?? 0, p?.tier1Seconds ?? 0, p?.tier2Seconds ?? 0, p?.tier15Seconds ?? 0) });
+        items.push({ key: "seconds", icon: <PlaceMedal place={2} />, value: seconds, title: medalBreakdownTitle(p?.seconds ?? 0, tier1SecondPlaces(p), p?.tier2Seconds ?? 0, p?.tier15Seconds ?? 0) });
     }
     const thirds = totalThirdPlaces(p);
     if (thirds > 0) {
-        items.push({ key: "thirds", icon: "🥉", value: thirds, title: medalBreakdownTitle(p?.thirds ?? 0, p?.tier1Thirds ?? 0, p?.tier2Thirds ?? 0, p?.tier15Thirds ?? 0) });
+        items.push({ key: "thirds", icon: <PlaceMedal place={3} />, value: thirds, title: medalBreakdownTitle(p?.thirds ?? 0, tier1ThirdPlaces(p), p?.tier2Thirds ?? 0, p?.tier15Thirds ?? 0) });
     }
     return items;
 };
