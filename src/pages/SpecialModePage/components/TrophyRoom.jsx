@@ -7,6 +7,7 @@ import { PemGoldTrophy, PemSilverTrophy, GplTrophy, PbsTrophy, PgxTrophy, EssTro
 import { recordTitle } from "../logic/trophyCase.js";
 import { hostOfRecord } from "../logic/hostCities.js";
 import { TROPHY_WEIGHTS } from "../logic/teamData.js";
+import { getAnniversaryTheme } from "../logic/winnersAndPickem.js";
 import { HostBadge } from "../worldMap/HostCity.jsx";
 import { TournamentNumberText } from "./TournamentNumberText.jsx";
 import css from "./TrophyRoom.module.css";
@@ -337,7 +338,14 @@ export function TrophyRoom({ team, placings, cases, ewcTrophies, focus = null, o
     const roomRef = useRef(null);
     const trophies = useMemo(() => buildItems(TROPHY_KEYS, placings, cases, ewcTrophies, "trophy").sort((a, b) => a.time - b.time), [placings, cases, ewcTrophies]);
     const medals = useMemo(() => buildItems(MEDAL_KEYS, placings, cases, ewcTrophies, "medal").sort((a, b) => a.place - b.place || a.time - b.time), [placings, cases, ewcTrophies]);
-    const featured = useMemo(() => (trophies.length ? [...trophies].sort((a, b) => b.weight - a.weight || b.time - a.time)[0] : null), [trophies]);
+    const featured = useMemo(() => {
+        if (!trophies.length) return null;
+        const top = Math.max(...trophies.map((item) => item.weight));
+        const best = trophies.filter((item) => item.weight === top);
+        const anniversaries = best.filter((item) => getAnniversaryTheme(Number(item.record?.number) || 0));
+        if (anniversaries.length) return [...anniversaries].sort((a, b) => Number(b.record.number) - Number(a.record.number))[0];
+        return [...best].sort((a, b) => (a.time || Infinity) - (b.time || Infinity) || a.index - b.index)[0];
+    }, [trophies]);
     const shelves = chunk(trophies.filter((item) => item !== featured), 6);
     const racks = chunk(medals, 9);
 
