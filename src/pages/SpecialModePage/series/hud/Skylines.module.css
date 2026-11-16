@@ -424,3 +424,30 @@
         transform: translateY(-9px);
     }
 }
+
+.frame_dmb {
+    top: -34px;
+    bottom: -14px;
+    width: 460px;
+    margin-left: -230px;
+}
+
+.dmb_plate {
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.row_host {
+    margin: 18px 0 40px;
+}
+
+.frame_row {
+    top: -24px;
+    bottom: -42px;
+    width: 720px;
+    margin-left: -360px;
+}
+
+.frame_unlit .band::after {
+    display: none;
+}

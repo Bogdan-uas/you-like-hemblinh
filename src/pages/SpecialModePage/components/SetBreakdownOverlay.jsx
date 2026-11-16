@@ -23,6 +23,8 @@ import { EssRow, EssBoard, EssSets } from "../series/hud/EssHud.jsx";
 import { PemErTrack } from "../series/hud/PemExtendedRounds.jsx";
 import { PemSetChips, PemDivider } from "../series/hud/PemParts.jsx";
 import hudCss from "../series/hud/PemHud.module.css";
+import { SkylinePlate, SkylineFloorFrame } from "../series/hud/SkylinesHud.jsx";
+import skyCss from "../series/hud/Skylines.module.css";
 
 const ROUND_BATCH = 3;
 
@@ -155,6 +157,7 @@ export const SetBreakdownOverlay = ({
     isPlayoffs = false,
     pointLabelText = "MATCH POINT!!!",
     hud = "official",
+    skyline = null,
     pickemBonuses = [],
 }) => {
     const isBroadcast = hud === "pem" || hud === "gpl" || hud === "pbs" || hud === "pgx" || hud === "cst" || hud === "ess" || hud === "gcc" || hud === "swc" || hud === "ewc";
@@ -165,6 +168,14 @@ export const SetBreakdownOverlay = ({
     const ErTrack = isBroadcast ? PemErTrack : ExtendedRoundsTrack;
     const BroadcastSets = hud === "ess" ? EssSets : hud === "cst" ? CstSets : hud === "pgx" ? PgxSets : hud === "pbs" ? PbsSets : hud === "swc" ? SwcSets : hud === "ewc" ? EwcSets : PemSetChips;
     const isBo1 = bestOf === 1;
+    const isSkylines = hud === "skylines" && !!skyline;
+    const skylineRow = (lit, row) =>
+        isSkylines ? (
+            <div className={`${skyCss.host} ${skyCss.row_host}`}>
+                <SkylineFloorFrame seriesState={skyline} className={`${skyCss.frame_row} ${lit ? "" : skyCss.frame_unlit}`} />
+                {row}
+            </div>
+        ) : row;
     const entry = sets?.[index] ?? null;
 
     const scrollRef = useRef(null);
@@ -580,7 +591,7 @@ export const SetBreakdownOverlay = ({
 
         return (
             <div key={key} data-round-key={round.key} className={css.breakdown_round} style={isBroadcast ? { maxWidth: hud === "pbs" ? "620px" : hud === "swc" ? "780px" : hud === "ewc" ? "800px" : hud === "cst" ? "900px" : hud === "ess" ? "740px" : "812px", padding: "14px 0" } : undefined}>
-                <ScoreRow
+                {skylineRow(isDecisive, <ScoreRow
                     leftTeam={leftTeam}
                     rightTeam={rightTeam}
                     leftScore={round.scoreLeft}
@@ -622,7 +633,7 @@ export const SetBreakdownOverlay = ({
                             : null
                     }
                     {...opacities}
-                />
+                />)}
 
                 <MiniRoundTimeline minis={round.minis} leftTeam={leftTeam} rightTeam={rightTeam} />
             </div>
@@ -989,6 +1000,7 @@ export const SetBreakdownOverlay = ({
                                     <span className={css.match_modal_caption} style={{ marginBottom: 0, color: "#fff", textShadow: "0 0 4px #000" }}>{stageLabel}</span>
                                 ) : null}
                                 <span style={{ color: "#fff" }} className={css.series_label_title}>
+                                    {isSkylines ? <SkylinePlate seriesState={skyline} size={30} className={skyCss.dmb_plate} /> : null}
                                     <span style={{ textShadow: "0 0 4px #000" }}>{matchTitle}</span>
                                     {matchNumber ? (
                                         <span style={{ backgroundColor: won ? "#2e7d32" : "#7d2e2e", color: "#fff" }} className={`${css.points} ${css.series_label_number}`}>#{matchNumber}</span>
@@ -1029,7 +1041,8 @@ export const SetBreakdownOverlay = ({
                     </div>
                 )}
 
-                <div className={css.breakdown_modal_board} style={{ marginTop: isModalHidden ? "26px" : "34px" }}>
+                <div className={`${css.breakdown_modal_board} ${isSkylines ? skyCss.host : ""}`} style={{ marginTop: (isModalHidden ? 26 : 34) + (isSkylines ? 14 : 0) }}>
+                    {isSkylines ? <SkylineFloorFrame seriesState={skyline} className={skyCss.frame_dmb} /> : null}
                     <ModalBoard
                         leftTeam={leftTeam}
                         rightTeam={rightTeam}

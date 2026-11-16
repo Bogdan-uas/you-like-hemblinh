@@ -1998,8 +1998,13 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <SkyShot n={19} alt="The series screen of an Opening Match on the Ground Floor" />
             <p className={css.info_text}>
                 And the Momentum Streak is an elevator floor display here: from 5 rounds in a row on, a small display below the score shows the count with an arrow riding up, and every new round rolls the number up, like a floor.
-                From 7 on, the digits turn red, and from 10 on, they turn green, the display gets a golden frame and two arrows ride up. (The Official itself keeps its fire.)
+                From 7 on, the digits turn red, and from 10 on, they turn green, the display gets a golden frame and two arrows ride up. (The Official itself keeps its "Streak" badge with the flame.)
             </p>
+            <p className={css.info_text}>
+                The Detailed Match Results of a Skylines match look the same way: the plate of the Floor stands next to the name of the match, the scoreboard of the set stands in its slice of the building, and every round below it is a Floor of its own, with the elevator display for the Momentum Streak.
+                Only the round, which decided the set, glows yellow, like the current Floor in the building. Here is the first set of the Opening Match #1 in the Penthouse in Round 4, which Team Seafoam won 13:3 against Team Sand:
+            </p>
+            <SkyShot n={24} alt="Detailed Match Results of a Penthouse match of Official Skylines #1, with the plate of the Floor and every round as a Floor" />
             <p className={css.info_text}>
                 And when the match is over, both teams show right away where they go next, with a small elevator car next to it. After an Opening Match, it&apos;s the Winners&apos; Match and the Losers&apos; Match, after the Winners&apos; Match and the Losers&apos; Match, it&apos;s the elevator:
                 green arrows go up (two of them for two Floors), red ones go down, and after Round 4, the best teams of the Penthouse go "Up to the Rooftop":

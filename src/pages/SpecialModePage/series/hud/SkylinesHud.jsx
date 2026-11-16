@@ -67,14 +67,14 @@ const MoveChip = ({ side, move, team }) => {
     );
 };
 
-export const SkylineFloorFrame = ({ seriesState: s }) => {
+export const SkylineFloorFrame = ({ seriesState: s, className = "" }) => {
     const roof = isRoof(s);
     const penthouse = !roof && s.skylineFloor === 1;
     const ground = !roof && s.skylineFloor === SKYLINES_FLOOR_COUNT;
     const winnerSide = s.banner && !s.banner.tie ? ((s.playerWonSets ?? 0) >= (s.playerLostSets ?? 0) ? "left" : "right") : null;
 
     return (
-        <span className={`${css.frame} ${roof ? css.frame_roof : ""} ${penthouse ? css.frame_penthouse : ""} ${ground ? css.frame_ground : ""}`} aria-hidden="true">
+        <span className={`${css.frame} ${roof ? css.frame_roof : ""} ${penthouse ? css.frame_penthouse : ""} ${ground ? css.frame_ground : ""} ${className}`} aria-hidden="true">
             <span className={css.band} />
             {roof ? <span className={css.railing} /> : <span className={`${css.ledge} ${css.ledge_top}`} />}
             <span className={`${css.ledge} ${css.ledge_bottom}`} />

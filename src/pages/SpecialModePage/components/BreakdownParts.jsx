@@ -3,6 +3,7 @@ import css from "../SpecialModePage.module.css";
 import { useInView } from "framer-motion";
 import { PenaltyCircles } from "./PenaltyCircles.jsx";
 import { MomentumStreakBadge } from "./StreakBadges.jsx";
+import { SkylineStreak } from "../series/hud/SkylinesHud.jsx";
 import { BREAKDOWN_GLOW, TIE_BANNER_COLOR, TIE_BANNER_GRADIENT } from "../logic/breakdownStyles.js";
 import { lightenHex, darkenHex, getBrightness } from "../logic/colors.js";
 import { decodeMiniRounds } from "../logic/series.js";
@@ -265,6 +266,7 @@ export const BreakdownScoreRow = ({
     ggBanner = null,
     leftMomentumStreak = null,
     rightMomentumStreak = null,
+    streakTheme = null,
 }) => {
     const hasPens = !!penalties;
 
@@ -325,7 +327,11 @@ export const BreakdownScoreRow = ({
                         ) : (
                             <div className={isLeft ? css.lines : css.lossLines} />
                         )}
-                        <MomentumStreakBadge value={isLeft ? leftMomentumStreak : rightMomentumStreak} team={team} size={11} />
+                        {streakTheme === "skylines" ? (
+                            <SkylineStreak value={(isLeft ? leftMomentumStreak : rightMomentumStreak) ?? 0} />
+                        ) : (
+                            <MomentumStreakBadge value={isLeft ? leftMomentumStreak : rightMomentumStreak} team={team} size={11} />
+                        )}
                     </div>
 
                     {hasPens ? (

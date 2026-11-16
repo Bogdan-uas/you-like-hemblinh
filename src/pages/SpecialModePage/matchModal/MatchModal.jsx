@@ -2536,6 +2536,7 @@ export function MatchModal({ modal, teams, actions, labels }) {
                                 isPlayoffs={modalContext.type === "playoffs"}
                                 pointLabelText={breakdownPointLabel}
                                 hud={breakdownHud}
+                                skyline={modalContext.type === "skyline" ? { skylineRound: modalContext.round, skylineFloor: modalContext.floor, skylineStage: modalContext.stage } : null}
                                 pickemBonuses={pickemBonuses}
                                 pickemStreak={pickemStreak}
                             />

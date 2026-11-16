@@ -11554,6 +11554,7 @@ function SpecialModeContent() {
     );
     const breakdownHudFor = (context, record) => {
         if (!context) return "official";
+        if (context.type === "skyline") return "skylines";
         const archivedEvent = context.isArchivedHallOfFame ? record?.event ?? null : null;
         if (context.type === "swcSc" || context.type === "swcMain") return "swc";
         if (context.type === "ewcOq" || context.type === "ewcMain") return "ewc";
