@@ -9,6 +9,7 @@ import CountryFlag from "./CountryFlag.jsx";
 import { ewcHomeOf, EWC_COUNTRIES, EWC_LANGUAGES } from "../logic/ewcHomes.js";
 import { formatOrdinal } from "../logic/teamData.js";
 import { formatKeyCode, mapKeysOf, useSpecialModeSettings } from "../logic/settings.js";
+import { lockPageScroll } from "../../../components/PageScrollbar/scrollLock.js";
 
 const headerBottom = () => {
     const header = document.querySelector("header");
@@ -26,7 +27,7 @@ const Keys = ({ codes }) =>
         </span>
     ));
 
-export default function WorldMapView({ teams, rankById, onClose, onOpenProfile }) {
+export default function WorldMapView({ teams, rankById, onClose, onOpenProfile, onTop = true }) {
     const settings = useSpecialModeSettings();
     const keys = useMemo(() => mapKeysOf(settings), [settings]);
     const [top] = useState(headerBottom);
@@ -63,25 +64,17 @@ export default function WorldMapView({ teams, rankById, onClose, onOpenProfile }
         };
     }, [code, byCountry, activeId]);
 
-    useEffect(() => {
-        const root = document.documentElement;
-        const previous = [root.style.overflow, document.body.style.overflow];
-        root.style.overflow = "hidden";
-        document.body.style.overflow = "hidden";
-        return () => {
-            root.style.overflow = previous[0];
-            document.body.style.overflow = previous[1];
-        };
-    }, []);
+    useEffect(() => lockPageScroll(), []);
 
     useEffect(() => {
         const onKey = (e) => {
-            if (e.key !== "Escape" || e.defaultPrevented) return;
+            if (e.key !== "Escape" || e.defaultPrevented || !onTop) return;
+            e.preventDefault();
             onClose();
         };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
+        window.addEventListener("keydown", onKey, true);
+        return () => window.removeEventListener("keydown", onKey, true);
+    }, [onClose, onTop]);
 
     const pickTeam = (row) => {
         if (String(row.team.id) === String(activeId)) return;
@@ -113,7 +106,7 @@ export default function WorldMapView({ teams, rankById, onClose, onOpenProfile }
     return (
         <motion.div
             className={css.wm_root}
-            style={{ top }}
+            style={{ top, zIndex: onTop ? 998 : undefined }}
             data-lenis-prevent
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

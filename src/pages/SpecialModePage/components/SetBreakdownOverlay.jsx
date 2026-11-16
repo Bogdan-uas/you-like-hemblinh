@@ -25,6 +25,7 @@ import { PemSetChips, PemDivider } from "../series/hud/PemParts.jsx";
 import hudCss from "../series/hud/PemHud.module.css";
 import { SkylinePlate, SkylineFloorFrame } from "../series/hud/SkylinesHud.jsx";
 import skyCss from "../series/hud/Skylines.module.css";
+import { lockPageScroll } from "../../../components/PageScrollbar/scrollLock.js";
 
 const ROUND_BATCH = 3;
 
@@ -194,14 +195,7 @@ export const SetBreakdownOverlay = ({
     }, [smoothScroll]);
 
     useEffect(() => {
-        const root = document.documentElement;
-        const previous = [root.style.overflow, document.body.style.overflow];
-        root.style.overflow = "hidden";
-        document.body.style.overflow = "hidden";
-        return () => {
-            root.style.overflow = previous[0];
-            document.body.style.overflow = previous[1];
-        };
+        return lockPageScroll();
     }, []);
 
     useEffect(() => {

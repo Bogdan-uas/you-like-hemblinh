@@ -108,6 +108,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
         closeTrophyRoom,
         openTrophyTournament,
         worldMapOpen,
+        worldMapOnTop,
         closeWorldMap,
     } = page;
     const trophyRoomTeam = trophyRoom ? (allTeams || []).find((team) => String(team.id) === String(trophyRoom.teamId)) ?? null : null;
@@ -588,7 +589,7 @@ export function LeaderboardView({ tournamentNumberAdmin, leaderboardState, page 
 
         <LeaderboardHoverPopover store={leaderboardHoverStore} cursorRef={leaderboardCursorRef} teamStats={teamStats} tab={leaderboardStatsTab} />
         <AnimatePresence>
-            {worldMapOpen ? <WorldMapView key="world-map" teams={allTeams ?? []} rankById={rankById} onClose={closeWorldMap} onOpenProfile={openTeamProfile} /> : null}
+            {worldMapOpen ? <WorldMapView key="world-map" teams={allTeams ?? []} rankById={rankById} onClose={closeWorldMap} onOpenProfile={openTeamProfile} onTop={worldMapOnTop} /> : null}
         </AnimatePresence>
         <AnimatePresence>
             {teamProfile?.team && teamProfile.history ? (

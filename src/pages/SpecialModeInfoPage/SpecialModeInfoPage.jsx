@@ -2,6 +2,8 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from
 import css from './SpecialModeInfoPage.module.css'
 import { Link, useSearchParams } from "react-router-dom";
 import { useHallDragScroll } from "../SpecialModePage/hallOfFame/useHallDragScroll.js";
+import ImageLightbox from "./ImageLightbox.jsx";
+import { PAGE_SCROLL_LOCK_EVENT, isPageScrollLocked, registerPageScroller } from "../../components/PageScrollbar/scrollLock.js";
 import introImg from "../../../assets/images/image.png";
 import scoreBoardImg from "../../../assets/images/image-2.png";
 import dashedDividerImg from "../../../assets/images/image-3.png";
@@ -737,7 +739,7 @@ const StatExplanations = () => (
             <br />• All the changes a team collects during a match are added to its stats once the match is over. The finished match modal shows them as green and red numbers:
         </p>
         <div className={css.image_container}>
-            <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
+            <img src={finishedMatchModalThreeImg} alt="Finished match modal of Match of 0:0 net #2: Team Coral lost 23:25 to Team Khaki after four Overtimes, with the tooltip on the Overtime info" className={css.image} style={{ width: '35vw', height: 'auto' }} />
         </div>
         {STAT_EXPLANATIONS.map(({ group, stats }) => (
             <React.Fragment key={group}>
@@ -1100,7 +1102,7 @@ const TrophyRoomExplained = ({ scrollToAnchor }) => (
             The panel tells the place, the tournament with its host city, the day, when it was won, and the team, which it beat or lost to in the final. The trophy of the Esports World Cup also lists the three Keys sealed into its base, and choosing one of them lights up its shard (more on the Keys in the Esports World Cup tab):
         </p>
         <RoomShot n={3} alt="The Esports World Cup trophy up close with the Key of Team Blush lit up in its base" />
-        <RoomShot n={4} alt="The trophy zoomed in on its base" />
+        <RoomShot n={4} alt="The base of the Esports World Cup trophy zoomed in, with the Key shards of the defeated teams and the info card next to it" />
         <p className={css.info_text}>
             "Go to the tournament" opens its summary in the Hall of Fame and scrolls right to the match, where the team won it (or, if the tournament has no saved matches, to the podium), which lights up with a golden ring. "Back to Hall of Fame" leads right back into the Trophy room:
         </p>
@@ -1142,13 +1144,13 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 This addition is clickable separately from the "Start Game" button itself, but what does it open? I will tell you this in a minute as well.
             </p>
             <div className={css.image_container}>
-                <img src={introImg} alt="Intro Page" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={introImg} alt="The start page of the Special Mode: the question, all the team circles and the Start Game button" className={css.image} style={{ width: '34vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>
                 Now, we open <b>the Leaderboard</b> by clicking on the "Leaderboard" button:
             </p>
             <div className={css.image_container}>
-                <img src={scoreBoardImg} alt="Leaderboard" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={scoreBoardImg} alt="The Leaderboard before the first tournament, Team Red, Team Lime and Team Yellow on the top with 1150 points each" className={css.image} style={{ width: '34vw', height: '35vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Higher points = higher placement)
                 </span>
@@ -1157,10 +1159,10 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 You can scroll down and see other teams, with such kind of dividers, like here:
             </p>
             <div className={css.image_container}>
-                <img src={dashedDividerImg} alt="Divider, which show the edge between qualifiers for Stage III and Stage II" className={css.image} style={{ width: '40vw', height: '73vh' }} />
+                <img src={dashedDividerImg} alt="Divider, which shows the edge between qualifiers for Stage III and Stage II" className={css.image} style={{ width: '40vw', height: '73vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={dashedDividerTwoImg} alt="Divider, which show the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '73vh' }} />
+                <img src={dashedDividerTwoImg} alt="Divider, which shows the edge between qualifiers for Stage II and Stage I" className={css.image} style={{ width: '40vw', height: '73vh' }} />
             </div>
             <p className={css.info_text}>
                 And even further below, after the 32nd place, there is one more divider, but this one is dark:
@@ -1244,7 +1246,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Before we start anything, let&apos;s also click on that gear in the top-right corner. It smoothly opens the <b>Settings</b> on top of the screen you are on, so you can change them at any moment, even in the middle of a series:
             </p>
             <div className={css.image_container}>
-                <img src={settingsPanelImg} alt="Settings with all of its options" className={css.image} style={{ width: '24vw', height: 'auto' }} />
+                <img src={settingsPanelImg} alt="The top of the Settings: the Gambling and Simulate sections" className={css.image} style={{ width: '24vw', height: 'auto' }} />
             </div>
             <p className={css.info_text}>
                 These are the options, which make playing the Special Mode more comfortable:
@@ -1284,7 +1286,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Now, let's go back to the Intro Page and click on that addition on the "Start Game" button with an arrow:
             </p>
             <div className={css.image_container}>
-                <img src={openedTournamentSelectionModal} alt="Opened tournament selection modal" className={css.image} style={{ width: '35vw', height: '35vh' }} />
+                <img src={openedTournamentSelectionModal} alt="The Choose How You Want To Play modal with Random on top and every tournament listed below" className={css.image} style={{ width: '35vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>
                 Here, you can set the tournament's roll on "Random", which could then any tournament from the list below or you can choose a specific tournament(s) you want to play.
@@ -1302,7 +1304,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 But first, the screen flies over the world map to Budapest, the host city of every Official (more on it in <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("host-cities")} href='#host-cities'>Host cities</a>), and then I will be redirected to the "Tournament Intro Screen", where we can see the overview of the qualifiers with their points for each stage one more time, in case you haven't seen the Leaderboard:
             </p>
             <div className={css.image_container}>
-                <img src={tournamentIntroScreenImg} alt="Tournament Intro Screen" className={css.image} style={{ width: '35vw', height: '35vh' }} />
+                <img src={tournamentIntroScreenImg} alt="Tournament Intro Screen of Official #1 with the teams of every Stage" className={css.image} style={{ width: '35vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>
                 By hovering onto a team circle, you will be able to see that team's name, in case you cannot decipher the team's color with your eyes.
@@ -1317,7 +1319,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 When you click "Continue", the <b>Official #1</b> starts. You'll start from this: <br />
             </p>
             <div className={css.image_container}>
-                <img src={swissStageImg} alt="First look of Stage I" className={css.image} style={{ width: '37vw', height: '38vh' }} />
+                <img src={swissStageImg} alt="First look of Stage I of Official #1, the first match glowing yellow" className={css.image} style={{ width: '37vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Teams' distribution in Officials depends on their placement in the top, but very first tournament has always the same qualifiers for every Stage, as well as Stage I. Exactly how the distribution system works, it all will be explained in the <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("distribution-explained")} href='#distribution-explained'>Distribution system in Swiss Stages</a> section)
                 </span>
@@ -1437,11 +1439,11 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <span style={{ fontStyle: 'italic', color: 'black', marginBottom: '24px' }} className={css.info_text}>(Dashed border shows that it is the next match)</span>
             <p className={css.info_text}>In our case, we look at the 0:0 net and at the very first match in this net, where we also can see "#1" from the side of our needed match:</p>
             <div className={css.image_container}>
-                <img src={locatedMatchRect} alt="Current Match in big" className={css.image} style={{ width: '25vw', height: '32vh' }} />
+                <img src={locatedMatchRect} alt="The current match #1, Team Lavender against Team Salmon, zoomed in with its yellow glow" className={css.image} style={{ width: '25vw', height: '32vh' }} />
             </div>
             <p className={css.info_text}>We have to start it somehow and in order to do that, we should click on it first and it will open a match modal:</p>
             <div className={css.image_container}>
-                <img src={matchModal} alt="Opened match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+                <img src={matchModal} alt="Match modal of Match of 0:0 net #1: Team Lavender against Team Salmon, a pure toss-up" className={css.image} style={{ width: '35vw', height: '27vh' }} />
             </div>
             <p className={css.info_text}>
                 There is a lot of information on this modal, so let me explain it to you: <br />
@@ -1465,13 +1467,13 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 You will be able to click it, once you choose one of the teams. And right below the modal, there is a small "SIMULATE" tab, which I will explain in the next section: <br />
             </p>
             <div className={css.image_container}>
-                <img src={chosenLeftTeamModal} alt="Chosen left team on the match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+                <img src={chosenLeftTeamModal} alt="Team Lavender chosen in the match modal: its circle gets the blue ring and stays on the left" className={css.image} style={{ width: '35vw', height: '27vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Your chosen team is being highlighted with blue glow and is always at the left, even if it is at the right at first)
                 </span>
             </div>
             <div className={css.image_container}>
-                <img src={chosenRightTeamModal} alt="Chosen right team on the match modal" className={css.image} style={{ width: '35vw', height: '27vh' }} />
+                <img src={chosenRightTeamModal} alt="Team Salmon chosen in the match modal: the teams swap sides, so the chosen team is on the left" className={css.image} style={{ width: '35vw', height: '27vh' }} />
             </div>
         </section>
         <section>
@@ -1481,7 +1483,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>After starting the match, you're being redirected to the "series screen":</p>
             <div className={css.image_container}>
-                <img src={seriesScreen} alt="'Series screen" className={css.image} style={{ width: '32vw', height: '38vh' }} />
+                <img src={seriesScreen} alt="Series screen of Match of 0:0 net #1 at 0:0: Team Salmon against Team Lavender with the Gamble button" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Matches in Playoffs have a bit different scoreboard)
                 </span>
@@ -1519,7 +1521,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>And as it is a Best of 1 in 0:0 net of Stage I, a team needs one set to win:</p>
             <div className={css.image_container}>
-                <img src={matchPointImg} alt="MATCH POINT!!! for the Salmon!" className={css.image} style={{ width: '32vw', height: '38vh' }} />
+                <img src={matchPointImg} alt="MATCH POINT!!! for Team Salmon at 15-14 in the Overtime (first to 16)" className={css.image} style={{ width: '32vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Once a team is one round away from taking a set, they have a "SET POINT!" pill in their color above their names. But if a team is one set away from winning and one round away from winning, then it says "MATCH POINT!!!". This label differs itself in some specific matches, but I'll leave it already to you to find "some other specific cases" out)
                 </span>
@@ -1570,7 +1572,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>Already finished match is finished, but you can click on it and see results of the match in that same modal:</p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
+                <img src={finishedMatchModalImg} alt="Finished match modal of Match of 0:0 net #1: Team Salmon won 16:14 against Team Lavender after the Overtime, +1 Pick'em point" className={css.image} style={{ width: '35vw', height: 'auto' }} />
             </div>
             <p className={css.info_text}>
                 On the header of the modal, we can see it in light-green or light-red dependent on whether your chosen team won. Above we can see the check icon again (it can also be a cross icon but if the match would have lost). <br />
@@ -1585,7 +1587,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 If OT goes onto multiple OTs and a team won in those multiple OTs at least 2 Extended Rounds, the check mark is being replaced by a "i" mark like here:
             </p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalTwoImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
+                <img src={finishedMatchModalTwoImg} alt="Finished match modal of Match of 0:0 net #2: Team Coral lost 23:25 to Team Khaki after four Overtimes, +0 Pick'em points" className={css.image} style={{ width: '35vw', height: 'auto' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (This 4x OT was like the full match regulation, LOL)
                 </span>
@@ -1594,7 +1596,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 By hovering onto this "i" mark, you can see in which Overtimes a team won the Extended Rounds:
             </p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalThreeImg} alt="Finished match modal" className={css.image} style={{ width: '35vw', height: 'auto' }} />
+                <img src={finishedMatchModalThreeImg} alt="The same match modal of Team Coral against Team Khaki with the tooltip on the Overtime info" className={css.image} style={{ width: '35vw', height: 'auto' }} />
             </div>
         </section>
         <section>
@@ -1652,8 +1654,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </div>
             <p className={css.info_text}>As I have already spoiled it to you in the pre-previous section, there is even more detailed series summary. To open it, we should click onto that blue button with total rounds count:</p>
             <div className={css.image_container}>
-                <img src={hoveredTotalRoundsCountButton} alt="Hovered blue button with total rounds count" className={css.image} style={{ width: '35vw', height: '27vh', margin: "0 auto" }} />
-                <img src={detailedMatchResults} alt="Detailed Match Results" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                <img src={hoveredTotalRoundsCountButton} alt="Finished match modal with the hovered blue &quot;30 Rounds&quot; button" className={css.image} style={{ width: '35vw', height: '27vh', margin: "0 auto" }} />
+                <img src={detailedMatchResults} alt="Detailed Match Results of Match of 0:0 net #1 (Team Salmon 16:14 Team Lavender): the start of the First Half" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
             </div>
             <p className={css.info_text}>
                 At the top, there are a modal and the navigation. The modal looks like a small version of the series screen: it contains the match Stage, name and order number, "Best of" of this match, the gained Pick&apos;em points specifically in this set (this is a Bo1 here, so in this Bo1) as a pill on the right, the final set score with both team names above it and the "n | ROUNDS" badge, which tells how many rounds were played, the "Back?" button and the "Hide full modal" text. Clicking it shrinks the modal down to the team names, the score and the gained Pick&apos;em points for a better view of the breakdown, while the breakdown itself stays exactly where it is (and the modal remembers this choice for the next time). The modal also shows whether your pickem team won this specific set (again, it&apos;s a Bo1 here, so this Bo1) with its light-green or light-red top and the ✓ or ✗ in its top-left corner. <br />
@@ -1687,13 +1689,13 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 The ending of the set looks like this, for example (in this case, it has happened in first Overtime). Only the last round of a set shows the set lines below the scores, just like the series screen does right after the set:
             </p>
             <div className={css.image_container}>
-                <img src={setEnding} alt="Ending of the set in Overtime" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                <img src={setEnding} alt="The Overtime in the Detailed Match Results: MATCH POINT at 15-14 and then the GG at 16-14 for Team Salmon" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
             </div>
             <p className={css.info_text}>
                 For non-Bo1 matches, like e.g. Bo3s, there are different looks of match modals and detailed match results:
             </p>
             <div className={css.image_container}>
-                <img src={boThreeFinishedMatchModal} alt="Finished Match modal, Bo3" className={css.image} style={{ width: '31vw', height: '36vh', margin: "0 auto" }} />
+                <img src={boThreeFinishedMatchModal} alt="Finished match modal of a Bo3: Team Gray beat Team Cyan 2:1 (11:13, 16:14, 13:11), +3 Pick'em points" className={css.image} style={{ width: '31vw', height: '36vh', margin: "0 auto" }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Decider is the last playable set of a series; In this case, it's meant a Set 3)
                 </span>
@@ -1705,14 +1707,14 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 And the UI for the Detailed Match Results modal for non-Bo1 matches is also different: below the "BEST OF" badge, there are the same set chips with the final scores as in the set history of the series screen (S1, S2, ... and the orange "DEC" for the Decider). The chip of the set, which you&apos;re looking at, is dark with a small eye icon and a blue ring around it. By clicking onto another chip, the ring glides over to it and the whole breakdown smoothly switches to that set, while the scores in the modal roll to the new ones. I open at first the "Set 1":
             </p>
             <div className={css.image_container}>
-                <img src={detailedMatchResultsBoThreeFirstSet} alt="Detailed Match Results of Set 1 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                <img src={detailedMatchResultsBoThreeFirstSet} alt="Detailed Match Results of Set 1 of the Bo3: Team Gray 11:13 Team Cyan" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
             </div>
             <p className={css.info_text}>
                 Here, it's visible that the modal indicates whether your picked team won the set you're currently reviewing. Gained Pick&apos;em points are here as well only for a set you've taken.
             </p>
             <div className={css.image_container}>
-                <img src={detailedMatchResultsBoThreeSecondSet} alt="Detailed Match Results of Set 2 of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
-                <img src={detailedMatchResultsBoThreeDecider} alt="Detailed Match Results of the Decider of a Bo3" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                <img src={detailedMatchResultsBoThreeSecondSet} alt="Detailed Match Results of Set 2 of the Bo3: Team Gray 16:14 Team Cyan after the Overtime" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
+                <img src={detailedMatchResultsBoThreeDecider} alt="Detailed Match Results of the Decider of the Bo3: Team Gray 13:11 Team Cyan, with the Total +3 pill" className={css.image} style={{ width: '34vw', height: '35vh', margin: "0 auto" }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (The golden "TOTAL" pill on the left is only shown at the last played set of a series and shows how much Pick&apos;em points you have gained from the whole series. If your picked team lost the series, but still took some sets, it&apos;s orange instead)
                 </span>
@@ -1733,30 +1735,30 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Below that, there are the cards of all 6 possible Extended Rounds in a chronological order (1st Half, 2nd Half, OT, Double OT, Triple OT and Quadruple OT). One by one, the cards flip over and show the winner of that Extended Round with a small arrow pointing to the side of the winner, the mini-rounds score of that round and the total Extended Rounds score below the card. The card, which is about to flip, has a blue ring around it, and the pill at the bottom always tells what has just happened.
                 That team, which won more Extended Rounds throughout the whole set, that team also wins the set (4 Extended Rounds are already enough and the card, which decided it, gets a "CLINCHED!" pill):</p>
             <div className={css.image_container}>
-                <img src={extRoundsScreenOne} alt="Extended Rounds comparison screen 1" className={css.image} style={{ width: '30vw', height: '35vh' }} />
+                <img src={extRoundsScreenOne} alt="Extended Rounds after 24:24: the First Half compared, Team Chartreuse leads 1:0" className={css.image} style={{ width: '30vw', height: '35vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={extRoundsScreenTwo} alt="Extended Rounds comparison screen 2" className={css.image} style={{ width: '30vw', height: '35vh' }} />
+                <img src={extRoundsScreenTwo} alt="Extended Rounds: 4 of 6 compared, Team Silver leads 3:1 and takes the Double Overtime" className={css.image} style={{ width: '30vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>If the Extended Rounds score is tied 3-3, penalty series will start, which will decide everything:</p>
             <div className={css.image_container}>
-                <img src={extRoundsScreenThree} alt="Extended Rounds score tied 3-3" className={css.image} style={{ width: '30vw', height: '35vh' }} />
+                <img src={extRoundsScreenThree} alt="Extended Rounds: all 6 compared and tied 3:3, so the penalties are coming" className={css.image} style={{ width: '30vw', height: '35vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={pensScreen} alt="Penalty series screen" className={css.image} style={{ width: '32vw', height: '36vh' }} />
+                <img src={pensScreen} alt="The penalty series of Team Silver against Team Chartreuse at 0:0" className={css.image} style={{ width: '32vw', height: '36vh' }} />
             </div>
             <p className={css.info_text}>
                 It looks similar to what we've used to see normally in normal series screen. But here, instead of mini-wins indicators, there are penalties indicators: dashed and hollow circles mean that the attempt hasn&apos;t been taken yet, green circles mean successful attempt and red circles mean unsuccessful attempt. Instead of the "ROUND" badge, the "PENALTY SERIES | Attempt n" badge below the score tells which attempt it is, and if nobody is ahead after the 5th attempt, it turns into a pulsing "SUDDEN DEATH" badge. The rules are now different as from normal series.
                 The point and the idea here were taken from football analogue, explained <a style={{ color: 'Highlight', fontStyle: 'italic' }} target="_blank" href='https://en.wikipedia.org/wiki/Penalty_shoot-out_(association_football)'>here</a>. Unlike football, we utilize here some different rules from football. Teams take turns one by one. The team that will take the Pen first, is always random, and the pill in the color of the team above the scoreboard, like "TEAM CHARTREUSE&apos;S TURN", always tells whose turn it is. But, here are also simultaneous pair rolls of each team. During an attempt of e.g. left team, left team should roll a bigger number than their opponent to gain a successful attempt, like here:
             </p>
             <div className={css.image_container}>
-                <img src={successfulAttemptForLeft} alt="Successful attempt for the left team" className={css.image} style={{ width: '32vw', height: '36vh' }} />
+                <img src={successfulAttemptForLeft} alt="Team Silver on the left scores its penalty: 1:0" className={css.image} style={{ width: '32vw', height: '36vh' }} />
             </div>
             <p className={css.info_text}>
                 If the rolled number of left team on left team's turn is smaller than right team's one, then it's unsuccessful attempt for the left team. For right team to get a successful attempt, they need also a higher number than their opponent's and for unsuccessful, a smaller one:
             </p>
             <div className={css.image_container}>
-                <img src={unSuccessfulAttemptForRight} alt="Unsuccessful attempt for the right team" className={css.image} style={{ width: '32vw', height: '36vh' }} />
+                <img src={unSuccessfulAttemptForRight} alt="Team Chartreuse on the right misses its penalty" className={css.image} style={{ width: '32vw', height: '36vh' }} />
             </div>
             <p className={css.info_text}>
                 If both rolled numbers are the same, the same attempt should be retaken:
@@ -1768,7 +1770,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 The rules on how many successful attempts are needed to win, are explained in that same Wikipedia page. But, whoever wins the penalty series, that one also wins the whole set:
             </p>
             <div className={css.image_container}>
-                <img src={rightWinsPens} alt="Right team win the penalty series" className={css.image} style={{ width: '30vw', height: '34vh' }} />
+                <img src={rightWinsPens} alt="Team Chartreuse on the right wins the penalty series 3:1: GG!" className={css.image} style={{ width: '30vw', height: '34vh' }} />
             </div>
             <p className={css.info_text}>
                 And whenever a match is over, no matter how it ended, a big "GG!" in the colors of the winner shows up below the scoreboard with a small celebration, and the whole side of the loser fades out.
@@ -1778,7 +1780,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Match rectangle of such a match looks like this then:
             </p>
             <div className={css.image_container}>
-                <img src={matchRectPens} alt="Match rectangle with penalty score" className={css.image} style={{ width: '30vw', height: '24vh' }} />
+                <img src={matchRectPens} alt="The match rectangle with the score 24:24 and the penalties 1:3" className={css.image} style={{ width: '30vw', height: '24vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (Instead of "Pens", it could be also "ERs", which stands for "Extended Rounds". "ERs" is there if this match was finished already by Extended Rounds score. Also, this label underneath is only in BO1s.)
                 </span>
@@ -1818,7 +1820,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>That's why also I get here only <b>+1 Pick&apos;em point</b>:</p>
             <div className={css.image_container}>
-                <img src={finishedMatchModalImg} alt="Finished match modal" className={css.image} style={{ width: '37vw', height: 'auto' }} />
+                <img src={finishedMatchModalImg} alt="Finished match modal of Match of 0:0 net #1: Team Salmon won 16:14 against Team Lavender after the Overtime, +1 Pick'em point" className={css.image} style={{ width: '37vw', height: 'auto' }} />
             </div>
         </section>
         <section>
@@ -1899,7 +1901,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Right after that, the big <b>Level Up</b> screen stops everything else and stays until I click or press any key. It shows the new level and every new benefit, which this level has unlocked.
                 Some levels are <b>anniversaries</b>: up to Level 100, every 5th level gets its own colors, glows and sparkles (later on, they come rarer), and Levels 10, 25, 50, 100, 250, 500 and 1000 are big anniversaries with an even bigger celebration. All the other levels above 100 shine a bit as well. Level 20 was one of the anniversaries:
             </p>
-            <LevelShot n={4} alt="Level Up screen of Level 20 with its two new benefits" />
+            <LevelShot n={4} alt="Level Up screen of Level 20 with its three new benefits" />
             <p className={css.info_text}>
                 After the Pick&apos;em summary, the first button I click, which leaves the tournament (any of them, except "To the bracket", which only shows the bracket and keeps the XP summary waiting), opens the <b>XP summary</b> of the whole tournament first. Every series, every completed task, the results of the tournament and every new achievement get their own row, one after another, while the bar fills up,
                 and at the end, there is the total. If I reached a new level during the tournament, its Level Up screen shows up once more at the right moment of the summary. "Continue" takes me to where I wanted to go, and the summary of the last tournament can be opened again later in the Level tab:
@@ -2030,7 +2032,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 Team Apricot, which started on Floor 3 as the 44th team of the Leaderboard, beat Team Ivory 2:0 in the Semifinal, and Team Sand beat Team Forest 2:0. So, the Grand Final was Team Apricot against Team Sand, and the prediction was clearly on the side of Team Apricot:
             </p>
-            <SkyShot n={8} alt="Match modal of the Rooftop Grand Final" width="35vw" />
+            <SkyShot n={8} alt="Match modal of the Rooftop Grand Final: Team Apricot against Team Sand, a Bo5" width="35vw" />
             <p className={css.info_text}>
                 On the roof, the elevator ride of the series opening goes all the way up, to the open sky, and the scoreboard stands on the roof itself: with the railing on top, the golden glow of the roof and the golden "RF" plate in the middle:
             </p>
@@ -2063,27 +2065,27 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>After that, you can proceed with further matches. When all the match-ups in Stage I are finished, only 8 teams are left. After the first two Rounds of the{" "}
                 <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("official-skylines")} href='#official-skylines'>Official Skylines</a>, they qualify into Stage II and build with auto-qualifiers match-ups for 0:0 net but already in Stage II:</p>
             <div className={css.image_container}>
-                <img src={stageTwoQualifiersImg} alt="Stage II Qualifiers" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                <img src={stageTwoQualifiersImg} alt="The green corner of Stage I zoomed in: the teams with 3:0, 3:1 and 3:2 qualify for Stage II" className={css.image} style={{ width: '30vw', height: '40vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={stageTwoImg} alt="Stage II" className={css.image} style={{ width: '33vw', height: '38vh' }} />
+                <img src={stageTwoImg} alt="First look of Stage II of Official #1, the first match glowing yellow" className={css.image} style={{ width: '33vw', height: '38vh' }} />
                 <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                     (There is a navigation menu in top left corner, where you can also see Stage III and Playoffs, once you finish Stage II)
                 </span>
             </div>
             <p className={css.info_text}>And so you can proceed from Stage II to Stage III and from Stage III to Playoffs (with Rounds 3 and 4 and the Rooftop Final of the Official Skylines in between):</p>
             <div className={css.image_container}>
-                <img src={playoffsQualifiersImg} alt="Playoffs Qualifiers" className={css.image} style={{ width: '30vw', height: '40vh' }} />
+                <img src={playoffsQualifiersImg} alt="The green corner of Stage III zoomed in: the teams with 3 wins qualify for the Playoffs" className={css.image} style={{ width: '30vw', height: '40vh' }} />
             </div>
             <div className={css.image_container}>
-                <img src={playoffsImg} alt="Playoffs" className={css.image} style={{ width: '39vw', height: '40vh' }} />
+                <img src={playoffsImg} alt="First look of the Playoffs of Official #1 before the Quarterfinals" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>
             <p className={css.info_text}>As I mentioned above, the Quarterfinals are <b>BO5</b>, Semifinals and Third Place Decider are <b>BO7</b>, and the Grand Final is <b>BO9</b>.</p>
             <p className={css.info_text}>
                 Playoffs are single-elimination stage, which means that once a team loses a series, it flies out of the tournament directly. By the time we reach Grand Final, there should be only two teams left:
             </p>
             <div className={css.image_container}>
-                <img src={grandFinalistsImg} alt="Two contenders for the championship remaining" className={css.image} style={{ width: '39vw', height: '40vh' }} />
+                <img src={grandFinalistsImg} alt="The Playoffs before the Grand Final: Team Indigo against Team Blue, and Team Navy against Team Lime in the Third Place Decider" className={css.image} style={{ width: '39vw', height: '40vh' }} />
             </div>
             <p className={css.info_text}>
                 In a BO9 will be decided the winner of the tournament. And once the winner of the Grand Final is determined, we are directly redirected to winner&apos;s screen, where the first 4 places of the tournament show up one by one: at first the Fourth Place, then the Third Place, the Runner-Up and at the very end, the Winner. Every place rises with its own little celebration: blue embers for the Fourth Place, bronze sparkles for the Third Place, silver rays for the Runner-Up and golden rays, fireworks and confetti all over the screen for the Winner:
@@ -2096,7 +2098,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             </p>
             <p className={css.info_text}>After clicking "Proceed", we are redirected to Pick&apos;em summary, where you can see how many matches overall you've guessed correctly throughout the tournament and your final Pick&apos;em points score and also whether you won the Pick'em challenge or not:</p>
             <div className={css.image_container}>
-                <img src={pickemSummaryImg} alt="Pick'em Summary Screen" className={css.image} style={{ width: '41vw', height: '39vh' }} />
+                <img src={pickemSummaryImg} alt="Pick'em summary of Official #1: 207 out of 247 needed Pick'em points, You Lost!" className={css.image} style={{ width: '41vw', height: '39vh' }} />
             </div>
         </section>
         <section>
@@ -2132,7 +2134,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Then, I clicked "Back to the start of Special Mode" and got redirected to Intro Page again:
             </p>
             <div className={css.image_container}>
-                <img src={introImgTwo} alt="Intro Page 2" className={css.image} style={{ width: '34vw', height: '35vh' }} />
+                <img src={introImgTwo} alt="The start page after Official #1 with the Leaderboard and Hall of Fame buttons" className={css.image} style={{ width: '34vw', height: '35vh' }} />
             </div>
             <p className={css.info_text}>
                 Here, I can finally go to Hall of Fame and see something:
@@ -2204,7 +2206,7 @@ const pemBigImg = (n) => PEM_BIG_IMAGES[`../../../assets/images/pem-big-${String
 
 const PemShot = ({ n, src, alt, width = "34vw", caption }) => (
     <div className={css.image_container}>
-        <img src={src ?? pemImg(n)} alt={alt} className={css.image} style={{ width, height: "auto" }} />
+        <img src={src ?? pemImg(n)} alt={alt} data-caption={typeof caption === "string" ? caption : undefined} className={css.image} style={{ width, height: "auto" }} />
         {caption && (
             <span className={css.info_text} style={{ fontStyle: 'italic', color: 'black' }}>
                 {caption}
@@ -2500,7 +2502,7 @@ const PemSmallSubPage = ({ scrollToAnchor }) => (
                 Afterwards, I can choose between <b>Official</b> and <b>PEM Small Tournament</b>, which #2 I'm going to have (or I'll go it via "Random", who knows). Although via "Random", neither of them could come up right now: Official is still excluded for the next 2 tournaments and the PEM Small Tournament, which has just ended, for the next 2 as well:
             </p>
             <div className={css.image_container}>
-                <img src={hardChoiceToMake} alt="Hard choice to make: Official #2 or PEM Small Tournament #2?" className={css.image} style={{ width: '35vw', height: '35vh' }} />
+                <img src={hardChoiceToMake} alt="The Choose How You Want To Play modal after the PEM Small Tournament: Random excludes Official and the PEM Small Tournament for the next rolls" className={css.image} style={{ width: '35vw', height: '35vh' }} />
             </div>
         </section>
     </>
@@ -2722,13 +2724,13 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
                 In the Hall of Fame, there are three new cards again: the PEM Big Tournament card with the golden trophy on top, the Elite Competition League card and the Qualifier card.
                 I lost all three Pick&apos;em challenges again, so the Pick&apos;em points score went down even further:
             </p>
-            <BigShot n={30} alt="Hall of Fame with the cards of PEM Big Tournament #1" />
+            <BigShot n={30} alt="Hall of Fame with the cards of PEM Big Tournament #1, its Qualifier and Elite Competition League #1 in front" />
             <p className={css.info_text}>
                 The Qualifier&apos;s summary is the same as the one of the PEM Small Tournament Qualifier. The Elite Competition League&apos;s summary has all teams,
                 the whole bracket with all the results, the podium and the whole top from the 5th to the 16th place. The order of the places comes from the round, in which a team lost its second match:
                 the losers of the Lower Semifinals are 5th and 6th, the losers of Lower Round 3 are 7th and 8th and so on:
             </p>
-            <BigShot n={31} alt="Hall of Fame, Elite Competition League #1: all teams" />
+            <BigShot n={31} alt="Hall of Fame, Elite Competition League #1: all teams and the start of the bracket" />
             <BigShot n={32} alt="Hall of Fame, Elite Competition League #1: the bracket" />
             <BigShot n={33} alt="Hall of Fame, Elite Competition League #1: the podium" />
             <BigShot n={34} alt="Hall of Fame, Elite Competition League #1: the places 5-16" />
@@ -2746,7 +2748,7 @@ const PemBigSubPage = ({ scrollToAnchor }) => (
                 Afterwards, there are three tournaments to choose from: <b>Official</b>, <b>PEM Small Tournament</b> and <b>PEM Big Tournament</b>. Which #2 is coming next? (Or I&apos;ll go it via "Random" again, who knows. But "Random" would exclude all three of them right now: Official and the PEM Small Tournament for the next tournament, the PEM Big Tournament for the next 2):
             </p>
             <div className={css.image_container}>
-                <img src={hardChoiceToMakeTwo} alt="Hard choice to make: Official #2 or PEM Small Tournament #2 or PEM Big Tournament #2?" className={css.image} style={{ width: '35vw', height: '35vh' }} />
+                <img src={hardChoiceToMakeTwo} alt="The Choose How You Want To Play modal after the PEM Big Tournament: Random excludes Official, the PEM Small and the PEM Big Tournament for the next rolls" className={css.image} style={{ width: '35vw', height: '35vh' }} />
             </div>
         </section>
     </>
@@ -3513,7 +3515,7 @@ const PgxSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 And the last Pick&apos;em challenge of Jönköping was won as well: 130 out of 109 needed Pick&apos;em points.
             </p>
-            <PgxShot n={28} alt="Pick'em summary of PGX Grandmasters Jönköping #1" width="30vw" />
+            <PgxShot n={28} alt="Pick'em summary of PGX Grandmasters Jönköping #1 while it's being written: 23/33 Swiss Stage matches, 3/4 Quarterfinals and 2/2 Semifinals" width="30vw" />
         </section>
         <section>
             <div id="pgx-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
@@ -3727,7 +3729,7 @@ const EssSubPage = ({ scrollToAnchor }) => (
             <p className={css.info_text}>
                 And the last Pick&apos;em challenge was won: 45 out of 38 needed Pick&apos;em points.
             </p>
-            <EssShot n={32} alt="Pick'em summary of Elite Star Series #1" width="30vw" />
+            <EssShot n={32} alt="Pick'em summary of Elite Star Series #1 while the achieved Pick'em points are still counting up" width="30vw" />
         </section>
         <section>
             <div id="ess-rewards" style={{ marginTop: '24px' }} className={css.divider_container}>
@@ -4336,6 +4338,74 @@ const SpecialModeInfoPage = () => {
     const tabsRef = useRef(null);
     const hasMeasuredTabsRef = useRef(false);
     const [headerHeight, setHeaderHeight] = useState(0);
+    const inlineBackRef = useRef(null);
+    const dockBackRef = useRef(null);
+    const backDockReadyRef = useRef(false);
+    const [backDocked, setBackDocked] = useState(false);
+
+    useEffect(() => {
+        const el = inlineBackRef.current;
+        if (!el || !headerHeight) return undefined;
+        const observer = new IntersectionObserver(
+            ([entry]) => setBackDocked(entry.intersectionRatio < 1 && entry.boundingClientRect.top < headerHeight + 1),
+            { rootMargin: `-${Math.round(headerHeight)}px 0px 0px 0px`, threshold: [0, 1] },
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [headerHeight]);
+
+    useLayoutEffect(() => {
+        const dock = dockBackRef.current;
+        const inline = inlineBackRef.current;
+        if (!dock || !inline) return undefined;
+        if (!backDockReadyRef.current) {
+            backDockReadyRef.current = true;
+            dock.style.visibility = backDocked ? "visible" : "hidden";
+            inline.style.visibility = backDocked ? "hidden" : "visible";
+            return undefined;
+        }
+        const base = () => {
+            const rect = (dock.firstElementChild ?? dock).getBoundingClientRect();
+            const shift = new DOMMatrix(getComputedStyle(dock).transform);
+            return { left: rect.left - shift.m41, top: rect.top - shift.m42, x: shift.m41, y: shift.m42 };
+        };
+        const offsetToInline = (b) => {
+            const r = inline.getBoundingClientRect();
+            return { x: r.left - b.left, y: r.top - b.top };
+        };
+        const ease = (t) => 1 - Math.pow(1 - t, 3);
+        const place = (x, y) => {
+            dock.style.transform = `translate(${x}px, ${y}px)`;
+        };
+        const b = base();
+        const from = backDocked ? offsetToInline(b) : { x: b.x, y: b.y };
+        const duration = backDocked ? 380 : 320;
+        const t0 = performance.now();
+        let frame = 0;
+        dock.style.visibility = "visible";
+        if (backDocked) inline.style.visibility = "hidden";
+        place(from.x, from.y);
+        const step = (now) => {
+            const t = Math.min(1, Math.max(0, (now - t0) / duration));
+            const e = ease(t);
+            const to = backDocked ? { x: 0, y: 0 } : offsetToInline(b);
+            place(from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e);
+            if (t < 1) {
+                frame = requestAnimationFrame(step);
+                return;
+            }
+            frame = 0;
+            if (!backDocked) {
+                inline.style.visibility = "visible";
+                dock.style.visibility = "hidden";
+                place(0, 0);
+            }
+        };
+        frame = requestAnimationFrame(step);
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+        };
+    }, [backDocked]);
     const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0, animate: false });
     const {
         hallScrollRef: tabWindowRef,
@@ -4366,7 +4436,13 @@ const SpecialModeInfoPage = () => {
 
         rafId = requestAnimationFrame(raf);
 
+        const onLock = () => (isPageScrollLocked() ? lenis.stop() : lenis.start());
+        window.addEventListener(PAGE_SCROLL_LOCK_EVENT, onLock);
+        const unregister = registerPageScroller(lenis);
+
         return () => {
+            window.removeEventListener(PAGE_SCROLL_LOCK_EVENT, onLock);
+            unregister();
             cancelAnimationFrame(rafId);
             lenis.destroy();
             lenisRef.current = null;
@@ -4699,6 +4775,11 @@ const SpecialModeInfoPage = () => {
 
     const renderSubPageNavigation = () => (
         <div ref={headerRef} className={css.second_header}>
+            <div ref={dockBackRef} className={css.header_back}>
+                <Link className={css.back_button} to="/special-mode" tabIndex={backDocked ? 0 : -1}>
+                    Back?
+                </Link>
+            </div>
             <div className={css.sub_page_strip}>
                 {renderSubPageArrow(-1)}
                 <div
@@ -4793,6 +4874,7 @@ const SpecialModeInfoPage = () => {
     return (
         <>
             {renderSubPageNavigation()}
+            <ImageLightbox className={css.image} />
             <div aria-hidden="true" style={{ height: headerHeight }} />
             {renderInfoNavigation()}
             <div className={css.page_container}>
@@ -4800,6 +4882,7 @@ const SpecialModeInfoPage = () => {
                 <p style={{ fontWeight: '700' }} className={css.info_text}>Here is a full guide, how to correctly play Special Mode.</p>
                 <p style={{ marginTop: '12px', fontWeight: '700', textAlign: 'center' }} className={css.info_text}>P. s. If you clicked the "?" button unintentionally, then here's the back button:</p>
                 <Link
+                    ref={inlineBackRef}
                     style={{ marginTop: '12px' }}
                     className={css.back_button}
                     to="/special-mode"
@@ -4809,13 +4892,6 @@ const SpecialModeInfoPage = () => {
                 <SubPageContent key={activeSubPage.id} scrollToAnchor={scrollToAnchor} />
                 <div style={{ marginTop: '24px' }} className={css.divider} />
                 <p style={{ fontWeight: '700' }} className={css.info_text}>Hope, it helps those who don't understand how to play without any explanations. 😜</p>
-                <Link
-                    style={{ marginTop: '12px' }}
-                    className={css.back_button}
-                    to="/special-mode"
-                >
-                    Back?
-                </Link>
             </div>
         </>
     );

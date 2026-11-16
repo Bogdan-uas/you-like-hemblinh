@@ -516,6 +516,7 @@ import { createPortal } from "react-dom";
 import { ProfileFloodOverlay } from "./components/TeamHistory.jsx";
 import { matchTitleOf, matchSmallLabelOf } from "./logic/matchLabels.js";
 import { useGlobalTips } from "./logic/useGlobalTips.js";
+import { PAGE_SCROLL_LOCK_EVENT, isPageScrollLocked, registerPageScroller } from "../../components/PageScrollbar/scrollLock.js";
 import { useMatchSpotlight, playSpotlight } from "./logic/useMatchSpotlight.js";
 import { matchDomKey } from "./logic/matchDomKey.js";
 import { buildHallEntries, buildLiveEntries, indexByTeam, matchSignature, teamEntries, teamStatsOf, teamView } from "./logic/teamHistory.js";
@@ -960,7 +961,14 @@ function SpecialModeContent() {
 
         rafId = requestAnimationFrame(raf);
 
+        const onLock = () => (isPageScrollLocked() ? lenis.stop() : lenis.start());
+        window.addEventListener(PAGE_SCROLL_LOCK_EVENT, onLock);
+        const unregister = registerPageScroller(lenis);
+        onLock();
+
         return () => {
+            window.removeEventListener(PAGE_SCROLL_LOCK_EVENT, onLock);
+            unregister();
             cancelAnimationFrame(rafId);
             lenis.destroy();
             lenisRef.current = null;
@@ -3640,6 +3648,7 @@ function SpecialModeContent() {
     const setStatsPanelTab = (side, tab) => setStatsPanelTabs((prev) => ({ ...prev, [side]: tab }));
     const [teamProfile, setTeamProfile] = useState(null);
     const [isWorldMapOpen, setIsWorldMapOpen] = useState(false);
+    const [isWorldMapOnTop, setIsWorldMapOnTop] = useState(true);
 
     const hallHistoryIndex = useMemo(() => indexByTeam(buildHallEntries(hallOfFame)), [hallOfFame]);
     const liveHistoryEntries = useMemo(
@@ -3879,6 +3888,7 @@ function SpecialModeContent() {
     const openTeamProfile = (team, origin) => {
         leaderboardScrollRef.current = window.scrollY;
         historyStackRef.current = [];
+        setIsWorldMapOnTop(false);
         setTeamProfile({ teamId: team.id, origin, restored: false, savedView: null });
     };
 
@@ -11956,7 +11966,10 @@ function SpecialModeContent() {
                     hasAnyPlacings={hasAnyPlacings}
                     onInfoPage={() => navigate("/special-mode-info")}
                     onHallOfFame={() => setIsHallOfFameOpen(true)}
-                    onWorldMap={() => setIsWorldMapOpen(true)}
+                    onWorldMap={() => {
+                        setIsWorldMapOnTop(true);
+                        setIsWorldMapOpen(true);
+                    }}
                     isWorldMapOpen={isWorldMapOpen}
                 />
                 <LeaderboardView tournamentNumberAdmin={tournamentNumberAdmin} leaderboardState={leaderboardState} page={{
@@ -11983,6 +11996,7 @@ function SpecialModeContent() {
                         closeTrophyRoom,
                         openTrophyTournament,
                         worldMapOpen: isWorldMapOpen,
+                        worldMapOnTop: isWorldMapOnTop || !teamProfile,
                         closeWorldMap: () => setIsWorldMapOpen(false),
                     }} />
                 <AnimatePresence key={modalPresenceKey}>{matchModalNode}</AnimatePresence>

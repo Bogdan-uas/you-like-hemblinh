@@ -1,3 +1,4 @@
+import { lockPageScroll } from "../../../components/PageScrollbar/scrollLock.js";
 import { useEffect, useRef, useState } from "react";
 import { useMotionValueEvent } from "framer-motion";
 import Lenis from "lenis";
@@ -307,14 +308,7 @@ export const useScreenLenis = (smooth) => {
     const smoothRef = useRef(smooth);
 
     useEffect(() => {
-        const root = document.documentElement;
-        const previous = [root.style.overflow, document.body.style.overflow];
-        root.style.overflow = "hidden";
-        document.body.style.overflow = "hidden";
-        return () => {
-            root.style.overflow = previous[0];
-            document.body.style.overflow = previous[1];
-        };
+        return lockPageScroll();
     }, []);
 
     useEffect(() => {

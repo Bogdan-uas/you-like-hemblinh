@@ -11,6 +11,7 @@ import SpecialModeInfoPage from '../../pages/SpecialModeInfoPage/SpecialModeInfo
 import { Toaster } from "react-hot-toast";
 import { AppToast } from "./AppToast.jsx";
 import { useModalPresence } from "./useModalPresence.js";
+import PageScrollbar from "../PageScrollbar/PageScrollbar.jsx";
 
 function App() {
   const isModalOpen = useModalPresence();
@@ -25,6 +26,7 @@ function App() {
       >
         {(t) => <AppToast t={t} />}
       </Toaster>
+      <PageScrollbar />
       <Suspense fallback={<Loader />}>
         <Layout>
           <Routes>

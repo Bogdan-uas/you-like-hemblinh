@@ -1,0 +1,44 @@
+.track {
+    position: fixed;
+    top: 4px;
+    right: 0;
+    bottom: 4px;
+    z-index: 2147483000;
+    width: 14px;
+    opacity: 1;
+    transition: opacity 320ms ease;
+}
+
+.track[data-hidden] {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 14px;
+    cursor: default;
+    touch-action: none;
+    will-change: transform;
+    transition: none;
+}
+
+.thumb::before {
+    content: "";
+    position: absolute;
+    inset: 0 3px 0 3px;
+    border-radius: var(--ui-radius-pill);
+    background: rgba(46, 47, 66, 0.35);
+    transition: background-color 200ms ease;
+}
+
+.thumb[data-animate] {
+    transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1), height 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.thumb:hover::before,
+.thumb[data-dragging]::before {
+    background: rgba(46, 47, 66, 0.55);
+}
