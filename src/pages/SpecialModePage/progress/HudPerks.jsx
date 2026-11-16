@@ -31,7 +31,7 @@ const playedSets = (seriesState) =>
 const bonusOutcomes = (pick, seriesState) => {
     const chosen = pickedBonusesOf(pick);
     if (!seriesState?.banner) return chosen.map(() => null);
-    if (!seriesWon(seriesState)) return chosen.map(() => ({ kind: "lost", value: "Lost" }));
+    if (!seriesWon(seriesState)) return chosen.map(() => ({ kind: "lost", value: "No points" }));
     const sets = playedSets(seriesState);
     let left = pick.bonusLeft ?? 0;
     return chosen.map((bonus) => {
@@ -43,21 +43,25 @@ const bonusOutcomes = (pick, seriesState) => {
         });
         const amount = Math.min(payout, left);
         left -= amount;
-        return amount > 0 ? { kind: "paid", value: `+${amount}` } : { kind: "lost", value: "Lost" };
+        return amount > 0 ? { kind: "paid", value: `+${amount}` } : { kind: "lost", value: "No points" };
     });
 };
 
-function HudChip({ variant, hud, ghost, label, value, icon, tone, title }) {
+function HudChip({ variant, hud, ghost, label, value, icon, tone, title, kind = "bonus" }) {
     const toneClass = `${tone ? css[`hud_insured_${tone}`] ?? "" : ""} ${ghost ? css.hud_ghost : ""} ${variant === "pgx" ? css.hud_insured_pgx : ""}`;
     const Icon = icon;
 
     if (variant === "official") {
         return (
-            <span className={`${page.best_of_badge} ${css.hud_insured_official} ${toneClass}`} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
-                <span className={page.best_of_badge_label}>{label}</span>
-                <span key={value} className={`${page.best_of_badge_value} ${css.hud_insured_value}`}>
+            <span className={`${css.hud_token} ${ghost ? css.hud_ghost : ""}`} data-tone={tone ?? "live"} data-kind={kind} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
+                <span className={css.hud_token_disc}>
                     <Icon aria-hidden="true" />
-                    {value}
+                </span>
+                <span className={css.hud_token_text}>
+                    <span className={css.hud_token_label}>{label}</span>
+                    <span key={value} className={css.hud_token_value}>
+                        {value}
+                    </span>
                 </span>
             </span>
         );
@@ -84,7 +88,7 @@ function HudChip({ variant, hud, ghost, label, value, icon, tone, title }) {
     );
 
     return (
-        <span className={`${hud.set} ${hud.set_bo} ${css.hud_insured} ${toneClass}`} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
+        <span className={`${hud.set} ${hud.set_bo} ${css.hud_insured} ${toneClass}`} data-long={String(value).length > 6 || undefined} title={ghost ? undefined : title} aria-hidden={ghost || undefined}>
             {variant === "cst" ? <span className={hud.set_inner}>{inner}</span> : inner}
         </span>
     );
@@ -103,6 +107,7 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
         chips.push(
             <HudChip
                 key="insurance"
+                kind="insurance"
                 variant={variant}
                 hud={hud}
                 ghost={ghost}
@@ -144,7 +149,7 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
                     outcome?.kind === "paid"
                         ? `Your ${name} bonus is activated: ${outcome.value} Pick'em point${outcome.value === "+1" ? "" : "s"}`
                         : outcome?.kind === "lost"
-                            ? `Your ${name} bonus wasn't activated in this match, so it is lost`
+                            ? `Your ${name} bonus wasn't activated in this match, so it gives no points this time (it isn't used up)`
                             : `${name} bonus: ${bonus.type === "comebackBonus" ? comebackValueLabel(amount, pick.bestOf) : `+${amount}`}, if ${BONUS_WHEN[bonus.type] ?? "it is activated"}`
                 }
             />,
@@ -155,7 +160,7 @@ export function HudInsurance({ variant, hud, seriesState, ghost = false }) {
 }
 
 const findCut = (progress, value) =>
-    [progress.event?.neededCut, progress.lastSummary?.perks?.neededCut].find((cut) => cut && cut.after === value && cut.before > cut.after) ?? null;
+    [progress.event?.neededCut, ...Object.values(progress.eventStash || {}).map((event) => event?.neededCut), progress.lastSummary?.perks?.neededCut].find((cut) => cut && cut.after === value && cut.before > cut.after) ?? null;
 
 export function NeededPerkTag({ value, cut = null, fallback = true }) {
     const { progress } = useProgress();
@@ -231,7 +236,7 @@ export function PickBonusBadges({ bonuses }) {
                 <span
                     key={`${bonus.type}-${i}`}
                     className={`${page.breakdown_pickem_pill} ${css.bonus_pill} ${css.bonus_pill_muted} ${css.bonus_pill_missed}`}
-                    title={`Your chosen ${name} bonus is lost: ${MISSED_REASONS[bonus.reason] ?? MISSED_REASONS.condition}`}
+                    title={`Your chosen ${name} bonus gave no points (it isn't used up): ${MISSED_REASONS[bonus.reason] ?? MISSED_REASONS.condition}`}
                 >
                     <FaXmark aria-hidden="true" />
                     {name}

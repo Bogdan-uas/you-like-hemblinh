@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, cloneElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import IntroHome from "../../worldMap/IntroHome.jsx";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { FaCheck, FaXmark } from "react-icons/fa6";
@@ -611,8 +611,8 @@ const LiveDot = ({ chips }) => {
 };
 
 export const EwcSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, extra = null }) => (
+    <div className={css.sets_stack}>
     <div className={`${css.hud} ${css.sets}`} data-count={chips.length > 7 ? "many" : chips.length > 5 ? "more" : "few"}>
-        {extra}
         <span className={css.strip_wrap}>
         <span className={css.strip}>
             <span className={`${css.tile} ${css.tile_bo}`}>
@@ -662,7 +662,8 @@ export const EwcSets = ({ chips, bestOf, selectedIndex = null, onSelect = null, 
         </span>
         {onSelect ? null : <LiveDot chips={chips} />}
         </span>
-        {extra ? cloneElement(extra, { ghost: true }) : null}
+    </div>
+    {extra ? <div className={`${css.hud} ${css.sets} ${css.sets_extra}`}>{extra}</div> : null}
     </div>
 );
 

@@ -331,6 +331,8 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             teams: allTeams,
                             matchContext: modalContext,
                             bestOf: modalBestOf,
+                            leftForm: getTeamForm?.(modalLeftTeam?.id, isPlayedModal ? currentModalMatch : null)?.stats ?? null,
+                            rightForm: getTeamForm?.(modalRightTeam?.id, isPlayedModal ? currentModalMatch : null)?.stats ?? null,
                         });
 
                         const leftPct = toDisplayedPercent(prediction.leftWinProbability);
@@ -2493,8 +2495,8 @@ export function MatchModal({ modal, teams, actions, labels }) {
                             rightRowNotes={buildStatRowNotes(statActivation?.right)}
                             panelTabs={statsPanelTabs}
                             onPanelTabChange={setStatsPanelTab}
-                            leftForm={getTeamForm?.(statsLeftTeam?.id, isPlayedModal ? currentModalMatch : null)}
-                            rightForm={getTeamForm?.(statsRightTeam?.id, isPlayedModal ? currentModalMatch : null)}
+                            leftForm={getTeamForm?.(statsLeftTeam?.id, isPlayedModal ? currentModalMatch : null, statsRightTeam?.id)}
+                            rightForm={getTeamForm?.(statsRightTeam?.id, isPlayedModal ? currentModalMatch : null, statsLeftTeam?.id)}
                             formBefore={isPlayedModal}
                             onOpenEntry={openHistoryEntry}
                             onOpenProfile={openProfileFromModal}

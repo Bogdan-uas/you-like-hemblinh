@@ -8716,3 +8716,72 @@ button.breakdown_er_tag:not(:disabled):hover {
     font-size: 0;
     line-height: 0;
 }
+
+.momentum_wrap {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    display: flex;
+    justify-content: center;
+    width: max-content;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    pointer-events: none;
+    transition: none;
+}
+
+.momentum_badge {
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--team) 35%, transparent), var(--ui-shadow);
+    transition: none;
+}
+
+.momentum_label {
+    gap: 0.35em;
+    padding-left: 0.6em;
+}
+
+.momentum_flame {
+    font-size: 1.15em;
+    color: #ff8a00;
+    filter: drop-shadow(0 0 2px rgba(255, 138, 0, 0.6));
+}
+
+.momentum_badge[data-hot] .momentum_flame {
+    color: #ff4d1f;
+    animation: momentum_flicker 1.4s ease-in-out infinite;
+}
+
+.momentum_value {
+    min-width: 1.6em;
+    background: linear-gradient(180deg, #ffb347 0%, #ff7a00 100%);
+    overflow: hidden;
+}
+
+@keyframes momentum_flicker {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.hud_tokens_row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 2px 0 6px;
+    transition: none;
+}
+
+.hud_tokens_row:empty {
+    display: none;
+}
+
+.skyline_bracket {
+    isolation: isolate;
+}

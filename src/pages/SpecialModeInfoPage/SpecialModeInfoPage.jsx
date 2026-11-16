@@ -81,6 +81,7 @@ import { FaFire } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { useGlobalTips } from "../SpecialModePage/logic/useGlobalTips.js";
 import { PlaceMedal } from "../SpecialModePage/components/Trophies.jsx";
+import { MomentumStreakBadge } from "../SpecialModePage/components/StreakBadges.jsx";
 
 const hexToRgb = (hex) => {
     const clean = hex.replace("#", "");
@@ -494,7 +495,7 @@ const TeamCircle = ({ team }) => {
     );
 };
 
-const MomentumStreakBadge = ({ value = 5, size = 15 }) => {
+const UnbeatenFireBadge = ({ value = 5, size = 15 }) => {
     return (
         <span
             style={{
@@ -640,7 +641,7 @@ const STAT_EXPLANATIONS = [
                 meta: ["Starts at 50", KEPT],
                 when: (
                     <>
-                        The team is on an <b style={{ color: "#f28c28" }}>Unbeaten Streak</b> <MomentumStreakBadge value={2} />: it has won at least one match and hasn&apos;t lost any yet. The streak carries over to the next Stage, into the Playoffs and even into the next tournament.
+                        The team is on an <b style={{ color: "#f28c28" }}>Unbeaten Streak</b> <UnbeatenFireBadge value={2} />: it has won at least one match and hasn&apos;t lost any yet. The streak carries over to the next Stage, into the Playoffs and even into the next tournament.
                         The streak is shown with a fire icon with the number inside: next to the trophies in the Leaderboard and next to the team circles in the match modals (in a finished match, it shows the streak right after that match). It can also be changed by hand in the "Stats management" modal.
                     </>
                 ),
@@ -694,7 +695,7 @@ const STAT_EXPLANATIONS = [
                 effect: (
                     <>
                         Nothing until the team has won 5 rounds in a row. From there, the push up grows with every further round won: +0.0125 at 5 in a row, +0.05 at 8 and at most +0.10 (12 in a row).
-                        From 5 in a row on, a small fire icon with the streak <MomentumStreakBadge /> inside shows up below the team&apos;s round score, and it&apos;s also shown in the Detailed Match Results for every round where Momentum was active.
+                        From 5 in a row on, a small "Streak" badge with a flame and the number of rounds in a row <span className={css.inline_momentum}><MomentumStreakBadge value={5} size={11} /></span> shows up below the team&apos;s round score, with the number in the team&apos;s colors (from 10 in a row on, the flame flickers), and it&apos;s also shown in the Detailed Match Results for every round where Momentum was active.
                     </>
                 ),
             },
@@ -1455,6 +1456,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 >
                     stats
                 </a> and already one little stat difference may put one team into total outsiders (in most cases, this may indeed be true). But still, huge upsets can happen, even if the prediction may say that upset is purely impossible. <br />
+                On top of that, the match statistics of both teams from their Recent form (see below) nudge the percentages a little: the win rate, the round difference per match and how the average multiplier of a team compares to the one of its opponents. A team in good form gets a small push up, a team in bad form a small push down, and the push is only at its full size after 10 played matches, so it can tip a close match, but it never turns a big favourite into an outsider. <br />
                 And of course, on both sides of the modal, there are full two tabs with all the stats of each team and their average value.
                 You can close them, open them and their closed/opened state will be persisted for each modal, so e.g. one modal has both opened and another modal could have only one opened: you can do with that information, whatever you want. <br />
                 <i>P.s.: Some stats have the <span style={{ color: "#8a8d99", fontStyle: "normal", fontWeight: 600, lineHeight: "9px", whiteSpace: "nowrap" }}>Not activated</span> badge near them: this means, they don't influence the performance of a team in this match and they will not increment or decrement after this match, no matter the performance of the team. </i> <br />
@@ -1615,8 +1617,8 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 <div className={css.divider} />
             </div>
             <p className={css.info_text}>
-                The panels with the team stats on both sides of the match modal have a third page as well: <b>Recent form</b>. The arrow in the top corner of a panel switches between its pages, and the panel stays on the page, which I chose last, in the next match modals as well.
-                Here, in the Grand Final of Official #1 (a lot later than the first match above), Team Indigo and Team Blue already have many matches behind them:
+                The panels with the team stats on both sides of the match modal have a third page as well: <b>Recent form</b> (and a fourth one, <b>Head-to-head</b>, if both teams have already met before). The arrow in the top corner of a panel switches between its pages, and the panel stays on the page, which I chose last, in the next match modals as well.
+                Here, in the Grand Final of Official #1 (a lot later than the first match above), Team Indigo and Team Blue already have many matches behind them (but never against each other, so there are only three pages here):
             </p>
             <HistoryShot n={1} alt="Recent form of Team Indigo and Team Blue next to the match modal of the Grand Final" />
             <p className={css.info_text}>
@@ -1630,6 +1632,11 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 Here, I opened the Semifinal of Team Indigo: it was still its newest match before the Grand Final, but not the one of Team Navy, which played the Third Place Decider after it:
             </p>
             <HistoryShot n={2} alt="The Semifinal of Team Indigo and Team Navy opened from the Recent form, with the average multipliers of both teams" />
+            <p className={css.info_text}>
+                And when both teams of a match have already played against each other, the fourth page, <b>Head-to-head</b>, shows only those earlier meetings: the record of the matches against this opponent, the share of the won sets and the round difference, and below them, the cards of those matches (up to 5, the newest one first), which open the same way as above. If both teams have never met, this page isn&apos;t there at all.
+                In the Third Place Decider of Official #1, Team Navy and Team Lime had already met once, in Stage III, where Team Lime won 2:0:
+            </p>
+            <HistoryShot n={3} alt="Head-to-head pages of Team Navy and Team Lime next to the match modal of the Third Place Decider" />
             <p className={css.info_text}>
                 The same match cards, only bigger, are also in the team profiles in the Leaderboard (see{" "}
                 <a style={{ color: 'Highlight', fontStyle: 'italic' }} onClick={scrollToAnchor("leaderboard-explained")} href='#leaderboard-explained'>Leaderboard format and points system</a>
@@ -1859,20 +1866,20 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
                 If my insured pick loses, the insurance wins back a share of the Pick&apos;em points, which I&apos;ve missed (50% at first, rounded down, and more with higher levels). If that share is 0, because my team already took enough sets, the insurance comes back to me. And if my insured pick wins, the insurance wasn&apos;t needed, but it&apos;s used up anyway.
                 Below it, there are the <b>level bonuses</b>, which this match can give (for example +1 for a comeback, a sweep, an Overtime or a knockout match). Just like the insurance, they are toggles: for every pick, I can choose one of them (or none).
                 Only the bonuses, which can really happen in this match, are there: the Knockout bonus only in a match, whose loser is out, the Upset bonus only when my chosen team has 35% or less predicted, the Sweep, Comeback and Decider bonuses only from a Best of 3 on, and so on.
-                If my pick wins and the chosen bonus gets activated in the match (a comeback, for example, needs my team to be 2 sets behind, or 1 set behind in a Best of 3, and still win), it gives me its extra Pick&apos;em points. If it doesn&apos;t get activated, or my pick loses, the bonus is lost. The Comeback bonus is the only one, whose points depend on the match itself: +1 for a comeback, +2 for a big one (3 sets behind, or 2 sets behind with the opponent one set away from the win) and +3 for a huge one (from 0-3 in a Best of 7 or from 0-4 in a Best of 9), as far as my level allows it: up to +1 from Level 12, up to +2 from Level 55 and up to +3 from Level 100 on. The bigger the comeback, the more XP it gives as well.
-                All the bonus points of a tournament together can&apos;t be more than a share of the needed Pick&apos;em points (5% from Level 6 on, up to 25% at Level 1000), and the line above the toggles tells how many of them are still left. It doesn&apos;t matter which bonuses they come from, so I could even spend all of them on the same kind of bonus.
+                If my pick wins and the chosen bonus gets activated in the match (a comeback, for example, needs my team to be 2 sets behind, or 1 set behind in a Best of 3, and still win), it gives me its extra Pick&apos;em points. If it doesn&apos;t get activated, or my pick loses, the bonus gives no points this time, but it isn&apos;t used up, so I can choose it again in the next match. The Comeback bonus is the only one, whose points depend on the match itself: +1 for a comeback, +2 for a big one (3 sets behind, or 2 sets behind with the opponent one set away from the win) and +3 for a huge one (from 0-3 in a Best of 7 or from 0-4 in a Best of 9), as far as my level allows it: up to +1 from Level 12, up to +2 from Level 55 and up to +3 from Level 100 on. The bigger the comeback, the more XP it gives as well.
+                All the bonus points of a tournament together can&apos;t be more than a share of the needed Pick&apos;em points (5% from Level 6 on, up to 25% at Level 1000), and the line above the toggles tells how many of them are still left. The Official and the Official Skylines count as two tournaments here: each of them has its own bonus points and its own Pick&apos;em Insurances. It doesn&apos;t matter which bonuses they come from, so I could even spend all of them on the same kind of bonus.
                 That way, the bonuses are a small choice of their own, but the Pick&apos;em challenge stays a challenge. Right below the "Start" button, the flame shows my <b>pick streak</b>, so how many of my picks in a row were correct (over all tournaments), and it tells, when the next correct pick would make it a 5th, 10th and so on. Here, in the Grand Final, I insured my pick on Team Indigo and chose the Comeback bonus:
             </p>
             <LevelShot n={1} alt="Match modal of the Grand Final with the Pick'em Insurance switched on and the Comeback bonus chosen" width="35vw" />
             <p className={css.info_text}>
-                Every HUD shows the insurance and the chosen bonus as their own chips next to the "BEST OF" badge (even in a Best of 1, if a bonus is chosen), here "INSURED 50%" and "COMEBACK +1":
+                Every HUD shows the insurance and the chosen bonus as their own chips (even in a Best of 1, if a bonus is chosen). In the Official and the Official Skylines, they are round tokens in their own row right below the "BEST OF" badge, here "INSURED 50%" and "COMEBACK +1". The other tournaments with their own HUDs show them in their own style next to their "BEST OF" tile, and the Esports World Cup in its own row right below its strip of sets:
             </p>
-            <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% and COMEBACK +1 chips next to the BEST OF badge" />
+            <LevelShot n={2} alt="Series screen of the Grand Final with the INSURED 50% and COMEBACK +1 tokens below the BEST OF badge" />
             <p className={css.info_text}>
-                When the series is over, the chips tell what happened. The insurance shows "+2" for the points it has won back, "Returned" or, if my pick has won, a grey "Not needed". The bonus shows its points, if it got activated, or a grey "Lost".
-                Team Indigo won the Grand Final 5:2, but it was never 2 sets behind, so there was no comeback and the Comeback bonus was lost:
+                When the series is over, the chips tell what happened. The insurance shows "+2" for the points it has won back, "Returned" or, if my pick has won, a grey "Not needed". The bonus shows its points, if it got activated, or a grey "No points".
+                Team Indigo won the Grand Final 5:2, but it was never 2 sets behind, so there was no comeback and the Comeback bonus gave no points this time (it isn&apos;t used up, though):
             </p>
-            <LevelShot n={11} alt="The end of the Grand Final: Insurance Not needed and Comeback Lost" />
+            <LevelShot n={11} alt="The end of the Grand Final: Insurance Not needed and Comeback No points" />
             <p className={css.info_text}>
                 And it stays visible later as well: the match modal and the last set in the Detailed Match Results show the grey "Not needed" insurance and the crossed-out bonus, which wasn&apos;t activated, right above the Pick&apos;em points.
                 On the left, the flame shows what this pick has done to my pick streak: "Correct pick" or the new streak with "In a row", "Streak lost" (or "No streak") for a wrong pick, or "Streak kept", if a Streak Shield has saved it:
@@ -1962,7 +1969,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <SkyShot n={1} alt="Tournament Intro Screen of Official Skylines #1 with all 8 Floors" />
             <p className={css.info_text}>
                 After "Continue", there is the building itself. At the top, the navigation "Official | Official Skylines" lets you switch between both tournaments at any moment (it&apos;s there during the whole Official, also in the Stages), and the vertical navigations on both sides take you to every Round (on the left) and to every Floor (on the right, where the Penthouse is golden).
-                Every Floor is a small Double Elimination bracket of its own: two <b>Opening</b> matches, the <b>Winners&apos; Match</b> of both winners and the <b>Losers&apos; Match</b> of both losers, which decide the places 1-4 on that Floor.
+                Every Floor is a small Double Elimination bracket of its own: two <b>Opening</b> matches (numbered #1 and #2 in the corner of their rectangles, so the order on every Floor is clear), the <b>Winners&apos; Match</b> of both winners and the <b>Losers&apos; Match</b> of both losers, which decide the places 1-4 on that Floor.
                 The Penthouse and Floor 2 play <b>Best of 3</b>, all the other Floors play <b>Best of 1</b>. Above the Penthouse, the roof already waits for the Rooftop Final:
             </p>
             <SkyShot n={2} alt="Round 1 of Official Skylines #1 at the top of the building: the roof and the Penthouse" />
@@ -2031,6 +2038,7 @@ const OfficialSubPage = ({ scrollToAnchor }) => (
             <SkyShot n={9} alt="Winners' screen of Official Skylines #1" width="28vw" />
             <p className={css.info_text}>
                 The Official Skylines has its own Pick&apos;em challenge as well. While it is played, the needed Pick&apos;em points in the top-right corner are the ones of the Official Skylines, and its Pick&apos;em summary counts every Round on its own and then the Rooftop Final.
+                The level benefits work here as well, but on their own: the fewer needed Pick&apos;em points are cut from the needed points of the Official Skylines, and it has its own Pick&apos;em Insurances and its own bonus points, so whatever I use in the Official Skylines doesn&apos;t take anything away from the Official, and the other way around.
                 This one, I won: 133 out of 119 needed Pick&apos;em points.
             </p>
             <SkyShot n={10} alt="Pick'em summary of Official Skylines #1" width="30vw" />

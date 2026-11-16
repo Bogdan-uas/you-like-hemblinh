@@ -295,6 +295,29 @@ const ProfileLink = ({ team, onProfile }) =>
         </button>
     ) : null;
 
+export function HeadToHeadPanelBody({ h2h, opponent, onOpen, before }) {
+    if (!h2h) return null;
+    const { views, stats } = h2h;
+    return (
+        <div className={css.form}>
+            <div className={css.form_caption}>
+                Against Team {opponent?.name ?? "—"} · {stats.played === 1 ? "1 earlier match" : `${stats.played} earlier matches`}
+                {before ? " before this one" : ""}
+            </div>
+            <div className={css.tiles}>
+                <Tile label="Record" value={<Record wins={stats.wins} losses={stats.losses} ties={stats.ties} />} color={pctColor(stats.winRate)} sub={formatPct(stats.winRate)} title="Matches won, lost (and tied) against this team" />
+                <Tile label="Sets" value={formatPct(stats.setRate)} color={pctColor(stats.setRate)} sub={<Record wins={stats.setsWon} losses={stats.setsLost} />} title="Sets won and lost against this team" />
+                <Tile label="Rounds" value={formatSigned(stats.roundDiff)} sub={`${stats.roundsFor}-${stats.roundsAgainst}`} color={signedColor(stats.roundDiff)} title="Round difference against this team" />
+            </div>
+            <div className={css.cards}>
+                {views.map((view) => (
+                    <HistoryCard key={view.entry.key} view={view} onOpen={onOpen} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function FormPanelBody({ form, onOpen, before, team = null, onProfile = null }) {
     if (!form) return null;
     const { views, stats, latest } = form;

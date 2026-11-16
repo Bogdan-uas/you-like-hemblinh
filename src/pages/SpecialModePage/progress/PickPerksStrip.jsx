@@ -87,7 +87,7 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
                 <div className={css.bonus_picker}>
                     <span
                         className={css.perk_hint}
-                        title={`Choose ${maxPicks === 1 ? "one level bonus" : `up to ${maxPicks} level bonuses`} for this pick. A bonus, which isn't activated in this match, is lost. All bonus Pick'em points of a tournament can't be more than ${bonus.pct}% of the needed ones (${bonus.cap}).`}
+                        title={`Choose ${maxPicks === 1 ? "one level bonus" : `up to ${maxPicks} level bonuses`} for this pick. A bonus, which isn't activated in this match, gives no points this time, but it isn't used up. All bonus Pick'em points of a tournament can't be more than ${bonus.pct}% of the needed ones (${bonus.cap}).`}
                     >
                         <FaStar aria-hidden="true" style={{ marginRight: 5, verticalAlign: "-0.1em", color: capped ? "#a9acba" : "#e0a800" }} />
                         {capped
@@ -107,7 +107,7 @@ export function PickPerksStrip({ stage, bestOf = 1, knockout = false, pickChance
                                         type="button"
                                         aria-pressed={on}
                                         className={`${css.filter} ${css.bonus_option} ${on ? css.filter_active : ""} ${blocked ? css.bonus_option_blocked : ""}`}
-                                        title={blocked ? `You can choose up to ${maxPicks} bonuses for one pick` : `${shown} Pick'em point${value === 1 ? "" : "s"}, if ${option.when}.${option.type === "comebackBonus" && value > 1 && bestOf >= 7 ? " A big comeback gives +2" + (value > 2 && bestOf >= 7 ? ", a huge one +3." : ".") : ""} Otherwise, the bonus is lost.`}
+                                        title={blocked ? `You can choose up to ${maxPicks} bonuses for one pick` : `${shown} Pick'em point${value === 1 ? "" : "s"}, if ${option.when}.${option.type === "comebackBonus" && value > 1 && bestOf >= 7 ? " A big comeback gives +2" + (value > 2 && bestOf >= 7 ? ", a huge one +3." : ".") : ""} Otherwise, it gives no points this time (it isn't used up).`}
                                         onClick={() => (maxPicks === 1 ? progressSetBonusArmed(on ? [] : [option.type]) : toggle(option.type))}
                                     >
                                         {shown} {option.label}

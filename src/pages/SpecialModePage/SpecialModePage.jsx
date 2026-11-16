@@ -298,6 +298,7 @@ import { applyPickPerks, pickBonusesOf, pickPerkBreakdown } from "./progress/pic
 import { isKnockoutContext } from "./progress/progressConfig.js";
 import {
     progressApplyNeededPerk as perkNeeded,
+    progressUseEventSlot,
     progressBuildPickPerks,
     progressClearSnapshot,
     progressEnsureSnapshot,
@@ -530,6 +531,7 @@ import { SettingsContext, loadSettings, saveSettings, useGambleKey, useSecretKey
 import { DEFAULT_CHEAT_DRAFT, CHEAT_SCRIPTS, TIE_SCORE, buildCheatAnchor, getCheatMiniWinner, isCheatFinished, describeCheat, getMiniRoundOdds, getRoundOdds, normalizeCheatDraft, loadCheatDraft, saveCheatDraft } from "./logic/secretCheats.js";
 
 const saveHallTournament = (record) => {
+    progressUseEventSlot(record?.event === "skylines" ? "skylines" : "main");
     const withPerk = progressWithNeededPerk(record);
     progressEventFinished(withPerk);
     return writeHallTournament(withPerk);
@@ -704,6 +706,9 @@ function SpecialModeContent() {
     }, [skylines]);
 
     const isSkylinesPhase = activePhase === "skylines" && !!skylines;
+    useEffect(() => {
+        progressUseEventSlot(isSkylinesPhase ? "skylines" : "main");
+    }, [isSkylinesPhase]);
 
     const [pgxSeries, setPgxSeries] = useState(null);
     const [pgxCm, setPgxCm] = useState(null);
@@ -2864,7 +2869,7 @@ function SpecialModeContent() {
                 number: skylinesNumberNext,
                 officialNumber: tournamentNumber + 1,
                 firstPlace: SKYLINES_FIRST_PLACE,
-                neededPickemPoints: perkNeeded(getRandomSkylinesNeededPickemPoints()),
+                neededPickemPoints: perkNeeded(getRandomSkylinesNeededPickemPoints(), "skylines"),
             });
             setSkylinesRoundView(0);
             skylinesAutoAdvanceRef.current = null;
@@ -3656,7 +3661,7 @@ function SpecialModeContent() {
         return placingsAtTime(teamPlacings, hallOfFame, teamId, time);
     };
 
-    const getTeamForm = (teamId, beforeMatch = null) => {
+    const getTeamForm = (teamId, beforeMatch = null, opponentId = null) => {
         if (teamId == null) return null;
         const all = teamEntries(hallHistoryIndex, liveHistoryEntries, teamId);
         let list = all;
@@ -3668,7 +3673,9 @@ function SpecialModeContent() {
             latest = at >= 0 ? at === 0 : !playedAt || !all.some((entry) => entry.time > playedAt);
         }
         const views = list.map((entry) => teamView(entry, teamId));
-        return { views: views.slice(0, 5), stats: teamStatsOf(views), latest };
+        const meetings = opponentId == null ? [] : views.filter((view) => String(view.opponent?.id) === String(opponentId));
+        const h2h = meetings.length ? { views: meetings.slice(0, 5), stats: teamStatsOf(meetings), latest } : null;
+        return { views: views.slice(0, 5), stats: teamStatsOf(views), latest, h2h };
     };
 
     const profileTeamId = teamProfile?.teamId ?? null;
@@ -4040,6 +4047,8 @@ function SpecialModeContent() {
                     teams: allTeams,
                     matchContext: modalContext,
                     bestOf: modalBestOf,
+                    leftForm: getTeamForm(modalLeftTeam.id)?.stats ?? null,
+                    rightForm: getTeamForm(modalRightTeam.id)?.stats ?? null,
                 }).leftWinProbability;
             } catch {
                 return null;

@@ -208,14 +208,33 @@ export const progressMarkSimulated = () => {
 
 export const progressNeededPreview = (points) => applyNeededPerk(points, currentLevel());
 
-export const progressApplyNeededPerk = (points) => {
+export const progressApplyNeededPerk = (points, slot = null) => {
     const reduced = applyNeededPerk(points, currentLevel());
     if (reduced !== points && Number.isFinite(points)) {
-        const next = ensureEvent(progress);
-        setProgress({ ...next, event: { ...next.event, neededCut: { before: points, after: reduced, pct: currentPerks().needed } } });
+        const cut = { before: points, after: reduced, pct: currentPerks().needed };
+        if (slot && slot !== (progress.eventSlot ?? "main")) {
+            const stash = { ...(progress.eventStash || {}) };
+            const target = stash[slot] ?? ensureEvent({ ...progress, event: null }).event;
+            setProgress({ ...progress, eventStash: { ...stash, [slot]: { ...target, neededCut: cut } } });
+        } else {
+            const next = ensureEvent(progress);
+            setProgress({ ...next, event: { ...next.event, neededCut: cut } });
+        }
         publish();
     }
     return reduced;
+};
+
+export const progressUseEventSlot = (slot) => {
+    const current = progress.eventSlot ?? "main";
+    if (!slot || slot === current) return;
+    const stash = { ...(progress.eventStash || {}) };
+    stash[current] = progress.event ?? null;
+    const event = stash[slot] ?? null;
+    delete stash[slot];
+    setProgress({ ...progress, event, eventSlot: slot, eventStash: stash });
+    setUi({ insuranceArmed: false, bonusArmed: [] });
+    publish();
 };
 
 const snapshotOf = (state) => ({ ...state, lastSummary: null, pendingSummary: null });
@@ -232,7 +251,7 @@ export const progressRestoreSnapshot = () => {
     const saved = read(PROGRESS_SNAPSHOT_LS_KEY);
     write(PROGRESS_SNAPSHOT_LS_KEY, null);
     if (!saved) return;
-    setProgress({ ...normalizeProgress(saved), tasks: mergeTasksOnRestore(saved.tasks, progress.tasks), lastSummary: progress.lastSummary, pendingSummary: progress.pendingSummary, event: null, activePick: null, catchUpDone: true });
+    setProgress({ ...normalizeProgress(saved), tasks: mergeTasksOnRestore(saved.tasks, progress.tasks), lastSummary: progress.lastSummary, pendingSummary: progress.pendingSummary, event: null, eventSlot: "main", eventStash: null, activePick: null, catchUpDone: true });
     setUi({ queue: [], displayXp: progress.xp, insuranceArmed: false });
     publish();
 };

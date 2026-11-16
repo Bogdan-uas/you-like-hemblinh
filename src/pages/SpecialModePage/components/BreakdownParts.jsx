@@ -325,7 +325,7 @@ export const BreakdownScoreRow = ({
                         ) : (
                             <div className={isLeft ? css.lines : css.lossLines} />
                         )}
-                        <MomentumStreakBadge value={isLeft ? leftMomentumStreak : rightMomentumStreak} />
+                        <MomentumStreakBadge value={isLeft ? leftMomentumStreak : rightMomentumStreak} team={team} size={11} />
                     </div>
 
                     {hasPens ? (

@@ -1330,9 +1330,11 @@
 
 .sets > .set_bo {
     flex: 0 0 auto;
-    width: 82px;
-    margin-right: 4px;
-    padding: 0 16px 0 14px;
+    width: auto;
+    min-width: 82px;
+    white-space: nowrap;
+    margin-left: calc(2px - var(--lean));
+    padding: 0 30px 0 30px;
     background: var(--e-black);
     clip-path: polygon(0 0, calc(100% - var(--lean)) 0, 100% 100%, var(--lean) 100%);
 }
@@ -2663,3 +2665,31 @@ button.tile:disabled {
     pointer-events: none;
 }
 
+
+.sets_stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.sets_extra {
+    --e-tile-h: 44px;
+    justify-content: flex-end;
+}
+
+.sets_extra:empty {
+    display: none;
+}
+
+.sets_extra > .set_bo:first-child {
+    margin-left: 0;
+}
+
+.sets_extra .set_label {
+    font-size: 10px;
+}
+
+.sets_extra .set_value {
+    font-size: 17px;
+}

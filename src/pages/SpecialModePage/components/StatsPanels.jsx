@@ -20,7 +20,7 @@ import {
     clampStat,
     statToInputString,
 } from "../logic/teamStats.js";
-import { FormPanelBody } from "./TeamHistory.jsx";
+import { FormPanelBody, HeadToHeadPanelBody } from "./TeamHistory.jsx";
 
 const StatScaleBar = ({ value, max = 100, height = 9, animated = true }) => {
     const pct = Math.max(0, Math.min(100, (Number(value) || 0) / max * 100));
@@ -327,13 +327,15 @@ export const StatsFactorPanelBody = ({ team, statsNow, statsBefore, tab = 0 }) =
     );
 };
 
-const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes = null, tab: tabProp = null, onTabChange = null, form = null, formBefore = false, onOpenEntry = null, onOpenProfile = null }) => {
+const MatchStatsSidePanel = ({ side, team, opponent = null, open, statsNow, statsBefore, rowNotes = null, tab: tabProp = null, onTabChange = null, form = null, formBefore = false, onOpenEntry = null, onOpenProfile = null }) => {
     const anchorProp = side === "left" ? "right" : "left";
     const [ownTab, setOwnTab] = useState(0);
-    const total = STAT_TABS.length + (form ? 1 : 0);
+    const hasH2h = !!form?.h2h;
+    const total = STAT_TABS.length + (form ? 1 : 0) + (hasH2h ? 1 : 0);
     const tab = Math.min(tabProp ?? ownTab, total - 1);
     const setTab = (next) => (onTabChange ? onTabChange(next) : setOwnTab(next));
-    const isFormTab = !!form && tab === STAT_TABS.length;
+    const isH2hTab = hasH2h && tab === STAT_TABS.length + 1;
+    const isFormTab = (!!form && tab === STAT_TABS.length) || isH2hTab;
     const defs = STAT_TABS[Math.max(0, Math.min(tab, STAT_TABS.length - 1))] ?? [];
 
     return (
@@ -389,7 +391,11 @@ const MatchStatsSidePanel = ({ side, team, open, statsNow, statsBefore, rowNotes
             </div>
             {isFormTab ? (
                 <div style={{ marginTop: "4px", paddingBottom: "4px" }}>
-                    <FormPanelBody form={form} before={formBefore} onOpen={onOpenEntry} team={team} onProfile={onOpenProfile} />
+                    {isH2hTab ? (
+                        <HeadToHeadPanelBody h2h={form.h2h} opponent={opponent} before={formBefore} onOpen={onOpenEntry} />
+                    ) : (
+                        <FormPanelBody form={form} before={formBefore} onOpen={onOpenEntry} team={team} onProfile={onOpenProfile} />
+                    )}
                 </div>
             ) : (
             <>
@@ -729,6 +735,7 @@ export const MatchStatsOverlay = ({
             <MatchStatsSidePanel
                 side="left"
                 team={leftTeam}
+                opponent={rightTeam}
                 open={leftOpen}
                 statsNow={leftNow}
                 statsBefore={showDiff ? leftBefore : null}
@@ -743,6 +750,7 @@ export const MatchStatsOverlay = ({
             <MatchStatsSidePanel
                 side="right"
                 team={rightTeam}
+                opponent={leftTeam}
                 open={rightOpen}
                 statsNow={rightNow}
                 statsBefore={showDiff ? rightBefore : null}

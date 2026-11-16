@@ -664,6 +664,30 @@ export const resolveSeriesTieStats = ({ liveStats, ctx }) => {
     return stats;
 };
 
+const FORM_SHIFT_SCALE = 0.18;
+const FORM_SHIFT_MAX = 0.25;
+const FORM_FULL_AT = 10;
+
+const clampUnit = (value, limit) => Math.max(-limit, Math.min(limit, value));
+
+const formScoreOf = (form) => {
+    const played = Number(form?.played) || 0;
+    if (!played) return 0;
+    const reliability = Math.min(played, FORM_FULL_AT) / FORM_FULL_AT;
+    const winPart = (Number(form.winRate) || 0) - 0.5;
+    const roundPart = clampUnit((Number(form.roundDiff) || 0) / played / 10, 0.5) * 0.5;
+    const multPart = form.avgMultiplier != null && form.opponentAvgMultiplier != null ? clampUnit(form.avgMultiplier - form.opponentAvgMultiplier, 0.5) * 0.5 : 0;
+    return (winPart + roundPart + multPart) * reliability;
+};
+
+export const applyFormToPrediction = (probability, leftForm, rightForm) => {
+    if (!Number.isFinite(probability) || (!leftForm && !rightForm)) return probability;
+    const p = Math.min(0.999, Math.max(0.001, probability));
+    const shift = clampUnit((formScoreOf(leftForm) - formScoreOf(rightForm)) * FORM_SHIFT_SCALE, FORM_SHIFT_MAX);
+    const logit = Math.log(p / (1 - p)) + shift;
+    return 1 / (1 + Math.exp(-logit));
+};
+
 export const getMatchWinPrediction = ({
     leftTeam,
     rightTeam,
@@ -673,6 +697,8 @@ export const getMatchWinPrediction = ({
     teams,
     matchContext,
     bestOf,
+    leftForm = null,
+    rightForm = null,
 }) => {
     const seeded = {
         left: { ...DEFAULT_TEAM_STAT_VALUES, ...(leftStats ?? {}), momentum: 0 },
@@ -696,7 +722,7 @@ export const getMatchWinPrediction = ({
     const setsToWin = calcSetsToWin(bestOf);
 
     return {
-        leftWinProbability: predictLeftSeriesWin({ seeded, matchCtx, setsToWin }),
+        leftWinProbability: applyFormToPrediction(predictLeftSeriesWin({ seeded, matchCtx, setsToWin }), leftForm, rightForm),
         upset: matchCtx.upset,
     };
 };

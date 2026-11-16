@@ -776,3 +776,15 @@ section {
         display: none;
     }
 }
+
+.inline_momentum {
+    display: inline-flex;
+    vertical-align: middle;
+    margin: -2px 2px;
+}
+
+.inline_momentum > span {
+    position: static;
+    transform: none;
+    margin: 0;
+}

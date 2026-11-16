@@ -359,8 +359,10 @@ export function SeriesScreen({ header, series, labels, actions }) {
                         style={{ fontSize: "24px", marginBottom: "2px", marginTop: "10px", marginLeft: "-2px", display: "flex" }}
                     >
                         <BestOfBadge bestOf={setsToWin * 2 - 1} size={20} />
-                        <HudInsurance variant="official" seriesState={seriesState} />
                     </motion.span>
+                    <span className={css.hud_tokens_row}>
+                        <HudInsurance variant="official" seriesState={seriesState} />
+                    </span>
                     {setsToWin !== 1 ? (
                         <motion.span
                             initial={{ opacity: 0 }}
@@ -1061,7 +1063,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 {seriesState.phase === "skyline" ? (
                                     <SkylineStreak value={seriesState.tiebreakerPhase === "idle" && !banner ? seriesState.liveStats?.left?.momentum ?? 0 : 0} />
                                 ) : seriesState.tiebreakerPhase === "idle" && (
-                                    <MomentumStreakBadge value={seriesState.liveStats?.left?.momentum} animated />
+                                    <MomentumStreakBadge value={seriesState.liveStats?.left?.momentum} team={seriesState.leftTeam} animated />
                                 )}
                             </div>
                             {seriesState.tiebreakerPhase === "penalties" ? (
@@ -1573,7 +1575,7 @@ export function SeriesScreen({ header, series, labels, actions }) {
                                 {seriesState.phase === "skyline" ? (
                                     <SkylineStreak value={seriesState.tiebreakerPhase === "idle" && !banner ? seriesState.liveStats?.right?.momentum ?? 0 : 0} />
                                 ) : seriesState.tiebreakerPhase === "idle" && (
-                                    <MomentumStreakBadge value={seriesState.liveStats?.right?.momentum} animated />
+                                    <MomentumStreakBadge value={seriesState.liveStats?.right?.momentum} team={seriesState.rightTeam} animated />
                                 )}
                             </div>
                             {seriesState.tiebreakerPhase === "penalties" ? (

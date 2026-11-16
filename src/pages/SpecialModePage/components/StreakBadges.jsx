@@ -2,54 +2,33 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { FaFire } from "react-icons/fa";
 import { STREAK_ASH_STYLE, STREAK_LIT_STYLE } from "../logic/statsUi.js";
+import page from "../SpecialModePage.module.css";
 
-export const MomentumStreakBadge = ({ value, size = 15, animated = false }) => {
+export const MomentumStreakBadge = ({ value, team = null, size = 15, animated = false }) => {
     if (!value || value < 5) return null;
+    const hot = value >= 10;
     return (
-        <div
-            style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "3px",
-                pointerEvents: "none",
-            }}
-        >
-            <motion.div
-                initial={animated ? { opacity: 0, scale: 0.4 } : false}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                style={{
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
+        <span className={page.momentum_wrap}>
+            <motion.span
+                className={`${page.best_of_badge} ${page.momentum_badge}`}
+                data-hot={hot || undefined}
+                style={{ fontSize: size + 1, "--team": team?.color ?? "#ff8a00" }}
+                initial={animated ? { opacity: 0, y: -6, scale: 0.7 } : false}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 24 }}
+                aria-label={`Momentum streak: ${value} rounds in a row`}
             >
-                <FaFire
-                    style={{
-                        fontSize: `${size + 11}px`,
-                        color: "#ff8a00",
-                        filter: "drop-shadow(0 0 3px rgba(255,138,0,0.85))",
-                    }}
-                />
-                <span
-                    style={{
-                        position: "absolute",
-                        fontSize: `${size - 3}px`,
-                        fontWeight: 800,
-                        color: "#fff",
-                        textShadow: "0 1px 2px rgba(0,0,0,0.85)",
-                        marginTop: "2px",
-                    }}
-                >
-                    {value}
+                <span className={`${page.best_of_badge_label} ${page.momentum_label}`}>
+                    <FaFire className={page.momentum_flame} aria-hidden="true" />
+                    Streak
                 </span>
-            </motion.div>
-        </div>
+                <span className={`${page.best_of_badge_value} ${page.momentum_value}`} style={{ background: team?.gradient || undefined }}>
+                    <motion.span key={value} initial={animated ? { y: -10, opacity: 0 } : false} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }} style={{ display: "inline-block", transition: "none" }}>
+                        {value}
+                    </motion.span>
+                </span>
+            </motion.span>
+        </span>
     );
 };
 
